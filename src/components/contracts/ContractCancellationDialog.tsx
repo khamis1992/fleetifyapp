@@ -18,21 +18,24 @@ import {
   useContractCancellationImpact,
   useUpdateContractStatus,
 } from '@/hooks/useContractRenewal';
-import { useCreateContractVehicleReturn } from '@/hooks/useContractVehicleReturn';
 import { toast } from 'sonner';
-import { cn } from '@/lib/utils';
 import { ContractCancellationImpactPanel } from './ContractCancellationImpactPanel';
+import type { Contract } from '@/types/contracts';
 
 interface ContractCancellationDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  contract: any;
+  contract: Contract;
+  onCancelled?: () => void | Promise<void>;
 }
+
+type VehicleCondition = 'excellent' | 'good' | 'fair' | 'poor';
 
 export const ContractCancellationDialog: React.FC<ContractCancellationDialogProps> = ({
   open,
   onOpenChange,
-  contract
+  contract,
+  onCancelled,
 }) => {
   const [cancellationReason, setCancellationReason] = React.useState('');
   const [transferTrafficViolationsToCompany, setTransferTrafficViolationsToCompany] = React.useState(false);
@@ -40,20 +43,19 @@ export const ContractCancellationDialog: React.FC<ContractCancellationDialogProp
   const [showVehicleSection, setShowVehicleSection] = React.useState(false);
   
   // Vehicle condition state
-  const [vehicleCondition, setVehicleCondition] = React.useState<'excellent' | 'good' | 'fair' | 'poor'>('good');
+  const [vehicleCondition, setVehicleCondition] = React.useState<VehicleCondition>('good');
   const [fuelLevel, setFuelLevel] = React.useState(50);
   const [odometerReading, setOdometerReading] = React.useState<number | undefined>(undefined);
   const [damagesNotes, setDamagesNotes] = React.useState('');
   
   const updateContractStatus = useUpdateContractStatus();
-  const createVehicleReturn = useCreateContractVehicleReturn();
   const cancellationImpact = useContractCancellationImpact({
     contractId: contract?.id,
     companyId: contract?.company_id,
     enabled: open,
   });
 
-  const isProcessing = updateContractStatus.isPending || createVehicleReturn.isPending;
+  const isProcessing = updateContractStatus.isPending;
   const requiresCompanyTransfer = cancellationImpact.data?.requiresCompanyTransfer === true;
   const cancellationIsBlocked = requiresCompanyTransfer && (
     cancellationImpact.data?.blockedPenaltyCount !== 0
@@ -85,48 +87,41 @@ export const ContractCancellationDialog: React.FC<ContractCancellationDialogProp
       toast.error('يرجى إدخال سبب إلغاء واضح من 5 أحرف على الأقل');
       return;
     }
+    if (recordVehicleCondition && (!odometerReading || odometerReading <= 0)) {
+      toast.error('أدخل قراءة عداد صحيحة قبل تسجيل إرجاع المركبة');
+      return;
+    }
     
     try {
-      // Record vehicle condition if enabled
-      if (recordVehicleCondition && contract.vehicle_id) {
-        await createVehicleReturn.mutateAsync({
-          contract_id: contract.id,
-          vehicle_id: contract.vehicle_id,
-          return_date: new Date().toISOString().split('T')[0],
-          vehicle_condition: vehicleCondition,
-          fuel_level: fuelLevel,
-          odometer_reading: odometerReading,
-          notes: damagesNotes || undefined,
-          damages: damagesNotes ? [{
-            type: 'ملاحظات',
-            description: damagesNotes,
-            severity: 'minor'
-          }] : []
-        });
-      }
-
-      // Cancel the contract
+      // Cancel first through the atomic financial/penalty path. A condition
+      // report must never make an active contract look returned if cancellation
+      // is later rejected by a financial guard.
       await updateContractStatus.mutateAsync({
         contractId: contract.id,
         status: 'cancelled',
         reason: cancellationReason.trim(),
         companyId: contract.company_id,
         transferTrafficViolationsToCompany,
+        vehicleReturn: recordVehicleCondition && contract.vehicle_id
+          ? {
+              inspection_date: new Date().toISOString(),
+              vehicle_condition: vehicleCondition,
+              fuel_level: fuelLevel,
+              odometer_reading: odometerReading,
+              notes: damagesNotes || null,
+              damages: damagesNotes ? [{
+                type: 'ملاحظات',
+                description: damagesNotes,
+                severity: 'minor',
+              }] : [],
+            }
+          : null,
       });
-      
+
+      await onCancelled?.();
       onOpenChange(false);
     } catch (error) {
       console.error('Error cancelling contract:', error);
-    }
-  };
-
-  const getConditionLabel = (condition: string) => {
-    switch (condition) {
-      case 'excellent': return 'ممتازة';
-      case 'good': return 'جيدة';
-      case 'fair': return 'مقبولة';
-      case 'poor': return 'سيئة';
-      default: return condition;
     }
   };
 
@@ -158,8 +153,8 @@ export const ContractCancellationDialog: React.FC<ContractCancellationDialogProp
             <div className="flex justify-between">
               <span className="text-slate-600">العميل:</span>
               <span className="font-medium">
-                {contract?.customers?.first_name_ar || contract?.customers?.first_name || 
-                 contract?.customers?.company_name_ar || contract?.customers?.company_name || 'غير محدد'}
+                {contract?.customer?.first_name_ar || contract?.customer?.first_name ||
+                 contract?.customer?.company_name_ar || contract?.customer?.company_name || 'غير محدد'}
               </span>
             </div>
             <div className="flex justify-between">
@@ -244,7 +239,7 @@ export const ContractCancellationDialog: React.FC<ContractCancellationDialogProp
                       {/* Vehicle Condition */}
                       <div className="space-y-2">
                         <Label>حالة المركبة</Label>
-                        <Select value={vehicleCondition} onValueChange={(v: any) => setVehicleCondition(v)}>
+                        <Select value={vehicleCondition} onValueChange={(value) => setVehicleCondition(value as VehicleCondition)}>
                           <SelectTrigger>
                             <SelectValue />
                           </SelectTrigger>
@@ -276,14 +271,20 @@ export const ContractCancellationDialog: React.FC<ContractCancellationDialogProp
 
                       {/* Odometer */}
                       <div className="space-y-2">
-                        <Label htmlFor="odometer">قراءة العداد (كم)</Label>
+                        <Label htmlFor="odometer">
+                          قراءة العداد (كم) <span className="text-red-500">*</span>
+                        </Label>
                         <Input
                           id="odometer"
                           type="number"
+                          min={1}
                           placeholder="مثال: 50000"
                           value={odometerReading || ''}
                           onChange={(e) => setOdometerReading(e.target.value ? parseInt(e.target.value) : undefined)}
                         />
+                        {(!odometerReading || odometerReading <= 0) && (
+                          <p className="text-xs text-red-600">القراءة الفعلية مطلوبة لتوثيق الإرجاع.</p>
+                        )}
                       </div>
 
                       {/* Damages Notes */}
@@ -325,6 +326,7 @@ export const ContractCancellationDialog: React.FC<ContractCancellationDialogProp
               || !!cancellationImpact.error
               || cancellationIsBlocked
               || cancellationReason.trim().length < 5
+              || (recordVehicleCondition && (!odometerReading || odometerReading <= 0))
             }
           >
             {isProcessing ? (

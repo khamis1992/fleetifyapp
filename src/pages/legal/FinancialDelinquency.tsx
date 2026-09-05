@@ -145,6 +145,7 @@ const employeeReviewStatusMeta: Record<string, { label: string; className: strin
   employee_rejected: { label: 'غير مناسبة للتحويل', className: 'border-rose-200 bg-rose-50 text-rose-700' },
   employee_approved: { label: 'معتمدة من الموظف', className: 'border-emerald-200 bg-emerald-50 text-emerald-700' },
   manager_overridden: { label: 'تجاوز إداري معتمد', className: 'border-violet-200 bg-violet-50 text-violet-700' },
+  system_verified: { label: 'متحققة آلياً', className: 'border-cyan-200 bg-cyan-50 text-cyan-700' },
   cancelled: { label: 'طلب ملغي', className: 'border-slate-200 bg-slate-50 text-slate-600' },
 };
 const activeWorkflowStages: LegalWorkflowStage[] = [
@@ -489,7 +490,18 @@ const fetchLegalQueue = async (companyId: string): Promise<QueueItem[]> => {
       fetchDelinquencyInvoices(companyId, contractIds),
       supabase
         .from('contract_documents')
-        .select('id, contract_id, document_name, document_type, file_path, mime_type')
+        .select(`
+          id,
+          contract_id,
+          document_name,
+          document_type,
+          file_path,
+          mime_type,
+          legal_identity_match_status,
+          legal_identity_expected_id,
+          legal_identity_extracted_id,
+          legal_evidence_state
+        `)
         .eq('company_id', companyId)
         .in('contract_id', contractIds),
     ]);
@@ -1048,9 +1060,14 @@ const getQueueReadiness = (item: QueueItem) => {
   const isFiled = item.workflowStage && item.workflowStage !== 'preparation';
 
   if (isFiled) {
+    const filedDescription = item.workflowStage === 'filed'
+      ? 'تم إيداع الدعوى، ولم يُسجل قبول المحكمة بعد.'
+      : item.workflowStage === 'awaiting_acceptance'
+        ? 'الدعوى لدى المحكمة وبانتظار قرار القبول.'
+        : 'هذه الدعوى خرجت من لوبي التجهيز وتحتاج متابعة في سجل القضايا.';
     return {
       label: preparationStageLabel(item.workflowStage),
-      description: 'هذه الدعوى خرجت من لوبي التجهيز وتحتاج متابعة في سجل القضايا.',
+      description: filedDescription,
       progress: 100,
       tone: 'slate' as const,
       nextAction: 'عرض المتابعة',
@@ -1599,7 +1616,7 @@ const FinancialDelinquencyPage: React.FC = () => {
     }
 
     const review = employeeReviewByContract.get(candidate.contract.id);
-    if (!review || !['employee_approved', 'manager_overridden'].includes(review.status)) {
+    if (!review || !['employee_approved', 'manager_overridden', 'system_verified'].includes(review.status)) {
       toast.error('يجب اعتماد الموظف المسؤول قبل التحويل القانوني');
       return;
     }
@@ -2215,7 +2232,7 @@ const FinancialDelinquencyPage: React.FC = () => {
                     : undefined;
                   const reviewApproved = Boolean(
                     employeeReview
-                    && ['employee_approved', 'manager_overridden'].includes(employeeReview.status),
+                    && ['employee_approved', 'manager_overridden', 'system_verified'].includes(employeeReview.status),
                   );
                   const reviewMeta = employeeReview
                     ? employeeReviewStatusMeta[employeeReview.status]

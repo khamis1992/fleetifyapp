@@ -40,6 +40,26 @@ describe('selectLegalContractDocument', () => {
     expect(selected).toBeNull();
   });
 
+  it('accepts an exact QID match when legacy OCR misclassified nearby prose as the tenant name', () => {
+    const candidate = {
+      ...document('qid-match', 'signed_contract', 'سعيد الحبابي', undefined, 'mismatch'),
+      legal_identity_expected_id: '28663402985',
+      legal_identity_extracted_id: '28663402985',
+    };
+
+    expect(selectLegalContractDocument([candidate])?.id).toBe('qid-match');
+  });
+
+  it('does not override a real QID mismatch', () => {
+    const candidate = {
+      ...document('qid-mismatch', 'signed_contract', 'نسخة العقد', undefined, 'mismatch'),
+      legal_identity_expected_id: '28663402985',
+      legal_identity_extracted_id: '28663402986',
+    };
+
+    expect(selectLegalContractDocument([candidate])).toBeNull();
+  });
+
   it('falls back to the contract type and ignores drafts or missing files', () => {
     const selected = selectLegalContractDocument([
       document('draft', 'draft_contract', 'مسودة عقد'),

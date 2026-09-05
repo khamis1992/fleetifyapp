@@ -121,6 +121,7 @@ interface ContractInvoicesTabRedesignedProps {
   isBulkCancellingInvoices?: boolean;
   onGenerateMissingInvoices?: () => void;
   isGeneratingMissingInvoices?: boolean;
+  billingGenerationBlocker?: string | null;
   contractNumber?: string;
   customerInfo?: CustomerInfo;
   trafficViolations?: TrafficViolation[];
@@ -144,6 +145,9 @@ const getInvoicePaymentStatus = (invoice: Invoice): string => {
 };
 
 const isInvoicePaid = (invoice: Invoice): boolean => {
+  // Cancelled invoices have balance_due zeroed by the reversal routine; the
+  // zero balance must not be misread as "paid".
+  if (isInvoiceCancelled(invoice)) return false;
   const status = getInvoicePaymentStatus(invoice);
   if (status === 'paid') return true;
   return invoice.balance_due != null
@@ -186,10 +190,10 @@ const getInvoicePaymentStatusInfo = (invoice: Invoice) => {
     return {
       label: 'ملغي',
       variant: 'outline' as const,
-      bgColor: 'bg-slate-50',
-      textColor: 'text-slate-500',
-      borderColor: 'border-slate-200',
-      iconBg: 'bg-slate-400',
+      bgColor: 'bg-[#FFF5F6]',
+      textColor: 'text-[#BE123C]',
+      borderColor: 'border-[#FB6B7A]/30',
+      iconBg: 'bg-[#FB6B7A]',
       icon: XCircle,
     };
   }
@@ -198,10 +202,10 @@ const getInvoicePaymentStatusInfo = (invoice: Invoice) => {
     return {
       label: 'مسدد',
       variant: 'default' as const,
-      bgColor: 'bg-green-50',
-      textColor: 'text-green-700',
-      borderColor: 'border-green-200',
-      iconBg: 'bg-green-500',
+      bgColor: 'bg-[#ECFDF9]',
+      textColor: 'text-[#0E9E7E]',
+      borderColor: 'border-[#22C7A1]/30',
+      iconBg: 'bg-[#22C7A1]',
       icon: CheckCircle,
     };
   }
@@ -210,10 +214,10 @@ const getInvoicePaymentStatusInfo = (invoice: Invoice) => {
     return {
       label: 'جزئي',
       variant: 'secondary' as const,
-      bgColor: 'bg-amber-50',
-      textColor: 'text-amber-700',
-      borderColor: 'border-amber-200',
-      iconBg: 'bg-amber-500',
+      bgColor: 'bg-[#FFFBEB]',
+      textColor: 'text-[#B45309]',
+      borderColor: 'border-[#F59E0B]/30',
+      iconBg: 'bg-[#F59E0B]',
       icon: Clock,
     };
   }
@@ -222,10 +226,10 @@ const getInvoicePaymentStatusInfo = (invoice: Invoice) => {
   return {
     label: 'غير مسدد',
     variant: 'outline' as const,
-    bgColor: 'bg-slate-50',
-    textColor: 'text-slate-700',
-    borderColor: 'border-slate-200',
-    iconBg: 'bg-slate-500',
+    bgColor: 'bg-[#F0F9FF]',
+    textColor: 'text-[#0369A1]',
+    borderColor: 'border-[#38BDF8]/30',
+    iconBg: 'bg-[#38BDF8]',
     icon: Clock,
   };
 };
@@ -237,9 +241,9 @@ const getInvoiceDueStatusInfo = (invoice: Invoice) => {
     return {
       value: dueStatus,
       label: 'مستقبلية',
-      bgColor: 'bg-violet-50',
-      textColor: 'text-violet-700',
-      borderColor: 'border-violet-200',
+      bgColor: 'bg-[#EEF2FF]',
+      textColor: 'text-[#4F46E5]',
+      borderColor: 'border-[#7C83F6]/30',
       icon: Calendar,
     };
   }
@@ -248,9 +252,9 @@ const getInvoiceDueStatusInfo = (invoice: Invoice) => {
     return {
       value: dueStatus,
       label: 'مستحقة اليوم',
-      bgColor: 'bg-blue-50',
-      textColor: 'text-blue-700',
-      borderColor: 'border-blue-200',
+      bgColor: 'bg-[#F0F9FF]',
+      textColor: 'text-[#0369A1]',
+      borderColor: 'border-[#38BDF8]/30',
       icon: Clock,
     };
   }
@@ -259,9 +263,9 @@ const getInvoiceDueStatusInfo = (invoice: Invoice) => {
     return {
       value: dueStatus,
       label: 'متأخرة',
-      bgColor: 'bg-red-50',
-      textColor: 'text-red-700',
-      borderColor: 'border-red-200',
+      bgColor: 'bg-[#FFF5F6]',
+      textColor: 'text-[#BE123C]',
+      borderColor: 'border-[#FB6B7A]/30',
       icon: AlertTriangle,
     };
   }
@@ -269,9 +273,9 @@ const getInvoiceDueStatusInfo = (invoice: Invoice) => {
   return {
     value: dueStatus,
     label: 'بلا تاريخ استحقاق',
-    bgColor: 'bg-slate-50',
-    textColor: 'text-slate-600',
-    borderColor: 'border-slate-200',
+    bgColor: 'bg-[#F6F8FB]',
+    textColor: 'text-slate-500',
+    borderColor: 'border-[#E5EAF1]',
     icon: Calendar,
   };
 };
@@ -366,40 +370,41 @@ const InvoiceMetrics = ({
       value: formatCurrency(metrics.totalInvoiced),
       subtext: `${invoices.length} فاتورة`,
       icon: Receipt,
-      color: 'from-teal-500 to-teal-600',
-      bgColor: 'bg-teal-50',
-      textColor: 'text-teal-700',
-      borderColor: 'border-teal-200/50',
+      tintBg: 'bg-[#EEF2FF]',
+      iconColor: 'text-[#4F46E5]',
+      badgeBg: 'bg-[#EEF2FF]',
+      badgeText: 'text-[#4F46E5]',
     },
     {
       title: 'المسدد',
       value: formatCurrency(metrics.totalPaid),
       subtext: `${metrics.paidCount} فاتورة • ${metrics.paymentPercentage}%`,
+      badge: `${metrics.paymentPercentage}%`,
       icon: Wallet,
-      color: 'from-green-500 to-green-600',
-      bgColor: 'bg-green-50',
-      textColor: 'text-green-700',
-      borderColor: 'border-green-200/50',
+      tintBg: 'bg-[#ECFDF9]',
+      iconColor: 'text-[#0E9E7E]',
+      badgeBg: 'bg-[#ECFDF9]',
+      badgeText: 'text-[#0E9E7E]',
     },
     {
       title: 'غير المسدد',
       value: formatCurrency(metrics.totalPending),
       subtext: `${metrics.pendingCount} فاتورة مفتوحة`,
       icon: Clock,
-      color: 'from-blue-500 to-blue-600',
-      bgColor: 'bg-blue-50',
-      textColor: 'text-blue-700',
-      borderColor: 'border-blue-200/50',
+      tintBg: 'bg-[#FFFBEB]',
+      iconColor: 'text-[#B45309]',
+      badgeBg: 'bg-[#FFFBEB]',
+      badgeText: 'text-[#B45309]',
     },
     {
       title: 'المتأخر',
       value: formatCurrency(metrics.totalOverdue),
       subtext: `${metrics.overdueCount} فاتورة متأخرة`,
       icon: AlertTriangle,
-      color: 'from-red-500 to-red-600',
-      bgColor: 'bg-red-50',
-      textColor: 'text-red-700',
-      borderColor: 'border-red-200/50',
+      tintBg: 'bg-[#FFF5F6]',
+      iconColor: 'text-[#BE123C]',
+      badgeBg: 'bg-[#FFF5F6]',
+      badgeText: 'text-[#BE123C]',
     },
   ];
 
@@ -412,18 +417,21 @@ const InvoiceMetrics = ({
         <motion.div
           key={idx}
           variants={scaleIn}
-          className="rounded-xl border border-[#DDE5EF] bg-white p-4 shadow-sm transition-colors hover:border-[#173A63]"
+          className="rounded-2xl border border-[#E5EAF1] bg-white p-4 shadow-[0_10px_30px_-22px_rgba(15,23,42,0.25)]"
         >
           <div className="flex items-start justify-between mb-3">
-            <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-[#EEF5FB] text-[#173A63]">
-              <metric.icon className="h-5 w-5" />
+            <div className={cn("flex h-8 w-8 items-center justify-center rounded-lg", metric.tintBg, metric.iconColor)}>
+              <metric.icon className="h-4 w-4" />
             </div>
-            <div className={cn("px-2 py-1 rounded-lg text-xs font-medium", metric.bgColor, metric.textColor)}>
-              {metric.subtext.split(' • ')[0]}
+            <div className={cn("px-2 py-1 rounded-lg text-[11px] font-bold", metric.badgeBg, metric.badgeText)}>
+              {metric.badge ?? metric.subtext.split(' • ')[0]}
             </div>
           </div>
-          <p className="text-2xl font-bold text-neutral-900 mb-1">{metric.value}</p>
-          <p className="text-xs text-neutral-500">{metric.title}</p>
+          <p className="text-base font-black text-[#0F172A] mb-1">{metric.value}</p>
+          <p className="text-[11px] font-bold text-slate-500">
+            {metric.title}
+            {metric.subtext.includes(' • ') ? ` — ${metric.subtext.split(' • ')[1]}` : ''}
+          </p>
         </motion.div>
       ))}
     </motion.div>
@@ -464,17 +472,24 @@ const InvoiceCard = ({
 
   const isOverdue = showDueStatus && dueStatusInfo.value === 'overdue';
   const daysUntilDue = invoice.due_date ? differenceInDays(new Date(invoice.due_date), new Date()) : null;
+  const paymentStatus = getInvoicePaymentStatus(invoice);
 
   return (
     <motion.div
       variants={scaleIn}
       whileHover={{ y: -2 }}
       className={cn(
-        "rounded-xl border bg-white p-5 shadow-sm transition-colors hover:border-[#173A63]",
+        "relative overflow-hidden rounded-2xl border bg-white p-5 shadow-[0_10px_30px_-22px_rgba(15,23,42,0.25)] transition-colors",
         showDueStatus ? dueStatusInfo.borderColor : paymentStatusInfo.borderColor,
-        selected && 'border-[#173A63] ring-2 ring-[#173A63]/15'
+        selected && 'border-[#7C83F6] ring-2 ring-[#7C83F6]/15'
       )}
     >
+      {/* Corner accent */}
+      <div className={cn(
+        "absolute inset-y-0 right-0 w-1",
+        isOverdue ? "bg-[#FB6B7A]" : paymentStatus === 'paid' ? "bg-[#22C7A1]" : paymentStatus === 'partial' ? "bg-[#F59E0B]" : "bg-[#E5EAF1]"
+      )} />
+
       {/* Header */}
       <div className="flex items-start justify-between mb-4">
         <div className="flex items-center gap-3">
@@ -488,12 +503,12 @@ const InvoiceCard = ({
               className="h-5 w-5"
             />
           )}
-          <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-[#EEF5FB] text-[#173A63]">
+          <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-[#EEF2FF] text-[#4F46E5]">
             <Receipt className="h-6 w-6" />
           </div>
           <div>
             <div className="flex items-center gap-2 mb-1">
-              <h3 className="font-bold text-neutral-900 text-lg">{invoice.invoice_number}</h3>
+              <h3 className="font-black text-[#0F172A] text-lg">{invoice.invoice_number}</h3>
               <div className="flex flex-wrap items-center gap-1.5">
                 <Badge className={cn("gap-1 text-xs", paymentStatusInfo.bgColor, paymentStatusInfo.textColor, "border-0")}>
                   <PaymentStatusIcon className="h-3 w-3" />
@@ -507,7 +522,7 @@ const InvoiceCard = ({
                 )}
               </div>
             </div>
-            <p className="text-sm text-neutral-500">{getInvoiceTypeLabel(invoice.invoice_type)}</p>
+            <p className="text-sm text-slate-500">{getInvoiceTypeLabel(invoice.invoice_type)}</p>
           </div>
         </div>
 
@@ -533,7 +548,7 @@ const InvoiceCard = ({
             {showDueStatus && (
               <>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={onCancel} className="gap-2 text-red-600 focus:text-red-600">
+                <DropdownMenuItem onClick={onCancel} className="gap-2 text-[#BE123C] focus:text-[#BE123C]">
                   <XCircle className="w-4 h-4" />
                   <span>إلغاء الفاتورة</span>
                 </DropdownMenuItem>
@@ -546,21 +561,21 @@ const InvoiceCard = ({
       {/* Details Grid */}
       <div className="grid grid-cols-2 gap-4 mb-4">
         {/* Amount */}
-        <div className="rounded-xl border border-[#DDE5EF] bg-[#FCFDFE] p-3">
-          <p className="text-xs text-neutral-500 mb-1">المبلغ الإجمالي</p>
-          <p className="text-xl font-bold text-neutral-900">{formatCurrency(invoice.total_amount || 0)}</p>
+        <div className="rounded-xl border border-[#E5EAF1] bg-[#F6F8FB] p-3">
+          <p className="text-xs text-slate-500 mb-1">المبلغ الإجمالي</p>
+          <p className="text-xl font-black text-[#0F172A]">{formatCurrency(invoice.total_amount || 0)}</p>
         </div>
 
         {/* Balance Due */}
         {(invoice.balance_due ?? 0) > 0 ? (
-          <div className="p-3 rounded-xl bg-red-50 border border-red-200">
-            <p className="text-xs text-neutral-500 mb-1">المبلغ المتبقي</p>
-            <p className="text-xl font-bold text-red-600">{formatCurrency(invoice.balance_due || 0)}</p>
+          <div className="p-3 rounded-xl bg-[#FFF5F6] border border-[#FB6B7A]/30">
+            <p className="text-xs text-slate-500 mb-1">المبلغ المتبقي</p>
+            <p className="text-xl font-black text-[#BE123C]">{formatCurrency(invoice.balance_due || 0)}</p>
           </div>
         ) : (
-          <div className="p-3 rounded-xl bg-green-50 border border-green-200">
-            <p className="text-xs text-neutral-500 mb-1">المدفوع</p>
-            <p className="text-xl font-bold text-green-600">{formatCurrency(invoice.paid_amount || 0)}</p>
+          <div className="p-3 rounded-xl bg-[#ECFDF9] border border-[#22C7A1]/30">
+            <p className="text-xs text-slate-500 mb-1">المدفوع</p>
+            <p className="text-xl font-black text-[#0E9E7E]">{formatCurrency(invoice.paid_amount || 0)}</p>
           </div>
         )}
       </div>
@@ -568,31 +583,31 @@ const InvoiceCard = ({
       {/* Date & Status Info */}
       <div className="space-y-2 mb-4">
         <div className="flex items-center justify-between text-sm">
-          <div className="flex items-center gap-2 text-neutral-600">
+          <div className="flex items-center gap-2 text-slate-500">
             <Calendar className="w-4 h-4" />
             <span>تاريخ الفاتورة</span>
           </div>
-          <span className="font-medium text-neutral-900" dir="ltr">
+          <span className="font-medium text-[#0F172A]" dir="ltr">
             {invoice.invoice_date ? format(new Date(invoice.invoice_date), 'dd MMM yyyy', { locale: ar }) : '-'}
           </span>
         </div>
 
         <div className="flex items-center justify-between text-sm">
-          <div className="flex items-center gap-2 text-neutral-600">
+          <div className="flex items-center gap-2 text-slate-500">
             <Clock className="w-4 h-4" />
             <span>تاريخ الاستحقاق</span>
           </div>
           <div className="flex items-center gap-2">
             <span className={cn(
               "font-medium",
-              isOverdue ? "text-red-600" : "text-neutral-900"
+              isOverdue ? "text-[#BE123C]" : "text-[#0F172A]"
             )} dir="ltr">
               {invoice.due_date ? format(new Date(invoice.due_date), 'dd MMM yyyy', { locale: ar }) : '-'}
             </span>
             {daysUntilDue !== null && daysUntilDue < 7 && showDueStatus && (
               <Badge variant="outline" className={cn(
                 "text-xs",
-                isOverdue ? "border-red-200 text-red-600" : "border-amber-200 text-amber-600"
+                isOverdue ? "border-[#FB6B7A]/40 text-[#BE123C]" : "border-[#F59E0B]/40 text-[#B45309]"
               )}>
                 {isOverdue ? `متأخر ${Math.abs(daysUntilDue)} يوم` : `${daysUntilDue} يوم متبقي`}
               </Badge>
@@ -602,7 +617,7 @@ const InvoiceCard = ({
       </div>
 
       {/* Action Buttons */}
-      <div className="flex items-center gap-2 border-t border-[#E6EDF5] pt-3">
+      <div className="flex items-center gap-2 border-t border-[#E5EAF1] pt-3">
         <Button
           variant="outline"
           size="sm"
@@ -616,7 +631,7 @@ const InvoiceCard = ({
           <Button
             size="sm"
             onClick={onPay}
-            className="flex-1 gap-2 rounded-xl bg-[#173A63] hover:bg-[#173A63]/90"
+            className="flex-1 gap-2 rounded-xl bg-[#22C7A1] hover:bg-[#0E9E7E]"
           >
             <CreditCard className="w-4 h-4" />
             <span>دفع</span>
@@ -663,8 +678,8 @@ const InvoiceTableRow = ({
 
   return (
     <tr className={cn(
-      'border-b border-[#E6EDF5] transition-colors hover:bg-[#F7FAFD]',
-      selected && 'bg-[#EEF5FB]'
+      'border-b border-[#E5EAF1] transition-colors hover:bg-[#F6F8FB]',
+      selected && 'bg-[#EEF2FF]'
     )}>
       <td className="w-12 px-4 py-4">
         {onSelect && (
@@ -681,12 +696,12 @@ const InvoiceTableRow = ({
       {/* Invoice Number */}
       <td className="py-4 px-4">
         <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#EEF5FB] text-[#173A63]">
+          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#EEF2FF] text-[#4F46E5]">
             <Receipt className="h-5 w-5" />
           </div>
           <div>
-            <p className="font-semibold text-neutral-900">{invoice.invoice_number}</p>
-            <p className="text-xs text-neutral-500">{getInvoiceTypeLabel(invoice.invoice_type)}</p>
+            <p className="font-bold text-[#0F172A]">{invoice.invoice_number}</p>
+            <p className="text-xs text-slate-500">{getInvoiceTypeLabel(invoice.invoice_type)}</p>
           </div>
         </div>
       </td>
@@ -694,11 +709,11 @@ const InvoiceTableRow = ({
       {/* Date */}
       <td className="py-4 px-4">
         <div className="space-y-1">
-          <p className="text-sm text-neutral-900" dir="ltr">
+          <p className="text-sm text-[#0F172A]" dir="ltr">
             {invoice.invoice_date ? format(new Date(invoice.invoice_date), 'dd/MM/yyyy') : '-'}
           </p>
           {invoice.due_date && (
-            <p className={cn("text-xs", isOverdue ? "text-red-600" : "text-neutral-500")} dir="ltr">
+            <p className={cn("text-xs", isOverdue ? "text-[#BE123C]" : "text-slate-500")} dir="ltr">
               الاستحقاق: {format(new Date(invoice.due_date), 'dd/MM/yyyy')}
             </p>
           )}
@@ -707,9 +722,9 @@ const InvoiceTableRow = ({
 
       {/* Amount */}
       <td className="py-4 px-4">
-        <p className="font-semibold text-neutral-900">{formatCurrency(invoice.total_amount || 0)}</p>
+        <p className="font-bold text-[#0F172A]">{formatCurrency(invoice.total_amount || 0)}</p>
         {invoice.tax_amount && invoice.tax_amount > 0 && (
-          <p className="text-xs text-neutral-500">ضريبة: {formatCurrency(invoice.tax_amount)}</p>
+          <p className="text-xs text-slate-500">ضريبة: {formatCurrency(invoice.tax_amount)}</p>
         )}
       </td>
 
@@ -717,13 +732,13 @@ const InvoiceTableRow = ({
       <td className="py-4 px-4">
         {(invoice.balance_due ?? 0) > 0 ? (
           <div>
-            <p className="font-semibold text-red-600">{formatCurrency(invoice.balance_due || 0)}</p>
-            <p className="text-xs text-neutral-500">متبقي</p>
+            <p className="font-bold text-[#BE123C]">{formatCurrency(invoice.balance_due || 0)}</p>
+            <p className="text-xs text-slate-500">متبقي</p>
           </div>
         ) : (
           <div>
-            <p className="font-semibold text-green-600">{formatCurrency(invoice.paid_amount || 0)}</p>
-            <p className="text-xs text-neutral-500">مدفوع</p>
+            <p className="font-bold text-[#0E9E7E]">{formatCurrency(invoice.paid_amount || 0)}</p>
+            <p className="text-xs text-slate-500">مدفوع</p>
           </div>
         )}
       </td>
@@ -760,7 +775,7 @@ const InvoiceTableRow = ({
               <Button
                 size="sm"
                 onClick={onPay}
-                className="h-8 rounded-lg bg-[#173A63] px-3 hover:bg-[#173A63]/90"
+                className="h-8 rounded-lg bg-[#22C7A1] px-3 hover:bg-[#0E9E7E]"
               >
                 <CreditCard className="w-4 h-4 ml-1" />
                 دفع
@@ -770,7 +785,7 @@ const InvoiceTableRow = ({
                 variant="ghost"
                 onClick={onCancel}
                 disabled={isCancelling}
-                className="h-8 w-8 p-0 rounded-lg text-red-600 hover:text-red-700 hover:bg-red-50"
+                className="h-8 w-8 p-0 rounded-lg text-[#BE123C] hover:text-[#BE123C] hover:bg-[#FFF5F6]"
               >
                 <XCircle className="w-4 h-4" />
               </Button>
@@ -798,22 +813,22 @@ const InvoiceFilters = ({
   sortOption: string;
   onSortChange: (value: string) => void;
 }) => (
-  <div className="flex flex-col gap-3 rounded-xl border border-[#DDE5EF] bg-[#FCFDFE] p-4 sm:flex-row sm:items-center sm:justify-between">
+  <div className="flex flex-col gap-3 rounded-2xl border border-[#E5EAF1] bg-white p-4 shadow-[0_10px_30px_-22px_rgba(15,23,42,0.25)] sm:flex-row sm:items-center sm:justify-between">
     <div className="flex items-center gap-3 flex-1 w-full sm:w-auto">
       <div className="relative flex-1 max-w-md">
-        <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
+        <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
         <Input
           placeholder="بحث برقم الفاتورة..."
           value={searchQuery}
           onChange={(e) => onSearchChange(e.target.value)}
-          className="rounded-xl border-[#D8E1EC] bg-white pr-10"
+          className="rounded-xl border-[#E5EAF1] bg-white pr-10"
         />
       </div>
     </div>
 
     <div className="flex items-center gap-3 w-full sm:w-auto">
       <Select value={statusFilter} onValueChange={onStatusFilterChange}>
-        <SelectTrigger className="w-full rounded-xl border-[#D8E1EC] bg-white sm:w-[160px]">
+        <SelectTrigger className="w-full rounded-xl border-[#E5EAF1] bg-white sm:w-[160px]">
           <SelectValue placeholder="الحالة" />
         </SelectTrigger>
         <SelectContent>
@@ -830,7 +845,7 @@ const InvoiceFilters = ({
       </Select>
 
       <Select value={sortOption} onValueChange={onSortChange}>
-        <SelectTrigger className="w-full rounded-xl border-[#D8E1EC] bg-white sm:w-[160px]">
+        <SelectTrigger className="w-full rounded-xl border-[#E5EAF1] bg-white sm:w-[160px]">
           <SelectValue placeholder="الترتيب" />
         </SelectTrigger>
         <SelectContent>
@@ -849,30 +864,32 @@ const InvoicesEmptyState = ({
   onCreateInvoice,
   onGenerateMissingInvoices,
   isGeneratingMissingInvoices,
+  billingGenerationBlocker,
 }: {
   onCreateInvoice: () => void;
   onGenerateMissingInvoices?: () => void;
   isGeneratingMissingInvoices?: boolean;
+  billingGenerationBlocker?: string | null;
 }) => (
   <div className="text-center py-16">
     <motion.div
       initial={{ scale: 0.9, opacity: 0 }}
       animate={{ scale: 1, opacity: 1 }}
       transition={{ duration: 0.3 }}
-      className="mx-auto mb-6 flex h-24 w-24 items-center justify-center rounded-xl bg-[#EEF5FB]"
+      className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-[#EEF2FF]"
     >
-      <Receipt className="h-12 w-12 text-[#173A63]" />
+      <Receipt className="h-8 w-8 text-[#4F46E5]" />
     </motion.div>
-    <h3 className="text-xl font-bold text-neutral-900 mb-2">لا توجد فواتير</h3>
-    <p className="text-neutral-500 mb-6 max-w-md mx-auto">
+    <h3 className="text-xl font-black text-[#0F172A] mb-2">لا توجد فواتير</h3>
+    <p className="text-slate-500 mb-6 max-w-md mx-auto">
       لم يتم إنشاء أي فواتير لهذا العقد بعد. ابدأ بإنشاء فاتورة جديدة لمتابعة المدفوعات.
     </p>
     <div className="flex flex-col sm:flex-row gap-3 justify-center">
       {onGenerateMissingInvoices && (
         <Button
           onClick={onGenerateMissingInvoices}
-          disabled={isGeneratingMissingInvoices}
-          className="gap-2 rounded-xl bg-[#173A63] hover:bg-[#173A63]/90"
+          disabled={isGeneratingMissingInvoices || Boolean(billingGenerationBlocker)}
+          className="gap-2 rounded-xl bg-[#22C7A1] hover:bg-[#0E9E7E]"
         >
           {isGeneratingMissingInvoices ? (
             <>
@@ -889,10 +906,12 @@ const InvoicesEmptyState = ({
       )}
       <Button
         onClick={onCreateInvoice}
+        disabled={Boolean(billingGenerationBlocker)}
+        title={billingGenerationBlocker || undefined}
         variant={onGenerateMissingInvoices ? 'outline' : 'default'}
         className={cn(
           'gap-2 rounded-xl',
-          !onGenerateMissingInvoices && 'bg-[#173A63] hover:bg-[#173A63]/90'
+          !onGenerateMissingInvoices && 'bg-[#22C7A1] hover:bg-[#0E9E7E]'
         )}
       >
         <Receipt className="w-4 h-4" />
@@ -915,6 +934,7 @@ export const ContractInvoicesTabRedesigned = ({
   isBulkCancellingInvoices,
   onGenerateMissingInvoices,
   isGeneratingMissingInvoices,
+  billingGenerationBlocker,
   contractNumber,
   customerInfo,
   trafficViolations = [],
@@ -1055,11 +1075,21 @@ export const ContractInvoicesTabRedesigned = ({
       {/* Metrics Overview */}
       <InvoiceMetrics invoices={invoices} formatCurrency={formatCurrency} />
 
+      {billingGenerationBlocker && (
+        <div className="flex items-start gap-3 rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900">
+          <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0" />
+          <div>
+            <p className="font-bold">تعذر إنشاء الفواتير تلقائياً</p>
+            <p className="mt-1">{billingGenerationBlocker}</p>
+          </div>
+        </div>
+      )}
+
       {/* Header & Actions */}
-      <div className="flex flex-col gap-3 rounded-xl border border-[#DDE5EF] bg-[#FCFDFE] p-4 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-col gap-3 rounded-2xl border border-[#E5EAF1] bg-white p-4 shadow-[0_10px_30px_-22px_rgba(15,23,42,0.25)] sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h2 className="mb-1 text-xl font-black text-[#142033]">الفواتير</h2>
-          <p className="text-neutral-500 text-sm">
+          <h2 className="mb-1 text-xl font-black text-[#0F172A]">الفواتير</h2>
+          <p className="text-slate-500 text-sm">
             {contractNumber ? `العقد #${contractNumber} • ` : ''}
             {invoices.length} فاتورة
           </p>
@@ -1069,7 +1099,7 @@ export const ContractInvoicesTabRedesigned = ({
             <Button
               variant="outline"
               onClick={onGenerateMissingInvoices}
-              disabled={isGeneratingMissingInvoices}
+              disabled={isGeneratingMissingInvoices || Boolean(billingGenerationBlocker)}
               className="gap-2 rounded-xl"
             >
               {isGeneratingMissingInvoices ? (
@@ -1088,9 +1118,10 @@ export const ContractInvoicesTabRedesigned = ({
           <Button
             variant="outline"
             onClick={() => {
-              // Filter due invoices (not paid and not cancelled)
-              const dueInvoices = invoices.filter(inv => 
-                inv.payment_status !== 'paid' && inv.status !== 'cancelled'
+              // Filter due invoices: active (not cancelled/void in either
+              // lifecycle field) and not fully paid.
+              const dueInvoices = invoices.filter(inv =>
+                !isInvoiceCancelled(inv) && !isInvoicePaid(inv)
               );
               if (dueInvoices.length === 0) {
                 alert('لا توجد فواتير مستحقة للطباعة');
@@ -1531,7 +1562,10 @@ export const ContractInvoicesTabRedesigned = ({
                       </thead>
                       <tbody>
                         ${dueInvoices.map((inv, idx) => {
-                          const isOverdue = inv.due_date && new Date() > new Date(inv.due_date);
+                          // Date-key comparison (not Date objects): an invoice
+                          // due today is "مستحق الآن", not "متأخر".
+                          const dueStatus = getInvoiceDueStatus(inv.due_date);
+                          const isOverdue = dueStatus === 'overdue';
                           return `
                             <tr>
                               <td style="text-align: center;">${idx + 1}</td>
@@ -1655,6 +1689,8 @@ export const ContractInvoicesTabRedesigned = ({
               if (printWindow) {
                 printWindow.document.write(printContent);
                 printWindow.document.close();
+              } else {
+                alert('منع المتصفح نافذة الطباعة. اسمح بالنوافذ المنبثقة لهذا الموقع ثم أعد المحاولة.');
               }
             }}
             className="gap-2 rounded-xl"
@@ -1664,7 +1700,9 @@ export const ContractInvoicesTabRedesigned = ({
           </Button>
           <Button
             onClick={onCreateInvoice}
-            className="gap-2 rounded-xl bg-[#173A63] hover:bg-[#173A63]/90"
+            disabled={Boolean(billingGenerationBlocker)}
+            title={billingGenerationBlocker || undefined}
+            className="gap-2 rounded-xl bg-[#22C7A1] hover:bg-[#0E9E7E]"
           >
             <Receipt className="w-4 h-4" />
             إنشاء فاتورة
@@ -1674,12 +1712,13 @@ export const ContractInvoicesTabRedesigned = ({
 
       {/* Empty State */}
       {invoices.length === 0 ? (
-        <Card className="rounded-xl border-[#DDE5EF] shadow-sm">
+        <Card className="rounded-2xl border-[#E5EAF1] shadow-[0_10px_30px_-22px_rgba(15,23,42,0.25)]">
           <CardContent className="p-6">
             <InvoicesEmptyState
               onCreateInvoice={onCreateInvoice}
               onGenerateMissingInvoices={onGenerateMissingInvoices}
               isGeneratingMissingInvoices={isGeneratingMissingInvoices}
+              billingGenerationBlocker={billingGenerationBlocker}
             />
           </CardContent>
         </Card>
@@ -1696,12 +1735,12 @@ export const ContractInvoicesTabRedesigned = ({
           />
 
           {onBulkCancelInvoices && selectedInvoices.length > 0 && (
-            <div className="flex flex-col gap-3 rounded-xl border border-red-200 bg-red-50 p-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex flex-col gap-3 rounded-2xl border border-[#FB6B7A]/30 bg-[#FFF5F6] p-4 sm:flex-row sm:items-center sm:justify-between">
               <div>
-                <p className="font-bold text-red-900">
+                <p className="font-bold text-[#BE123C]">
                   تم تحديد {selectedInvoices.length} فاتورة
                 </p>
-                <p className="mt-1 text-sm text-red-700">
+                <p className="mt-1 text-sm text-[#BE123C]">
                   إجمالي الرصيد المحدد: {formatCurrency(selectedTotal)}
                 </p>
               </div>
@@ -1734,10 +1773,10 @@ export const ContractInvoicesTabRedesigned = ({
 
           {/* View Mode Toggle & Results Count */}
           <div className="flex items-center justify-between">
-            <p className="text-sm text-neutral-500">
+            <p className="text-sm text-slate-500">
               عرض {filteredAndSortedInvoices.length} من {invoices.length} فاتورة
             </p>
-            <div className="flex items-center gap-2 rounded-xl border border-[#DDE5EF] bg-white p-1">
+            <div className="flex items-center gap-2 rounded-xl border border-[#E5EAF1] bg-white p-1">
               <Button
                 size="sm"
                 variant={viewMode === 'grid' ? 'default' : 'ghost'}
@@ -1765,11 +1804,11 @@ export const ContractInvoicesTabRedesigned = ({
 
           {/* Invoices Display */}
           {filteredAndSortedInvoices.length === 0 ? (
-            <Card className="rounded-xl border-[#DDE5EF] shadow-sm">
+            <Card className="rounded-2xl border-[#E5EAF1] shadow-[0_10px_30px_-22px_rgba(15,23,42,0.25)]">
               <CardContent className="p-12 text-center">
-                <Search className="w-12 h-12 text-neutral-300 mx-auto mb-4" />
-                <h3 className="text-lg font-semibold text-neutral-900 mb-2">لا توجد نتائج</h3>
-                <p className="text-neutral-500">جرب تغيير filters البحث</p>
+                <Search className="w-12 h-12 text-slate-300 mx-auto mb-4" />
+                <h3 className="text-lg font-black text-[#0F172A] mb-2">لا توجد نتائج</h3>
+                <p className="text-slate-500">جرب تغيير filters البحث</p>
               </CardContent>
             </Card>
           ) : viewMode === 'grid' ? (
@@ -1797,11 +1836,11 @@ export const ContractInvoicesTabRedesigned = ({
               ))}
             </motion.div>
           ) : (
-            <Card className="overflow-hidden rounded-xl border-[#DDE5EF] shadow-sm">
+            <Card className="overflow-hidden rounded-2xl border-[#E5EAF1] shadow-[0_10px_30px_-22px_rgba(15,23,42,0.25)]">
               <div className="overflow-x-auto">
                 <table className="w-full">
                   <thead>
-                    <tr className="border-b border-[#DDE5EF] bg-[#F7FAFD]">
+                    <tr className="border-b border-[#E5EAF1] bg-[#F6F8FB]">
                       <th className="w-12 px-4 py-3 text-right">
                         <Checkbox
                           checked={
@@ -1818,12 +1857,12 @@ export const ContractInvoicesTabRedesigned = ({
                           className="h-5 w-5"
                         />
                       </th>
-                      <th className="py-3 px-4 text-right text-sm font-semibold text-neutral-700">رقم الفاتورة</th>
-                      <th className="py-3 px-4 text-right text-sm font-semibold text-neutral-700">التاريخ</th>
-                      <th className="py-3 px-4 text-right text-sm font-semibold text-neutral-700">المبلغ</th>
-                      <th className="py-3 px-4 text-right text-sm font-semibold text-neutral-700">الرصيد</th>
-                      <th className="py-3 px-4 text-right text-sm font-semibold text-neutral-700">الدفع / الاستحقاق</th>
-                      <th className="py-3 px-4 text-right text-sm font-semibold text-neutral-700">الإجراءات</th>
+                      <th className="py-3 px-4 text-right text-sm font-bold text-slate-500">رقم الفاتورة</th>
+                      <th className="py-3 px-4 text-right text-sm font-bold text-slate-500">التاريخ</th>
+                      <th className="py-3 px-4 text-right text-sm font-bold text-slate-500">المبلغ</th>
+                      <th className="py-3 px-4 text-right text-sm font-bold text-slate-500">الرصيد</th>
+                      <th className="py-3 px-4 text-right text-sm font-bold text-slate-500">الدفع / الاستحقاق</th>
+                      <th className="py-3 px-4 text-right text-sm font-bold text-slate-500">الإجراءات</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -1872,7 +1911,7 @@ export const ContractInvoicesTabRedesigned = ({
             <AlertDialogAction
               onClick={confirmBulkCancellation}
               disabled={isBulkCancellingInvoices || selectedInvoices.length === 0}
-              className="gap-2 bg-red-600 text-white hover:bg-red-700"
+              className="gap-2 bg-[#FB6B7A] text-white hover:bg-[#BE123C]"
             >
               {isBulkCancellingInvoices ? (
                 <Loader2 className="h-4 w-4 animate-spin" />

@@ -1,13 +1,11 @@
 import * as React from 'react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Download, Trash2, FileText, Upload, Eye, Car, CheckCircle, AlertCircle, AlertTriangle, FileImage, RefreshCw, Pencil, PlayCircle, ScanLine, IdCard } from 'lucide-react';
+import { Plus, Download, Trash2, FileText, Upload, Eye, Car, CheckCircle, AlertCircle, AlertTriangle, FileImage, RefreshCw, PlayCircle, ScanLine, IdCard, FileSpreadsheet, ShieldCheck, CreditCard, Receipt, FileSignature } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { useContractDocuments, useCreateContractDocument, useDeleteContractDocument, useDownloadContractDocument } from '@/hooks/useContractDocuments';
+import { useContractDocuments, useCreateContractDocument, useDeleteContractDocument } from '@/hooks/useContractDocuments';
 import { DocumentUploadDialog, DocumentUploadData } from './DocumentUploadDialog';
 import { ContractHtmlViewer } from './ContractHtmlViewer';
 import { ContractPdfData } from '@/utils/contractPdfGenerator';
@@ -20,7 +18,8 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { LazyImage } from '@/components/common/LazyImage';
 import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
-import { motion, AnimatePresence, type Variants } from 'framer-motion';
+import { invalidateContractDocumentDependents } from '@/utils/contractDocumentQueries';
+import { motion, type Variants } from 'framer-motion';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { useTourGuide } from '@/components/tour-guide';
@@ -80,6 +79,74 @@ const getContractDocumentPublicUrl = (bucket: string | undefined, filePath?: str
     ? supabase.storage.from(bucket || 'contract-documents').getPublicUrl(filePath).data.publicUrl
     : '';
 
+type DocumentCategory = 'contract' | 'license' | 'identity' | 'insurance' | 'condition_report' | 'receipt' | 'violations' | 'other';
+
+const categoryMeta: Record<DocumentCategory, { label: string; icon: React.ReactNode; tint: string }> = {
+  contract: { label: 'العقود والتوقيعات', icon: <FileSignature className="h-3.5 w-3.5" />, tint: 'bg-[#EEF2FF] text-[#4F46E5]' },
+  license: { label: 'الرخص', icon: <CreditCard className="h-3.5 w-3.5" />, tint: 'bg-[#FFFBEB] text-[#B45309]' },
+  identity: { label: 'الهوية', icon: <IdCard className="h-3.5 w-3.5" />, tint: 'bg-[#F0F9FF] text-[#0369A1]' },
+  insurance: { label: 'التأمين', icon: <ShieldCheck className="h-3.5 w-3.5" />, tint: 'bg-[#ECFDF9] text-[#0E9E7E]' },
+  condition_report: { label: 'تقارير حالة المركبة', icon: <Car className="h-3.5 w-3.5" />, tint: 'bg-[#ECFDF9] text-[#0E9E7E]' },
+  receipt: { label: 'الإيصالات', icon: <Receipt className="h-3.5 w-3.5" />, tint: 'bg-[#F0F9FF] text-[#0369A1]' },
+  violations: { label: 'المخالفات المرورية', icon: <AlertTriangle className="h-3.5 w-3.5" />, tint: 'bg-[#FFF5F6] text-[#BE123C]' },
+  other: { label: 'مستندات أخرى', icon: <FileText className="h-3.5 w-3.5" />, tint: 'bg-[#F6F8FB] text-slate-500' },
+};
+
+const getCategory = (documentType: string): DocumentCategory => {
+  switch (documentType) {
+    case 'contract':
+    case 'signed_contract':
+    case 'signed_contract_image':
+    case 'draft_contract':
+    case 'signature':
+      return 'contract';
+    case 'license':
+      return 'license';
+    case 'identity':
+      return 'identity';
+    case 'insurance':
+      return 'insurance';
+    case 'condition_report':
+      return 'condition_report';
+    case 'receipt':
+      return 'receipt';
+    case 'violations_proof':
+      return 'violations';
+    default:
+      return 'other';
+  }
+};
+
+const getFileTypeMeta = (document: any): { icon: React.ReactNode; tint: string } => {
+  const isImage = document.mime_type?.includes('image') ||
+    document.file_path?.match(/\.(jpg|jpeg|png|gif|webp|bmp|svg)$/i) ||
+    document.document_name?.match(/\.(jpg|jpeg|png|gif|webp|bmp|svg)$/i);
+  const isPdf = document.mime_type?.includes('pdf') || document.file_path?.match(/\.pdf$/i);
+
+  if (document.document_type === 'condition_report') {
+    return { icon: <Car className="h-5 w-5" />, tint: 'bg-[#ECFDF9] text-[#0E9E7E]' };
+  }
+  if (isImage) {
+    return { icon: <FileImage className="h-5 w-5" />, tint: 'bg-[#F0F9FF] text-[#0369A1]' };
+  }
+  if (isPdf) {
+    return { icon: <FileText className="h-5 w-5" />, tint: 'bg-[#FFF5F6] text-[#BE123C]' };
+  }
+  if (document.document_type === 'receipt') {
+    return { icon: <Receipt className="h-5 w-5" />, tint: 'bg-[#F0F9FF] text-[#0369A1]' };
+  }
+  if (document.document_type === 'insurance') {
+    return { icon: <ShieldCheck className="h-5 w-5" />, tint: 'bg-[#ECFDF9] text-[#0E9E7E]' };
+  }
+  if (document.document_type === 'license' || document.document_type === 'identity') {
+    return { icon: <IdCard className="h-5 w-5" />, tint: 'bg-[#FFFBEB] text-[#B45309]' };
+  }
+  if (document.document_type === 'violations_proof') {
+    return { icon: <AlertTriangle className="h-5 w-5" />, tint: 'bg-[#FFF5F6] text-[#BE123C]' };
+  }
+  return { icon: <FileSpreadsheet className="h-5 w-5" />, tint: 'bg-[#EEF2FF] text-[#4F46E5]' };
+};
+
 export function ContractDocuments({ contractId, customerId, vehicleId }: ContractDocumentsProps) {
   const { startTour } = useTourGuide();
   const [isDialogOpen, setIsDialogOpen] = React.useState(false);
@@ -90,10 +157,14 @@ export function ContractDocuments({ contractId, customerId, vehicleId }: Contrac
   const [isDocumentPreviewOpen, setIsDocumentPreviewOpen] = React.useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false);
   const [documentToDelete, setDocumentToDelete] = React.useState<string | null>(null);
-  const { data: documents = [], isLoading } = useContractDocuments(contractId, customerId, vehicleId);
+  const {
+    data: documents = [],
+    isLoading,
+    error: documentsError,
+    refetch: refetchDocuments,
+  } = useContractDocuments(contractId, customerId, vehicleId);
   const createDocument = useCreateContractDocument();
   const deleteDocument = useDeleteContractDocument();
-  const downloadDocument = useDownloadContractDocument();
   const { companyId } = useUnifiedCompanyAccess();
 
   // Vision OCR: ID card scan proposals
@@ -107,19 +178,18 @@ export function ContractDocuments({ contractId, customerId, vehicleId }: Contrac
   // (Cron also scans image documents every 15 minutes; PDFs are rasterized
   //  client-side here because servers cannot rasterize PDFs.)
   React.useEffect(() => {
-    if (autoScanTriggeredRef.current || isLoading) return;
+    if (autoScanTriggeredRef.current || isLoading || documentsError) return;
     if (pendingScanCount > 0) {
       autoScanTriggeredRef.current = true;
       scanDocumentsForId.mutate();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pendingScanCount, isLoading]);
+  }, [pendingScanCount, isLoading, documentsError]);
   
   // Enhanced document saving with progress tracking
   const { 
     savingSteps, 
     isProcessing: isSavingDocuments,
-    retryStep,
     documentSavingErrors,
     clearErrors 
   } = useContractDocumentSaving();
@@ -271,12 +341,17 @@ export function ContractDocuments({ contractId, customerId, vehicleId }: Contrac
       
       // إذا كان الملف PDF مرفوع (من صفحة رفع العقود الموقعة)، افتحه مباشرة
       if (document.file_path.startsWith('signed-agreements/') || document.mime_type === 'application/pdf') {
-        const { data: signedUrl } = await supabase.storage
+        const { data: signedUrl, error: signedUrlError } = await supabase.storage
           .from(bucket)
           .createSignedUrl(document.file_path, 3600); // 1 hour
-        
+
+        if (signedUrlError) throw signedUrlError;
         if (signedUrl?.signedUrl) {
-          window.open(signedUrl.signedUrl, '_blank');
+          setSelectedDocumentForPreview({
+            ...document,
+            preview_url: signedUrl.signedUrl,
+          });
+          setIsDocumentPreviewOpen(true);
           return;
         } else {
           toast.error('فشل في إنشاء رابط المعاينة');
@@ -398,17 +473,31 @@ export function ContractDocuments({ contractId, customerId, vehicleId }: Contrac
 
   const handleChangeDocumentType = async (documentId: string, newType: string) => {
     try {
+      if (!companyId) throw new Error('تعذر تحديد الشركة الحالية');
       const { error } = await supabase
         .from('contract_documents')
         .update({ document_type: newType })
-        .eq('id', documentId);
+        .eq('id', documentId)
+        .eq('contract_id', contractId)
+        .eq('company_id', companyId)
+        .select('id')
+        .single();
       
       if (error) throw error;
       
-      queryClient.invalidateQueries({ queryKey: ['contract-documents'] });
+      await invalidateContractDocumentDependents(queryClient, companyId, contractId);
       toast.success('تم تغيير نوع المستند');
     } catch (error) {
       console.error('Error updating document type:', error);
+      const message = error instanceof Error
+        ? error.message
+        : typeof error === 'object' && error !== null && 'message' in error
+          ? String((error as { message?: unknown }).message || '')
+          : '';
+      if (message.includes('SIGNED_CONTRACT_REPLACEMENT_REQUIRED')) {
+        toast.error('لا يمكن تغيير نوع آخر نسخة عقد موقعة أثناء الإجراء القانوني. ارفع النسخة البديلة أولاً.');
+        return;
+      }
       toast.error('حدث خطأ في تغيير نوع المستند');
     }
   };
@@ -439,10 +528,55 @@ export function ContractDocuments({ contractId, customerId, vehicleId }: Contrac
     return labels[condition] || condition;
   };
 
+  const groupedDocuments = React.useMemo(() => {
+    const groups: Record<DocumentCategory, any[]> = {
+      contract: [],
+      license: [],
+      identity: [],
+      insurance: [],
+      condition_report: [],
+      receipt: [],
+      violations: [],
+      other: [],
+    };
+    documents.forEach((doc) => {
+      groups[getCategory(doc.document_type)].push(doc);
+    });
+    return (Object.keys(groups) as DocumentCategory[])
+      .filter((key) => groups[key].length > 0)
+      .map((key) => ({ category: key, items: groups[key] }));
+  }, [documents]);
+
+  const conditionReportDocs = React.useMemo(
+    () => documents.filter((d) => d.document_type === 'condition_report'),
+    [documents]
+  );
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-16">
-        <RefreshCw className="h-8 w-8 animate-spin text-[#173A63]" />
+        <RefreshCw className="h-8 w-8 animate-spin text-[#22C7A1]" />
+      </div>
+    );
+  }
+
+  if (documentsError) {
+    return (
+      <div className="rounded-2xl border border-rose-200 bg-rose-50 p-6 text-center">
+        <AlertTriangle className="mx-auto h-8 w-8 text-rose-600" />
+        <h3 className="mt-3 font-black text-rose-950">تعذر التحقق من مستندات العقد</h3>
+        <p className="mt-1 text-sm leading-6 text-rose-800">
+          لم يعتبر النظام فشل التحميل دليلاً على أن المستندات ناقصة. أعد المحاولة لاستكمال التحقق.
+        </p>
+        <Button
+          type="button"
+          variant="outline"
+          className="mt-4 gap-2 border-rose-300 bg-white"
+          onClick={() => void refetchDocuments()}
+        >
+          <RefreshCw className="h-4 w-4" />
+          إعادة تحميل المستندات
+        </Button>
       </div>
     );
   }
@@ -465,11 +599,11 @@ export function ContractDocuments({ contractId, customerId, vehicleId }: Contrac
       
       {/* Document Saving Errors Summary */}
       {documentSavingErrors.length > 0 && (
-        <motion.div variants={fadeInUp} className="rounded-xl border border-red-200 bg-red-50 p-4">
+        <motion.div variants={fadeInUp} className="rounded-2xl border border-[#FB6B7A]/30 bg-[#FFF5F6] p-4 shadow-[0_10px_30px_-22px_rgba(15,23,42,0.25)]">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <AlertTriangle className="h-4 w-4 text-red-600" />
-              <span className="text-sm font-medium text-red-800">
+              <AlertTriangle className="h-4 w-4 text-[#BE123C]" />
+              <span className="text-sm font-bold text-[#BE123C]">
                 {documentSavingErrors.length} خطأ في حفظ المستندات
               </span>
             </div>
@@ -482,32 +616,41 @@ export function ContractDocuments({ contractId, customerId, vehicleId }: Contrac
               مسح الأخطاء
             </Button>
           </div>
-          <div className="mt-2 text-xs text-red-700">
+          <div className="mt-2 text-xs text-[#BE123C]/80">
             اضغط على زر "إعادة المحاولة" بجانب الخطوات الفاشلة أعلاه
           </div>
         </motion.div>
       )}
       
-      {/* Documents List */}
+      {/* Documents Panel */}
       <motion.div
         variants={fadeInUp}
-        className="rounded-xl border border-[#DDE5EF] bg-white p-5 shadow-sm sm:p-6"
+        className="rounded-2xl border border-[#E5EAF1] bg-white shadow-[0_10px_30px_-22px_rgba(15,23,42,0.25)]"
       >
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h3 className="text-xl font-black text-[#142033]">مستندات العقد</h3>
-            <p className="text-sm text-neutral-500">{documents.length} مستند</p>
+        {/* Panel header */}
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#E5EAF1] bg-[#F6F8FB] px-4 py-3">
+          <div className="flex items-center gap-3">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#ECFDF9] text-[#0E9E7E]">
+              <FileText className="h-4 w-4" />
+            </div>
+            <div>
+              <p className="text-[10px] font-black uppercase tracking-wide text-slate-400">Documents</p>
+              <h3 className="text-sm font-black text-[#0F172A]">مستندات العقد</h3>
+            </div>
+            <Badge variant="secondary" className="mr-1 rounded-full bg-white text-[10px] font-bold text-slate-500">
+              {documents.length} مستند
+            </Badge>
           </div>
           <div className="flex flex-wrap gap-2">
             {idProposals.length > 0 && (
               <Button
                 variant="outline"
                 onClick={() => setIsProposalsOpen(true)}
-                className="gap-2 rounded-lg border-[#F5C98A] text-[#B5791F] hover:bg-[#FDF6EA]"
+                className="gap-2 rounded-lg border-[#F59E0B]/30 bg-[#FFFBEB] text-[#B45309] hover:bg-[#FFFBEB]"
               >
                 <IdCard className="h-4 w-4" />
                 مقترحات البطاقة
-                <Badge className="bg-[#B5791F] text-white hover:bg-[#B5791F]">
+                <Badge className="bg-[#B45309] text-white hover:bg-[#B45309]">
                   {idProposals.length}
                 </Badge>
               </Button>
@@ -516,7 +659,7 @@ export function ContractDocuments({ contractId, customerId, vehicleId }: Contrac
               variant="outline"
               onClick={() => scanDocumentsForId.mutate()}
               disabled={scanDocumentsForId.isPending}
-              className="gap-2 rounded-lg border-[#9FDCCB] text-[#0D876A] hover:bg-[#E9FBF6]"
+              className="gap-2 rounded-lg border-[#22C7A1]/30 bg-[#ECFDF9] text-[#0E9E7E] hover:bg-[#ECFDF9]"
             >
               {scanDocumentsForId.isPending ? (
                 <RefreshCw className="h-4 w-4 animate-spin" />
@@ -528,14 +671,14 @@ export function ContractDocuments({ contractId, customerId, vehicleId }: Contrac
             <Button
               variant="outline"
               onClick={() => setIsScannerOpen(true)}
-              className="gap-2 rounded-lg border-[#9FDCCB] text-[#0D876A] hover:bg-[#E9FBF6]"
+              className="gap-2 rounded-lg border-[#22C7A1]/30 bg-[#ECFDF9] text-[#0E9E7E] hover:bg-[#ECFDF9]"
             >
               <ScanLine className="h-4 w-4" />
               مسح العقد بالكاميرا
             </Button>
             <Button
               onClick={() => setIsDialogOpen(true)}
-              className="gap-2 rounded-lg bg-[#173A63] hover:bg-[#173A63]/90"
+              className="gap-2 rounded-lg bg-[#22C7A1] text-white hover:bg-[#0E9E7E]"
             >
               <Plus className="w-4 h-4" />
               إضافة مستند
@@ -543,157 +686,226 @@ export function ContractDocuments({ contractId, customerId, vehicleId }: Contrac
           </div>
         </div>
 
-        {documents.length === 0 ? (
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {['العقد الموقع', 'رخصة القيادة', 'الهوية', 'تقرير الحالة'].map((placeholder, idx) => (
-              <motion.div
-                key={idx}
-                variants={scaleIn}
-                whileHover={{ y: -4 }}
-                onClick={() => setIsDialogOpen(true)}
-                className="flex aspect-[4/3] cursor-pointer flex-col items-center justify-center rounded-xl border border-dashed border-[#C8D4E2] bg-[#FAFBFC] text-[#7A8698] transition-colors hover:border-[#173A63] hover:text-[#173A63]"
-              >
-                <FileText className="w-10 h-10 mb-2" />
-                <p className="text-xs font-bold">{placeholder}</p>
-              </motion.div>
-            ))}
+        <div className="p-4 sm:p-6">
+          {/* Upload zone */}
+          <button
+            type="button"
+            onClick={() => setIsDialogOpen(true)}
+            className="group flex w-full flex-col items-center justify-center gap-3 rounded-2xl border-2 border-dashed border-[#E5EAF1] bg-[#F6F8FB] px-6 py-10 text-center transition-colors hover:border-[#22C7A1] hover:bg-[#ECFDF9]/40"
+          >
+            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-white text-[#22C7A1] shadow-sm transition-transform group-hover:scale-105">
+              <Upload className="h-6 w-6" />
+            </div>
+            <div>
+              <p className="text-sm font-black text-[#0F172A]">اسحب المستندات هنا أو انقر للرفع</p>
+              <p className="mt-1 text-xs text-slate-500">PDF، صور، أو أي ملف آخر — سيتم تصنيفه تلقائياً</p>
+            </div>
+          </button>
+
+          {documents.length === 0 ? (
+            <div className="mt-6 grid grid-cols-2 gap-4 md:grid-cols-4">
+              {['العقد الموقع', 'رخصة القيادة', 'الهوية', 'تقرير الحالة'].map((placeholder, idx) => (
+                <motion.div
+                  key={idx}
+                  variants={scaleIn}
+                  whileHover={{ y: -4 }}
+                  onClick={() => setIsDialogOpen(true)}
+                  className="flex aspect-[4/3] cursor-pointer flex-col items-center justify-center rounded-2xl border border-dashed border-[#E5EAF1] bg-[#F6F8FB] text-slate-400 transition-colors hover:border-[#22C7A1] hover:text-[#0E9E7E]"
+                >
+                  <FileText className="mb-2 h-10 w-10" />
+                  <p className="text-xs font-bold">{placeholder}</p>
+                </motion.div>
+              ))}
+            </div>
+          ) : (
+            <div className="mt-6 space-y-6">
+              {groupedDocuments.map(({ category, items }) => {
+                const meta = categoryMeta[category];
+                return (
+                  <div key={category}>
+                    <div className="mb-3 flex items-center gap-2">
+                      <div className={cn('flex h-6 w-6 items-center justify-center rounded-md', meta.tint)}>
+                        {meta.icon}
+                      </div>
+                      <span className="text-xs font-black text-[#0F172A]">{meta.label}</span>
+                      <span className="text-[10px] font-bold text-slate-400">{items.length}</span>
+                    </div>
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                      {items.map((document) => {
+                        const fileMeta = getFileTypeMeta(document);
+                        return (
+                          <motion.div
+                            key={document.id}
+                            variants={scaleIn}
+                            whileHover={{ y: -2 }}
+                            onClick={() => {
+                              if (document.document_type === 'condition_report' && document.condition_report_id) {
+                                handleViewConditionReport(document.condition_report_id);
+                              } else if (document.file_path) {
+                                handlePreviewDocument(document);
+                              }
+                            }}
+                            className="group relative cursor-pointer rounded-2xl border border-[#E5EAF1] bg-white p-3 transition-colors hover:border-[#22C7A1]/50 hover:shadow-[0_10px_30px_-22px_rgba(15,23,42,0.25)]"
+                          >
+                            <div className="flex items-start gap-3">
+                              <div className={cn('flex h-10 w-10 shrink-0 items-center justify-center rounded-xl', fileMeta.tint)}>
+                                {fileMeta.icon}
+                              </div>
+                              <div className="min-w-0 flex-1">
+                                <div className="flex items-start justify-between gap-2">
+                                  <p className="truncate text-xs font-black text-[#0F172A]" title={document.document_name}>
+                                    {document.document_name}
+                                  </p>
+                                  {document.is_required && (
+                                    <Badge variant="destructive" className="h-5 shrink-0 px-1.5 text-[10px]">
+                                      مطلوب
+                                    </Badge>
+                                  )}
+                                </div>
+                                <div className="mt-1 flex items-center gap-2 text-[10px] text-slate-400">
+                                  <span>{formatFileSize(document.file_size) || '—'}</span>
+                                  <span className="text-slate-300">•</span>
+                                  <span>{document.uploaded_at ? format(new Date(document.uploaded_at), 'dd/MM/yyyy') : '-'}</span>
+                                </div>
+                              </div>
+                            </div>
+
+                            <div className="mt-3">
+                              <Select
+                                value={document.document_type}
+                                onValueChange={(value) => {
+                                  handleChangeDocumentType(document.id, value);
+                                }}
+                              >
+                                <SelectTrigger
+                                  className="h-6 max-w-full border-[#E5EAF1] px-2 text-[10px]"
+                                  onClick={(e) => e.stopPropagation()}
+                                >
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {documentTypes.map((type) => (
+                                    <SelectItem key={type.value} value={type.value} className="text-xs">
+                                      {type.label}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </div>
+
+                            {/* Actions — always visible (touch-friendly) */}
+                            <div className="mt-3 flex items-center gap-2 border-t border-[#E5EAF1] pt-2">
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="h-8 flex-1 gap-1 border-[#E5EAF1] bg-white text-xs text-[#0F172A] hover:bg-[#F6F8FB]"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  if (document.document_type === 'condition_report' && document.condition_report_id) {
+                                    handleViewConditionReport(document.condition_report_id);
+                                  } else {
+                                    handlePreviewDocument(document);
+                                  }
+                                }}
+                                title="معاينة"
+                              >
+                                <Eye className="h-3.5 w-3.5" />
+                                معاينة
+                              </Button>
+
+                              {document.file_path && (
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="h-8 w-8 p-0"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleDownload(document.file_path, document.document_name, document.sourceBucket || 'contract-documents');
+                                  }}
+                                  title="تحميل"
+                                >
+                                  <Download className="h-3.5 w-3.5" />
+                                </Button>
+                              )}
+
+                              {/* Only show delete button for contract documents, not customer documents */}
+                              {document.sourceBucket === 'contract-documents' && (
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="h-8 w-8 border-[#FB6B7A]/30 p-0 text-[#BE123C] hover:bg-[#FFF5F6]"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleDelete(document.id);
+                                  }}
+                                  title="حذف"
+                                >
+                                  <Trash2 className="h-3.5 w-3.5" />
+                                </Button>
+                              )}
+                            </div>
+                          </motion.div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      </motion.div>
+
+      {/* Condition report section */}
+      {conditionReportDocs.length > 0 && (
+        <motion.div
+          variants={fadeInUp}
+          className="rounded-2xl border border-[#E5EAF1] bg-white shadow-[0_10px_30px_-22px_rgba(15,23,42,0.25)]"
+        >
+          <div className="flex items-center gap-3 border-b border-[#E5EAF1] bg-[#F6F8FB] px-4 py-3">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#ECFDF9] text-[#0E9E7E]">
+              <Car className="h-4 w-4" />
+            </div>
+            <div>
+              <p className="text-[10px] font-black uppercase tracking-wide text-slate-400">Condition Reports</p>
+              <h3 className="text-sm font-black text-[#0F172A]">تقارير حالة المركبة</h3>
+            </div>
           </div>
-        ) : (
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-            {documents.map((document) => (
+          <div className="grid grid-cols-1 gap-3 p-4 sm:grid-cols-2 lg:grid-cols-3">
+            {conditionReportDocs.map((document) => (
               <motion.div
                 key={document.id}
                 variants={scaleIn}
-                whileHover={{ y: -4 }}
+                whileHover={{ y: -2 }}
                 onClick={() => {
-                  if (document.document_type === 'condition_report' && document.condition_report_id) {
+                  if (document.condition_report_id) {
                     handleViewConditionReport(document.condition_report_id);
-                  } else if (document.file_path) {
-                    handlePreviewDocument(document);
                   }
                 }}
-                className="group relative cursor-pointer overflow-hidden rounded-xl border border-[#DDE5EF] bg-[#FAFBFC] transition-colors hover:border-[#173A63]"
+                className="group flex cursor-pointer items-center gap-3 rounded-2xl border border-[#E5EAF1] bg-white p-3 transition-colors hover:border-[#22C7A1]/50"
               >
-                <div className="relative flex aspect-square items-center justify-center overflow-hidden bg-[#EEF5FB]">
-                  {document.document_type === 'condition_report' ? (
-                    <Car className="w-12 h-12 text-blue-400" />
-                  ) : (document.mime_type?.includes('image') || 
-                       document.file_path?.match(/\.(jpg|jpeg|png|gif|webp|bmp|svg)$/i) ||
-                       document.document_name?.match(/\.(jpg|jpeg|png|gif|webp|bmp|svg)$/i)) ? (
-                    <img
-                      src={document.preview_url || getContractDocumentPublicUrl(document.sourceBucket, document.file_path)}
-                      alt={document.document_name}
-                      className="w-full h-full object-cover"
-                      loading="lazy"
-                      onError={(e) => {
-                        // إذا فشل تحميل الصورة، اعرض أيقونة بديلة
-                        const target = e.target as HTMLImageElement;
-                        target.style.display = 'none';
-                        target.parentElement?.classList.add('fallback-icon');
-                      }}
-                    />
-                  ) : (document.mime_type?.includes('pdf') || document.file_path?.match(/\.pdf$/i)) ? (
-                    <FileText className="w-12 h-12 text-red-400" />
-                  ) : (
-                    <FileImage className="w-12 h-12 text-neutral-400" />
-                  )}
-                  
-                  {document.is_required && (
-                    <div className="absolute top-2 right-2">
-                      <Badge variant="destructive" className="text-[10px] h-5 px-1.5">
-                        مطلوب
-                      </Badge>
-                    </div>
-                  )}
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#ECFDF9] text-[#0E9E7E]">
+                  <Car className="h-5 w-5" />
                 </div>
-                
-                <div className="p-3">
-                  <div className="flex items-center justify-between mb-1">
-                    <p className="text-xs font-bold text-neutral-900 truncate flex-1" title={document.document_name}>
-                      {document.document_name}
-                    </p>
-                  </div>
-                  <Select
-                    value={document.document_type}
-                    onValueChange={(value) => {
-                      handleChangeDocumentType(document.id, value);
-                    }}
-                  >
-                    <SelectTrigger 
-                      className="mb-2 h-6 max-w-full border-[#D8E1EC] px-2 text-[10px]"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {documentTypes.map((type) => (
-                        <SelectItem key={type.value} value={type.value} className="text-xs">
-                          {type.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <p className="text-[10px] text-neutral-500 mb-3">
-                    {document.uploaded_at ? format(new Date(document.uploaded_at), 'dd/MM/yyyy') : '-'}
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-xs font-black text-[#0F172A]" title={document.document_name}>
+                    {document.document_name}
                   </p>
-                  
-                  {/* أزرار الإجراءات - دائماً مرئية */}
-                  <div className="flex items-center gap-2 border-t border-[#E6EDF5] pt-2">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="h-8 flex-1 gap-1 border-[#D8E1EC] bg-white text-xs text-[#173A63] hover:bg-[#EEF5FB]"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        if (document.document_type === 'condition_report' && document.condition_report_id) {
-                          handleViewConditionReport(document.condition_report_id);
-                        } else {
-                          handlePreviewDocument(document);
-                        }
-                      }}
-                      title="معاينة"
-                    >
-                      <Eye className="w-3.5 h-3.5" />
-                      معاينة
-                    </Button>
-                    
-                    {document.file_path && (
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="h-8 w-8 p-0"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleDownload(document.file_path, document.document_name, document.sourceBucket || 'contract-documents');
-                        }}
-                        title="تحميل"
-                      >
-                        <Download className="w-3.5 h-3.5" />
-                      </Button>
-                    )}
-                    
-                    {/* Only show delete button for contract documents, not customer documents */}
-                    {document.sourceBucket === 'contract-documents' && (
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="h-8 w-8 p-0 border-red-200 hover:bg-red-50 text-red-600"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleDelete(document.id);
-                        }}
-                        title="حذف"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </Button>
-                    )}
+                  <div className="mt-1 flex items-center gap-2 text-[10px] text-slate-400">
+                    <span className="flex items-center gap-1">
+                      <span className="h-1.5 w-1.5 rounded-full bg-[#22C7A1]" />
+                      تقرير حالة
+                    </span>
+                    <span className="text-slate-300">•</span>
+                    <span>{document.uploaded_at ? format(new Date(document.uploaded_at), 'dd/MM/yyyy') : '-'}</span>
                   </div>
                 </div>
+                <Eye className="h-4 w-4 text-slate-300 transition-colors group-hover:text-[#0E9E7E]" />
               </motion.div>
             ))}
           </div>
-        )}
-      </motion.div>
+        </motion.div>
+      )}
 
       {/* Dialog لعرض تقرير حالة المركبة */}
       <Dialog open={isReportViewerOpen} onOpenChange={setIsReportViewerOpen}>
@@ -948,7 +1160,7 @@ export function ContractDocuments({ contractId, customerId, vehicleId }: Contrac
                   <>
                     {selectedDocumentForPreview.mime_type?.includes('pdf') ? (
                       <iframe
-                        src={getContractDocumentPublicUrl(selectedDocumentForPreview.sourceBucket, selectedDocumentForPreview.file_path)}
+                        src={selectedDocumentForPreview.preview_url || getContractDocumentPublicUrl(selectedDocumentForPreview.sourceBucket, selectedDocumentForPreview.file_path)}
                         className="w-full h-[600px]"
                         title="معاينة PDF"
                       />

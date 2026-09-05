@@ -19,8 +19,8 @@ describe("delinquent customer cron company scope", () => {
   });
 
   it("passes the Fleetify company to the protected refresh RPC", () => {
-    expect(migration).toContain(
-      "public.update_delinquent_customers(\n    '24bc0b21-4e2d-4413-9842-31719a3669f4'::uuid"
+    expect(migration).toMatch(
+      /public\.update_delinquent_customers\(\s*'24bc0b21-4e2d-4413-9842-31719a3669f4'::uuid/
     );
     expect(migration).not.toContain("SELECT update_delinquent_customers()");
   });

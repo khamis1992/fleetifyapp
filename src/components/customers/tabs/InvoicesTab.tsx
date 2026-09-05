@@ -5,6 +5,13 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
+import { getInvoiceDisplayLabel } from '@/utils/invoiceBillingMonth';
+
+const getInvoiceReference = (invoice: any) =>
+  invoice.invoice_number || `INV-${invoice.id?.substring(0, 8) || '-'}`;
+
+const getInvoiceDisplayName = (invoice: any) =>
+  getInvoiceDisplayLabel(invoice);
 
 const InvoicesTab = ({
   invoices,
@@ -150,12 +157,12 @@ const InvoicesTab = ({
           ${outstandingInvoices.length > 0 ? `
           <div class="section-title">أولاً: الفواتير المستحقة (${outstandingInvoices.length})</div>
           <table>
-            <thead><tr><th style="width: 35px;">م</th><th>رقم الفاتورة</th><th>التاريخ</th><th>تاريخ الاستحقاق</th><th>المبلغ الإجمالي</th><th>المدفوع</th><th>المتبقي</th><th>الحالة</th></tr></thead>
+            <thead><tr><th style="width: 35px;">م</th><th>الفاتورة</th><th>التاريخ</th><th>تاريخ الاستحقاق</th><th>المبلغ الإجمالي</th><th>المدفوع</th><th>المتبقي</th><th>الحالة</th></tr></thead>
             <tbody>
               ${outstandingInvoices.map((invoice, index) => {
                 const outstanding = (invoice.total_amount || 0) - (invoice.paid_amount || 0);
                 const isOverdue = invoice.due_date && new Date(invoice.due_date) < new Date();
-                return `<tr><td style="text-align: center;">${index + 1}</td><td>${invoice.invoice_number || 'INV-' + (invoice.id?.substring(0, 8) || '-')}</td><td>${invoice.invoice_date ? format(new Date(invoice.invoice_date), 'dd/MM/yyyy') : '-'}</td><td>${invoice.due_date ? format(new Date(invoice.due_date), 'dd/MM/yyyy') : '-'}</td><td>${(invoice.total_amount || 0).toLocaleString()} ر.ق</td><td>${(invoice.paid_amount || 0).toLocaleString()} ر.ق</td><td class="amount-cell">${outstanding.toLocaleString()} ر.ق</td><td style="text-align: center;"><span class="${isOverdue ? 'status-overdue' : 'status-pending'}">${isOverdue ? 'متأخر' : 'مستحق'}</span></td></tr>`;
+                return `<tr><td style="text-align: center;">${index + 1}</td><td><strong>${getInvoiceDisplayName(invoice)}</strong><br/><small>المرجع: ${getInvoiceReference(invoice)}</small></td><td>${invoice.invoice_date ? format(new Date(invoice.invoice_date), 'dd/MM/yyyy') : '-'}</td><td>${invoice.due_date ? format(new Date(invoice.due_date), 'dd/MM/yyyy') : '-'}</td><td>${(invoice.total_amount || 0).toLocaleString()} ر.ق</td><td>${(invoice.paid_amount || 0).toLocaleString()} ر.ق</td><td class="amount-cell">${outstanding.toLocaleString()} ر.ق</td><td style="text-align: center;"><span class="${isOverdue ? 'status-overdue' : 'status-pending'}">${isOverdue ? 'متأخر' : 'مستحق'}</span></td></tr>`;
               }).join('')}
             </tbody>
             <tfoot><tr style="background: #1e3a5f; color: white;"><td colspan="6" style="text-align: left; font-weight: bold; border-color: #1e3a5f;">إجمالي الفواتير المستحقة</td><td colspan="2" style="font-weight: bold; font-size: 14px; border-color: #1e3a5f;">${totalOutstanding.toLocaleString()} ر.ق</td></tr></tfoot>
@@ -258,7 +265,10 @@ const InvoicesTab = ({
                     <FileText className="w-5 h-5" />
                   </div>
                   <div>
-                    <p className="font-bold text-slate-900">{invoice.invoice_number || `INV-${invoice.id.substring(0, 8)}`}</p>
+                    <p className="font-bold text-slate-900">{getInvoiceDisplayName(invoice)}</p>
+                    <p className="text-[11px] font-semibold text-slate-500">
+                      المرجع: {getInvoiceReference(invoice)}
+                    </p>
                     <p className="text-xs text-slate-600">
                       {invoice.invoice_date ? format(new Date(invoice.invoice_date), 'dd/MM/yyyy') : invoice.due_date ? format(new Date(invoice.due_date), 'dd/MM/yyyy') : '-'}
                     </p>

@@ -48,6 +48,13 @@ describe('autonomous signed-contract reconciliation agent', () => {
     expect(migration).not.toMatch(/DELETE\s+FROM\s+public\.(payments|invoices|contract_payment_schedules)/i);
   });
 
+  it('does not flatten an established partial-period schedule from incomplete OCR', () => {
+    expect(scanner).toContain('graph.activeScheduleCount !== duration');
+    expect(scanner).toContain('Math.abs(graph.scheduleTotal - total)');
+    expect(scanner).toContain('graph.lastScheduleMonth !== lastBillingMonth');
+    expect(scanner).toContain('existing schedule count differs from the extracted installment duration');
+  });
+
   it('assigns ambiguous scenarios instead of silently stopping', () => {
     expect(migration).toContain('upsert_contract_reconciliation_review_task_v1');
     expect(migration).toContain("'contract_reconciliation_review'");

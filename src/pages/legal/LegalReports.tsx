@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -11,6 +11,8 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { useLatePaymentCustomers } from '@/hooks/usePaymentLegalIntegration';
+import { rentalArrearsReviewLabels, type VerifiedRentalArrears } from '@/services/rentalArrears';
+import { escapeHtml } from '@/utils/htmlSanitizer';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { 
@@ -18,47 +20,45 @@ import {
   Download, 
   AlertTriangle,
   Users,
-  Calendar,
   DollarSign,
   Printer
 } from 'lucide-react';
 import { formatCurrency } from '@/lib/utils';
-import { format } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 import { ar } from 'date-fns/locale';
 import { HelpIcon } from '@/components/help/HelpIcon';
-import { financialHelpContent } from '@/data/helpContent';
 import '@/styles/legal-system.css';
 
 interface LegalReport {
   id: string;
   report_number: string;
-  customers: any[];
+  customers: VerifiedRentalArrears[];
   total_amount: number;
   created_date: string;
   status: 'draft' | 'ready' | 'submitted';
 }
 
 export const LegalReports: React.FC = () => {
-  const { data: lateCustomers, isLoading } = useLatePaymentCustomers();
-  const [reports, setReports] = useState<LegalReport[]>([]);
+  const { data, isLoading, error } = useLatePaymentCustomers();
+  const lateCustomers=data?.verified;
+  const reviews=data?.review||[];
 
   // Automatically group customers into reports of 4
-  useEffect(() => {
-    if (!lateCustomers) return;
+  const reports=useMemo(() => {
+    if (!lateCustomers) return [];
 
     // Filter customers with 30+ days overdue
     const eligibleCustomers = lateCustomers.filter(c => c.days_overdue >= 30);
 
     if (eligibleCustomers.length === 0) {
-      setReports([]);
-      return;
+      return [];
     }
 
     // Group into batches of 4
     const groupedReports: LegalReport[] = [];
     for (let i = 0; i < eligibleCustomers.length; i += 4) {
       const batch = eligibleCustomers.slice(i, i + 4);
-      const totalAmount = batch.reduce((sum, c) => sum + c.total_outstanding, 0);
+      const totalAmount = batch.reduce((sum, c) => sum + Math.round(c.total_outstanding*100), 0)/100;
       
       groupedReports.push({
         id: `report-${i / 4 + 1}`,
@@ -66,14 +66,15 @@ export const LegalReports: React.FC = () => {
         customers: batch,
         total_amount: totalAmount,
         created_date: new Date().toISOString(),
-        status: 'ready',
+        status: 'draft',
       });
     }
 
-    setReports(groupedReports);
+    return groupedReports;
   }, [lateCustomers]);
 
   const handlePrintReport = (report: LegalReport) => {
+    if(isLoading||error||!data||!reports.includes(report)) return;
     // Create a printable HTML document
     const printWindow = window.open('', '_blank');
     if (!printWindow) return;
@@ -83,7 +84,7 @@ export const LegalReports: React.FC = () => {
       <html dir="rtl" lang="ar">
       <head>
         <meta charset="UTF-8">
-        <title>بلاغ قانوني - ${report.report_number}</title>
+        <title>مسودة متابعة المتأخرات - ${report.report_number}</title>
         <style>
           body {
             font-family: 'Arial', sans-serif;
@@ -200,8 +201,9 @@ export const LegalReports: React.FC = () => {
       </head>
       <body>
         <div class="header">
-          <h1>بلاغ قانوني</h1>
+          <h1>مسودة متابعة المتأخرات</h1>
           <p>تأخر عن سداد الإيجار الشهري</p>
+          <p>ليست اعتمادًا قانونيًا؛ تشمل أرصدة الإيجار المتحققة فقط، ولا تشمل الغرامات أو العقود التي تحتاج مطابقة.</p>
         </div>
 
         <div class="report-info">
@@ -215,8 +217,8 @@ export const LegalReports: React.FC = () => {
               <td>${format(new Date(report.created_date), 'dd MMMM yyyy', { locale: ar })}</td>
             </tr>
             <tr>
-              <td>عدد المخالفين:</td>
-              <td>${report.customers.length} عميل</td>
+              <td>عدد العقود المتأخرة:</td>
+              <td>${report.customers.length} عقد</td>
             </tr>
             <tr>
               <td>إجمالي المبالغ المستحقة:</td>
@@ -240,8 +242,8 @@ export const LegalReports: React.FC = () => {
             ${report.customers.map((customer, index) => `
               <tr>
                 <td>${index + 1}</td>
-                <td>${customer.customer_name}</td>
-                <td>${customer.contract_number}</td>
+                <td>${escapeHtml(customer.customer_name)}</td>
+                <td>${escapeHtml(customer.contract_number)}</td>
                 <td>${customer.days_overdue} يوم</td>
                 <td>${formatCurrency(customer.total_outstanding)}</td>
               </tr>
@@ -252,19 +254,19 @@ export const LegalReports: React.FC = () => {
         <h2>التفاصيل المالية لكل عميل</h2>
         ${report.customers.map((customer, index) => `
           <div class="customer-details">
-            <h3>العميل ${index + 1}: ${customer.customer_name}</h3>
+            <h3>العميل ${index + 1}: ${escapeHtml(customer.customer_name)}</h3>
             <div class="details-grid">
               <div class="detail-item">
                 <span class="detail-label">رقم العقد</span>
-                <span class="detail-value">${customer.contract_number}</span>
+                <span class="detail-value">${escapeHtml(customer.contract_number)}</span>
               </div>
               <div class="detail-item">
                 <span class="detail-label">رقم المركبة</span>
-                <span class="detail-value">${customer.vehicle_plate || 'غير متوفر'}</span>
+                <span class="detail-value">${escapeHtml(customer.vehicle_plate || 'غير متوفر')}</span>
               </div>
               <div class="detail-item">
                 <span class="detail-label">الإيجار الشهري</span>
-                <span class="detail-value">${formatCurrency(customer.monthly_rent)}</span>
+                <span class="detail-value">${customer.monthly_rent===null?'غير متوفر':formatCurrency(customer.monthly_rent)}</span>
               </div>
               <div class="detail-item">
                 <span class="detail-label">عدد الأشهر غير المدفوعة</span>
@@ -276,7 +278,7 @@ export const LegalReports: React.FC = () => {
               </div>
               <div class="detail-item">
                 <span class="detail-label">الغرامات المتراكمة</span>
-                <span class="detail-value">${formatCurrency(customer.total_fines)}</span>
+                <span class="detail-value">غير محسوبة في هذا التقرير</span>
               </div>
               <div class="detail-item">
                 <span class="detail-label">أيام التأخير</span>
@@ -284,15 +286,15 @@ export const LegalReports: React.FC = () => {
               </div>
               <div class="detail-item">
                 <span class="detail-label">آخر دفعة</span>
-                <span class="detail-value">${customer.last_payment_date ? format(new Date(customer.last_payment_date), 'dd MMM yyyy', { locale: ar }) : 'لا يوجد'}</span>
+                <span class="detail-value">${customer.last_payment_date ? format(parseISO(customer.last_payment_date), 'dd MMM yyyy', { locale: ar }) : 'لا يوجد'}</span>
               </div>
               <div class="detail-item">
                 <span class="detail-label">رقم الهاتف</span>
-                <span class="detail-value">${customer.customer_phone || 'غير متوفر'}</span>
+                <span class="detail-value">${escapeHtml(customer.customer_phone || 'غير متوفر')}</span>
               </div>
               <div class="detail-item">
                 <span class="detail-label">البريد الإلكتروني</span>
-                <span class="detail-value">${customer.customer_email || 'غير متوفر'}</span>
+                <span class="detail-value">${escapeHtml(customer.customer_email || 'غير متوفر')}</span>
               </div>
             </div>
           </div>
@@ -307,7 +309,7 @@ export const LegalReports: React.FC = () => {
             </tr>
             <tr>
               <td><strong>إجمالي الغرامات:</strong></td>
-              <td><strong>${formatCurrency(report.customers.reduce((sum, c) => sum + c.total_fines, 0))}</strong></td>
+              <td><strong>غير محسوبة في هذا التقرير؛ تُراجع بشكل منفصل</strong></td>
             </tr>
             <tr>
               <td><strong>متوسط أيام التأخير:</strong></td>
@@ -339,6 +341,7 @@ export const LegalReports: React.FC = () => {
       </div>
     );
   }
+  if(error) return <Alert variant="destructive"><AlertDescription>{error.message}</AlertDescription></Alert>;
 
   return (
     <div className="legal-system container mx-auto space-y-6 py-6">
@@ -358,7 +361,7 @@ export const LegalReports: React.FC = () => {
                   />
                </div>
               <CardDescription className="text-base mt-1">
-                بلاغات تجمع 4 عملاء متأخرين لكل بلاغ (بعد 30 يوم من التأخير)
+                مسودات تجمع حتى 4 عقود متأخرة لكل تقرير (30 يومًا أو أكثر من التأخير)
               </CardDescription>
             </div>
           </div>
@@ -366,6 +369,10 @@ export const LegalReports: React.FC = () => {
       </Card>
 
       {/* Statistics */}
+      {reviews.length>0&&<Alert><AlertDescription>
+        <p>عقود تحتاج مطابقة ({reviews.length}) — مستبعدة من البلاغات والإجماليات:</p>
+        <ul>{reviews.map(row=><li key={row.contract_id}>{row.contract_number} — {row.customer_name}: {row.review_reasons.map(code=>rentalArrearsReviewLabels[code]).join('، ')}</li>)}</ul>
+      </AlertDescription></Alert>}
       <div className="grid gap-4 md:grid-cols-3">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -375,14 +382,14 @@ export const LegalReports: React.FC = () => {
           <CardContent>
             <div className="text-2xl font-bold">{reports.length}</div>
             <p className="text-xs text-muted-foreground">
-              بلاغ جاهز للتقديم
+              مسودة متابعة مالية، وليست اعتمادًا قانونيًا
             </p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">إجمالي المخالفين</CardTitle>
+            <CardTitle className="text-sm font-medium">إجمالي العقود المتأخرة</CardTitle>
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -390,7 +397,7 @@ export const LegalReports: React.FC = () => {
               {reports.reduce((sum, r) => sum + r.customers.length, 0)}
             </div>
             <p className="text-xs text-muted-foreground">
-              عميل متأخر
+              عقد متأخر، وقد يملك العميل أكثر من عقد
             </p>
           </CardContent>
         </Card>
@@ -402,7 +409,7 @@ export const LegalReports: React.FC = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {formatCurrency(reports.reduce((sum, r) => sum + r.total_amount, 0))}
+              {formatCurrency(reports.reduce((sum, r) => sum + Math.round(r.total_amount * 100), 0) / 100)}
             </div>
             <p className="text-xs text-muted-foreground">
               مبالغ مستحقة
@@ -426,7 +433,7 @@ export const LegalReports: React.FC = () => {
                       <div>
                         <CardTitle className="text-lg">{report.report_number}</CardTitle>
                         <CardDescription>
-                          {report.customers.length} عملاء • {formatCurrency(report.total_amount)}
+                          {report.customers.length} عقود • {formatCurrency(report.total_amount)}
                         </CardDescription>
                       </div>
                       <div className="flex gap-2">
@@ -464,7 +471,7 @@ export const LegalReports: React.FC = () => {
                         </TableHeader>
                         <TableBody>
                           {report.customers.map((customer, index) => (
-                            <TableRow key={customer.customer_id}>
+                            <TableRow key={customer.contract_id}>
                               <TableCell>{index + 1}</TableCell>
                               <TableCell className="font-medium">{customer.customer_name}</TableCell>
                               <TableCell>
@@ -492,7 +499,7 @@ export const LegalReports: React.FC = () => {
             <Alert>
               <AlertTriangle className="h-4 w-4" />
               <AlertDescription>
-                لا توجد بلاغات جاهزة حالياً. يتم إنشاء البلاغات تلقائياً للعملاء المتأخرين عن الدفع لمدة 30 يوم أو أكثر.
+                لا توجد متأخرات متحققة تجاوزت 30 يومًا لتجميعها حاليًا. الحالات التي تحتاج مطابقة لا تُعد مسددة.
               </AlertDescription>
             </Alert>
           )}
@@ -503,8 +510,9 @@ export const LegalReports: React.FC = () => {
       <Alert>
         <FileText className="h-4 w-4" />
         <AlertDescription>
-          <strong>ملاحظة:</strong> يتم تجميع العملاء المتأخرين تلقائياً في بلاغات، كل بلاغ يحتوي على 4 عملاء كحد أقصى.
-          يتم إنشاء البلاغات فقط للعملاء الذين تجاوزت متأخراتهم 30 يوماً.
+          <strong>ملاحظة:</strong> تُجمع العقود المتأخرة تلقائياً في مسودات، كل مسودة تحتوي على 4 عقود كحد أقصى.
+          تُدرج العقود ذات المتأخرات المتحققة لمدة 30 يوماً أو أكثر، ويظل كل عقد مستقلًا ولو كان للعميل نفسه.
+          المبالغ تخص الإيجار فقط؛ الغرامات والمخالفات وصلاحية المطالبة القانونية تُراجع بشكل منفصل.
         </AlertDescription>
       </Alert>
     </div>

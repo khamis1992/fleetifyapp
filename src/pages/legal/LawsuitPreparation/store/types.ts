@@ -226,6 +226,8 @@ export interface ContractEvidenceDocument {
   file_path: string | null;
   mime_type: string | null;
   legal_identity_match_status?: 'pending' | 'matched' | 'mismatch' | 'unverified' | 'expired_unverified' | 'failed' | null;
+  legal_identity_expected_id?: string | null;
+  legal_identity_extracted_id?: string | null;
   legal_evidence_state?: 'active' | 'superseded' | 'quarantined' | null;
 }
 

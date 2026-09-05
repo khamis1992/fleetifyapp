@@ -255,6 +255,22 @@ describe('buildMemoDocumentData', () => {
     expect(isMemoSnapshotCurrent(changed, snapshot)).toBe(false);
   });
 
+  it('treats an approved snapshot as not current while live memo data is incomplete', () => {
+    const snapshot = {
+      readiness_status: 'approved',
+      payload: buildMemoDocumentData(baseState),
+    } as LawsuitPreparationState['memoSnapshots'][number];
+
+    expect(isMemoSnapshotCurrent(
+      { ...baseState, calculations: null } as unknown as LawsuitPreparationState,
+      snapshot,
+    )).toBe(false);
+    expect(isMemoSnapshotCurrent(
+      { ...baseState, contract: null } as unknown as LawsuitPreparationState,
+      snapshot,
+    )).toBe(false);
+  });
+
   it('uses an approved frozen payload only while it still matches the live evidence', () => {
     const payload = {
       ...buildMemoDocumentData(baseState),

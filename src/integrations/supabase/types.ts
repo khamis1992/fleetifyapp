@@ -4658,6 +4658,7 @@ export type Database = {
           company_id: string
           contract_id: string
           id: string
+          idempotency_key: string | null
           new_values: Json | null
           notes: string | null
           old_values: Json | null
@@ -4670,6 +4671,7 @@ export type Database = {
           company_id: string
           contract_id: string
           id?: string
+          idempotency_key?: string | null
           new_values?: Json | null
           notes?: string | null
           old_values?: Json | null
@@ -4682,6 +4684,7 @@ export type Database = {
           company_id?: string
           contract_id?: string
           id?: string
+          idempotency_key?: string | null
           new_values?: Json | null
           notes?: string | null
           old_values?: Json | null
@@ -5157,6 +5160,7 @@ export type Database = {
           creation_idempotency_key: string | null
           customer_id: string
           days_overdue: number | null
+          deposit_amount: number
           description: string | null
           end_date: string
           expired_at: string | null
@@ -5205,6 +5209,7 @@ export type Database = {
           creation_idempotency_key?: string | null
           customer_id: string
           days_overdue?: number | null
+          deposit_amount?: number
           description?: string | null
           end_date: string
           expired_at?: string | null
@@ -5253,6 +5258,7 @@ export type Database = {
           creation_idempotency_key?: string | null
           customer_id?: string
           days_overdue?: number | null
+          deposit_amount?: number
           description?: string | null
           end_date?: string
           expired_at?: string | null
@@ -24485,6 +24491,7 @@ export type Database = {
           liability_journal_entry_id: string | null
           liability_recognized_at: string | null
           location: string | null
+          manual_request_id: string | null
           match_confidence: string | null
           notes: string | null
           original_contract_number: string | null
@@ -24519,6 +24526,7 @@ export type Database = {
           liability_journal_entry_id?: string | null
           liability_recognized_at?: string | null
           location?: string | null
+          manual_request_id?: string | null
           match_confidence?: string | null
           notes?: string | null
           original_contract_number?: string | null
@@ -24553,6 +24561,7 @@ export type Database = {
           liability_journal_entry_id?: string | null
           liability_recognized_at?: string | null
           location?: string | null
+          manual_request_id?: string | null
           match_confidence?: string | null
           notes?: string | null
           original_contract_number?: string | null
@@ -30754,6 +30763,7 @@ export type Database = {
           p_created_via?: string
           p_customer_id: string
           p_description?: string
+          p_deposit_amount?: number
           p_end_date?: string
           p_idempotency_key?: string
           p_monthly_amount?: number
@@ -31093,6 +31103,21 @@ export type Database = {
           p_vendor_id: string
         }
         Returns: Database["public"]["Tables"]["purchase_orders"]["Row"]
+      }
+      create_manual_contract_traffic_violation_v1: {
+        Args: {
+          p_company_id: string
+          p_contract_id: string
+          p_description?: string | null
+          p_fine_amount: number
+          p_idempotency_key: string
+          p_location?: string | null
+          p_vehicle_id: string
+          p_violation_date: string
+          p_violation_number?: string | null
+          p_violation_type: string
+        }
+        Returns: Json
       }
       create_traffic_violation_payment_with_journal: {
         Args: {
@@ -31639,6 +31664,10 @@ export type Database = {
       }
       generate_invoice_for_contract_month_outcome: {
         Args: { p_contract_id: string; p_invoice_month: string }
+        Returns: Json
+      }
+      generate_contract_billing_graph_v2: {
+        Args: { p_contract_id: string }
         Returns: Json
       }
       generate_invoices_from_payment_schedule: {
@@ -33260,6 +33289,41 @@ export type Database = {
         }
         Returns: Database["public"]["Tables"]["odometer_readings"]["Row"]
       }
+      record_contract_vehicle_return_v1: {
+        Args: {
+          p_actor_id?: string | null
+          p_condition_items?: Json
+          p_contract_id: string
+          p_damage_items?: Json
+          p_damage_points?: Json
+          p_fuel_level: number
+          p_inspection_date: string
+          p_mileage_reading: number
+          p_notes?: string | null
+          p_overall_condition: string
+          p_photos?: Json
+        }
+        Returns: Json
+      }
+      cancel_contract_with_return_and_penalties_v2: {
+        Args: {
+          p_actor_id?: string | null
+          p_company_id: string
+          p_contract_id: string
+          p_reason: string
+          p_return_payload?: Json | null
+          p_transfer_open_penalties_to_company?: boolean
+        }
+        Returns: Json
+      }
+      cancel_traffic_violation_atomic_v1: {
+        Args: {
+          p_actor_id?: string | null
+          p_reason: string
+          p_violation_id: string
+        }
+        Returns: Json
+      }
       post_manual_journal_entry_v1: {
         Args: { p_actor_id?: string; p_company_id: string; p_entry_id: string }
         Returns: Database["public"]["Tables"]["journal_entries"]["Row"]
@@ -33277,6 +33341,16 @@ export type Database = {
       }
       revert_contract_from_legal_v1: {
         Args: { p_actor_id?: string; p_company_id: string; p_contract_id: string; p_reason: string }
+        Returns: Json
+      }
+      revert_contract_from_legal_v2: {
+        Args: {
+          p_actor_id?: string | null
+          p_company_id: string
+          p_contract_id: string
+          p_idempotency_key: string
+          p_reason: string
+        }
         Returns: Json
       }
       resolve_contract_financial_review_v1: {
@@ -33431,6 +33505,20 @@ export type Database = {
         Returns: undefined
       }
       refresh_company_stats_cache: { Args: never; Returns: undefined }
+      // Local migration 20260903222544; deployment is verified separately.
+      get_canonical_rental_month_summary_v1: {
+        Args: { p_company_id: string; p_month: string }
+        Returns: Json
+      }
+      get_canonical_rental_arrears_v1: {
+        Args: { p_company_id: string; p_due_as_of?: string }
+        Returns: Json
+      }
+      // Declared by local migration 20260903085138; deployment is checked separately.
+      refresh_contract_financial_state_v1: {
+        Args: { p_contract_id: string }
+        Returns: Json
+      }
       refresh_customer_summary: { Args: never; Returns: undefined }
       regenerate_all_cancelled_contract_invoices: {
         Args: never

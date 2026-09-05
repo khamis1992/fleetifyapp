@@ -33,6 +33,10 @@ import {
   Landmark,
   Smartphone,
   Printer,
+  ChevronDown,
+  ListTree,
+  Rows3,
+  ReceiptText,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -42,6 +46,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Progress } from '@/components/ui/progress';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -62,6 +67,16 @@ import {
 import { useToast } from '@/components/ui/use-toast';
 import { usePaymentOperations } from '@/hooks/business/usePaymentOperations';
 import { cn } from '@/lib/utils';
+import { readContractPaymentPages } from '@/services/readContractPaymentPages';
+import { contractPaymentEvidenceQueryOptions, type PaymentApplication } from '@/services/contractPaymentEvidence';
+import {
+  buildContractInstallmentLedger,
+  isCompletedInstallmentPayment,
+  type InstallmentContribution,
+  type InstallmentLedgerGroup,
+  type InstallmentLedgerInvoice,
+  type InstallmentLedgerStatus,
+} from '@/utils/contractPaymentInstallmentLedger';
 
 // ===== Animation Variants =====
 const fadeInUp: Variants = {
@@ -88,14 +103,16 @@ interface Payment {
   amount: number;
   payment_date: string;
   payment_status: string;
+  transaction_type?: string | null;
+  financial_applications?: PaymentApplication[];
   payment_method: string;
   payment_number?: string | null;
   reference_number: string | null;
   notes: string | null;
   created_by: string | null;
   created_at: string;
-  invoice_id: string;
-  contract_id?: string;
+  invoice_id: string | null;
+  contract_id?: string | null;
   created_by_name?: string | null;
   invoice?: {
     invoice_number: string;
@@ -124,7 +141,9 @@ interface CustomerInfo {
 interface ContractPaymentsTabRedesignedProps {
   contractId: string;
   companyId: string;
+  customerId: string;
   invoiceIds: string[];
+  invoices: InstallmentLedgerInvoice[];
   contractStartDate?: string | null;
   formatCurrency: (amount: number) => string;
   contractNumber?: string;
@@ -133,54 +152,78 @@ interface ContractPaymentsTabRedesignedProps {
 
 // ===== Helper Functions =====
 const getPaymentStatusInfo = (status: string) => {
-  switch (status) {
+  switch (status.trim().toLowerCase()) {
     case 'completed':
+    case 'paid':
+    case 'success':
+    case 'succeeded':
       return {
         label: 'مكتمل',
         variant: 'default' as const,
-        bgColor: 'bg-green-50',
-        textColor: 'text-green-700',
-        borderColor: 'border-green-200',
-        iconBg: 'bg-green-500',
+        bgColor: 'bg-[#ECFDF9]',
+        textColor: 'text-[#0E9E7E]',
+        borderColor: 'border-[#22C7A1]/30',
+        iconBg: 'bg-[#22C7A1]',
+        icon: CheckCircle,
+      };
+    case 'cleared':
+      return {
+        label: 'مصروف',
+        variant: 'default' as const,
+        bgColor: 'bg-[#ECFDF9]',
+        textColor: 'text-[#0E9E7E]',
+        borderColor: 'border-[#22C7A1]/30',
+        iconBg: 'bg-[#22C7A1]',
         icon: CheckCircle,
       };
     case 'pending':
       return {
         label: 'معلق',
         variant: 'secondary' as const,
-        bgColor: 'bg-yellow-50',
-        textColor: 'text-yellow-700',
-        borderColor: 'border-yellow-200',
-        iconBg: 'bg-yellow-500',
+        bgColor: 'bg-[#FFFBEB]',
+        textColor: 'text-[#B45309]',
+        borderColor: 'border-[#F59E0B]/30',
+        iconBg: 'bg-[#F59E0B]',
         icon: Clock,
       };
     case 'cancelled':
+    case 'canceled':
       return {
         label: 'ملغي',
         variant: 'outline' as const,
-        bgColor: 'bg-red-50',
-        textColor: 'text-red-700',
-        borderColor: 'border-red-200',
-        iconBg: 'bg-red-500',
+        bgColor: 'bg-[#FFF5F6]',
+        textColor: 'text-[#BE123C]',
+        borderColor: 'border-[#FB6B7A]/30',
+        iconBg: 'bg-[#FB6B7A]',
+        icon: Ban,
+      };
+    case 'bounced':
+      return {
+        label: 'مرتجع',
+        variant: 'destructive' as const,
+        bgColor: 'bg-[#FFF5F6]',
+        textColor: 'text-[#BE123C]',
+        borderColor: 'border-[#FB6B7A]/30',
+        iconBg: 'bg-[#FB6B7A]',
         icon: Ban,
       };
     case 'failed':
       return {
         label: 'فشل',
         variant: 'destructive' as const,
-        bgColor: 'bg-red-50',
-        textColor: 'text-red-700',
-        borderColor: 'border-red-200',
-        iconBg: 'bg-red-500',
+        bgColor: 'bg-[#FFF5F6]',
+        textColor: 'text-[#BE123C]',
+        borderColor: 'border-[#FB6B7A]/30',
+        iconBg: 'bg-[#FB6B7A]',
         icon: XCircle,
       };
     default:
       return {
         label: status,
         variant: 'secondary' as const,
-        bgColor: 'bg-slate-50',
-        textColor: 'text-slate-700',
-        borderColor: 'border-slate-200',
+        bgColor: 'bg-[#F6F8FB]',
+        textColor: 'text-slate-500',
+        borderColor: 'border-[#E5EAF1]',
         iconBg: 'bg-slate-400',
         icon: Clock,
       };
@@ -188,13 +231,15 @@ const getPaymentStatusInfo = (status: string) => {
 };
 
 const getPaymentMethodInfo = (method: string) => {
+  // The database and all write paths use 'check' for cheques.
   const methods: Record<string, { label: string; icon: any; color: string; bg: string }> = {
-    cash: { label: 'نقدي', icon: Smartphone, color: 'from-emerald-500 to-emerald-600', bg: 'bg-emerald-50' },
-    bank_transfer: { label: 'تحويل بنكي', icon: Landmark, color: 'from-blue-500 to-blue-600', bg: 'bg-blue-50' },
-    credit_card: { label: 'بطاقة ائتمان', icon: CreditCard, color: 'from-purple-500 to-purple-600', bg: 'bg-purple-50' },
-    cheque: { label: 'شيك', icon: DollarSign, color: 'from-amber-500 to-amber-600', bg: 'bg-amber-50' },
-    received: { label: 'مستلم', icon: Wallet, color: 'from-teal-500 to-teal-600', bg: 'bg-teal-50' },
-    other: { label: 'أخرى', icon: CreditCard, color: 'from-slate-500 to-slate-600', bg: 'bg-slate-50' },
+    cash: { label: 'نقدي', icon: Smartphone, color: 'from-[#22C7A1] to-[#0E9E7E]', bg: 'bg-[#ECFDF9]' },
+    bank_transfer: { label: 'تحويل بنكي', icon: Landmark, color: 'from-[#38BDF8] to-[#0369A1]', bg: 'bg-[#F0F9FF]' },
+    online_transfer: { label: 'تحويل إلكتروني', icon: Landmark, color: 'from-[#38BDF8] to-[#0369A1]', bg: 'bg-[#F0F9FF]' },
+    credit_card: { label: 'بطاقة ائتمان', icon: CreditCard, color: 'from-[#7C83F6] to-[#4F46E5]', bg: 'bg-[#EEF2FF]' },
+    check: { label: 'شيك', icon: DollarSign, color: 'from-[#F59E0B] to-[#B45309]', bg: 'bg-[#FFFBEB]' },
+    received: { label: 'مستلم', icon: Wallet, color: 'from-[#22C7A1] to-[#0E9E7E]', bg: 'bg-[#ECFDF9]' },
+    other: { label: 'أخرى', icon: CreditCard, color: 'from-slate-500 to-slate-600', bg: 'bg-[#F6F8FB]' },
   };
   return methods[method] || methods.other;
 };
@@ -430,13 +475,20 @@ const PaymentMetrics = ({
   formatCurrency: (amount: number) => string;
 }) => {
   const metrics = useMemo(() => {
-    const totalPayments = payments.length;
-    const completedPayments = payments.filter(p => p.payment_status === 'completed');
-    const pendingPayments = payments.filter(p => p.payment_status === 'pending');
-    const cancelledPayments = payments.filter(p => p.payment_status === 'cancelled');
+    const cancelledStatuses = ['cancelled', 'canceled', 'void', 'voided'];
+    const isCancelledPayment = (p: Payment) =>
+      cancelledStatuses.includes(String(p.payment_status || '').trim().toLowerCase());
+    // Cancelled receipts never contributed money; the totals card must only
+    // reflect receipts that can settle, so the four cards reconcile.
+    const activePayments = payments.filter(p => !isCancelledPayment(p));
+    const totalPayments = activePayments.length;
+    const completedPayments = activePayments.filter(isCompletedInstallmentPayment);
+    const pendingPayments = activePayments.filter(p => p.payment_status === 'pending');
+    const cancelledPayments = payments.filter(isCancelledPayment);
 
-    const totalAmount = payments.reduce((sum, p) => sum + (p.amount || 0), 0);
-    const completedAmount = completedPayments.reduce((sum, p) => sum + (p.amount || 0), 0);
+    const totalAmount = activePayments.reduce((sum, p) => sum + (p.amount || 0), 0);
+    const completedAmount = completedPayments.reduce((sum, p) => sum
+      + (p.financial_applications || []).reduce((applied, row) => applied + Math.round(row.amount * 100), 0), 0) / 100;
     const pendingAmount = pendingPayments.reduce((sum, p) => sum + (p.amount || 0), 0);
     const cancelledAmount = cancelledPayments.reduce((sum, p) => sum + (p.amount || 0), 0);
 
@@ -449,7 +501,6 @@ const PaymentMetrics = ({
       completedAmount,
       pendingAmount,
       cancelledAmount,
-      completionRate: totalPayments > 0 ? Math.round((completedPayments.length / totalPayments) * 100) : 0,
     };
   }, [payments]);
 
@@ -457,38 +508,42 @@ const PaymentMetrics = ({
     {
       title: 'إجمالي الدفعات',
       value: formatCurrency(metrics.totalAmount),
-      subtext: `${metrics.totalPayments} دفعة`,
+      subtext: `${metrics.totalPayments} دفعة فعّالة (بدون الملغاة)`,
       icon: Wallet,
-      color: 'from-teal-500 to-teal-600',
-      bgColor: 'bg-teal-50',
-      borderColor: 'border-teal-200/50',
+      tintBg: 'bg-[#EEF2FF]',
+      iconColor: 'text-[#4F46E5]',
+      badgeBg: 'bg-[#EEF2FF]',
+      badgeText: 'text-[#4F46E5]',
     },
     {
-      title: 'المدفوع',
+      title: 'المسدد لهذا العقد',
       value: formatCurrency(metrics.completedAmount),
-      subtext: `${metrics.completedCount} دفعة • ${metrics.completionRate}%`,
+      subtext: `${metrics.completedCount} إيصال مكتمل • مجموع التخصيصات`,
       icon: CheckCircle,
-      color: 'from-green-500 to-green-600',
-      bgColor: 'bg-green-50',
-      borderColor: 'border-green-200/50',
+      tintBg: 'bg-[#ECFDF9]',
+      iconColor: 'text-[#0E9E7E]',
+      badgeBg: 'bg-[#ECFDF9]',
+      badgeText: 'text-[#0E9E7E]',
     },
     {
       title: 'المعلقة',
       value: formatCurrency(metrics.pendingAmount),
       subtext: `${metrics.pendingCount} دفعة معلقة`,
       icon: Clock,
-      color: 'from-amber-500 to-amber-600',
-      bgColor: 'bg-amber-50',
-      borderColor: 'border-amber-200/50',
+      tintBg: 'bg-[#FFFBEB]',
+      iconColor: 'text-[#B45309]',
+      badgeBg: 'bg-[#FFFBEB]',
+      badgeText: 'text-[#B45309]',
     },
     {
       title: 'الملغية',
       value: formatCurrency(metrics.cancelledAmount),
       subtext: `${metrics.cancelledCount} دفعة ملغاة`,
       icon: Ban,
-      color: 'from-red-500 to-red-600',
-      bgColor: 'bg-red-50',
-      borderColor: 'border-red-200/50',
+      tintBg: 'bg-[#FFF5F6]',
+      iconColor: 'text-[#BE123C]',
+      badgeBg: 'bg-[#FFF5F6]',
+      badgeText: 'text-[#BE123C]',
     },
   ];
 
@@ -501,18 +556,21 @@ const PaymentMetrics = ({
         <motion.div
           key={idx}
           variants={scaleIn}
-          className="rounded-xl border border-[#DDE5EF] bg-white p-4 shadow-sm transition-colors hover:border-[#173A63]"
+          className="rounded-2xl border border-[#E5EAF1] bg-white p-4 shadow-[0_10px_30px_-22px_rgba(15,23,42,0.25)]"
         >
           <div className="flex items-start justify-between mb-3">
-            <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-[#EEF5FB] text-[#173A63]">
-              <metric.icon className="h-5 w-5" />
+            <div className={cn("flex h-8 w-8 items-center justify-center rounded-lg", metric.tintBg, metric.iconColor)}>
+              <metric.icon className="h-4 w-4" />
             </div>
-            <div className={cn("px-2 py-1 rounded-lg text-xs font-medium", metric.bgColor, "text-slate-700")}>
+            <div className={cn("px-2 py-1 rounded-lg text-[11px] font-bold", metric.badgeBg, metric.badgeText)}>
               {metric.subtext.split(' • ')[0]}
             </div>
           </div>
-          <p className="text-2xl font-bold text-neutral-900 mb-1">{metric.value}</p>
-          <p className="text-xs text-neutral-500">{metric.title}</p>
+          <p className="text-base font-black text-[#0F172A] mb-1">{metric.value}</p>
+          <p className="text-[11px] font-bold text-slate-500">
+            {metric.title}
+            {metric.subtext.includes(' • ') ? ` — ${metric.subtext.split(' • ')[1]}` : ''}
+          </p>
         </motion.div>
       ))}
     </motion.div>
@@ -539,7 +597,7 @@ const PaymentCard = ({
       variants={scaleIn}
       whileHover={{ y: -2 }}
       className={cn(
-        "rounded-xl border bg-white p-5 shadow-sm transition-colors hover:border-[#173A63]",
+        "rounded-2xl border bg-white p-5 shadow-[0_10px_30px_-22px_rgba(15,23,42,0.25)] transition-colors",
         statusInfo.borderColor,
         payment.payment_status === 'cancelled' && 'opacity-60'
       )}
@@ -547,12 +605,12 @@ const PaymentCard = ({
       {/* Header */}
       <div className="flex items-start justify-between mb-4">
         <div className="flex items-center gap-3">
-          <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-[#EEF5FB] text-[#173A63]">
+          <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-[#EEF2FF] text-[#4F46E5]">
             <MethodIcon className="h-6 w-6" />
           </div>
           <div>
             <div className="flex items-center gap-2 mb-1">
-              <h3 className="font-bold text-neutral-900 text-lg">
+              <h3 className="font-black text-[#0F172A] text-lg">
                 {payment.invoice?.invoice_number || 'دفعة مباشرة'}
               </h3>
               <Badge className={cn("text-xs", statusInfo.bgColor, statusInfo.textColor, "border-0 gap-1.5")}>
@@ -560,9 +618,9 @@ const PaymentCard = ({
                 {statusInfo.label}
               </Badge>
             </div>
-            <p className="text-sm text-neutral-500">{methodInfo.label}</p>
+            <p className="text-sm text-slate-500">{methodInfo.label}</p>
             {payment.invoice_id && (
-              <p className="mt-1 text-xs font-semibold text-[#173A63]">
+              <p className="mt-1 text-xs font-bold text-[#4F46E5]">
                 شهر الفاتورة: {formatInvoiceMonthLabel(payment)}
               </p>
             )}
@@ -571,16 +629,16 @@ const PaymentCard = ({
       </div>
 
       {/* Amount Display */}
-      <div className="mb-4 rounded-xl border border-[#DDE5EF] bg-[#FCFDFE] p-4">
+      <div className="mb-4 rounded-xl border border-[#E5EAF1] bg-[#F6F8FB] p-4">
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-xs text-neutral-600 mb-1">المبلغ المدفوع</p>
-            <p className="text-2xl font-bold text-neutral-900">{formatCurrency(payment.amount || 0)}</p>
+            <p className="text-xs text-slate-500 mb-1">المبلغ المدفوع</p>
+            <p className="text-2xl font-black text-[#0F172A]">{formatCurrency(payment.amount || 0)}</p>
           </div>
           {payment.reference_number && (
             <div className="text-left">
-              <p className="text-xs text-neutral-600 mb-1">رقم المرجع</p>
-              <p className="text-sm font-medium text-neutral-900 font-mono">{payment.reference_number}</p>
+              <p className="text-xs text-slate-500 mb-1">رقم المرجع</p>
+              <p className="text-sm font-medium text-[#0F172A] font-mono">{payment.reference_number}</p>
             </div>
           )}
         </div>
@@ -589,11 +647,11 @@ const PaymentCard = ({
       {/* Date & Info */}
       <div className="space-y-2 mb-4">
         <div className="flex items-center justify-between text-sm">
-          <div className="flex items-center gap-2 text-neutral-600">
+          <div className="flex items-center gap-2 text-slate-500">
             <Calendar className="w-4 h-4" />
             <span>تاريخ الدفع</span>
           </div>
-          <span className="font-medium text-neutral-900" dir="ltr">
+          <span className="font-medium text-[#0F172A]" dir="ltr">
             {payment.payment_date
               ? format(new Date(payment.payment_date), 'dd MMM yyyy', { locale: ar })
               : '-'}
@@ -601,27 +659,27 @@ const PaymentCard = ({
         </div>
 
         <div className="flex items-center justify-between text-sm">
-          <span className="text-neutral-600">سجلها</span>
-          <span className="font-medium text-neutral-900">
+          <span className="text-slate-500">سجلها</span>
+          <span className="font-medium text-[#0F172A]">
             {getPaymentCreatorName(payment)}
           </span>
         </div>
 
         {payment.notes && (
-          <div className="flex items-start gap-2 text-sm p-3 bg-slate-50 rounded-lg">
-            <AlertTriangle className="w-4 h-4 text-neutral-500 flex-shrink-0 mt-0.5" />
-            <p className="text-neutral-600 line-clamp-2">{payment.notes}</p>
+          <div className="flex items-start gap-2 text-sm p-3 bg-[#F6F8FB] rounded-lg">
+            <AlertTriangle className="w-4 h-4 text-slate-500 flex-shrink-0 mt-0.5" />
+            <p className="text-slate-500 line-clamp-2">{payment.notes}</p>
           </div>
         )}
       </div>
 
       {/* Actions */}
-      {payment.payment_status === 'completed' && (
+      {payment.payment_status === 'completed' && isCompletedInstallmentPayment(payment) && (
         <Button
           variant="outline"
           size="sm"
           onClick={onCancel}
-          className="w-full gap-2 rounded-xl border-red-200 text-red-600 hover:text-red-700 hover:bg-red-50"
+          className="w-full gap-2 rounded-xl border-[#FB6B7A]/40 text-[#BE123C] hover:text-[#BE123C] hover:bg-[#FFF5F6]"
         >
           <XCircle className="w-4 h-4" />
           إلغاء الدفعة
@@ -648,37 +706,37 @@ const PaymentTableRow = ({
 
   return (
     <tr className={cn(
-      "border-b border-[#E6EDF5] transition-colors hover:bg-[#F7FAFD]",
+      "border-b border-[#E5EAF1] transition-colors hover:bg-[#F6F8FB]",
       payment.payment_status === 'cancelled' && 'opacity-50'
     )}>
       {/* Invoice Number */}
       <td className="py-4 px-4">
         <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#EEF5FB] text-[#173A63]">
+          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#EEF2FF] text-[#4F46E5]">
             <MethodIcon className="h-5 w-5" />
           </div>
           <div className="min-w-[150px] space-y-2">
-            <p className="font-semibold text-neutral-900">{payment.invoice?.invoice_number || '-'}</p>
+            <p className="font-bold text-[#0F172A]">{payment.invoice?.invoice_number || '-'}</p>
             <div className="space-y-1">
-              <p className="text-xs text-neutral-500">{methodInfo.label}</p>
+              <p className="text-xs text-slate-500">{methodInfo.label}</p>
               {payment.invoice_id && (
-                <Badge variant="outline" className="border-[#B8D3EA] bg-[#EEF5FB] text-[#173A63]">
+                <Badge variant="outline" className="border-[#7C83F6]/30 bg-[#EEF2FF] text-[#4F46E5]">
                   شهر الفاتورة: {formatInvoiceMonthLabel(payment)}
                 </Badge>
               )}
             </div>
-            {payment.payment_status === 'completed' ? (
+            {isCompletedInstallmentPayment(payment) ? (
               <Button
                 size="sm"
                 variant="outline"
                 onClick={onCancel}
-                className="h-8 px-3 rounded-lg border-red-200 text-red-600 hover:text-red-700 hover:bg-red-50"
+                className="h-8 px-3 rounded-lg border-[#FB6B7A]/40 text-[#BE123C] hover:text-[#BE123C] hover:bg-[#FFF5F6]"
               >
                 <XCircle className="w-4 h-4 ml-1" />
                 إلغاء الدفعة
               </Button>
             ) : payment.payment_status === 'cancelled' ? (
-              <span className="inline-flex h-8 items-center rounded-lg bg-slate-100 px-3 text-sm text-slate-500">
+              <span className="inline-flex h-8 items-center rounded-lg bg-[#F6F8FB] px-3 text-sm text-slate-500">
                 ملغي
               </span>
             ) : null}
@@ -690,29 +748,29 @@ const PaymentTableRow = ({
       <td className="py-4 px-4">
         {payment.invoice_id ? (
           <div>
-            <p className="text-sm font-bold text-[#173A63]">{formatInvoiceMonthLabel(payment)}</p>
-            <p className="text-xs text-neutral-500" dir="ltr">{formatInvoiceMonthNumeric(payment)}</p>
+            <p className="text-sm font-bold text-[#4F46E5]">{formatInvoiceMonthLabel(payment)}</p>
+            <p className="text-xs text-slate-500" dir="ltr">{formatInvoiceMonthNumeric(payment)}</p>
           </div>
         ) : (
-          <span className="text-neutral-400">-</span>
+          <span className="text-slate-400">-</span>
         )}
       </td>
 
       {/* Payment Date */}
       <td className="py-4 px-4">
-        <p className="text-sm text-neutral-900" dir="ltr">
+        <p className="text-sm text-[#0F172A]" dir="ltr">
           {payment.payment_date
             ? format(new Date(payment.payment_date), 'dd/MM/yyyy', { locale: ar })
             : '-'}
         </p>
         {payment.reference_number && (
-          <p className="text-xs text-neutral-500 font-mono">{payment.reference_number}</p>
+          <p className="text-xs text-slate-500 font-mono">{payment.reference_number}</p>
         )}
       </td>
 
       {/* Due Date */}
       <td className="py-4 px-4">
-        <p className="text-sm text-neutral-900" dir="ltr">
+        <p className="text-sm text-[#0F172A]" dir="ltr">
           {getPaymentDueDate(payment)
             ? format(new Date(getPaymentDueDate(payment) as string), 'dd/MM/yyyy', { locale: ar })
             : '-'}
@@ -721,7 +779,7 @@ const PaymentTableRow = ({
 
       {/* Amount */}
       <td className="py-4 px-4">
-        <p className="font-bold text-neutral-900 text-lg">{formatCurrency(payment.amount || 0)}</p>
+        <p className="font-black text-[#0F172A] text-lg">{formatCurrency(payment.amount || 0)}</p>
       </td>
 
       {/* Status */}
@@ -734,7 +792,7 @@ const PaymentTableRow = ({
 
       {/* Created By */}
       <td className="py-4 px-4">
-        <p className="text-sm font-semibold text-[#142033]">
+        <p className="text-sm font-bold text-[#0F172A]">
           {getPaymentCreatorName(payment)}
         </p>
       </td>
@@ -743,12 +801,12 @@ const PaymentTableRow = ({
       <td className="py-4 px-4">
         {payment.notes ? (
           <div className="max-w-[240px]">
-            <p className="line-clamp-2 text-sm leading-6 text-neutral-600" title={payment.notes}>
+            <p className="line-clamp-2 text-sm leading-6 text-slate-500" title={payment.notes}>
               {payment.notes}
             </p>
           </div>
         ) : (
-          <span className="text-neutral-400">-</span>
+          <span className="text-slate-400">-</span>
         )}
       </td>
     </tr>
@@ -768,20 +826,20 @@ const PaymentBatchTableRow = ({
   const StatusIcon = statusInfo.icon;
   const methodInfo = getPaymentMethodInfo(group.paymentMethod);
   const MethodIcon = methodInfo.icon;
-  const activePayments = group.payments.filter((payment) => payment.payment_status === 'completed');
+  const activePayments = group.payments.filter((payment) => payment.payment_status === 'completed' && isCompletedInstallmentPayment(payment));
 
   return (
-    <tr className="border-b border-[#DDE5EF] bg-[#F8FBFE]">
+    <tr className="border-b border-[#E5EAF1] bg-[#F6F8FB]">
       <td colSpan={8} className="p-4">
-        <div className="rounded-xl border border-[#B8D3EA] bg-white shadow-sm">
-          <div className="grid gap-3 border-b border-[#E6EDF5] bg-[#EEF5FB] p-4 lg:grid-cols-[1fr_auto] lg:items-center">
+        <div className="rounded-2xl border border-[#7C83F6]/30 bg-white shadow-[0_10px_30px_-22px_rgba(15,23,42,0.25)]">
+          <div className="grid gap-3 border-b border-[#E5EAF1] bg-[#EEF2FF] p-4 lg:grid-cols-[1fr_auto] lg:items-center">
             <div className="flex items-start gap-3">
-              <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-white text-[#173A63] shadow-sm">
+              <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-white text-[#4F46E5] shadow-sm">
                 <MethodIcon className="h-5 w-5" />
               </div>
               <div>
                 <div className="flex flex-wrap items-center gap-2">
-                  <h3 className="text-base font-black text-[#142033]">
+                  <h3 className="text-base font-black text-[#0F172A]">
                     دفعة مجمعة غطّت {group.payments.length} فواتير
                   </h3>
                   <Badge className={cn("gap-1.5 border-0", statusInfo.bgColor, statusInfo.textColor)}>
@@ -789,57 +847,57 @@ const PaymentBatchTableRow = ({
                     {statusInfo.label}
                   </Badge>
                 </div>
-                <p className="mt-1 text-sm text-[#5B6B7E]">
+                <p className="mt-1 text-sm text-slate-500">
                   تاريخ الدفع: <span dir="ltr">{group.paymentDate ? format(new Date(group.paymentDate), 'dd/MM/yyyy') : '-'}</span>
                   {' '}· الطريقة: {methodInfo.label}
                 </p>
               </div>
             </div>
 
-            <div className="rounded-lg border border-[#DDE5EF] bg-white px-4 py-3 text-left">
-              <p className="text-xs font-semibold text-[#5B6B7E]">إجمالي الدفعة المجمعة</p>
-              <p className="text-xl font-black text-[#142033]">{formatCurrency(group.totalAmount)}</p>
+            <div className="rounded-lg border border-[#E5EAF1] bg-white px-4 py-3 text-left">
+              <p className="text-xs font-bold text-slate-500">إجمالي الدفعة المجمعة</p>
+              <p className="text-xl font-black text-[#0F172A]">{formatCurrency(group.totalAmount)}</p>
             </div>
           </div>
 
-          <div className="divide-y divide-[#EEF2F6]">
+          <div className="divide-y divide-[#E5EAF1]">
             {group.payments.map((payment) => (
               <div key={payment.id} className="grid gap-3 px-4 py-3 md:grid-cols-[1.3fr_1fr_1fr_1fr_auto] md:items-center">
                 <div>
-                  <p className="font-bold text-[#142033]">{payment.invoice?.invoice_number || '-'}</p>
-                  <p className="mt-1 text-xs text-[#5B6B7E]">
+                  <p className="font-bold text-[#0F172A]">{payment.invoice?.invoice_number || '-'}</p>
+                  <p className="mt-1 text-xs text-slate-500">
                     رقم الدفعة: <span className="font-mono" dir="ltr">{payment.payment_number || '-'}</span>
                   </p>
                 </div>
 
                 <div>
-                  <p className="text-xs font-semibold text-[#8091A5]">شهر الفاتورة</p>
-                  <p className="font-bold text-[#173A63]">{formatInvoiceMonthLabel(payment)}</p>
-                  <p className="text-xs text-[#8091A5]" dir="ltr">{formatInvoiceMonthNumeric(payment)}</p>
+                  <p className="text-xs font-bold text-slate-400">شهر الفاتورة</p>
+                  <p className="font-bold text-[#4F46E5]">{formatInvoiceMonthLabel(payment)}</p>
+                  <p className="text-xs text-slate-400" dir="ltr">{formatInvoiceMonthNumeric(payment)}</p>
                 </div>
 
                 <div>
-                  <p className="text-xs font-semibold text-[#8091A5]">تاريخ الاستحقاق</p>
-                  <p className="text-sm font-semibold text-[#142033]" dir="ltr">
+                  <p className="text-xs font-bold text-slate-400">تاريخ الاستحقاق</p>
+                  <p className="text-sm font-bold text-[#0F172A]" dir="ltr">
                     {getPaymentDueDate(payment) ? format(new Date(getPaymentDueDate(payment) as string), 'dd/MM/yyyy') : '-'}
                   </p>
                 </div>
 
                 <div>
-                  <p className="text-xs font-semibold text-[#8091A5]">سجلها</p>
-                  <p className="text-sm font-semibold text-[#142033]">
+                  <p className="text-xs font-bold text-slate-400">سجلها</p>
+                  <p className="text-sm font-bold text-[#0F172A]">
                     {getPaymentCreatorName(payment)}
                   </p>
                 </div>
 
                 <div className="flex items-center justify-between gap-3 md:justify-end">
-                  <p className="text-base font-black text-[#142033]">{formatCurrency(payment.amount || 0)}</p>
-                  {payment.payment_status === 'completed' && (
+                  <p className="text-base font-black text-[#0F172A]">{formatCurrency(payment.amount || 0)}</p>
+                  {payment.payment_status === 'completed' && isCompletedInstallmentPayment(payment) && (
                     <Button
                       size="sm"
                       variant="outline"
                       onClick={() => onCancelPayment(payment)}
-                      className="h-8 rounded-lg border-red-200 px-3 text-red-600 hover:bg-red-50 hover:text-red-700"
+                      className="h-8 rounded-lg border-[#FB6B7A]/40 px-3 text-[#BE123C] hover:bg-[#FFF5F6] hover:text-[#BE123C]"
                     >
                       <XCircle className="ml-1 h-4 w-4" />
                       إلغاء
@@ -851,13 +909,250 @@ const PaymentBatchTableRow = ({
           </div>
 
           {activePayments.length > 1 && (
-            <div className="border-t border-[#E6EDF5] bg-[#FCFDFE] px-4 py-2 text-xs leading-6 text-[#5B6B7E]">
+            <div className="border-t border-[#E5EAF1] bg-[#F6F8FB] px-4 py-2 text-xs leading-6 text-slate-500">
               لإلغاء العملية كاملة يجب إلغاء كل دفعة مرتبطة بالفواتير أعلاه، لأن كل فاتورة لها قيد دفع مستقل.
             </div>
           )}
         </div>
       </td>
     </tr>
+  );
+};
+
+const getInstallmentStatusInfo = (group: InstallmentLedgerGroup) => {
+  const statusMap: Record<InstallmentLedgerStatus, { label: string; className: string }> = {
+    paid: { label: 'مسدد', className: 'border-emerald-200 bg-emerald-50 text-emerald-700' },
+    partial: {
+      label: group.isOverdue ? 'جزئي متأخر' : 'مسدد جزئياً',
+      className: group.isOverdue
+        ? 'border-rose-200 bg-rose-50 text-rose-700'
+        : 'border-amber-200 bg-amber-50 text-amber-700',
+    },
+    overdue: { label: 'متأخر', className: 'border-rose-200 bg-rose-50 text-rose-700' },
+    unpaid: { label: 'غير مسدد', className: 'border-slate-200 bg-slate-50 text-slate-600' },
+    cancelled: { label: 'ملغي', className: 'border-slate-200 bg-slate-100 text-slate-500' },
+    review: { label: 'تعارض يحتاج مراجعة', className: 'border-amber-200 bg-amber-50 text-amber-700' },
+  };
+  return statusMap[group.status];
+};
+
+const InstallmentReceiptRow = ({
+  contribution,
+  formatCurrency,
+  onCancel,
+}: {
+  contribution: InstallmentContribution;
+  formatCurrency: (amount: number) => string;
+  onCancel: (paymentId: string) => void;
+}) => {
+  const { payment } = contribution;
+  const methodInfo = getPaymentMethodInfo(payment.payment_method);
+  const isCompleted = isCompletedInstallmentPayment(payment);
+  const isEffective = contribution.isActive && isCompleted;
+
+  return (
+    <div className={cn(
+      'grid gap-3 px-4 py-3 md:grid-cols-[1.3fr_1fr_1fr_1fr_auto] md:items-center',
+      !isEffective && 'bg-slate-50/80 opacity-65',
+    )}>
+      <div className="min-w-0">
+        <div className="flex flex-wrap items-center gap-2">
+          <p className="truncate font-mono text-sm font-black text-[#0F172A]" dir="ltr">
+            {payment.payment_number || payment.reference_number || 'إيصال بدون رقم'}
+          </p>
+          {!contribution.isActive && (
+            <Badge variant="outline" className="border-slate-200 bg-slate-100 text-slate-500">تخصيص ملغي</Badge>
+          )}
+          {payment.payment_status === 'cancelled' && (
+            <Badge variant="outline" className="border-rose-200 bg-rose-50 text-rose-600">دفعة ملغاة</Badge>
+          )}
+        </div>
+        {payment.reference_number && payment.reference_number !== payment.payment_number && (
+          <p className="mt-1 truncate font-mono text-xs text-slate-400" dir="ltr">{payment.reference_number}</p>
+        )}
+      </div>
+
+      <div>
+        <p className="text-[11px] font-bold text-slate-400">تاريخ الدفع</p>
+        <p className="text-sm font-bold text-[#0F172A]" dir="ltr">
+          {payment.payment_date ? format(new Date(payment.payment_date), 'dd/MM/yyyy') : '-'}
+        </p>
+      </div>
+
+      <div>
+        <p className="text-[11px] font-bold text-slate-400">طريقة الدفع</p>
+        <p className="text-sm font-bold text-[#0F172A]">{methodInfo.label}</p>
+      </div>
+
+      <div>
+        <p className="text-[11px] font-bold text-slate-400">سجلها</p>
+        <p className="truncate text-sm font-bold text-[#0F172A]">
+          {payment.created_by_name || 'غير محدد'}
+        </p>
+      </div>
+
+      <div className="flex items-center justify-between gap-3 md:justify-end">
+        <div className="text-left">
+          <p className="text-[11px] font-bold text-slate-400">من هذا القسط</p>
+          <p className="whitespace-nowrap text-base font-black text-[#0F172A]">
+            {formatCurrency(contribution.amount)}
+          </p>
+        </div>
+        {isEffective && (
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            onClick={() => onCancel(payment.id)}
+            className="h-8 rounded-lg border-[#FB6B7A]/40 px-3 text-[#BE123C] hover:bg-[#FFF5F6] hover:text-[#BE123C]"
+          >
+            <XCircle className="ml-1 h-4 w-4" />
+            إلغاء
+          </Button>
+        )}
+      </div>
+    </div>
+  );
+};
+
+const InstallmentLedgerCard = ({
+  group,
+  formatCurrency,
+  onCancelPayment,
+}: {
+  group: InstallmentLedgerGroup;
+  formatCurrency: (amount: number) => string;
+  onCancelPayment: (paymentId: string) => void;
+}) => {
+  const [isOpen, setIsOpen] = useState(group.status === 'partial' || group.status === 'overdue');
+  const statusInfo = getInstallmentStatusInfo(group);
+  const progressValue = group.totalAmount > 0
+    ? Math.max(0, Math.min(group.remainingAmount > 0 ? 99 : 100,
+      Math.floor(((group.totalAmount - group.remainingAmount) / group.totalAmount) * 100)))
+    : 0;
+  const activeContributions = group.contributions.filter(
+    (item) => item.isActive && isCompletedInstallmentPayment(item.payment),
+  );
+
+  return (
+    <Collapsible open={isOpen} onOpenChange={setIsOpen}>
+      <div className={cn(
+        'overflow-hidden rounded-2xl border bg-white shadow-[0_14px_40px_-30px_rgba(15,23,42,0.45)] transition-colors',
+        group.isOverdue ? 'border-rose-200' : 'border-[#E5EAF1]',
+      )}>
+        <CollapsibleTrigger asChild>
+          <button type="button" className="w-full p-0 text-right focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400">
+            <div className="grid gap-4 p-4 lg:grid-cols-[1.3fr_1.7fr_auto] lg:items-center">
+              <div className="flex min-w-0 items-start gap-3">
+                <div className={cn(
+                  'flex h-11 w-11 shrink-0 items-center justify-center rounded-xl',
+                  group.status === 'paid' ? 'bg-emerald-50 text-emerald-700' : 'bg-[#EEF2FF] text-[#4F46E5]',
+                )}>
+                  {group.category === 'rent' ? <Calendar className="h-5 w-5" /> : <ReceiptText className="h-5 w-5" />}
+                </div>
+                <div className="min-w-0">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <h3 className="text-base font-black text-[#0F172A]">{group.label}</h3>
+                    <Badge variant="outline" className={statusInfo.className}>{statusInfo.label}</Badge>
+                    {group.invoices.length > 1 && (
+                      <Badge variant="outline" className="border-violet-200 bg-violet-50 text-violet-700">
+                        {group.invoices.length} فواتير مجمعة
+                      </Badge>
+                    )}
+                  </div>
+                  <p className="mt-1 truncate font-mono text-xs text-slate-400" dir="ltr">
+                    {group.invoices.map((invoice) => invoice.invoice_number).join(' · ')}
+                  </p>
+                  <p className="mt-2 text-xs font-bold text-slate-500">
+                    {group.receiptCount > 0
+                      ? `${group.receiptCount} إيصال${group.latestPaymentDate ? ` · آخر سداد ${format(new Date(group.latestPaymentDate), 'dd/MM/yyyy')}` : ''}`
+                      : 'لا توجد إيصالات مسددة'}
+                  </p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-3 gap-2 rounded-xl border border-[#E5EAF1] bg-[#F8FAFC] p-3">
+                <div>
+                  <p className="text-[11px] font-bold text-slate-400">قيمة القسط</p>
+                  <p className="mt-1 whitespace-nowrap text-sm font-black text-[#0F172A]">{formatCurrency(group.totalAmount)}</p>
+                </div>
+                <div>
+                  <p className="text-[11px] font-bold text-slate-400">المسدد</p>
+                  <p className="mt-1 whitespace-nowrap text-sm font-black text-emerald-700">{formatCurrency(group.paidAmount)}</p>
+                </div>
+                <div>
+                  <p className="text-[11px] font-bold text-slate-400">المتبقي</p>
+                  <p className={cn(
+                    'mt-1 whitespace-nowrap text-sm font-black',
+                    group.remainingAmount > 0 ? 'text-rose-700' : 'text-slate-500',
+                  )}>
+                    {formatCurrency(group.remainingAmount)}
+                  </p>
+                </div>
+                <div className="col-span-3 flex items-center gap-3 pt-1">
+                  <Progress value={progressValue} className="h-2 flex-1" />
+                  <span className="w-10 text-left text-xs font-black text-slate-500" dir="ltr">{progressValue}%</span>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between gap-3 lg:justify-end">
+                <div className="text-left">
+                  <p className="text-[11px] font-bold text-slate-400">الاستحقاق</p>
+                  <p className="whitespace-nowrap text-sm font-black text-[#0F172A]" dir="ltr">
+                    {group.dueDate ? format(new Date(group.dueDate), 'dd/MM/yyyy') : '-'}
+                  </p>
+                </div>
+                <ChevronDown className={cn('h-5 w-5 text-slate-400 transition-transform', isOpen && 'rotate-180')} />
+              </div>
+            </div>
+          </button>
+        </CollapsibleTrigger>
+
+        {group.status === 'review' && (
+          <p role="alert" className="border-t border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+            رصيد الفاتورة المخزن لا يطابق تفاصيل الدفعات. المبالغ المعروضة محسوبة من التخصيصات والإيصالات، وتحتاج المطابقة قبل اعتمادها للمطالبة.
+          </p>
+        )}
+        <CollapsibleContent>
+          <div className="border-t border-[#E5EAF1] bg-[#FBFCFE]">
+            <div className="flex flex-col gap-2 border-b border-[#E5EAF1] px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <p className="text-sm font-black text-[#0F172A]">تفاصيل التحصيل لهذا القسط</p>
+                <p className="text-xs text-slate-500">كل سطر يوضح مقدار ما خصّصه الإيصال لهذا الشهر تحديداً.</p>
+              </div>
+              {group.untracedPaidAmount > 0.01 && (
+                <Badge variant="outline" className="w-fit border-amber-200 bg-amber-50 text-amber-700">
+                  فرق غير مثبت بإيصال: {formatCurrency(group.untracedPaidAmount)}
+                </Badge>
+              )}
+            </div>
+
+            {group.contributions.length > 0 ? (
+              <div className="divide-y divide-[#E5EAF1]">
+                {group.contributions.map((contribution) => (
+                  <InstallmentReceiptRow
+                    key={contribution.id}
+                    contribution={contribution}
+                    formatCurrency={formatCurrency}
+                    onCancel={onCancelPayment}
+                  />
+                ))}
+              </div>
+            ) : (
+              <div className="px-4 py-6 text-center text-sm text-slate-500">
+                لا توجد تفاصيل إيصالات مرتبطة بهذا القسط.
+              </div>
+            )}
+
+            {activeContributions.length > 1 && (
+              <div className="border-t border-[#E5EAF1] bg-white px-4 py-2 text-xs leading-6 text-slate-500">
+                هذا القسط سُدد عبر {activeContributions.length} تخصيصات في تواريخ مختلفة، وقد جُمعت هنا دون دمج سجلات الإيصالات الأصلية.
+              </div>
+            )}
+          </div>
+        </CollapsibleContent>
+      </div>
+    </Collapsible>
   );
 };
 
@@ -881,22 +1176,22 @@ const PaymentFilters = ({
   sortOption: string;
   onSortChange: (value: string) => void;
 }) => (
-  <div className="flex flex-col gap-3 rounded-xl border border-[#DDE5EF] bg-[#FCFDFE] p-4 lg:flex-row lg:items-center lg:justify-between">
+  <div className="flex flex-col gap-3 rounded-2xl border border-[#E5EAF1] bg-white p-4 shadow-[0_10px_30px_-22px_rgba(15,23,42,0.25)] lg:flex-row lg:items-center lg:justify-between">
     <div className="flex items-center gap-3 flex-1 w-full lg:w-auto">
       <div className="relative flex-1 max-w-md">
-        <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
+        <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
         <Input
-          placeholder="بحث في الدفعات..."
+          placeholder="بحث في الأقساط أو الإيصالات..."
           value={searchQuery}
           onChange={(e) => onSearchChange(e.target.value)}
-          className="rounded-xl border-[#D8E1EC] bg-white pr-10"
+          className="rounded-xl border-[#E5EAF1] bg-white pr-10"
         />
       </div>
     </div>
 
     <div className="flex items-center gap-3 w-full lg:w-auto flex-wrap">
       <Select value={statusFilter} onValueChange={onStatusFilterChange}>
-        <SelectTrigger className="w-full rounded-xl border-[#D8E1EC] bg-white lg:w-[140px]">
+        <SelectTrigger className="w-full rounded-xl border-[#E5EAF1] bg-white lg:w-[140px]">
           <SelectValue placeholder="الحالة" />
         </SelectTrigger>
         <SelectContent>
@@ -909,7 +1204,7 @@ const PaymentFilters = ({
       </Select>
 
       <Select value={methodFilter} onValueChange={onMethodFilterChange}>
-        <SelectTrigger className="w-full rounded-xl border-[#D8E1EC] bg-white lg:w-[140px]">
+        <SelectTrigger className="w-full rounded-xl border-[#E5EAF1] bg-white lg:w-[140px]">
           <SelectValue placeholder="طريقة الدفع" />
         </SelectTrigger>
         <SelectContent>
@@ -917,13 +1212,13 @@ const PaymentFilters = ({
           <SelectItem value="cash">نقدي</SelectItem>
           <SelectItem value="bank_transfer">تحويل بنكي</SelectItem>
           <SelectItem value="credit_card">بطاقة ائتمان</SelectItem>
-          <SelectItem value="cheque">شيك</SelectItem>
+          <SelectItem value="check">شيك</SelectItem>
           <SelectItem value="received">مستلم</SelectItem>
         </SelectContent>
       </Select>
 
       <Select value={sortOption} onValueChange={onSortChange}>
-        <SelectTrigger className="w-full rounded-xl border-[#D8E1EC] bg-white lg:w-[140px]">
+        <SelectTrigger className="w-full rounded-xl border-[#E5EAF1] bg-white lg:w-[140px]">
           <SelectValue placeholder="الترتيب" />
         </SelectTrigger>
         <SelectContent>
@@ -944,12 +1239,12 @@ const PaymentsEmptyState = () => (
       initial={{ scale: 0.9, opacity: 0 }}
       animate={{ scale: 1, opacity: 1 }}
       transition={{ duration: 0.3 }}
-      className="mx-auto mb-6 flex h-24 w-24 items-center justify-center rounded-xl bg-[#EEF5FB]"
+      className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-[#EEF2FF]"
     >
-      <Wallet className="h-12 w-12 text-[#173A63]" />
+      <Wallet className="h-8 w-8 text-[#4F46E5]" />
     </motion.div>
-    <h3 className="text-xl font-bold text-neutral-900 mb-2">لا توجد دفعات</h3>
-    <p className="text-neutral-500 max-w-md mx-auto">
+    <h3 className="text-xl font-black text-[#0F172A] mb-2">لا توجد دفعات</h3>
+    <p className="text-slate-500 max-w-md mx-auto">
       لم يتم تسجيل أي دفعات لهذا العقد بعد. ستظهر الدفعات هنا بمجرد إضافتها.
     </p>
   </div>
@@ -959,8 +1254,9 @@ const PaymentsEmptyState = () => (
 export const ContractPaymentsTabRedesigned = ({
   contractId,
   companyId,
+  customerId,
   invoiceIds,
-  contractStartDate,
+  invoices,
   formatCurrency,
   contractNumber,
   customerInfo,
@@ -977,97 +1273,67 @@ export const ContractPaymentsTabRedesigned = ({
   const [methodFilter, setMethodFilter] = useState('all');
   const [sortOption, setSortOption] = useState('date-asc');
   const [viewMode, setViewMode] = useState<'grid' | 'table'>('table');
+  const [ledgerView, setLedgerView] = useState<'installments' | 'receipts'>('installments');
 
-  // Fetch payments with caching for better performance
-  const { data: payments = [], isLoading } = useQuery({
-    queryKey: ['contract-payments', contractId, showAllPayments, invoiceIds.join(','), contractStartDate || null],
+  const { data: evidence, isLoading, error: paymentsError, refetch: refetchPayments } = useQuery(
+    contractPaymentEvidenceQueryOptions({ companyId, contractId, customerId, invoiceIds }),
+  );
+  const creatorIds = useMemo(() => [...new Set((evidence?.payments || [])
+    .map((payment) => payment.created_by).filter((id): id is string => Boolean(id)))].sort(), [evidence]);
+  // Names are optional presentation data, never a prerequisite for financial evidence.
+  const { data: creators, error: creatorsError } = useQuery({
+    queryKey: ['contract-payment-creators', contractId, companyId, creatorIds],
+    enabled: Boolean(companyId && creatorIds.length),
+    staleTime: 30000,
     queryFn: async () => {
-      let query = supabase
-        .from('payments')
-        .select(`
-          id,
-          amount,
-          payment_date,
-          payment_status,
-          payment_method,
-          payment_number,
-          reference_number,
-          notes,
-          created_by,
-          created_at,
-          invoice_id,
-          contract_id,
-          invoice:invoices!invoice_id(invoice_number, invoice_month, invoice_date, due_date)
-        `)
-        .eq('company_id', companyId);
-
-      if (showAllPayments) {
-        if (invoiceIds.length) {
-          query = query.or(`contract_id.eq.${contractId},invoice_id.in.(${invoiceIds.join(',')})`);
-        } else {
-          query = query.eq('contract_id', contractId);
-        }
-      } else {
-        if (!invoiceIds.length) return [];
-        query = query.in('invoice_id', invoiceIds);
-      }
-
-      if (contractStartDate) {
-        query = query.gte('payment_date', contractStartDate);
-      }
-
-      query = query.order('payment_date', { ascending: false });
-
-      const { data, error } = await query;
-
-      if (error) throw error;
-      const rawPayments = (data || []) as Payment[];
-      const creatorIds = Array.from(new Set(
-        rawPayments
-          .map((payment) => payment.created_by)
-          .filter((value): value is string => Boolean(value))
-      ));
-
-      if (creatorIds.length === 0) return rawPayments;
-
       const profilesById = new Map<string, PaymentCreatorProfile>();
-
-      const { data: profilesByUserId } = await supabase
-        .from('profiles')
-        .select('id,user_id,first_name,last_name,first_name_ar,last_name_ar,email')
-        .in('user_id', creatorIds);
-
-      (profilesByUserId || []).forEach((profile) => {
-        if (profile.user_id) profilesById.set(profile.user_id, profile as PaymentCreatorProfile);
-      });
-
-      const missingCreatorIds = creatorIds.filter((id) => !profilesById.has(id));
-      if (missingCreatorIds.length > 0) {
-        const { data: profilesByProfileId } = await supabase
-          .from('profiles')
-          .select('id,user_id,first_name,last_name,first_name_ar,last_name_ar,email')
-          .in('id', missingCreatorIds);
-
-        (profilesByProfileId || []).forEach((profile) => {
-          profilesById.set(profile.id, profile as PaymentCreatorProfile);
-        });
-      }
-
-      return rawPayments.map((payment) => ({
-        ...payment,
-        created_by_name: formatProfileName(
-          payment.created_by ? profilesById.get(payment.created_by) : null
-        ),
-      }));
+      const read = async (field: 'user_id' | 'id', ids: string[]) => {
+        for (let offset = 0; offset < ids.length; offset += 100) {
+          const rows = await readContractPaymentPages<PaymentCreatorProfile>((afterId) => {
+            let query = supabase.from('profiles')
+              .select('id,user_id,first_name,last_name,first_name_ar,last_name_ar,email')
+              .eq('company_id', companyId).in(field, ids.slice(offset, offset + 100))
+              .order('id', { ascending: true }).limit(200);
+            if (afterId) query = query.gt('id', afterId);
+            return query;
+          });
+          for (const profile of rows) {
+            const key = field === 'id' ? profile.id : profile.user_id;
+            if (key) profilesById.set(key, profile);
+          }
+        }
+      };
+      await read('user_id', creatorIds);
+      await read('id', creatorIds.filter((id) => !profilesById.has(id)));
+      return Object.fromEntries(profilesById);
     },
-    enabled: showAllPayments || invoiceIds.length > 0,
-    staleTime: 30000, // Cache for 30 seconds
-    gcTime: 300000, // Keep in cache for 5 minutes
   });
+  const payments: Payment[] = useMemo(() => {
+    const invoiceById = new Map(invoices.map((invoice) => [invoice.id, invoice]));
+    return (evidence?.payments || []).map((payment) => {
+      const invoice = payment.invoice_id ? invoiceById.get(payment.invoice_id) : undefined;
+      return {
+        ...payment,
+        invoice: invoice ? { ...invoice, due_date: invoice.due_date || null } : undefined,
+        created_by_name: creatorsError ? null : formatProfileName(payment.created_by ? creators?.[payment.created_by] : null),
+      };
+    });
+  }, [evidence, invoices, creators, creatorsError]);
+  const allocationsForLedger = evidence?.allocations;
+  const installmentLedger = useMemo(
+    () => buildContractInstallmentLedger({ invoices, payments, allocations: allocationsForLedger || [] }),
+    [allocationsForLedger, invoices, payments],
+  );
+  const invoiceLinkedPaymentIds = useMemo(() => new Set([
+    ...payments.filter((payment) => payment.invoice_id && invoiceIds.includes(payment.invoice_id)).map((payment) => payment.id),
+    ...(allocationsForLedger || []).filter((allocation) => allocation.allocation_type === 'invoice'
+      && invoiceIds.includes(allocation.target_id)).map((allocation) => allocation.payment_id),
+  ]), [payments, invoiceIds, allocationsForLedger]);
 
   // Filter and sort payments
   const filteredAndSortedPayments = useMemo(() => {
     let filtered = [...payments];
+    if (!showAllPayments) filtered = filtered.filter((payment) => invoiceLinkedPaymentIds.has(payment.id));
 
     // Apply search filter
     if (searchQuery) {
@@ -1084,7 +1350,7 @@ export const ContractPaymentsTabRedesigned = ({
     if (statusFilter === 'all') {
       filtered = filtered.filter(p => p.payment_status !== 'cancelled');
     } else {
-      filtered = filtered.filter(p => p.payment_status === statusFilter);
+      filtered = filtered.filter(p => statusFilter === 'completed' ? isCompletedInstallmentPayment(p) : p.payment_status === statusFilter);
     }
 
     // Apply method filter
@@ -1115,12 +1381,83 @@ export const ContractPaymentsTabRedesigned = ({
     });
 
     return filtered;
-  }, [payments, searchQuery, statusFilter, methodFilter, sortOption]);
+  }, [payments, searchQuery, statusFilter, methodFilter, sortOption, showAllPayments, invoiceLinkedPaymentIds]);
 
   const paymentDisplayGroups = useMemo(
     () => buildPaymentDisplayGroups(filteredAndSortedPayments),
     [filteredAndSortedPayments]
   );
+
+  const filteredInstallmentLedger = useMemo(() => {
+    const filterAndSortGroups = (groups: InstallmentLedgerGroup[]) => {
+      const normalizedSearch = searchQuery.trim().toLowerCase();
+      const filtered = groups.filter((group) => {
+        const matchesSearch = !normalizedSearch || [
+          group.label,
+          ...group.invoices.map((invoice) => invoice.invoice_number),
+          ...group.contributions.flatMap((contribution) => [
+            contribution.payment.payment_number || '',
+            contribution.payment.reference_number || '',
+            contribution.payment.notes || '',
+          ]),
+        ].some((value) => value.toLowerCase().includes(normalizedSearch));
+
+        const matchesStatus = statusFilter === 'all'
+          ? group.status !== 'cancelled'
+          : statusFilter === 'completed'
+            ? group.status === 'paid'
+            : statusFilter === 'pending'
+              ? ['partial', 'overdue', 'unpaid'].includes(group.status)
+              : statusFilter === 'cancelled'
+                ? group.status === 'cancelled'
+                : group.contributions.some(
+                  (contribution) => contribution.payment.payment_status === statusFilter,
+                );
+        const matchesMethod = methodFilter === 'all' || group.contributions.some(
+          (contribution) => contribution.payment.payment_method === methodFilter,
+        );
+        return matchesSearch && matchesStatus && matchesMethod;
+      });
+
+      return filtered.sort((left, right) => {
+        const leftDate = left.dueDate || left.monthKey || '9999-12-31';
+        const rightDate = right.dueDate || right.monthKey || '9999-12-31';
+        switch (sortOption) {
+          case 'date-desc':
+            return rightDate.localeCompare(leftDate);
+          case 'date-asc':
+            return leftDate.localeCompare(rightDate);
+          case 'amount-desc':
+            return right.totalAmount - left.totalAmount;
+          case 'amount-asc':
+            return left.totalAmount - right.totalAmount;
+          default:
+            return 0;
+        }
+      });
+    };
+
+    const normalizedSearch = searchQuery.trim().toLowerCase();
+    const unmatchedPayments = installmentLedger.unmatchedPayments.filter((payment) => {
+      const matchesSearch = !normalizedSearch || [
+        payment.payment_number || '',
+        payment.reference_number || '',
+        payment.notes || '',
+      ].some((value) => value.toLowerCase().includes(normalizedSearch));
+      const matchesStatus = statusFilter === 'all' || statusFilter === 'completed';
+      const matchesMethod = methodFilter === 'all' || payment.payment_method === methodFilter;
+      return matchesSearch && matchesStatus && matchesMethod;
+    });
+
+    return {
+      rentGroups: filterAndSortGroups(installmentLedger.rentGroups),
+      chargeGroups: filterAndSortGroups(installmentLedger.chargeGroups),
+      unmatchedPayments,
+    };
+  }, [installmentLedger, methodFilter, searchQuery, sortOption, statusFilter]);
+
+  const visibleInstallmentCount = filteredInstallmentLedger.rentGroups.length
+    + filteredInstallmentLedger.chargeGroups.length;
 
   const handleCancelClick = (payment: Payment) => {
     setSelectedPayment(payment);
@@ -1128,7 +1465,15 @@ export const ContractPaymentsTabRedesigned = ({
     setIsCancelDialogOpen(true);
   };
 
-  const confirmCancel = () => {
+  const handleCancelByPaymentId = (paymentId: string) => {
+    const payment = payments.find((item) => item.id === paymentId);
+    if (payment) handleCancelClick(payment);
+  };
+
+  const confirmCancel = (event?: React.MouseEvent) => {
+    // Keep the Radix dialog open while the mutation runs so the typed reason
+    // is not lost when the backend rejects the cancellation.
+    event?.preventDefault();
     if (selectedPayment) {
       cancelPayment.mutate(
         {
@@ -1161,6 +1506,17 @@ export const ContractPaymentsTabRedesigned = ({
     }
   };
 
+  if (paymentsError || !companyId || !contractId || !customerId) {
+    return (
+      <Card><CardContent className="py-8 text-center" role="alert">
+        <p>تعذر تحميل الدفعات والتخصيصات كاملة. لم تُحسب الأرصدة من بيانات ناقصة.</p>
+        <Button variant="outline" className="mt-4" onClick={() => {
+          void refetchPayments();
+        }}>إعادة تحميل البيانات</Button>
+      </CardContent></Card>
+    );
+  }
+
   if (isLoading) {
     return (
       <Card>
@@ -1181,22 +1537,54 @@ export const ContractPaymentsTabRedesigned = ({
         <PaymentMetrics payments={payments} formatCurrency={formatCurrency} />
 
         {/* Header & Actions */}
-        <div className="flex flex-col gap-3 rounded-xl border border-[#DDE5EF] bg-[#FCFDFE] p-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-col gap-3 rounded-2xl border border-[#E5EAF1] bg-white p-4 shadow-[0_10px_30px_-22px_rgba(15,23,42,0.25)] sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h2 className="mb-1 text-xl font-black text-[#142033]">سجل الدفعات</h2>
-            <p className="text-neutral-500 text-sm">{payments.length} دفعة مسجلة</p>
+            <h2 className="mb-1 text-xl font-black text-[#0F172A]">دفتر تحصيل العقد</h2>
+            <p className="text-slate-500 text-sm">
+              {ledgerView === 'installments'
+                ? `${installmentLedger.rentGroups.length} قسط إيجار · ${payments.length} إيصال مسجل`
+                : `${payments.length} دفعة مسجلة`}
+            </p>
           </div>
 
-          <div className="flex items-center gap-3">
-            {payments.filter(p => !p.invoice_id).length > 0 && (
-              <Badge variant="outline" className="text-amber-600 border-amber-300 bg-amber-50">
-                {payments.filter(p => !p.invoice_id).length} غير مرتبطة
+          <div className="flex flex-wrap items-center gap-3">
+            {installmentLedger.unmatchedPayments.length > 0 && (
+              <Badge variant="outline" className="text-[#B45309] border-[#F59E0B]/40 bg-[#FFFBEB]">
+                {installmentLedger.unmatchedPayments.length} تحتاج تحديد القسط
               </Badge>
             )}
+            <div className="flex items-center rounded-xl border border-[#E5EAF1] bg-[#F6F8FB] p-1">
+              <Button
+                type="button"
+                size="sm"
+                variant="ghost"
+                onClick={() => setLedgerView('installments')}
+                className={cn(
+                  'h-8 gap-2 rounded-lg px-3 text-xs',
+                  ledgerView === 'installments' && 'bg-white font-black text-[#0E9E7E] shadow-sm hover:bg-white',
+                )}
+              >
+                <ListTree className="h-4 w-4" />
+                حسب الأقساط
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                variant="ghost"
+                onClick={() => setLedgerView('receipts')}
+                className={cn(
+                  'h-8 gap-2 rounded-lg px-3 text-xs',
+                  ledgerView === 'receipts' && 'bg-white font-black text-[#4F46E5] shadow-sm hover:bg-white',
+                )}
+              >
+                <Rows3 className="h-4 w-4" />
+                سجل الإيصالات
+              </Button>
+            </div>
             <Button
               variant="outline"
               onClick={() => {
-                const completedPayments = payments.filter(p => p.payment_status === 'completed');
+                const completedPayments = payments.filter(isCompletedInstallmentPayment);
                 if (completedPayments.length === 0) {
                   alert('لا توجد دفعات مكتملة للطباعة');
                   return;
@@ -1570,7 +1958,7 @@ export const ContractPaymentsTabRedesigned = ({
                               cash: { label: 'نقدي', cssClass: 'method-cash' },
                               bank_transfer: { label: 'تحويل بنكي', cssClass: 'method-bank' },
                               credit_card: { label: 'بطاقة ائتمان', cssClass: 'method-card' },
-                              cheque: { label: 'شيك', cssClass: 'method-cheque' },
+                              check: { label: 'شيك', cssClass: 'method-cheque' },
                             };
                             const method = methodLabels[payment.payment_method] || { label: payment.payment_method || '-', cssClass: '' };
                             const paymentDate = payment.payment_date ? new Date(payment.payment_date).toLocaleDateString('en-GB') : '-';
@@ -1599,7 +1987,8 @@ export const ContractPaymentsTabRedesigned = ({
                       
                       <!-- الإجمالي الكلي -->
                       <div class="grand-total">
-                        <div class="label">إجمالي المبالغ المدفوعة</div>
+                        <div class="label">إجمالي مبالغ الإيصالات الأصلية</div>
+                        <div>قد تشمل الإيصالات رسومًا أو تخصيصات خارج هذا العقد؛ لا يمثل مجموعها وحده المسدد من قيمة العقد.</div>
                         <div class="amount">${formatCurrency(totalPaid)}</div>
                         <div style="font-size: 12px; color: #666; margin-top: 10px;">
                           (${completedPayments.length} دفعة مسجلة)
@@ -1643,6 +2032,12 @@ export const ContractPaymentsTabRedesigned = ({
                 if (printWindow) {
                   printWindow.document.write(printContent);
                   printWindow.document.close();
+                } else {
+                  toast({
+                    title: 'منع المتصفح نافذة الطباعة',
+                    description: 'اسمح بالنوافذ المنبثقة لهذا الموقع ثم أعد المحاولة.',
+                    variant: 'destructive',
+                  });
                 }
               }}
               className="gap-2 rounded-xl"
@@ -1650,7 +2045,7 @@ export const ContractPaymentsTabRedesigned = ({
               <Printer className="w-4 h-4" />
               طباعة الدفعات
             </Button>
-            <div className="flex items-center gap-2 rounded-xl border border-[#DDE5EF] bg-white px-3 py-2">
+            <div className="flex items-center gap-2 rounded-xl border border-[#E5EAF1] bg-white px-3 py-2">
               <Label htmlFor="show-all-payments" className="text-sm cursor-pointer whitespace-nowrap">
                 عرض الكل
               </Label>
@@ -1664,8 +2059,8 @@ export const ContractPaymentsTabRedesigned = ({
         </div>
 
         {/* Empty State */}
-        {payments.length === 0 ? (
-          <Card className="rounded-xl border-[#DDE5EF] shadow-sm">
+        {payments.length === 0 && invoices.length === 0 ? (
+          <Card className="rounded-2xl border-[#E5EAF1] shadow-[0_10px_30px_-22px_rgba(15,23,42,0.25)]">
             <CardContent className="p-6">
               <PaymentsEmptyState />
             </CardContent>
@@ -1686,18 +2081,120 @@ export const ContractPaymentsTabRedesigned = ({
 
             {/* View Mode Toggle & Results Count */}
             <div className="flex items-center justify-between">
-              <p className="text-sm text-neutral-500">
-                عرض {filteredAndSortedPayments.length} دفعة ضمن {paymentDisplayGroups.length} عملية
+              <p className="text-sm text-slate-500">
+                {ledgerView === 'installments'
+                  ? `عرض ${visibleInstallmentCount} مجموعة تحصيل حسب قسط الشهر`
+                  : `عرض ${filteredAndSortedPayments.length} دفعة ضمن ${paymentDisplayGroups.length} عملية`}
               </p>
             </div>
 
             {/* Payments Display */}
-            {filteredAndSortedPayments.length === 0 ? (
-              <Card className="rounded-xl border-[#DDE5EF] shadow-sm">
+            {ledgerView === 'installments' ? (
+              visibleInstallmentCount === 0 && filteredInstallmentLedger.unmatchedPayments.length === 0 ? (
+                <Card className="rounded-2xl border-[#E5EAF1] shadow-[0_10px_30px_-22px_rgba(15,23,42,0.25)]">
+                  <CardContent className="p-12 text-center">
+                    <Search className="w-12 h-12 text-slate-300 mx-auto mb-4" />
+                    <h3 className="text-lg font-black text-[#0F172A] mb-2">لا توجد نتائج</h3>
+                    <p className="text-slate-500">جرب تغيير معايير البحث</p>
+                  </CardContent>
+                </Card>
+              ) : (
+                <motion.div variants={fadeInUp} initial="hidden" animate="visible" className="space-y-6">
+                  {filteredInstallmentLedger.rentGroups.length > 0 && (
+                    <section className="space-y-3" aria-labelledby="rent-installments-heading">
+                      <div className="flex flex-wrap items-end justify-between gap-2 px-1">
+                        <div>
+                          <h3 id="rent-installments-heading" className="text-base font-black text-[#0F172A]">أقساط الإيجار الشهرية</h3>
+                          <p className="mt-1 text-xs text-slate-500">كل شهر في مجموعة واحدة، مهما تعددت تواريخ السداد أو الإيصالات.</p>
+                        </div>
+                        <Badge variant="outline" className="border-emerald-200 bg-emerald-50 text-emerald-700">
+                          {filteredInstallmentLedger.rentGroups.length} قسط
+                        </Badge>
+                      </div>
+                      <div className="space-y-3">
+                        {filteredInstallmentLedger.rentGroups.map((group) => (
+                          <InstallmentLedgerCard
+                            key={group.id}
+                            group={group}
+                            formatCurrency={formatCurrency}
+                            onCancelPayment={handleCancelByPaymentId}
+                          />
+                        ))}
+                      </div>
+                    </section>
+                  )}
+
+                  {filteredInstallmentLedger.chargeGroups.length > 0 && (
+                    <section className="space-y-3" aria-labelledby="contract-charges-heading">
+                      <div className="flex flex-wrap items-end justify-between gap-2 px-1">
+                        <div>
+                          <h3 id="contract-charges-heading" className="text-base font-black text-[#0F172A]">الرسوم والمخالفات</h3>
+                          <p className="mt-1 text-xs text-slate-500">مفصولة عن قسط الإيجار حتى لا تختلط تحصيلاتها بتحصيل الشهر.</p>
+                        </div>
+                        <Badge variant="outline" className="border-violet-200 bg-violet-50 text-violet-700">
+                          {filteredInstallmentLedger.chargeGroups.length} فاتورة
+                        </Badge>
+                      </div>
+                      <div className="space-y-3">
+                        {filteredInstallmentLedger.chargeGroups.map((group) => (
+                          <InstallmentLedgerCard
+                            key={group.id}
+                            group={group}
+                            formatCurrency={formatCurrency}
+                            onCancelPayment={handleCancelByPaymentId}
+                          />
+                        ))}
+                      </div>
+                    </section>
+                  )}
+
+                  {filteredInstallmentLedger.unmatchedPayments.length > 0 && (
+                    <section className="overflow-hidden rounded-2xl border border-amber-200 bg-amber-50/50" aria-labelledby="unmatched-payments-heading">
+                      <div className="flex items-start gap-3 border-b border-amber-200 px-4 py-3">
+                        <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-amber-600" />
+                        <div>
+                          <h3 id="unmatched-payments-heading" className="font-black text-amber-900">دفعات لا يمكن نسبها إلى قسط شهري</h3>
+                          <p className="mt-1 text-xs leading-6 text-amber-800">
+                            هذه الدفعات لا تملك تخصيص فاتورة صالحاً، ولذلك لم تُحسب ضمن أي قسط أعلاه.
+                          </p>
+                        </div>
+                      </div>
+                      <div className="divide-y divide-amber-200 bg-white/70">
+                        {filteredInstallmentLedger.unmatchedPayments.map((payment) => (
+                          <div key={payment.id} className="grid gap-3 px-4 py-3 sm:grid-cols-[1.3fr_1fr_1fr_auto] sm:items-center">
+                            <div>
+                              <p className="font-mono text-sm font-black text-[#0F172A]" dir="ltr">
+                                {payment.payment_number || payment.reference_number || 'دفعة بدون رقم'}
+                              </p>
+                              <p className="mt-1 text-xs text-slate-500">{getPaymentMethodInfo(payment.payment_method).label}</p>
+                            </div>
+                            <p className="text-sm font-bold text-[#0F172A]" dir="ltr">
+                              {payment.payment_date ? format(new Date(payment.payment_date), 'dd/MM/yyyy') : '-'}
+                            </p>
+                            <p className="text-base font-black text-[#0F172A]">{formatCurrency(payment.amount)}</p>
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleCancelByPaymentId(payment.id)}
+                              className="rounded-lg border-[#FB6B7A]/40 text-[#BE123C] hover:bg-[#FFF5F6] hover:text-[#BE123C]"
+                            >
+                              <XCircle className="ml-1 h-4 w-4" />
+                              إلغاء
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
+                    </section>
+                  )}
+                </motion.div>
+              )
+            ) : filteredAndSortedPayments.length === 0 ? (
+              <Card className="rounded-2xl border-[#E5EAF1] shadow-[0_10px_30px_-22px_rgba(15,23,42,0.25)]">
                 <CardContent className="p-12 text-center">
-                  <Search className="w-12 h-12 text-neutral-300 mx-auto mb-4" />
-                  <h3 className="text-lg font-semibold text-neutral-900 mb-2">لا توجد نتائج</h3>
-                  <p className="text-neutral-500">جرب تغيير معايير البحث</p>
+                  <Search className="w-12 h-12 text-slate-300 mx-auto mb-4" />
+                  <h3 className="text-lg font-black text-[#0F172A] mb-2">لا توجد نتائج</h3>
+                  <p className="text-slate-500">جرب تغيير معايير البحث</p>
                 </CardContent>
               </Card>
             ) : viewMode === 'grid' ? (
@@ -1717,19 +2214,19 @@ export const ContractPaymentsTabRedesigned = ({
                 ))}
               </motion.div>
             ) : (
-              <Card className="overflow-hidden rounded-xl border-[#DDE5EF] shadow-sm">
+              <Card className="overflow-hidden rounded-2xl border-[#E5EAF1] shadow-[0_10px_30px_-22px_rgba(15,23,42,0.25)]">
                 <div className="overflow-x-auto">
                   <table className="w-full">
                     <thead>
-                      <tr className="border-b border-[#DDE5EF] bg-[#F7FAFD]">
-                        <th className="py-3 px-4 text-right text-sm font-semibold text-neutral-700">الفاتورة / الطريقة</th>
-                        <th className="py-3 px-4 text-right text-sm font-semibold text-neutral-700">شهر الفاتورة</th>
-                        <th className="py-3 px-4 text-right text-sm font-semibold text-neutral-700">تاريخ الدفع</th>
-                        <th className="py-3 px-4 text-right text-sm font-semibold text-neutral-700">تاريخ الاستحقاق</th>
-                        <th className="py-3 px-4 text-right text-sm font-semibold text-neutral-700">المبلغ</th>
-                        <th className="py-3 px-4 text-right text-sm font-semibold text-neutral-700">الحالة</th>
-                        <th className="py-3 px-4 text-right text-sm font-semibold text-neutral-700">سجلها</th>
-                        <th className="py-3 px-4 text-right text-sm font-semibold text-neutral-700">ملاحظات</th>
+                      <tr className="border-b border-[#E5EAF1] bg-[#F6F8FB]">
+                        <th className="py-3 px-4 text-right text-sm font-bold text-slate-500">الفاتورة / الطريقة</th>
+                        <th className="py-3 px-4 text-right text-sm font-bold text-slate-500">شهر الفاتورة</th>
+                        <th className="py-3 px-4 text-right text-sm font-bold text-slate-500">تاريخ الدفع</th>
+                        <th className="py-3 px-4 text-right text-sm font-bold text-slate-500">تاريخ الاستحقاق</th>
+                        <th className="py-3 px-4 text-right text-sm font-bold text-slate-500">المبلغ</th>
+                        <th className="py-3 px-4 text-right text-sm font-bold text-slate-500">الحالة</th>
+                        <th className="py-3 px-4 text-right text-sm font-bold text-slate-500">سجلها</th>
+                        <th className="py-3 px-4 text-right text-sm font-bold text-slate-500">ملاحظات</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -1761,9 +2258,9 @@ export const ContractPaymentsTabRedesigned = ({
 
       {/* Cancel Confirmation Dialog */}
       <AlertDialog open={isCancelDialogOpen} onOpenChange={setIsCancelDialogOpen}>
-        <AlertDialogContent className="rounded-xl border-[#DDE5EF]">
+        <AlertDialogContent className="rounded-2xl border-[#E5EAF1]">
           <AlertDialogHeader>
-            <AlertDialogTitle className="flex items-center gap-2 text-red-600">
+            <AlertDialogTitle className="flex items-center gap-2 text-[#BE123C]">
               <AlertTriangle className="w-5 h-5" />
               تأكيد إلغاء الدفعة
             </AlertDialogTitle>
@@ -1771,21 +2268,21 @@ export const ContractPaymentsTabRedesigned = ({
               <div className="space-y-2 text-right text-sm text-muted-foreground">
                 <p>هل أنت متأكد من إلغاء هذه الدفعة؟</p>
                 {selectedPayment && (
-                  <div className="mt-3 space-y-1 rounded-lg bg-slate-50 p-3 text-sm">
+                  <div className="mt-3 space-y-1 rounded-lg bg-[#F6F8FB] p-3 text-sm">
                     <p><strong>رقم الدفعة:</strong> {selectedPayment.payment_number || selectedPayment.reference_number || '-'}</p>
                     <p><strong>الفاتورة:</strong> {selectedPayment.invoice?.invoice_number || 'غير مرتبطة'}</p>
                     <p><strong>المبلغ:</strong> {formatCurrency(selectedPayment.amount)}</p>
                     <p><strong>التاريخ:</strong> {selectedPayment.payment_date ? format(new Date(selectedPayment.payment_date), 'dd/MM/yyyy') : '-'}</p>
                   </div>
                 )}
-                <p className="mt-3 text-amber-600">
+                <p className="mt-3 text-[#B45309]">
                   سيتم عكس أثر الدفعة على الفاتورة والقيد المحاسبي، ولن يتم حذفها من سجل التدقيق.
                 </p>
               </div>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <div className="space-y-2 text-right">
-            <Label htmlFor="contract-payment-cancel-reason" className="text-sm font-semibold text-neutral-800">
+            <Label htmlFor="contract-payment-cancel-reason" className="text-sm font-bold text-[#0F172A]">
               سبب الإلغاء
             </Label>
             <Textarea
@@ -1793,7 +2290,7 @@ export const ContractPaymentsTabRedesigned = ({
               value={cancelReason}
               onChange={(event) => setCancelReason(event.target.value)}
               placeholder="مثال: دفعة مكررة أو تم إدخالها بالخطأ"
-              className="min-h-[92px] resize-none rounded-xl border-[#DDE5EF] text-right"
+              className="min-h-[92px] resize-none rounded-xl border-[#E5EAF1] text-right"
               dir="rtl"
             />
           </div>
@@ -1804,7 +2301,7 @@ export const ContractPaymentsTabRedesigned = ({
             <AlertDialogAction
               onClick={confirmCancel}
               disabled={cancelPayment.isPending}
-              className="bg-red-600 hover:bg-red-700 rounded-xl"
+              className="bg-[#FB6B7A] hover:bg-[#BE123C] rounded-xl"
             >
               {cancelPayment.isPending ? (
                 <>

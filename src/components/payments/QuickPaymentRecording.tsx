@@ -16,6 +16,7 @@ import { useBanks } from '@/hooks/useTreasury';
 import { PaymentReceipt } from './PaymentReceipt';
 import { generateReceiptPDF, downloadPDF, generateReceiptHTML, downloadHTML, numberToArabicWords, generateReceiptNumber, formatReceiptDate } from '@/utils/receiptGenerator';
 import { getInvoiceBillingDate, isActiveInvoice } from '@/utils/invoiceBillingMonth';
+import { generateContractBillingGraph } from '@/services/contractBillingGraph';
 
 interface Customer {
   id: string;
@@ -705,38 +706,14 @@ export function QuickPaymentRecording({ onStepChange }: QuickPaymentRecordingPro
 
     setIsGeneratingMissingInvoices(true);
     try {
-      console.log('🔄 Generating payment schedules for contract:', contractToUse.id);
-      const { data: scheduleData, error: scheduleError } = await supabase.rpc('generate_payment_schedules_for_contract', {
-        p_contract_id: contractToUse.id,
-        p_dry_run: false,
-      });
-      
-      const scheduleFailure = scheduleData && typeof scheduleData === 'object' && !Array.isArray(scheduleData)
-        && (scheduleData as Record<string, unknown>).success === false
-        ? String((scheduleData as Record<string, unknown>).error || 'فشل إنشاء جدول الدفعات')
-        : null;
-      if (scheduleError || scheduleFailure) {
-        console.error('❌ Schedule generation error:', scheduleError);
-        throw new Error(`فشل إنشاء جدول الدفعات: ${scheduleFailure || scheduleError?.message || scheduleError?.code || 'خطأ غير معروف'}`);
-      }
-      
-      console.log('✅ Payment schedules created:', scheduleData);
-      console.log('🔄 Generating invoices from payment schedule...');
-      
-      const { data: invoiceCount, error: invoiceError } = await supabase.rpc('generate_invoices_from_payment_schedule', {
-        p_contract_id: contractToUse.id,
-      });
-      
-      if (invoiceError) {
-        console.error('❌ Invoice generation error:', invoiceError);
-        throw new Error(`فشل إنشاء الفواتير: ${invoiceError.message || invoiceError.code || 'خطأ غير معروف'}`);
-      }
-      
-      console.log('✅ Invoices created:', invoiceCount);
+      const result = await generateContractBillingGraph(contractToUse.id);
+      const invoiceCount = result.createdInvoices;
       
       toast({
         title: invoiceCount ? 'تم إنشاء الفواتير بنجاح' : 'لا توجد فواتير ناقصة',
-        description: invoiceCount ? `تم إنشاء ${invoiceCount} فاتورة` : 'كل أشهر العقد النشطة لها فواتير بالفعل.',
+        description: invoiceCount
+          ? `تم إنشاء ${invoiceCount} فاتورة من ${result.scheduleCount} قسطاً متحققاً.`
+          : 'كل أقساط العقد المتحققة لها فواتير بالفعل.',
       });
 
       // Reload invoices for the selected contract

@@ -10,6 +10,12 @@ export interface InvoiceLifecycleFields {
   payment_status?: string | null;
 }
 
+export interface InvoiceDisplayFields extends InvoiceBillingMonthFields {
+  invoice_number?: string | null;
+  invoice_type?: string | null;
+  penalty_id?: string | null;
+}
+
 const INACTIVE_INVOICE_STATES = new Set([
   'cancelled',
   'canceled',
@@ -17,6 +23,7 @@ const INACTIVE_INVOICE_STATES = new Set([
   'voided',
   'deleted',
   'inactive',
+  'reversed',
 ]);
 
 const ISO_DATE_PREFIX = /^(\d{4})-(\d{2})-(\d{2})/;
@@ -42,6 +49,35 @@ export const getInvoiceBillingDate = (invoice: InvoiceBillingMonthFields): strin
 
 export const getInvoiceBillingMonthKey = (invoice: InvoiceBillingMonthFields): string | null =>
   getInvoiceBillingDate(invoice)?.slice(0, 7) ?? null;
+
+/** Human-readable Arabic label for invoice lists without changing the accounting reference. */
+export const getInvoiceBillingMonthLabel = (invoice: InvoiceBillingMonthFields): string | null => {
+  const monthKey = getInvoiceBillingMonthKey(invoice);
+  if (!monthKey) return null;
+
+  const [year, month] = monthKey.split('-');
+  return `فاتورة شهر ${Number(month)}/${year}`;
+};
+
+/**
+ * Keep non-rental charges visibly distinct from the monthly rental invoice.
+ * This prevents a traffic-violation invoice in the same month from looking
+ * like a duplicate rent invoice in customer-facing lists.
+ */
+export const getInvoiceDisplayLabel = (invoice: InvoiceDisplayFields): string => {
+  const reference = invoice.invoice_number?.trim() ?? '';
+  const invoiceType = invoice.invoice_type?.trim().toLowerCase() ?? '';
+
+  if (invoice.penalty_id || reference.toUpperCase().startsWith('TV-')) {
+    return 'فاتورة مخالفة مرورية';
+  }
+
+  if (invoiceType === 'service') {
+    return 'فاتورة خدمة';
+  }
+
+  return getInvoiceBillingMonthLabel(invoice) || (reference ? `فاتورة ${reference}` : 'فاتورة');
+};
 
 export const getLocalMonthKey = (date: Date): string =>
   formatLocalDate(date.getFullYear(), date.getMonth(), 1).slice(0, 7);

@@ -122,7 +122,7 @@ describe('complete autonomous-agent governance inventory', () => {
       'whatsapp-reminder-day5-final-warning',
       'whatsapp-reminder-day10-legal-action',
     ]) expect(containment).toContain(`'${job}'`);
-    expect(containment).toContain("cron.schedule(\n  'process-payment-reminders'");
+    expect(containment).toMatch(/cron\.schedule\(\s*'process-payment-reminders'/);
     expect(legacyReminderAdapter).toContain('Legacy bulk sender disabled; use process-payment-reminders');
     expect(paymentReminders).toContain('claim_automated_invoice_reminder_delivery');
     expect(paymentReminders).toContain('complete_automated_invoice_reminder_delivery');

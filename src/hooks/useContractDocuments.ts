@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
+import { contractDocumentsKey, invalidateContractDocumentDependents } from '@/utils/contractDocumentQueries';
 
 export interface ContractDocument {
   id: string;
@@ -41,9 +42,10 @@ export function useContractDocuments(contractId?: string, customerId?: string, v
   const { companyId } = useUnifiedCompanyAccess();
 
   return useQuery({
-    queryKey: ['contract-documents', contractId, customerId, vehicleId],
+    queryKey: [...contractDocumentsKey(companyId, contractId), customerId, vehicleId],
     queryFn: async () => {
       if (!contractId) return [];
+      if (!companyId) throw new Error('تعذر تحديد الشركة الحالية');
 
       // Run all queries in parallel for better performance
       const [contractResult, customerResult, vehicleResult] = await Promise.all([
@@ -52,7 +54,7 @@ export function useContractDocuments(contractId?: string, customerId?: string, v
           .from('contract_documents')
           .select('id, company_id, contract_id, document_type, document_name, file_path, file_size, mime_type, uploaded_by, uploaded_at, notes, is_required, condition_report_id, created_at, updated_at')
           .eq('contract_id', contractId)
-          .eq('company_id', companyId!)
+          .eq('company_id', companyId)
           .order('created_at', { ascending: false }),
         
         // Fetch customer documents (only if customerId provided)
@@ -61,7 +63,7 @@ export function useContractDocuments(contractId?: string, customerId?: string, v
               .from('customer_documents')
               .select('id, company_id, document_type, document_name, file_path, file_size, mime_type, uploaded_by, uploaded_at, notes, is_required, created_at, updated_at')
               .eq('customer_id', customerId)
-              .eq('company_id', companyId!)
+              .eq('company_id', companyId)
               .order('created_at', { ascending: false })
           : Promise.resolve({ data: null, error: null }),
         
@@ -77,6 +79,8 @@ export function useContractDocuments(contractId?: string, customerId?: string, v
 
       // Handle contract documents
       if (contractResult.error) throw contractResult.error;
+      if (customerResult.error) throw customerResult.error;
+      if (vehicleResult.error) throw vehicleResult.error;
       const contractDocuments = await Promise.all(
         (contractResult.data || []).map(async (doc) => {
           const isImage = Boolean(doc.mime_type?.startsWith('image/'));
@@ -105,7 +109,7 @@ export function useContractDocuments(contractId?: string, customerId?: string, v
 
       // Handle customer documents
       let customerDocuments: ContractDocument[] = [];
-      if (customerResult.data && !customerResult.error) {
+      if (customerResult.data) {
         customerDocuments = customerResult.data.map(doc => ({
           id: doc.id,
           company_id: doc.company_id,
@@ -124,13 +128,11 @@ export function useContractDocuments(contractId?: string, customerId?: string, v
           updated_at: doc.updated_at,
           sourceBucket: 'documents' as const
         }));
-      } else if (customerResult.error) {
-        console.error('Error fetching customer documents:', customerResult.error);
       }
 
       // Handle vehicle documents
       let vehicleDocuments: ContractDocument[] = [];
-      if (vehicleResult.data && !vehicleResult.error) {
+      if (vehicleResult.data) {
         vehicleDocuments = vehicleResult.data.map(doc => ({
           id: doc.id,
           company_id: companyId || '',
@@ -149,8 +151,6 @@ export function useContractDocuments(contractId?: string, customerId?: string, v
           updated_at: doc.updated_at || '',
           sourceBucket: 'documents' as const
         }));
-      } else if (vehicleResult.error) {
-        console.error('Error fetching vehicle documents:', vehicleResult.error);
       }
 
       // Combine and sort by created_at
@@ -167,6 +167,7 @@ export function useContractDocuments(contractId?: string, customerId?: string, v
 }
 
 export function useExportConditionDiagram() {
+  const queryClient = useQueryClient();
   const { user } = useAuth();
   const { companyId } = useUnifiedCompanyAccess();
 
@@ -219,7 +220,8 @@ export function useExportConditionDiagram() {
     onError: (error) => {
       console.error('Error exporting diagram:', error);
       toast.error('فشل في تصدير المخطط');
-    }
+    },
+    onSuccess: (document) => invalidateContractDocumentDependents(queryClient, document.company_id, document.contract_id),
   });
 }
 
@@ -269,8 +271,8 @@ export function useCreateContractDocument() {
       if (error) throw error;
       return document;
     },
-    onSuccess: (document, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['contract-documents', document.contract_id] });
+    onSuccess: async (document, variables) => {
+      await invalidateContractDocumentDependents(queryClient, document.company_id, document.contract_id);
       if (!variables.suppressSuccessToast) {
         toast.success('تم إضافة المستند بنجاح');
       }
@@ -292,7 +294,7 @@ export function useDeleteContractDocument() {
       // Get document info first
       const { data: document, error: documentError } = await supabase
         .from('contract_documents')
-        .select('file_path, contract_id')
+        .select('file_path, contract_id, company_id')
         .eq('id', documentId)
         .eq('company_id', companyId)
         .single();
@@ -319,14 +321,35 @@ export function useDeleteContractDocument() {
       }
       return document;
     },
-    onSuccess: (document) => {
+    onSuccess: async (document) => {
       if (document) {
-        queryClient.invalidateQueries({ queryKey: ['contract-documents', document.contract_id] });
+        await invalidateContractDocumentDependents(queryClient, document.company_id, document.contract_id);
       }
       toast.success('تم حذف المستند بنجاح');
     },
     onError: (error) => {
       console.error('Error deleting document:', error);
+      const message = error instanceof Error
+        ? error.message
+        : typeof error === 'object' && error !== null && 'message' in error
+          ? String((error as { message?: unknown }).message || '')
+          : '';
+
+      if (message.includes('SIGNED_CONTRACT_REPLACEMENT_REQUIRED')) {
+        toast.error('لا يمكن حذف النسخة أثناء الإجراء القانوني دون بديل صالح. ارفع نسخة أخرى وتأكد من اجتياز مطابقة الهوية أولاً.');
+        return;
+      }
+
+      if (message.includes('SIGNED_CONTRACT_EVIDENCE_BUSY')) {
+        toast.error('يجري تعديل مستندات العقد في عملية أخرى. حدّث الصفحة ثم أعد المحاولة.');
+        return;
+      }
+
+      if (typeof error === 'object' && error !== null && 'code' in error && error.code === '23503') {
+        toast.error('لا يمكن حذف المستند لأنه مرتبط بسجلات أخرى في النظام. لم يُحذف الملف؛ راجع ارتباطاته من الملف المعني.');
+        return;
+      }
+
       toast.error('فشل في حذف المستند');
     }
   });

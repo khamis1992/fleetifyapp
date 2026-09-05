@@ -44,6 +44,7 @@ interface ContractInputData {
   contract_date?: string
   contract_amount: number | string
   monthly_amount?: number | string
+  deposit_amount?: number | string
   description?: string | null
   terms?: string | null
   cost_center_id?: string | null
@@ -233,6 +234,7 @@ export const useContractCreation = () => {
           p_created_via: 'web',
           p_idempotency_key: idempotencyKey,
           p_accept_unpaid_violations: acceptedUnpaidViolations,
+          p_deposit_amount: Number(inputContractData.deposit_amount || 0),
         }
         
         console.log('📋 [CONTRACT_CREATION] معاملات RPC:', rpcParams)

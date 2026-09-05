@@ -1,13 +1,3 @@
-// Temporary mock to prevent React null errors
-export const useToast = () => {
-  return {
-    toast: (options: unknown) => {
-      console.log('Toast (disabled):', options);
-    },
-    toasts: []
-  };
-};
-
-export const toast = (options: unknown) => {
-  console.log('Toast (disabled):', options);
-};
+// Deprecated compatibility path. Runtime feedback must never silently become
+// console logging; remaining external imports share the real toast store.
+export { useToast, toast } from './use-toast';

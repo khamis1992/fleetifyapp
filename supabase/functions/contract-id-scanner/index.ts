@@ -8,6 +8,7 @@
  * Modes:
  *   - batch:    picks unprocessed image documents (cron, every 15 min)
  *   - document: processes a single contract_documents row (on upload)
+ *   - stored_ocr: reuses an earlier, persisted OCR result for the document
  *   - pages:    processes client-rasterized PDF pages [{pageNumber, imageBase64}]
  *
  * Smart name correction pipeline:
@@ -84,7 +85,7 @@ interface ProposedChange {
 }
 
 interface ScannerRequest {
-  mode?: "batch" | "document" | "pages" | "proposal_evidence";
+  mode?: "batch" | "document" | "stored_ocr" | "pages" | "proposal_evidence";
   companyId?: string;
   limit?: number;
   contractDocumentId?: string;
@@ -198,6 +199,14 @@ Deno.serve(async (req) => {
         body.proposalId,
         body.imageBase64,
         body.evidenceImagePath,
+      );
+    } else if (mode === "stored_ocr") {
+      if (!body.contractDocumentId) {
+        throw new Error("stored_ocr mode requires contractDocumentId");
+      }
+      result = await processStoredOcr(
+        supabase,
+        body.contractDocumentId,
       );
     } else if (mode === "pages") {
       if (!body.contractDocumentId || !body.pages?.length) {
@@ -359,6 +368,77 @@ async function processSingleDocument(supabase: SupabaseClient, documentId: strin
 }
 
 // ---------------------------------------------------------------------------
+// Stored OCR mode — reuse a previously reviewed scan before calling Vision
+// ---------------------------------------------------------------------------
+
+async function processStoredOcr(
+  supabase: SupabaseClient,
+  documentId: string,
+) {
+  const { data: doc, error: documentError } = await supabase
+    .from("contract_documents")
+    .select("id, company_id, contract_id, document_type, document_name, file_path, mime_type")
+    .eq("id", documentId)
+    .single();
+
+  if (documentError || !doc) throw new Error("Document not found");
+
+  const { data: proposal, error: proposalError } = await supabase
+    .from("customer_id_scan_proposals")
+    .select("raw_text, page_number, evidence_image_path, evidence_label")
+    .eq("contract_document_id", documentId)
+    .not("raw_text", "is", null)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (proposalError) throw proposalError;
+  const rawText = typeof proposal?.raw_text === "string"
+    ? proposal.raw_text.trim()
+    : "";
+  if (!rawText) {
+    return { outcome: "stored_ocr_unavailable", source: "stored_ocr" };
+  }
+
+  try {
+    const outcome = await buildAndStoreProposal(
+      supabase,
+      doc as ContractDocumentRow,
+      rawText,
+      proposal?.page_number ?? null,
+      {
+        imagePath: proposal?.evidence_image_path || doc.file_path,
+        crop: null,
+        label: proposal?.evidence_label || null,
+      },
+      [],
+      rawText,
+    );
+    if (outcome !== "proposal_created") await deletePendingProposal(supabase, doc.id);
+    await markDocument(
+      supabase,
+      doc.id,
+      outcome === "proposal_created" ? "proposal_created" : "no_changes",
+    );
+    return {
+      outcome,
+      source: "stored_ocr",
+      pageNumber: proposal?.page_number ?? null,
+    };
+  } catch (error) {
+    console.error(`Failed to compare stored OCR for document ${doc.id}:`, error);
+    await markDocument(
+      supabase,
+      doc.id,
+      "failed",
+      error instanceof Error ? error.message : String(error),
+    );
+    await markLegalIdentityFailedIfPending(supabase, doc.id, error);
+    return { outcome: "failed", source: "stored_ocr" };
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Pages mode — client-rasterized PDF pages
 // ---------------------------------------------------------------------------
 
@@ -380,13 +460,24 @@ async function processRasterizedPages(
     ocr: OcrResult;
   }> = [];
   const allPageTexts: string[] = [];
+  const pageErrors: string[] = [];
 
   for (const page of pages.slice(0, 20)) {
-    const ocr = await detectTextWithGoogleVision(page.imageBase64);
-    if (ocr.text) allPageTexts.push(ocr.text);
-    if (ocr.text && looksLikeCustomerIdentityEvidence(ocr.text)) {
-      evidencePages.push({ page, ocr });
+    try {
+      const ocr = await detectTextWithGoogleVision(page.imageBase64);
+      if (ocr.text) allPageTexts.push(ocr.text);
+      if (ocr.text && looksLikeCustomerIdentityEvidence(ocr.text)) {
+        evidencePages.push({ page, ocr });
+      }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      pageErrors.push(`page ${page.pageNumber}: ${message}`);
+      console.warn(`OCR failed for document ${doc.id}, page ${page.pageNumber}:`, error);
     }
+  }
+
+  if (allPageTexts.length === 0 && pageErrors.length > 0) {
+    throw new Error(`OCR failed for every submitted page: ${pageErrors[0]}`);
   }
 
   // The monthly rent lives in the contract body, not the ID page, so it is

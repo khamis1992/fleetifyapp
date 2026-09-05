@@ -25,6 +25,16 @@ describe('legal contract identity assessment', () => {
     }).status).toBe('matched');
   });
 
+  it('ignores Arabic punctuation added by OCR after the tenant name', () => {
+    expect(assessLegalContractIdentity({
+      expectedName: 'حمزة بادو',
+      extractedName: 'حمزه بادو ،',
+      expectedId: '29850400215',
+      extractedId: '29850400215',
+      authoritativeName: true,
+    }).status).toBe('matched');
+  });
+
   it('gives the tenant field priority over an attached matching ID card', () => {
     expect(assessLegalContractIdentity({
       expectedName: 'أحمد الشيخ الصديق هاشم الوسيلة',

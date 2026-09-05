@@ -65,7 +65,6 @@ import {
   isSafeLegacyReviewMismatchRetry,
   isSafePartyIdentityTypeRetry,
 
-  refreshTaqadiFilingJobPayload,
   resumeTaqadiFilingJob,
   retryTaqadiFilingJob,
 
@@ -332,9 +331,9 @@ export function TaqadiAutomationPanel({
         new Notification('دعوى تقاضي تحتاج تدخلك', { body });
       }
     } else if (job.status === 'filed') {
-      toast.success('تم رفع الدعوى في تقاضي بنجاح');
-      // complete_taqadi_filing_job_v1 already moves the case to `filed` and
-      // records the portal reference atomically. Refresh the UI only; do not
+      toast.success('تم إيداع الدعوى في تقاضي وبانتظار قبول المحكمة');
+      // complete_taqadi_filing_job_v1 records the portal reference and moves
+      // the case to `awaiting_acceptance` atomically. Refresh the UI only; do not
       // ask the browser to perform a second, user-owned finalization.
       void Promise.all([
         queryClient.invalidateQueries({ queryKey: ['lawsuit-legal-case', companyId, contractId] }),
@@ -440,9 +439,8 @@ export function TaqadiAutomationPanel({
           legalCase.id,
           refreshedPayload,
         );
-        await refreshTaqadiFilingJobPayload(companyId, job.id, refreshedPayload);
       }
-      return resumeTaqadiFilingJob(companyId, job.id);
+      return resumeTaqadiFilingJob(companyId, job.id, refreshedPayload);
     },
     onSuccess: async () => {
       toast.success('سيحدد الوكيل صفحة تقاضي المفتوحة ويكمل منها');
@@ -972,7 +970,7 @@ export function TaqadiAutomationPanel({
         {job?.status === 'filed' && (
           <Button type="button" size="lg" disabled className="lawsuit-primary-command !bg-emerald-600">
             <CheckCircle2 className="h-4 w-4" />
-            تم الرفع في تقاضي
+            تم الإيداع — بانتظار قبول المحكمة
           </Button>
         )}
 

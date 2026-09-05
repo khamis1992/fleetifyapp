@@ -1,58 +1,36 @@
 ﻿/**
- * صفحة تفاصيل العقد - UX Redesign V2
- * Professional SaaS design with improved information architecture
- * Better visual hierarchy, clearer actions, and enhanced mobile experience
+ * صفحة تفاصيل العقد — التجربة الجديدة "غرفة تحكم العقد"
  *
- * @component ContractDetailsPageRedesignedV2
+ * فلسفة التصميم (V3):
+ * - Hero سينمائي داكن يجيب بنظرة واحدة: من، أي مركبة، كم، كم تبقى، متى.
+ * - شريط إجراء واحد ذكي يرشّح الخطوة التالية حسب حالة العقد.
+ * - تبويبات لاصقة بشارات عدد — كل تبويب مسؤول عن عالم واحد فقط.
+ * - عمود "نبض العقد" يجمع صحة العقد، المهام، التشخيص المالي، CRM، والسجل
+ *   في مكان واحد بدل تكرارها في أربع مناطق مختلفة.
+ *
+ * كل منطق الأعمال (الاستعلامات، الإجراءات، الحوارات) محفوظ كما هو.
  */
 
-import { type CSSProperties, type ElementType, type ReactNode, useState, useMemo, useCallback, useEffect, useRef } from 'react';
+import { useState, useMemo, useCallback, useEffect } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { motion, AnimatePresence, type Variants } from 'framer-motion';
+import { motion } from 'framer-motion';
 import {
-  ArrowRight,
-  FileText,
-  User,
-  UserCheck,
-  Car,
-  RefreshCw,
-  FileEdit,
-  XCircle,
-  DollarSign,
-  Calendar,
-  CreditCard,
-  Wallet,
-  AlertTriangle,
   AlertCircle,
+  AlertTriangle,
+  ArrowRight,
+  Car,
+  CheckCircle,
+  FileCheck,
   Folder,
   GitBranch,
-  Activity,
-  CheckCircle,
-  CheckCircle2,
-  Trash2,
-  Scale,
-  Loader2,
   LayoutDashboard,
-  FileCheck,
-  Receipt,
-  Phone,
-  Mail,
-  MapPin,
-  Palette,
-  Gauge,
-  Fuel,
-  ExternalLink,
-  Hash,
-  Printer,
-  MessageSquare,
-  ClipboardList,
-  Target,
-  ShieldCheck,
-  MoreVertical,
+  Loader2,
   PlayCircle,
-  Sparkles,
+  Receipt,
+  RefreshCw,
+  ShieldCheck,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
@@ -73,19 +51,10 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
-
-import { Progress } from '@/components/ui/progress';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { ContractStatusManagement } from './ContractStatusManagement';
+import { ContractCancellationDialog } from './ContractCancellationDialog';
 import { LegalTransferReadinessWizard as ConvertToLegalDialog } from './LegalTransferReadinessWizard';
 import { PermanentContractDeleteDialog } from './PermanentContractDeleteDialog';
 
@@ -106,57 +75,53 @@ import { ContractPaymentsTabRedesigned as ContractPaymentsTab } from './Contract
 import { ContractInvoicesTabRedesigned } from './ContractInvoicesTabRedesigned';
 import { EnhancedPaymentScheduleTabRedesigned as EnhancedPaymentScheduleTab } from './EnhancedPaymentScheduleTabRedesigned';
 import { VehiclePickupReturnTabRedesigned } from './VehiclePickupReturnTabRedesigned';
-import { ContractViolationsTabRedesigned } from './ContractViolationsTabRedesigned';
+import {
+  ContractViolationsTabRedesigned,
+  type TrafficViolation as ContractViolationInput,
+} from './ContractViolationsTabRedesigned';
 import { ContractDocuments } from './ContractDocuments';
 import { ContractHealthAnalysis } from './ContractHealthAnalysis';
 import { SeizedActiveContractBanner } from './SeizedActiveContractBanner';
 import { OfficialContractView } from './OfficialContractView';
 import { formatCustomerName } from '@/utils/formatCustomerName';
-import { getInvoiceBillingMonthKey, isActiveInvoice } from '@/utils/invoiceBillingMonth';
 import { cn } from '@/lib/utils';
-import { format, differenceInDays } from 'date-fns';
-import { ar } from 'date-fns/locale';
+import { differenceInDays } from 'date-fns';
+import { analyzeContractBillingPeriod } from '@/utils/contractCalculations';
 import type { Contract } from '@/types/contracts';
 import type { Invoice } from '@/types/finance.types';
 import type { Database } from '@/integrations/supabase/types';
 
-import { useFleetifyTranslation } from "@/hooks/useTranslation";
 import { useToast } from '@/hooks/use-toast';
 import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
 import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
-import { useVehicleInspections, type VehicleInspection } from '@/hooks/useVehicleInspections';
-import { useCustomerCRMActivity, type CustomerActivity } from '@/hooks/useCustomerCRMActivity';
-import { systemColorPattern } from '@/lib/design-system/systemColorPattern';
+import { useVehicleInspections } from '@/hooks/useVehicleInspections';
+import { useCustomerCRMActivity } from '@/hooks/useCustomerCRMActivity';
 import type { PaymentSchedule } from '@/types/payment-schedules';
 import { useTourGuide } from '@/components/tour-guide';
 import { revertContractLegalProcedure } from '@/services/contractLegalProcedureService';
-import { assertContractCanClose } from '@/services/contractPenaltyGuard';
+import { reactivateCancelledContract } from '@/services/contractReactivationService';
+import { generateContractBillingGraph } from '@/services/contractBillingGraph';
+import { refreshContractFinancialQueries } from '@/utils/contractFinancialQueries';
+import { fetchContractInvoiceEvidence } from '@/services/contractInvoiceEvidence';
+import { contractPaymentEvidenceQueryOptions, type ContractPaymentEvidence } from '@/services/contractPaymentEvidence';
+import { contractFinancialSyncQueryOptions, retryContractFinancialReads } from '@/services/contractFinancialSynchronization';
+
+import { ContractHero } from './contract-details-v3/ContractHero';
+import { ContractActionBar } from './contract-details-v3/ContractActionBar';
+import { ContractPulse } from './contract-details-v3/ContractPulse';
 import {
-  canReactivateCancelledContract,
-  reactivateCancelledContract,
-} from '@/services/contractReactivationService';
+  billableContractStatusesV3,
+  buildContractFinancialSnapshotV3,
+  calculateContractHealthScoreV3,
+  chunkInvoicesForCancellationV3,
+  getInitialContractTabV3,
+  permanentlyDeletableContractStatusesV3,
+  type ContractFinancialSnapshot,
+} from './contract-details-v3/tokens';
 
-const contractDetailsTheme = systemColorPattern.colors;
-const contractDetailsSystemStyle = {
-  '--contract-details-text': contractDetailsTheme.text,
-  '--contract-details-surface': contractDetailsTheme.surface,
-  '--contract-details-inner': contractDetailsTheme.innerSurface,
-  '--contract-details-muted': contractDetailsTheme.secondaryText,
-  '--contract-details-border': contractDetailsTheme.border,
-  '--contract-details-info': contractDetailsTheme.info,
-  '--contract-details-alert': contractDetailsTheme.alert,
-  '--contract-details-focus': contractDetailsTheme.focus,
-  '--contract-details-success': contractDetailsTheme.success,
-} as CSSProperties;
-
-const permanentlyDeletableContractStatuses = new Set([
-  'draft',
-  'cancelled',
-  'expired',
-  'completed',
-  'closed',
-  'terminated',
-]);
+type ContractTrafficViolation = Database['public']['Tables']['traffic_violations']['Row'] & {
+  description?: string | null;
+};
 
 type ContractAuditLog = {
   id: string;
@@ -169,1675 +134,12 @@ type ContractAuditLog = {
   user_name: string | null;
 };
 
-// ===== Animation Variants =====
-const fadeInUp: Variants = {
-  hidden: { opacity: 0, y: 20 },
-  visible: {
-    opacity: 1,
-    y: 0,
-    transition: { duration: 0.4, ease: [0.25, 0.1, 0.25, 1] }
-  }
-};
-
-const scaleIn: Variants = {
-  hidden: { opacity: 0, scale: 0.95 },
-  visible: {
-    opacity: 1,
-    scale: 1,
-    transition: { duration: 0.3, ease: [0.25, 0.1, 0.25, 1] }
-  }
-};
-
-
-
-// ===== Stats Cards Component =====
-const ContractStatsGrid = ({
-  contractStats,
-  trafficViolationsCount,
-  formatCurrency,
-}: {
-  contractStats: Record<string, unknown>;
-  trafficViolationsCount: number;
-  formatCurrency: (amount: number) => string;
-}) => {
-  const { t } = useFleetifyTranslation("ui");
-  const stats = [
-    {
-      label: 'إجمالي القيمة',
-      value: formatCurrency(contractStats?.totalAmount as number || 0),
-      subtext: `${formatCurrency(contractStats?.monthlyAmount as number || 0)} شهرياً`,
-      icon: DollarSign,
-      color: 'from-teal-500 to-teal-600',
-      bgColor: 'bg-teal-50',
-    },
-    {
-      label: 'مدة العقد',
-      value: `${contractStats?.totalMonths || 0} شهر`,
-      subtext: `${(contractStats?.daysRemaining as number) > 0 ? `${contractStats.daysRemaining} يوم متبقي` : contractStats?.daysRemaining === 0 ? 'ينتهي اليوم' : 'منتهي'}`,
-      icon: Calendar,
-      color: 'from-blue-500 to-blue-600',
-      bgColor: 'bg-blue-50',
-      progress: contractStats?.progressPercentage as number || 0,
-    },
-    {
-      label: 'حالة السداد',
-      value: `${contractStats?.paidPayments} / ${contractStats?.totalPayments}`,
-      subtext: contractStats?.paymentStatus === 'completed' ? 'تم السداد' : 'قيد السداد',
-      icon: CreditCard,
-      color: contractStats?.paymentStatus === 'completed' ? 'from-green-500 to-green-600' : 'from-purple-500 to-purple-600',
-      bgColor: contractStats?.paymentStatus === 'completed' ? 'bg-green-50' : 'bg-purple-50',
-    },
-    {
-      label: 'المخالفات',
-      value: trafficViolationsCount.toString(),
-      subtext: trafficViolationsCount === 0 ? 'لا توجد مخالفات' : 'مخالفة مرورية',
-      icon: AlertCircle,
-      color: trafficViolationsCount > 0 ? 'from-red-500 to-red-600' : 'from-green-500 to-green-600',
-      bgColor: trafficViolationsCount > 0 ? 'bg-red-50' : 'bg-green-50',
-    },
-  ];
-
-  return (
-    <motion.div
-      variants={fadeInUp}
-      className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4"
-    >
-      {stats.map((stat, idx) => (
-        <motion.div
-          key={idx}
-          variants={fadeInUp}
-          className="rounded-xl border border-[#DDE5EF] bg-white p-4 shadow-sm transition-colors hover:border-[#B9C7D8]"
-        >
-          <div className="mb-4 flex items-center justify-between gap-3">
-            <div className={cn("flex h-11 w-11 items-center justify-center rounded-lg bg-[#EEF5FB]", stat.color)}>
-              <stat.icon className="h-5 w-5 text-[#173A63]" />
-            </div>
-            <span className="text-xs font-medium text-[#6A7688]">{stat.label}</span>
-          </div>
-          <p className="mb-1 text-2xl font-black text-[#142033]">{stat.value}</p>
-          <p className="text-sm text-[#6A7688]">{stat.subtext}</p>
-          {stat.progress !== undefined && (
-            <div className="mt-3">
-              <Progress value={stat.progress} className="h-2" />
-            </div>
-          )}
-        </motion.div>
-      ))}
-    </motion.div>
-  );
-};
-
-// ===== Customer & Vehicle Cards =====
-const CustomerVehicleCards = ({
-  customerName,
-  vehicleName,
-  plateNumber,
-  contract,
-  onCustomerClick,
-  onVehicleClick,
-}: {
-  customerName: string;
-  vehicleName: string;
-  plateNumber?: string;
-  contract: Contract;
-  onCustomerClick: () => void;
-  onVehicleClick: () => void;
-}) => (
-  <motion.div
-    variants={fadeInUp}
-    className="grid grid-cols-1 gap-4 md:grid-cols-2"
-  >
-    {/* Customer Card */}
-    <Card className="cursor-pointer rounded-xl border-[#DDE5EF] bg-[#FAFBFC] shadow-sm transition-colors hover:border-[#173A63]" onClick={onCustomerClick}>
-      <CardContent className="p-5">
-        <div className="flex items-start gap-4">
-          <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-xl bg-[#EEF5FB] text-[#173A63]">
-            <User className="h-6 w-6" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-xs text-neutral-500 mb-1">العميل</p>
-            <h3 className="font-bold text-neutral-900 text-lg mb-2 truncate">{customerName}</h3>
-            <div className="space-y-1">
-              {contract.customer?.phone && (
-                <div className="flex items-center gap-2 text-sm text-neutral-600">
-                  <Phone className="w-3.5 h-3.5" />
-                  <span className="font-mono" dir="ltr">{contract.customer.phone}</span>
-                </div>
-              )}
-              {contract.customer?.email && (
-                <div className="flex items-center gap-2 text-sm text-neutral-600">
-                  <Mail className="w-3.5 h-3.5" />
-                  <span className="truncate">{contract.customer.email}</span>
-                </div>
-              )}
-              {contract.customer?.national_id && (
-                <div className="flex items-center gap-2 text-sm text-neutral-600">
-                  <AlertCircle className="w-3.5 h-3.5" />
-                  <span>{contract.customer.national_id}</span>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      </CardContent>
-    </Card>
-
-    {/* Vehicle Card */}
-    <Card className="cursor-pointer rounded-xl border-[#DDE5EF] bg-[#FAFBFC] shadow-sm transition-colors hover:border-[#173A63]" onClick={onVehicleClick}>
-      <CardContent className="p-5">
-        <div className="flex items-start gap-4">
-          <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700">
-            <Car className="h-6 w-6" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-xs text-neutral-500 mb-1">المركبة</p>
-            <h3 className="font-bold text-neutral-900 text-lg mb-2">{vehicleName}</h3>
-            <div className="space-y-1">
-              {plateNumber && (
-                <div className="flex items-center gap-2 text-sm text-neutral-600">
-                  <AlertCircle className="w-3.5 h-3.5" />
-                  <span className="font-mono font-bold">{plateNumber}</span>
-                </div>
-              )}
-              {contract.vehicle?.year && (
-                <div className="flex items-center gap-2 text-sm text-neutral-600">
-                  <Calendar className="w-3.5 h-3.5" />
-                  <span>{contract.vehicle.year}</span>
-                </div>
-              )}
-              {contract.vehicle?.color && (
-                <div className="flex items-center gap-2 text-sm text-neutral-600">
-                  <MapPin className="w-3.5 h-3.5" />
-                  <span>{contract.vehicle.color}</span>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      </CardContent>
-    </Card>
-  </motion.div>
-);
-
-const getContractStatusMeta = (status?: string) => {
-  const map: Record<string, { label: string; tone: string; dot: string }> = {
-    active: {
-      label: 'نشط',
-      tone: 'border-emerald-200 bg-emerald-50 text-emerald-700',
-      dot: 'bg-emerald-500',
-    },
-    draft: {
-      label: 'مسودة',
-      tone: 'border-slate-200 bg-slate-50 text-slate-700',
-      dot: 'bg-slate-400',
-    },
-    expired: {
-      label: 'منتهي',
-      tone: 'border-amber-200 bg-amber-50 text-amber-700',
-      dot: 'bg-amber-500',
-    },
-    suspended: {
-      label: 'معلق',
-      tone: 'border-orange-200 bg-orange-50 text-orange-700',
-      dot: 'bg-orange-500',
-    },
-    cancelled: {
-      label: 'ملغي',
-      tone: 'border-rose-200 bg-rose-50 text-rose-700',
-      dot: 'bg-rose-500',
-    },
-    under_legal_procedure: {
-      label: 'إجراء قانوني',
-      tone: 'border-violet-200 bg-violet-50 text-violet-700',
-      dot: 'bg-violet-500',
-    },
-  };
-
-  return map[status || ''] || map.draft;
-};
-
-const formatAssignedEmployeeName = (profile?: Contract['assigned_employee'] | null) => {
-  if (!profile) return 'غير معين';
-
-  const arabicName = [profile.first_name_ar, profile.last_name_ar].filter(Boolean).join(' ').trim();
-  const englishName = [profile.first_name, profile.last_name].filter(Boolean).join(' ').trim();
-
-  return arabicName || englishName || profile.email || 'غير محدد';
-};
-
-const ContractCommandHeader = ({
-  contract,
-  customerName,
-  vehicleName,
-  plateNumber,
-  contractStats,
-  invoicesCount,
-  violationsCount,
-  formatCurrency,
-  onBack,
-  onEdit,
-  onPrint,
-  onExport,
-  onStatusClick,
-  onCustomerClick,
-  onVehicleClick,
-}: {
-  contract: Contract;
-  customerName: string;
-  vehicleName: string;
-  plateNumber?: string;
-  contractStats: Record<string, unknown> | null;
-  invoicesCount: number;
-  violationsCount: number;
-  formatCurrency: (amount: number) => string;
-  onBack: () => void;
-  onEdit: () => void;
-  onPrint: () => void;
-  onExport: () => void;
-  onStatusClick: () => void;
-  onCustomerClick: () => void;
-  onVehicleClick: () => void;
-}) => {
-  const statusMeta = getContractStatusMeta(contract.status);
-  const progress = Math.round((contractStats?.progressPercentage as number) || 0);
-  const daysRemaining = contractStats?.daysRemaining as number | undefined;
-  const totalAmount = (contractStats?.totalAmount as number) || contract.contract_amount || 0;
-  const totalMonths = Number(contractStats?.totalMonths ?? 0);
-  const monthlyAmount = Number(contractStats?.monthlyAmount ?? contract.monthly_amount ?? 0);
-  const paidPayments = Number(contractStats?.paidPayments ?? 0);
-  const totalPayments = Number(contractStats?.totalPayments ?? 0);
-  const balanceDue = Number(contractStats?.outstandingInvoiceTotal ?? contract.balance_due ?? 0);
-  const dueInvoiceBalance = Number(contractStats?.dueInvoiceTotal ?? balanceDue);
-  const paidAmount = Math.max(0, totalAmount - balanceDue);
-  const paymentProgress = totalAmount > 0 ? Math.min(100, Math.round((paidAmount / totalAmount) * 100)) : 0;
-  const assignedEmployeeName = formatAssignedEmployeeName(contract.assigned_employee);
-
-  const summaryItems = [
-    {
-      label: 'إجمالي القيمة',
-      value: formatCurrency(totalAmount),
-      icon: Wallet,
-      tone: 'bg-[#EEF5FB] text-[#173A63]',
-    },
-    {
-      label: 'الإيجار الشهري',
-      value: formatCurrency(monthlyAmount),
-      icon: DollarSign,
-      tone: 'bg-emerald-50 text-emerald-700',
-    },
-    {
-      label: 'حالة السداد',
-      value: `${paidPayments} / ${totalPayments}`,
-      icon: CreditCard,
-      tone: 'bg-blue-50 text-blue-700',
-    },
-    {
-      label: 'مدة العقد',
-      value: `${totalMonths} شهر`,
-      icon: Calendar,
-      tone: 'bg-[#EEF5FB] text-[#173A63]',
-    },
-    {
-      label: dueInvoiceBalance > 0 ? 'المستحق الآن' : balanceDue > 0 ? 'فواتير مفتوحة' : 'المتبقي',
-      value: formatCurrency(dueInvoiceBalance > 0 ? dueInvoiceBalance : balanceDue),
-      icon: AlertTriangle,
-      tone: balanceDue > 0 ? 'bg-amber-50 text-amber-700' : 'bg-emerald-50 text-emerald-700',
-    },
-    {
-      label: 'الفواتير',
-      value: String(invoicesCount),
-      icon: Receipt,
-      tone: 'bg-slate-100 text-slate-700',
-    },
-    {
-      label: 'المخالفات',
-      value: String(violationsCount),
-      icon: AlertCircle,
-      tone: violationsCount > 0 ? 'bg-rose-50 text-rose-700' : 'bg-emerald-50 text-emerald-700',
-    },
-    {
-      label: 'المدفوع',
-      value: formatCurrency(contract.total_paid || 0),
-      icon: CheckCircle2,
-      tone: 'bg-emerald-50 text-emerald-700',
-    },
-  ];
-
-  return (
-    <motion.section
-      variants={fadeInUp}
-      className="contract-profile-card overflow-hidden rounded-2xl border border-[#DDE5EF] bg-white shadow-sm"
-    >
-      <div className="contract-profile-body grid gap-3 p-4">
-        <div className="p-0">
-          <div className="contract-profile-main grid gap-3 xl:grid-cols-[minmax(0,1fr)_minmax(360px,0.45fr)] xl:items-stretch">
-            <div className="contract-profile-identity min-w-0 space-y-3 rounded-xl border border-[#E3EAF2] bg-[#FAFBFC] p-4">
-              <div className="flex flex-wrap items-center gap-2">
-                <button
-                  type="button"
-                  onClick={onStatusClick}
-                  className={cn(
-                    'inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-black transition-colors',
-                    statusMeta.tone,
-                  )}
-                >
-                  <span className={cn('h-2 w-2 rounded-full', statusMeta.dot)} />
-                  {statusMeta.label}
-                </button>
-                <span className="contract-type-badge rounded-full border border-[#DDE5EF] bg-white px-3 py-1 text-xs font-bold text-black">
-                  عقد تأجير مركبة
-                </span>
-              </div>
-
-              <div>
-                <p className="text-sm font-medium text-[#64748B]">رقم العقد</p>
-                <h1 className="mt-1 truncate text-2xl font-black tracking-normal text-[#142033] sm:text-3xl" dir="ltr">
-                  {contract.contract_number}
-                </h1>
-              </div>
-
-              <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-                <button
-                  type="button"
-                  onClick={onCustomerClick}
-                  className="group rounded-xl border border-[#E3EAF2] bg-white p-4 text-right transition-colors hover:border-[#173A63] hover:bg-[#EEF5FB]"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="contract-action-icon flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[#EEF5FB] text-black transition-colors group-hover:bg-white">
-                      <User className="h-5 w-5" />
-                    </div>
-                    <div className="min-w-0">
-                      <p className="text-xs text-[#6A7688]">العميل</p>
-                      <p className="truncate text-base font-black text-[#142033] group-hover:text-[#173A63]">{customerName}</p>
-                      <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-xs font-semibold text-[#8290A4]">
-                        {contract.customer?.phone && <span dir="ltr">{contract.customer.phone}</span>}
-                        {contract.customer?.email && <span className="max-w-[160px] truncate">{contract.customer.email}</span>}
-                        {contract.customer?.national_id && <span>{contract.customer.national_id}</span>}
-                      </div>
-                    </div>
-                  </div>
-                </button>
-
-                <div className="rounded-xl border border-[#E3EAF2] bg-white p-4 text-right">
-                  <div className="flex items-center gap-3">
-                    <div className="contract-action-icon flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[#F4F7FA] text-black">
-                      <UserCheck className="h-5 w-5" />
-                    </div>
-                    <div className="min-w-0">
-                      <p className="text-xs text-[#6A7688]">الموظف المسؤول</p>
-                      <p className="truncate text-sm font-bold text-[#142033]">{assignedEmployeeName}</p>
-                      <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-xs font-semibold text-[#8290A4]">
-                        <span>{contract.assigned_to_profile_id ? 'مسؤول متابعة العقد' : 'لم يتم تعيين موظف'}</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={onVehicleClick}
-                  className="group rounded-xl border border-[#E3EAF2] bg-white p-4 text-right transition-colors hover:border-[#173A63] hover:bg-[#EEF5FB]"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="contract-action-icon flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-emerald-50 text-black transition-colors group-hover:bg-white">
-                      <Car className="h-5 w-5" />
-                    </div>
-                    <div className="min-w-0">
-                      <p className="text-xs text-[#6A7688]">المركبة</p>
-                      <p className="truncate text-sm font-bold text-[#142033] group-hover:text-[#173A63]">{vehicleName}</p>
-                      <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-xs font-semibold text-[#8290A4]">
-                        <span dir="ltr">{plateNumber || '-'}</span>
-                        {contract.vehicle?.year && <span>{contract.vehicle.year}</span>}
-                        {contract.vehicle?.color && <span>{contract.vehicle.color}</span>}
-                      </div>
-                    </div>
-                  </div>
-                </button>
-              </div>
-            </div>
-
-            <div className="contract-profile-progress grid min-w-0 gap-3 sm:grid-cols-2">
-              <div className="rounded-xl border border-[#DDE5EF] bg-white p-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-semibold text-[#142033]">مدة العقد</span>
-                  <span className="text-sm font-bold text-[#173A63]">{progress}%</span>
-                </div>
-                <Progress value={progress} className="mt-2 h-2" />
-                <p className="mt-2 text-xs text-[#6A7688]">
-                  {typeof daysRemaining === 'number'
-                    ? daysRemaining > 0
-                      ? `${daysRemaining} يوم متبقي`
-                      : daysRemaining === 0
-                        ? 'ينتهي اليوم'
-                        : `منتهي منذ ${Math.abs(daysRemaining)} يوم`
-                    : 'المدة غير محددة'}
-                </p>
-              </div>
-
-              <div className="rounded-xl border border-[#DDE5EF] bg-white p-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-semibold text-[#142033]">تحصيل العقد</span>
-                  <span className="text-sm font-bold text-emerald-700">{paymentProgress}%</span>
-                </div>
-                <Progress value={paymentProgress} className="mt-2 h-2" />
-                <p className="mt-2 text-xs text-[#6A7688]">
-                  محصل {formatCurrency(paidAmount)}
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="p-0">
-          <div className="contract-profile-summary grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-4">
-            {summaryItems.map((item) => {
-              const Icon = item.icon;
-              return (
-                <div key={item.label} className="flex min-w-0 items-center justify-between gap-3 rounded-xl border border-[#E3EAF2] bg-white p-3">
-                  <div className="min-w-0 flex-1 text-right">
-                    <p className="text-xs text-[#6A7688]">{item.label}</p>
-                    <p className="mt-1 break-words text-base font-black leading-tight text-[#142033]" dir="auto">{item.value}</p>
-                  </div>
-                  <div className={cn('flex h-9 w-9 shrink-0 items-center justify-center rounded-lg', item.tone)}>
-                    <Icon className="h-4 w-4" />
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      </div>
-
-    </motion.section>
-  );
-};
-
-// ===== Quick Actions Bar - System Colors =====
-const QuickActionsBar = ({
-  contract,
-  onRenew,
-  onAmend,
-  onTerminate,
-  onReactivate,
-  onDeletePermanent,
-  onConvertToLegal,
-  onRemoveLegal,
-}: {
-  contract: Contract;
-  onRenew: () => void;
-  onAmend: () => void;
-  onTerminate: () => void;
-  onReactivate: () => void;
-  onDeletePermanent: () => void;
-  onConvertToLegal: () => void;
-  onRemoveLegal: () => void;
-}) => {
-  const primaryActions = [
-    {
-      label: 'تجديد العقد',
-      icon: RefreshCw,
-      onClick: onRenew,
-      variant: 'default' as const,
-      className: 'bg-[#00A896] hover:bg-[#007A6B] text-white border-0',
-      show: contract.status === 'active',
-    },
-    {
-      label: 'تعديل العقد',
-      icon: FileEdit,
-      onClick: onAmend,
-      variant: 'outline' as const,
-      className: 'border-[#00A896] text-[#00A896] hover:bg-[#E6F7F5]',
-      show: contract.status === 'active',
-    },
-    {
-      label: 'تحويل للشؤون القانونية',
-      icon: Scale,
-      onClick: onConvertToLegal,
-      variant: 'outline' as const,
-      className: 'border-violet-300 text-violet-700 hover:bg-violet-50',
-      show: ['active', 'cancelled', 'canceled', 'closed', 'expired'].includes(contract.status),
-    },
-    {
-      label: 'إزالة الإجراء القانوني',
-      icon: CheckCircle2,
-      onClick: onRemoveLegal,
-      variant: 'outline' as const,
-      className: 'border-emerald-300 text-emerald-700 hover:bg-emerald-50',
-      show: contract.status === 'under_legal_procedure',
-    },
-    {
-      label: 'إنهاء العقد',
-      icon: XCircle,
-      onClick: onTerminate,
-      variant: 'outline' as const,
-      className: 'border-rose-300 text-rose-700 hover:bg-rose-50',
-      show: contract.status === 'active',
-    },
-    {
-      label: 'إعادة تفعيل العقد',
-      icon: RefreshCw,
-      onClick: onReactivate,
-      variant: 'default' as const,
-      className: 'bg-emerald-500 hover:bg-emerald-600 text-white border-0',
-      show: canReactivateCancelledContract(contract.status),
-    },
-  ];
-
-  const visiblePrimaryActions = primaryActions.filter(a => a.show);
-  const sensitiveActions = [
-    {
-      label: 'حذف نهائي',
-      icon: Trash2,
-      onClick: onDeletePermanent,
-      className: 'border-rose-200 text-rose-700 hover:bg-rose-50',
-    },
-  ];
-
-  return (
-    <motion.div
-      variants={fadeInUp}
-      className="contract-action-dock rounded-xl border border-[#DDE5EF] bg-white p-4 shadow-sm"
-    >
-      <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
-        <div>
-          <p className="text-sm font-black text-[#142033]">إجراءات العقد</p>
-          <p className="mt-1 text-xs font-semibold text-[#6A7688]">الأفعال اليومية في اليمين، والإجراءات الحساسة منفصلة للمراجعة.</p>
-        </div>
-
-        <div className="flex flex-wrap items-center gap-2">
-          {visiblePrimaryActions.map((action, idx) => (
-            <motion.div key={idx} whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-              <Button
-                variant={action.variant}
-                size="sm"
-                onClick={action.onClick}
-                className={cn("h-10 gap-2 whitespace-nowrap rounded-lg font-bold", action.className)}
-              >
-                <action.icon className="w-4 h-4" />
-                {action.label}
-              </Button>
-            </motion.div>
-          ))}
-        </div>
-
-        <div className="flex flex-wrap items-center gap-2 border-t border-[#E6ECF3] pt-3 xl:border-r xl:border-t-0 xl:pr-4 xl:pt-0">
-          <span className="text-xs font-black text-rose-700">إجراءات حساسة</span>
-          {sensitiveActions.map((action) => (
-            <Button
-              key={action.label}
-              variant="outline"
-              size="sm"
-              onClick={action.onClick}
-              className={cn("h-10 gap-2 rounded-lg bg-white font-bold", action.className)}
-            >
-              <action.icon className="w-4 h-4" />
-              {action.label}
-            </Button>
-          ))}
-        </div>
-      </div>
-    </motion.div>
-  );
-};
-
-type ContractTrafficViolation = Database['public']['Tables']['traffic_violations']['Row'] & {
-  description?: string | null;
-};
-
-const CONTRACT_DETAIL_TAB_VALUES = new Set([
-  'health',
-  'financial',
-  'vehicle',
-  'violations',
-  'documents',
-  'contract',
-]);
-
-const getInitialContractTab = (tab: string | null) =>
-  tab && CONTRACT_DETAIL_TAB_VALUES.has(tab) ? tab : 'health';
-
-const ContractTopbarActions = ({
-  contract,
-  onRenew,
-  onTerminate,
-  onReactivate,
-  onDeletePermanent,
-  onConvertToLegal,
-  onRemoveLegal,
-}: {
-  contract: Contract;
-  onRenew: () => void;
-  onTerminate: () => void;
-  onReactivate: () => void;
-  onDeletePermanent: () => void;
-  onConvertToLegal: () => void;
-  onRemoveLegal: () => void;
-}) => {
-  const canRenew = contract.status === 'active';
-  const canReactivate = canReactivateCancelledContract(contract.status);
-  const canConvertToLegal = ['active', 'cancelled', 'canceled', 'closed', 'expired'].includes(contract.status);
-  const isLegal = contract.status === 'under_legal_procedure';
-
-  return (
-    <>
-      {canRenew && (
-        <Button type="button" onClick={onRenew} className="contract-topbar-renew">
-          <RefreshCw className="h-4 w-4" />
-          تجديد العقد
-        </Button>
-      )}
-
-      {canReactivate && (
-        <Button type="button" onClick={onReactivate} className="contract-topbar-renew">
-          <RefreshCw className="h-4 w-4" />
-          إعادة تفعيل
-        </Button>
-      )}
-
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button type="button" variant="outline" className="contract-topbar-more">
-            <MoreVertical className="h-4 w-4" />
-            إجراءات
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-56 text-right">
-          {canConvertToLegal && (
-            <DropdownMenuItem onClick={onConvertToLegal} className="gap-2 font-bold text-violet-700 focus:text-violet-700">
-              <Scale className="h-4 w-4" />
-              تحويل للشؤون القانونية
-            </DropdownMenuItem>
-          )}
-          {isLegal && (
-            <DropdownMenuItem onClick={onRemoveLegal} className="gap-2 font-bold text-emerald-700 focus:text-emerald-700">
-              <CheckCircle2 className="h-4 w-4" />
-              إزالة الإجراء القانوني
-            </DropdownMenuItem>
-          )}
-          {contract.status === 'active' && (
-            <DropdownMenuItem onClick={onTerminate} className="gap-2 font-bold text-rose-700 focus:text-rose-700">
-              <XCircle className="h-4 w-4" />
-              إنهاء العقد
-            </DropdownMenuItem>
-          )}
-          <DropdownMenuSeparator />
-          <DropdownMenuItem onClick={onDeletePermanent} className="gap-2 font-bold text-rose-700 focus:text-rose-700">
-            <Trash2 className="h-4 w-4" />
-            حذف نهائي
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
-    </>
-  );
-};
-
-const paidInvoiceStatuses = new Set(['paid', 'completed', 'cleared']);
-const inactiveScheduleStatuses = new Set(['cancelled', 'void', 'deleted']);
-const paidScheduleStatuses = new Set(['paid', 'completed', 'cleared']);
-const inactivePaymentStatuses = new Set(['cancelled', 'void', 'deleted', 'failed']);
-
-type ContractFinancialPayment = {
-  id: string;
-  amount: number | null;
-  payment_date: string | null;
-  payment_status: string | null;
-  payment_method: string | null;
-  payment_number?: string | null;
-  reference_number?: string | null;
-  invoice_id?: string | null;
-  contract_id?: string | null;
-  notes?: string | null;
-};
-
-const getInvoiceBalance = (invoice: Invoice) => {
-  const total = Number(invoice.total_amount || 0);
-  const paid = Number(invoice.paid_amount || 0);
-  const storedBalance = Number(invoice.balance_due ?? total - paid);
-  return Math.max(0, storedBalance);
-};
-
-const isActiveFinancialInvoice = (invoice: Invoice) => {
-  return isActiveInvoice(invoice);
-};
-
-const isPaidFinancialInvoice = (invoice: Invoice) => {
-  const status = String(invoice.status || '').trim().toLowerCase();
-  const paymentStatus = String(invoice.payment_status || '').trim().toLowerCase();
-  return paidInvoiceStatuses.has(status) || paidInvoiceStatuses.has(paymentStatus) || getInvoiceBalance(invoice) <= 1;
-};
-
-const isActiveScheduleItem = (payment: { status: string }) => {
-  const status = String(payment.status || '').toLowerCase();
-  return !inactiveScheduleStatuses.has(status);
-};
-
-const isPaidScheduleItem = (payment: { status: string }) => {
-  const status = String(payment.status || '').toLowerCase();
-  return paidScheduleStatuses.has(status);
-};
-
-const getScheduleMonthKey = (payment: { due_date: string | null }) => {
-  const source = payment.due_date;
-  if (!source) return 'unknown';
-  const dateOnly = String(source).match(/^(\d{4})-(\d{2})-(\d{2})/);
-  if (dateOnly) return `${dateOnly[1]}-${dateOnly[2]}`;
-
-  const date = new Date(source);
-  if (Number.isNaN(date.getTime())) return String(source).slice(0, 7);
-  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-};
-
-const getUniqueActiveSchedulesByMonth = <T extends { status: string; due_date: string | null; invoice_id?: string | null }>(paymentSchedules: T[]) => {
-  const byMonth = new Map<string, T>();
-
-  for (const schedule of paymentSchedules) {
-    if (!isActiveScheduleItem(schedule) || !schedule.due_date) continue;
-
-    const key = getScheduleMonthKey(schedule);
-    const current = byMonth.get(key);
-    if (!current || (!current.invoice_id && schedule.invoice_id)) {
-      byMonth.set(key, schedule);
-    }
-  }
-
-  return Array.from(byMonth.values()).sort((left, right) => {
-    const leftTime = new Date(left.due_date || '2999-12-31').getTime();
-    const rightTime = new Date(right.due_date || '2999-12-31').getTime();
-    return leftTime - rightTime;
-  });
-};
-
-const BULK_INVOICE_CANCELLATION_BATCH_SIZE = 8;
-const billableContractStatuses = new Set(['active', 'under_legal_procedure']);
-
-const chunkInvoicesForCancellation = <T,>(items: T[], size = BULK_INVOICE_CANCELLATION_BATCH_SIZE) => {
-  const chunks: T[][] = [];
-  for (let index = 0; index < items.length; index += size) {
-    chunks.push(items.slice(index, index + size));
-  }
-  return chunks;
-};
-
-const isActiveFinancialPayment = (payment: ContractFinancialPayment) => {
-  const status = String(payment.payment_status || '').toLowerCase();
-  return !inactivePaymentStatuses.has(status);
-};
-
-const getInvoiceMonthKey = (invoice: Invoice) => {
-  return getInvoiceBillingMonthKey(invoice) ?? 'unknown';
-};
-
-const buildFinancialAIDiagnosis = ({
-  contract,
-  invoices,
-  payments,
-  paymentSchedules,
-  formatCurrency,
-}: {
-  contract: Contract;
-  invoices: Invoice[];
-  payments: ContractFinancialPayment[];
-  paymentSchedules: Array<{ status: string; due_date: string | null; amount: number | null; invoice_id?: string | null }>;
-  formatCurrency: (amount: number) => string;
-}) => {
-  const activeInvoices = invoices.filter(isActiveFinancialInvoice);
-  const activePayments = payments.filter(isActiveFinancialPayment);
-  const activeSchedules = getUniqueActiveSchedulesByMonth(paymentSchedules);
-  const paymentsByInvoiceId = activePayments.reduce((map, payment) => {
-    if (!payment.invoice_id) return map;
-    map.set(payment.invoice_id, (map.get(payment.invoice_id) || 0) + Number(payment.amount || 0));
-    return map;
-  }, new Map<string, number>());
-  const invoicesByMonth = activeInvoices.reduce((map, invoice) => {
-    const key = getInvoiceMonthKey(invoice);
-    map.set(key, [...(map.get(key) || []), invoice]);
-    return map;
-  }, new Map<string, Invoice[]>());
-  const unlinkedPayments = activePayments.filter((payment) => !payment.invoice_id);
-  const invoicePaymentMismatches = activeInvoices.filter((invoice) => {
-    const linkedPaid = paymentsByInvoiceId.get(invoice.id) || 0;
-    const recordedPaid = Number(invoice.paid_amount || 0);
-    return Math.abs(linkedPaid - recordedPaid) > 1;
-  });
-  const balanceMismatches = activeInvoices.filter((invoice) => {
-    const expectedBalance = Math.max(0, Number(invoice.total_amount || 0) - Number(invoice.paid_amount || 0));
-    return Math.abs(expectedBalance - getInvoiceBalance(invoice)) > 1;
-  });
-  const duplicateInvoiceGroups = Array.from(invoicesByMonth.entries())
-    .filter(([, monthInvoices]) => monthInvoices.length > 1);
-  const duplicatePayments = activePayments.filter((payment, index, list) => {
-    const key = `${payment.payment_date || ''}-${Number(payment.amount || 0).toFixed(2)}-${payment.reference_number || ''}`;
-    return list.findIndex((other) => `${other.payment_date || ''}-${Number(other.amount || 0).toFixed(2)}-${other.reference_number || ''}` === key) !== index;
-  });
-  const openInvoices = activeInvoices.filter((invoice) => !isPaidFinancialInvoice(invoice) && getInvoiceBalance(invoice) > 1);
-  const invoicesTotal = activeInvoices.reduce((sum, invoice) => sum + Number(invoice.total_amount || 0), 0);
-  const recordedInvoicePaid = activeInvoices.reduce((sum, invoice) => sum + Number(invoice.paid_amount || 0), 0);
-  const activePaymentTotal = activePayments.reduce((sum, payment) => sum + Number(payment.amount || 0), 0);
-  const outstandingTotal = openInvoices.reduce((sum, invoice) => sum + getInvoiceBalance(invoice), 0);
-  const schedulesTotal = activeSchedules.reduce((sum, schedule) => sum + Number(schedule.amount || 0), 0);
-  const contractBalance = Number(contract.balance_due || 0);
-  const scheduleDifference = invoicesTotal - schedulesTotal;
-  const contractBalanceDifference = contractBalance - outstandingTotal;
-  const issues = [
-    unlinkedPayments.length > 0 && {
-      title: 'دفعات غير مرتبطة بفواتير',
-      detail: `${unlinkedPayments.length} دفعة بإجمالي ${formatCurrency(unlinkedPayments.reduce((sum, p) => sum + Number(p.amount || 0), 0))} لا ترتبط بأي فاتورة.`,
-      action: 'راجع هذه الدفعات واربطها بالفاتورة الصحيحة أو سجلها كدفعة مقدمة.',
-      severity: 'warning',
-    },
-    invoicePaymentMismatches.length > 0 && {
-      title: 'فرق بين paid_amount والدفعات المرتبطة',
-      detail: `${invoicePaymentMismatches.length} فاتورة لا يطابق مبلغها المدفوع مجموع الدفعات المرتبطة بها.`,
-      action: 'أعد احتساب حالة هذه الفواتير أو تحقق من الدفعات الملغاة/المكررة.',
-      severity: 'danger',
-    },
-    balanceMismatches.length > 0 && {
-      title: 'رصيد فاتورة غير مطابق للمعادلة',
-      detail: `${balanceMismatches.length} فاتورة رصيدها لا يساوي إجمالي الفاتورة ناقص المدفوع.`,
-      action: 'حدّث رصيد الفاتورة أو راجع التعديلات اليدوية على المبلغ.',
-      severity: 'danger',
-    },
-    duplicateInvoiceGroups.length > 0 && {
-      title: 'احتمال فواتير مكررة لنفس الشهر',
-      detail: `${duplicateInvoiceGroups.length} شهر يحتوي على أكثر من فاتورة فعالة لنفس العقد.`,
-      action: 'راجع الفواتير الشهرية وألغِ المكرر فقط بعد التأكد من عدم وجود دفعات مرتبطة.',
-      severity: 'warning',
-    },
-    duplicatePayments.length > 0 && {
-      title: 'احتمال دفعات مكررة',
-      detail: `${duplicatePayments.length} دفعة تتشابه في التاريخ والمبلغ والمرجع.`,
-      action: 'راجع أرقام الإيصالات والمراجع البنكية قبل الاعتماد.',
-      severity: 'warning',
-    },
-    Math.abs(contractBalanceDifference) > 1 && {
-      title: 'رصيد العقد لا يطابق الفواتير المفتوحة',
-      detail: `رصيد العقد ${formatCurrency(contractBalance)} بينما الفواتير المفتوحة ${formatCurrency(outstandingTotal)}. الفرق ${formatCurrency(Math.abs(contractBalanceDifference))}.`,
-      action: 'راجع تحديث رصيد العقد بعد آخر دفعة أو آخر إلغاء فاتورة.',
-      severity: 'danger',
-    },
-    activeInvoices.length > 0 && activeSchedules.length > 0 && Math.abs(scheduleDifference) > 1 && {
-      title: 'جدول الدفعات لا يطابق الفواتير',
-      detail: `إجمالي الفواتير ${formatCurrency(invoicesTotal)} وجدول الدفعات ${formatCurrency(schedulesTotal)}.`,
-      action: 'أعد توليد جدول الدفعات من الفواتير أو راجع الأشهر الناقصة.',
-      severity: 'warning',
-    },
-  ].filter(Boolean) as Array<{ title: string; detail: string; action: string; severity: 'danger' | 'warning' }>;
-
-  const score = Math.max(0, Math.min(100, 100 - issues.reduce((sum, issue) => sum + (issue.severity === 'danger' ? 18 : 10), 0)));
-  const status = score >= 85 ? 'سليم' : score >= 60 ? 'يحتاج مراجعة' : 'خلل مالي واضح';
-  const tone = score >= 85 ? 'ok' : score >= 60 ? 'warning' : 'danger';
-  const summary = issues[0]?.detail || 'لا توجد فروقات واضحة بين الفواتير والدفعات ورصيد العقد حسب البيانات الحالية.';
-
-  return {
-    activePaymentTotal,
-    issues,
-    openInvoicesCount: openInvoices.length,
-    outstandingTotal,
-    recordedInvoicePaid,
-    score,
-    status,
-    summary,
-    tone,
-  };
-};
-
-const FinancialAIDiagnosisCard = ({
-  contract,
-  invoices,
-  payments,
-  paymentSchedules,
-  formatCurrency,
-}: {
-  contract: Contract;
-  invoices: Invoice[];
-  payments: ContractFinancialPayment[];
-  paymentSchedules: Array<{ status: string; due_date: string | null; amount: number | null; invoice_id?: string | null }>;
-  formatCurrency: (amount: number) => string;
-}) => {
-  const diagnosis = useMemo(
-    () => buildFinancialAIDiagnosis({ contract, invoices, payments, paymentSchedules, formatCurrency }),
-    [contract, invoices, payments, paymentSchedules, formatCurrency]
-  );
-
-  return (
-    <section className={`rounded-xl border bg-white p-4 shadow-sm ${
-      diagnosis.tone === 'danger'
-        ? 'border-rose-200'
-        : diagnosis.tone === 'warning'
-          ? 'border-amber-200'
-          : 'border-emerald-200'
-    }`}>
-      <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_220px] lg:items-stretch">
-        <div className="min-w-0">
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#EAF2F9] text-[#173A63]">
-              <Sparkles className="h-5 w-5" />
-            </span>
-            <div>
-              <p className="text-xs font-black text-[#66758A]">تشخيص تلقائي للفواتير والدفعات</p>
-              <h3 className="text-lg font-black text-[#142033]">{diagnosis.status}</h3>
-            </div>
-          </div>
-          <p className="mt-3 rounded-lg bg-[#F8FBFD] p-3 text-sm font-bold leading-7 text-[#334155]">
-            {diagnosis.summary}
-          </p>
-        </div>
-
-        <div className="grid grid-cols-3 gap-2 lg:grid-cols-1">
-          <div className="rounded-lg border border-[#DCE6F0] bg-[#F8FBFD] p-3 text-center">
-            <span className="block text-xs font-black text-[#66758A]">درجة التطابق</span>
-            <strong className={`text-2xl ${
-              diagnosis.tone === 'danger' ? 'text-rose-600' : diagnosis.tone === 'warning' ? 'text-amber-600' : 'text-emerald-600'
-            }`}>{diagnosis.score}%</strong>
-          </div>
-          <div className="rounded-lg border border-[#DCE6F0] bg-[#F8FBFD] p-3 text-center">
-            <span className="block text-xs font-black text-[#66758A]">فواتير مفتوحة</span>
-            <strong className="text-lg text-[#142033]">{diagnosis.openInvoicesCount}</strong>
-          </div>
-          <div className="rounded-lg border border-[#DCE6F0] bg-[#F8FBFD] p-3 text-center">
-            <span className="block text-xs font-black text-[#66758A]">رصيد مفتوح</span>
-            <strong className="text-sm text-[#142033]">{formatCurrency(diagnosis.outstandingTotal)}</strong>
-          </div>
-        </div>
-      </div>
-
-      <div className="mt-4 grid gap-2 xl:grid-cols-2">
-        {diagnosis.issues.length > 0 ? diagnosis.issues.slice(0, 4).map((issue) => (
-          <div key={issue.title} className={`rounded-lg border p-3 ${
-            issue.severity === 'danger'
-              ? 'border-rose-200 bg-rose-50'
-              : 'border-amber-200 bg-amber-50'
-          }`}>
-            <div className="flex items-start gap-2">
-              <AlertTriangle className={`mt-0.5 h-4 w-4 ${issue.severity === 'danger' ? 'text-rose-600' : 'text-amber-600'}`} />
-              <div>
-                <strong className="block text-sm font-black text-[#142033]">{issue.title}</strong>
-                <p className="mt-1 text-sm leading-6 text-[#475569]">{issue.detail}</p>
-                <p className="mt-2 text-xs font-black leading-5 text-[#173A63]">{issue.action}</p>
-              </div>
-            </div>
-          </div>
-        )) : (
-          <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-sm font-bold text-emerald-700 xl:col-span-2">
-            لا توجد مشاكل واضحة حاليًا. يتم تحديث التشخيص تلقائيًا عند تحديث الفواتير أو الدفعات.
-          </div>
-        )}
-      </div>
-    </section>
-  );
-};
-
-const ContractCommandCenter = ({
-  contract,
-  contractStats,
-  invoices,
-  paymentSchedules,
-  crmActivities,
-  auditLogs,
-  violationsCount,
-  formatCurrency,
-  onPrimaryAction,
-  onOpenFinancial,
-  onOpenViolations,
-  onOpenDocuments,
-  activeTab,
-  onTabChange,
-  tabs,
-  children,
-}: {
-  contract: Contract;
-  contractStats: Record<string, unknown> | null;
-  invoices: Invoice[];
-  paymentSchedules: Array<{ status: string; due_date: string | null; amount: number | null; invoice_id?: string | null }>;
-  crmActivities: CustomerActivity[];
-  auditLogs: ContractAuditLog[];
-  violationsCount: number;
-  formatCurrency: (amount: number) => string;
-  onPrimaryAction: () => void;
-  onOpenFinancial: () => void;
-  onOpenViolations: () => void;
-  onOpenDocuments: () => void;
-  activeTab: string;
-  onTabChange: (value: string) => void;
-  tabs: Array<{ value: string; label: string; icon: ElementType }>;
-  children: ReactNode;
-}) => {
-  const daysRemaining = Number(contractStats?.daysRemaining ?? 0);
-  const activeInvoices = invoices.filter(isActiveFinancialInvoice);
-  const collectibleInvoices = activeInvoices.filter((invoice) => !isPaidFinancialInvoice(invoice) && getInvoiceBalance(invoice) > 1);
-  const activeSchedules = getUniqueActiveSchedulesByMonth(paymentSchedules);
-  const unpaidSchedules = activeSchedules.filter((payment) => !isPaidScheduleItem(payment));
-  const totalOutstanding = collectibleInvoices.reduce((sum, invoice) => sum + getInvoiceBalance(invoice), 0);
-  const invoicesTotal = activeInvoices.reduce((sum, invoice) => sum + Number(invoice.total_amount || 0), 0);
-  const schedulesTotal = activeSchedules.reduce((sum, payment) => sum + Number(payment.amount || 0), 0);
-  const unpaidSchedulesTotal = unpaidSchedules.reduce((sum, payment) => sum + Number(payment.amount || 0), 0);
-  const scheduleDifference = invoicesTotal - schedulesTotal;
-  const scheduleMismatch = activeInvoices.length > 0 && activeSchedules.length > 0 && Math.abs(scheduleDifference) > 1;
-  const scheduleReviewNeeded = unpaidSchedules.length > collectibleInvoices.length && unpaidSchedulesTotal > totalOutstanding + 1;
-  const nextSchedule = [...paymentSchedules]
-    .filter((payment) => isActiveScheduleItem(payment) && !isPaidScheduleItem(payment))
-    .sort((a, b) => new Date(a.due_date || '2999-12-31').getTime() - new Date(b.due_date || '2999-12-31').getTime())[0];
-
-  const nextAction =
-    contract.status === 'under_legal_procedure'
-      ? {
-          title: 'متابعة الإجراء القانوني',
-          note: 'العقد محوّل للشؤون القانونية. راجع المستندات والنشاط قبل أي تعديل مالي.',
-          button: 'فتح المستندات',
-          tone: 'legal',
-          onClick: onOpenDocuments,
-        }
-      : totalOutstanding > 0
-        ? {
-            title: 'تحصيل المبلغ المستحق',
-            note: `${formatCurrency(totalOutstanding)} متبقية على العقد. ابدأ من الملف المالي لتسجيل دفعة أو مراجعة الفواتير.`,
-            button: 'فتح الملف المالي',
-            tone: 'money',
-            onClick: onOpenFinancial,
-          }
-        : violationsCount > 0
-          ? {
-              title: 'مراجعة المخالفات',
-              note: 'يوجد مخالفات مرتبطة بالعقد. تحقق من التحميل أو التحويل قبل إغلاق الملف.',
-              button: 'فتح المخالفات',
-              tone: 'risk',
-              onClick: onOpenViolations,
-            }
-          : daysRemaining <= 30 && contract.status === 'active'
-            ? {
-                title: 'الاستعداد للتجديد',
-                note: daysRemaining > 0 ? `باقي ${daysRemaining} يوم على انتهاء العقد.` : 'العقد انتهى أو ينتهي اليوم.',
-                button: 'تنفيذ الإجراء',
-                tone: 'renew',
-                onClick: onPrimaryAction,
-              }
-            : {
-                title: 'العقد مستقر',
-                note: 'لا يوجد إجراء عاجل. راقب الدفعات والمستندات من لوحة العقد.',
-                button: 'تحديث البيانات',
-                tone: 'stable',
-                onClick: onPrimaryAction,
-              };
-
-  const riskItems = [
-    {
-      label: 'المستحق',
-      value: formatCurrency(totalOutstanding),
-      state: totalOutstanding > 0 ? 'danger' : 'ok',
-      icon: Wallet,
-      action: onOpenFinancial,
-    },
-    {
-      label: 'فواتير تحتاج متابعة',
-      value: String(collectibleInvoices.length),
-      state: collectibleInvoices.length ? 'danger' : 'ok',
-      icon: Receipt,
-      action: onOpenFinancial,
-    },
-    {
-      label: 'الأيام المتبقية',
-      value: Number.isFinite(daysRemaining) ? String(daysRemaining) : '-',
-      state: daysRemaining <= 30 ? 'warning' : 'ok',
-      icon: Calendar,
-      action: onPrimaryAction,
-    },
-    {
-      label: 'المخالفات',
-      value: String(violationsCount),
-      state: violationsCount ? 'warning' : 'ok',
-      icon: AlertCircle,
-      action: onOpenViolations,
-    },
-  ];
-
-  const activityItems = [
-    {
-      label: 'حالة العقد',
-      value: getContractStatusMeta(contract.status).label,
-      icon: FileCheck,
-    },
-    {
-      label: 'أقرب استحقاق',
-      value: nextSchedule?.due_date ? format(new Date(nextSchedule.due_date), 'dd MMM yyyy', { locale: ar }) : 'لا يوجد',
-      icon: Calendar,
-    },
-    {
-      label: 'آخر تحديث مالي',
-      value: invoices[0]?.updated_at ? format(new Date(invoices[0].updated_at), 'dd MMM yyyy', { locale: ar }) : 'لا يوجد',
-      icon: Activity,
-    },
-  ];
-  const intelligenceItems = [
-    {
-      title: scheduleMismatch ? 'تعارض بين الفواتير وجدول الدفعات' : 'تطابق مالي مقبول',
-      note: scheduleMismatch
-        ? `إجمالي الفواتير الفعالة ${formatCurrency(invoicesTotal)} وجدول الدفعات ${formatCurrency(schedulesTotal)}. الفرق ${formatCurrency(Math.abs(scheduleDifference))}.`
-        : 'لا يوجد فرق واضح بين الفواتير الفعالة وجدول الدفعات.',
-      state: scheduleMismatch ? 'danger' : 'ok',
-      action: onOpenFinancial,
-    },
-    {
-      title: collectibleInvoices.length > 0 ? 'تحصيل مطلوب' : 'لا توجد فواتير مفتوحة',
-      note: collectibleInvoices.length > 0
-        ? `${collectibleInvoices.length} فاتورة فعالة لديها رصيد مستحق بقيمة ${formatCurrency(totalOutstanding)}.`
-        : 'لا توجد فواتير فعالة لديها رصيد مستحق.',
-      state: collectibleInvoices.length > 0 ? 'warning' : 'ok',
-      action: onOpenFinancial,
-    },
-    {
-      title: scheduleReviewNeeded ? 'جدول الدفعات يحتاج مراجعة' : 'جدول الدفعات تحت السيطرة',
-      note: scheduleReviewNeeded
-        ? `الدفعات غير المكتملة في الجدول ${formatCurrency(unpaidSchedulesTotal)} أكبر من الرصيد المستحق ${formatCurrency(totalOutstanding)}.`
-        : `${unpaidSchedules.length} دفعة غير مكتملة في الجدول، بإجمالي ${formatCurrency(unpaidSchedulesTotal)}.`,
-      state: scheduleReviewNeeded ? 'warning' : 'ok',
-      action: onOpenFinancial,
-    },
-  ];
-  const timelineEvents = [
-    contract.created_at && {
-      date: contract.created_at,
-      title: 'إنشاء العقد',
-      detail: contract.contract_number,
-      tone: 'neutral',
-      icon: FileText,
-    },
-    contract.start_date && {
-      date: contract.start_date,
-      title: 'بداية العقد',
-      detail: contract.customer ? formatCustomerName(contract.customer) : 'عميل العقد',
-      tone: 'success',
-      icon: Calendar,
-    },
-    ...invoices.slice(0, 4).map((invoice) => ({
-      date: invoice.updated_at || invoice.invoice_date,
-      title: invoice.payment_status === 'paid' ? 'سداد فاتورة' : 'فاتورة مفتوحة',
-      detail: `${invoice.invoice_number} - ${formatCurrency(invoice.balance_due || invoice.total_amount || 0)}`,
-      tone: invoice.payment_status === 'paid' ? 'success' : 'warning',
-      icon: Receipt,
-    })),
-    ...paymentSchedules.slice(0, 3).map((payment) => ({
-      date: payment.due_date || contract.start_date,
-      title: payment.status === 'paid' ? 'دفعة مكتملة' : 'دفعة مجدولة',
-      detail: formatCurrency(Number(payment.amount || 0)),
-      tone: payment.status === 'paid' ? 'success' : 'neutral',
-      icon: CreditCard,
-    })),
-    ...crmActivities.slice(0, 4).map((activity) => ({
-      date: activity.created_at,
-      title: activity.title || (activity.note_type === 'phone' ? 'تواصل هاتفي' : 'تفاعل مع العميل'),
-      detail: activity.content || 'تم تسجيل تفاعل بدون ملاحظات',
-      tone: activity.is_important || activity.call_status === 'no_answer' ? 'warning' : 'neutral',
-      icon: activity.note_type === 'phone' ? Phone : MessageSquare,
-    })),
-    ...auditLogs.slice(0, 4).map((log) => ({
-      date: log.created_at || contract.updated_at || contract.created_at,
-      title: log.changes_summary || log.action || 'تحديث على العقد',
-      detail: [log.entity_name, log.user_name].filter(Boolean).join(' - ') || 'سجل تدقيق',
-      tone: log.severity === 'high' || log.status === 'failed' ? 'warning' : 'neutral',
-      icon: ShieldCheck,
-    })),
-    contract.end_date && {
-      date: contract.end_date,
-      title: 'نهاية العقد',
-      detail: daysRemaining > 0 ? `متبقي ${daysRemaining} يوم` : 'انتهى العقد',
-      tone: daysRemaining > 0 ? 'neutral' : 'warning',
-      icon: Calendar,
-    },
-  ]
-    .filter(Boolean)
-    .sort((a, b) => new Date((b as { date: string }).date).getTime() - new Date((a as { date: string }).date).getTime())
-    .slice(0, 6) as Array<{
-      date: string;
-      title: string;
-      detail: string;
-      tone: string;
-      icon: ElementType;
-    }>;
-
-  return (
-    <motion.section variants={fadeInUp} className="contract-command-center">
-      <div className={`contract-next-action is-${nextAction.tone}`}>
-        <div>
-          <span>الإجراء التالي</span>
-          <h2>{nextAction.title}</h2>
-          <p>{nextAction.note}</p>
-        </div>
-        <Button onClick={nextAction.onClick} className="h-11 rounded-lg bg-[#173A63] px-5 font-black text-white hover:bg-[#102C4D]">
-          {nextAction.button}
-        </Button>
-      </div>
-
-      <div className="contract-risk-board">
-        {riskItems.map((item) => {
-          const Icon = item.icon;
-          return (
-            <button key={item.label} type="button" onClick={item.action} className={`contract-risk-tile is-${item.state}`}>
-              <span><Icon className="h-4 w-4" /> {item.label}</span>
-              <strong>{item.value}</strong>
-            </button>
-          );
-        })}
-      </div>
-
-      <div className="contract-embedded-workbench">
-        <Tabs value={activeTab} onValueChange={onTabChange} className="w-full">
-          <div className="contract-workbench-nav">
-            <div>
-              <p className="text-sm font-bold text-[#142033]">ملف العقد</p>
-              <p className="mt-1 text-xs text-[#6A7688]">انتقل مباشرة إلى البيانات والماليات والمستندات</p>
-            </div>
-            <TabsList className="contract-workbench-tabs">
-              {tabs.map((tab) => (
-                <TabsTrigger key={tab.value} value={tab.value} className="contract-workbench-tab">
-                  <tab.icon className="w-4 h-4" />
-                  {tab.label}
-                </TabsTrigger>
-              ))}
-            </TabsList>
-          </div>
-
-          <section className="contract-workbench-content">
-            {children}
-          </section>
-        </Tabs>
-      </div>
-
-      <div className="contract-activity-strip">
-        <header>
-          <strong>ملخص النشاط</strong>
-          <span>نظرة سريعة قبل الدخول للتفاصيل</span>
-        </header>
-        {activityItems.map((item) => {
-          const Icon = item.icon;
-          return (
-            <div key={item.label} className="contract-activity-row">
-              <Icon className="h-4 w-4" />
-              <span>{item.label}</span>
-              <b>{item.value}</b>
-            </div>
-          );
-        })}
-      </div>
-
-      <div className="contract-intelligence-panel">
-        <header>
-          <strong>التدقيق الذكي</strong>
-          <span>تنبيهات تشغيلية قبل حدوث التعارضات</span>
-        </header>
-        <div className="contract-intelligence-list">
-          {intelligenceItems.map((item) => (
-            <button key={item.title} type="button" onClick={item.action} className={`contract-intelligence-item is-${item.state}`}>
-              <span>{item.title}</span>
-              <p>{item.note}</p>
-            </button>
-          ))}
-        </div>
-      </div>
-
-      <div className="contract-unified-timeline">
-        <header>
-          <strong>سجل العقد الموحد</strong>
-          <span>آخر الأحداث من العقد والفواتير وجدول الدفعات</span>
-        </header>
-        <div className="contract-timeline-list">
-          {timelineEvents.map((event, index) => {
-            const Icon = event.icon;
-            return (
-              <div key={`${event.title}-${event.date}-${index}`} className={`contract-timeline-event is-${event.tone}`}>
-                <i><Icon className="h-4 w-4" /></i>
-                <div>
-                  <strong>{event.title}</strong>
-                  <span>{event.detail}</span>
-                </div>
-                <time>{format(new Date(event.date), 'dd MMM yyyy', { locale: ar })}</time>
-              </div>
-            );
-          })}
-        </div>
-      </div>
-
-    </motion.section>
-  );
-};
-
-const ContractOperationsWorkspace = ({
-  contract,
-  contractStats,
-  invoices,
-  paymentSchedules,
-  crmActivities,
-  crmStats,
-  violationsCount,
-  formatCurrency,
-  crmNote,
-  callStatus,
-  isSavingCall,
-  onCrmNoteChange,
-  onCallStatusChange,
-  onSaveCall,
-  onOpenCrm,
-  onWhatsApp,
-  onOpenFinancial,
-  onOpenViolations,
-  onOpenDocuments,
-}: {
-  contract: Contract;
-  contractStats: Record<string, unknown> | null;
-  invoices: Invoice[];
-  paymentSchedules: Array<{ status: string; due_date: string | null; amount: number | null; invoice_id?: string | null }>;
-  crmActivities: CustomerActivity[];
-  crmStats: { total: number; calls: number; successfulCalls: number; missedCalls: number; messages: number; notes: number };
-  violationsCount: number;
-  formatCurrency: (amount: number) => string;
-  crmNote: string;
-  callStatus: 'answered' | 'no_answer' | 'busy';
-  isSavingCall: boolean;
-  onCrmNoteChange: (value: string) => void;
-  onCallStatusChange: (value: 'answered' | 'no_answer' | 'busy') => void;
-  onSaveCall: () => void;
-  onOpenCrm: () => void;
-  onWhatsApp: () => void;
-  onOpenFinancial: () => void;
-  onOpenViolations: () => void;
-  onOpenDocuments: () => void;
-}) => {
-  const daysRemaining = Number(contractStats?.daysRemaining ?? 0);
-  const activeInvoices = invoices.filter(isActiveFinancialInvoice);
-  const collectibleInvoices = activeInvoices.filter((invoice) => !isPaidFinancialInvoice(invoice) && getInvoiceBalance(invoice) > 1);
-  const activeSchedules = getUniqueActiveSchedulesByMonth(paymentSchedules);
-  const totalOutstanding = collectibleInvoices.reduce((sum, invoice) => sum + getInvoiceBalance(invoice), 0);
-  const invoicesTotal = activeInvoices.reduce((sum, invoice) => sum + Number(invoice.total_amount || 0), 0);
-  const schedulesTotal = activeSchedules.reduce((sum, payment) => sum + Number(payment.amount || 0), 0);
-  const scheduleDifference = invoicesTotal - schedulesTotal;
-  const scheduleMismatch = activeInvoices.length > 0 && activeSchedules.length > 0 && Math.abs(scheduleDifference) > 1;
-  const lastCrmActivity = crmActivities[0];
-  const lastContactDays = lastCrmActivity ? differenceInDays(new Date(), new Date(lastCrmActivity.created_at)) : null;
-  const outstandingRatio = invoicesTotal > 0 ? Math.min(1, totalOutstanding / invoicesTotal) : 0;
-
-  const healthScore = Math.max(0, Math.min(100,
-    35 - Math.round(outstandingRatio * 35) +
-    (daysRemaining > 30 ? 20 : daysRemaining >= 0 ? 12 : 4) +
-    (violationsCount === 0 ? 15 : Math.max(0, 15 - violationsCount * 4)) +
-    (scheduleMismatch ? 0 : 15) +
-    (contract.status === 'active' ? 15 : contract.status === 'under_legal_procedure' ? 5 : 8)
-  ));
-
-  const scoreTone = healthScore >= 80 ? 'good' : healthScore >= 55 ? 'watch' : 'risk';
-  const healthFactors = [
-    { label: 'التحصيل', value: totalOutstanding > 0 ? `${formatCurrency(totalOutstanding)} متبقي` : 'مكتمل', state: totalOutstanding > 0 ? 'risk' : 'good' },
-    { label: 'المدة', value: daysRemaining > 0 ? `${daysRemaining} يوم` : 'منتهي', state: daysRemaining <= 30 ? 'watch' : 'good' },
-    { label: 'الجدول المالي', value: scheduleMismatch ? 'يحتاج مراجعة' : 'متطابق', state: scheduleMismatch ? 'risk' : 'good' },
-    { label: 'التواصل', value: lastContactDays === null ? 'غير مسجل' : `${lastContactDays} يوم`, state: lastContactDays === null || lastContactDays > 7 ? 'watch' : 'good' },
-  ];
-
-  const smartTasks = [
-    totalOutstanding > 0 && {
-      title: 'تحصيل المستحقات المفتوحة',
-      note: `${collectibleInvoices.length} فاتورة فعالة لديها رصيد مستحق بقيمة ${formatCurrency(totalOutstanding)}.`,
-      priority: totalOutstanding > 5000 ? 'عالية' : 'متوسطة',
-      icon: Wallet,
-      action: onOpenFinancial,
-    },
-    scheduleMismatch && {
-      title: 'مطابقة جدول الدفعات مع الفواتير',
-      note: `يوجد فرق ${formatCurrency(Math.abs(scheduleDifference))} بين الفواتير الفعالة وجدول الدفعات.`,
-      priority: 'عالية',
-      icon: ClipboardList,
-      action: onOpenFinancial,
-    },
-    (lastContactDays === null || lastContactDays > 7) && {
-      title: 'تحديث سجل التواصل مع العميل',
-      note: 'سجل مكالمة أو ملاحظة حتى تكون المتابعة قابلة للتدقيق.',
-      priority: 'متوسطة',
-      icon: Phone,
-      action: onOpenCrm,
-    },
-    violationsCount > 0 && {
-      title: 'مراجعة المخالفات المرتبطة',
-      note: 'تحقق من حالة التحميل أو التحويل للعميل.',
-      priority: 'متوسطة',
-      icon: AlertCircle,
-      action: onOpenViolations,
-    },
-    daysRemaining <= 30 && contract.status === 'active' && {
-      title: 'قرار التجديد أو الإغلاق',
-      note: 'العقد قريب من الانتهاء ويحتاج إجراء واضح.',
-      priority: 'منخفضة',
-      icon: Target,
-      action: onOpenDocuments,
-    },
-  ].filter(Boolean) as Array<{ title: string; note: string; priority: string; icon: ElementType; action: () => void }>;
-
-  return (
-    <motion.section variants={fadeInUp} className="contract-operations-workspace">
-      <div className={`contract-health-panel is-${scoreTone}`}>
-        <header>
-          <div>
-            <span>Health Score</span>
-            <h3>صحة العقد التشغيلية</h3>
-          </div>
-          <div className="contract-health-score">
-            <strong>{healthScore}</strong>
-            <small>/100</small>
-          </div>
-        </header>
-        <div className="contract-health-meter">
-          <i style={{ width: `${healthScore}%` }} />
-        </div>
-        <div className="contract-health-factors">
-          {healthFactors.map((factor) => (
-            <div key={factor.label} className={`is-${factor.state}`}>
-              <span>{factor.label}</span>
-              <strong>{factor.value}</strong>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      <div className="contract-smart-tasks-panel">
-        <header>
-          <div>
-            <span>Smart Work Queue</span>
-            <h3>مهام مقترحة حسب حالة العقد</h3>
-          </div>
-          <ClipboardList className="h-5 w-5" />
-        </header>
-        <div className="contract-smart-task-list">
-          {smartTasks.length > 0 ? smartTasks.slice(0, 4).map((task) => {
-            const Icon = task.icon;
-            return (
-              <button key={task.title} type="button" onClick={task.action} className="contract-smart-task">
-                <i><Icon className="h-4 w-4" /></i>
-                <div>
-                  <strong>{task.title}</strong>
-                  <span>{task.note}</span>
-                </div>
-                <b>{task.priority}</b>
-              </button>
-            );
-          }) : (
-            <div className="contract-empty-state">
-              <CheckCircle2 className="h-5 w-5" />
-              <span>لا توجد مهام عاجلة على هذا العقد حاليا.</span>
-            </div>
-          )}
-        </div>
-      </div>
-
-      <div className="contract-crm-panel">
-        <header>
-          <div>
-            <span>Customer CRM</span>
-            <h3>التواصل مع العميل</h3>
-          </div>
-          <button type="button" onClick={onOpenCrm}>فتح CRM</button>
-        </header>
-        <div className="contract-crm-stats">
-          <div><strong>{crmStats.total}</strong><span>نشاط</span></div>
-          <div><strong>{crmStats.calls}</strong><span>مكالمات</span></div>
-          <div><strong>{crmStats.missedCalls}</strong><span>لم يرد</span></div>
-        </div>
-        <div className="contract-crm-last">
-          <Phone className="h-4 w-4" />
-          <div>
-            <strong>{lastCrmActivity?.title || 'لا يوجد تواصل حديث'}</strong>
-            <span>{lastCrmActivity?.content || 'سجل أول ملاحظة أو مكالمة من هنا.'}</span>
-          </div>
-        </div>
-        <textarea
-          value={crmNote}
-          onChange={(event) => onCrmNoteChange(event.target.value)}
-          placeholder="اكتب ملخص المكالمة أو الملاحظة..."
-          className="contract-crm-note"
-          rows={3}
-        />
-        <div className="contract-crm-actions">
-          <select value={callStatus} onChange={(event) => onCallStatusChange(event.target.value as 'answered' | 'no_answer' | 'busy')}>
-            <option value="answered">تم الرد</option>
-            <option value="no_answer">لم يرد</option>
-            <option value="busy">مشغول</option>
-          </select>
-          <Button type="button" onClick={onSaveCall} disabled={isSavingCall} className="bg-[#173A63] text-white hover:bg-[#102C4D]">
-            {isSavingCall ? <Loader2 className="h-4 w-4 animate-spin" /> : <Phone className="h-4 w-4" />}
-            حفظ تواصل
-          </Button>
-          <Button type="button" variant="outline" onClick={onWhatsApp}>
-            <MessageSquare className="h-4 w-4" />
-            WhatsApp
-          </Button>
-        </div>
-      </div>
-    </motion.section>
-  );
-};
-
-// ===== Tab Components =====
-
-// Overview Tab
-const ContractOverviewTab = ({
-  contract,
-  customerName,
-  vehicleName,
-  plateNumber,
-  contractStats,
-  trafficViolationsCount,
-  formatCurrency,
-  onStatusClick,
-  onCustomerClick,
-  onVehicleClick,
-}: {
-  contract: Contract;
-  customerName: string;
-  vehicleName: string;
-  plateNumber?: string;
-  contractStats: Record<string, unknown>;
-  trafficViolationsCount: number;
-  formatCurrency: (amount: number) => string;
-  onStatusClick: () => void;
-  onCustomerClick: () => void;
-  onVehicleClick: () => void;
-}) => (
-  <div className="space-y-6">
-    <ContractStatsGrid
-      contractStats={contractStats}
-      trafficViolationsCount={trafficViolationsCount}
-      formatCurrency={formatCurrency}
-    />
-
-    <CustomerVehicleCards
-      customerName={customerName}
-      vehicleName={vehicleName}
-      plateNumber={plateNumber}
-      contract={contract}
-      onCustomerClick={onCustomerClick}
-      onVehicleClick={onVehicleClick}
-    />
-
-    {/* Contract Terms */}
-    <Card className="rounded-xl border-[#DDE5EF] bg-white shadow-sm">
-      <CardHeader className="border-b border-[#E6ECF3] bg-[#FCFDFE]">
-        <CardTitle className="flex items-center gap-2 text-lg text-[#142033]">
-          <FileCheck className="h-5 w-5 text-[#173A63]" />
-          شروط العقد
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3 [&>div]:rounded-xl [&>div]:border [&>div]:border-[#E3EAF2] [&>div]:bg-[#FAFBFC] [&>div]:p-4 [&_p:first-child]:mb-2 [&_p:first-child]:text-sm [&_p:first-child]:text-[#6A7688] [&_p:last-child]:font-bold [&_p:last-child]:text-[#142033]">
-          <div>
-            <p className="text-sm text-neutral-500 mb-2">تاريخ البداية</p>
-            <p className="font-semibold text-neutral-900">
-              {contract.start_date ? format(new Date(contract.start_date), 'dd MMMM yyyy', { locale: ar }) : '-'}
-            </p>
-          </div>
-          <div>
-            <p className="text-sm text-neutral-500 mb-2">تاريخ الانتهاء</p>
-            <p className="font-semibold text-neutral-900">
-              {contract.end_date ? format(new Date(contract.end_date), 'dd MMMM yyyy', { locale: ar }) : '-'}
-            </p>
-          </div>
-          <div>
-            <p className="text-sm text-neutral-500 mb-2">الإيجار الشهري</p>
-            <p className="font-semibold text-teal-600">{formatCurrency(contract.monthly_amount || 0)}</p>
-          </div>
-          <div>
-            <p className="text-sm text-neutral-500 mb-2">إجمالي قيمة العقد</p>
-            <p className="font-semibold text-neutral-900">{formatCurrency(contract.contract_amount || 0)}</p>
-          </div>
-          <div>
-            <p className="text-sm text-neutral-500 mb-2">إجمالي المدفوع</p>
-            <p className="font-semibold text-emerald-700">{formatCurrency(contract.total_paid || 0)}</p>
-          </div>
-          <div>
-            <p className="text-sm text-neutral-500 mb-2">الرصيد المتبقي</p>
-            <p className="font-semibold text-amber-700">{formatCurrency(contract.balance_due || 0)}</p>
-          </div>
-        </div>
-        {contract.description && (
-          <div className="mt-6 pt-6 border-t border-neutral-100">
-            <p className="text-sm text-neutral-500 mb-2">ملاحظات</p>
-            <p className="text-neutral-700">{contract.description}</p>
-          </div>
-        )}
-      </CardContent>
-    </Card>
-  </div>
-);
-
-// Contract Tab Component
-const ContractTab = ({
-  contract,
-  paymentSchedules,
-  checkInInspection,
-  checkOutInspection,
-}: {
-  contract: Contract;
-  paymentSchedules: PaymentSchedule[];
-  checkInInspection?: VehicleInspection | null;
-  checkOutInspection?: VehicleInspection | null;
-}) => (
-  <div className="space-y-5">
-    <div className="rounded-xl border border-[#DDE5EF] bg-[#FCFDFE] p-4">
-      <h2 className="text-xl font-black text-[#142033]">نسخة العقد الرسمية</h2>
-      <p className="mt-1 text-sm text-[#6A7688]" dir="ltr">{contract.contract_number}</p>
-    </div>
-    <div className="overflow-hidden rounded-xl border border-[#DDE5EF] bg-white shadow-sm">
-      <OfficialContractView
-        contract={contract}
-        paymentSchedules={paymentSchedules}
-        checkInInspection={checkInInspection}
-        checkOutInspection={checkOutInspection}
-      />
-    </div>
-  </div>
-);
-
-// Financial Tab Component
+// ===== Financial Tab (embedded) =====
 const FinancialTab = ({
   contract,
   invoices,
-  payments,
   paymentSchedules,
-  isLoadingPaymentSchedules,
+  snapshot,
   contractId,
   companyId,
   formatCurrency,
@@ -1851,14 +153,14 @@ const FinancialTab = ({
   onGeneratePaymentSchedules,
   onGenerateMissingInvoices,
   isGeneratingMissingInvoices,
+  billingGenerationBlocker,
   customerName,
   trafficViolations,
 }: {
   contract: Contract;
   invoices: Invoice[];
-  payments: ContractFinancialPayment[];
   paymentSchedules: PaymentSchedule[];
-  isLoadingPaymentSchedules: boolean;
+  snapshot: ContractFinancialSnapshot;
   contractId: string;
   companyId: string;
   formatCurrency: (amount: number) => string;
@@ -1872,113 +174,108 @@ const FinancialTab = ({
   onGeneratePaymentSchedules: () => void;
   onGenerateMissingInvoices?: () => void;
   isGeneratingMissingInvoices?: boolean;
+  billingGenerationBlocker?: string | null;
   customerName: string;
   trafficViolations: ContractTrafficViolation[];
 }) => (
   <div className="space-y-5">
-    <div className="rounded-xl border border-[#DDE5EF] bg-[#FCFDFE] p-4">
-      <h2 className="text-xl font-black text-[#142033]">الملف المالي للعقد</h2>
-      <p className="mt-1 text-sm text-[#6A7688]" dir="ltr">{contract.contract_number}</p>
-    </div>
-    <FinancialAIDiagnosisCard
-      contract={contract}
-      invoices={invoices}
-      payments={payments}
-      paymentSchedules={paymentSchedules}
-      formatCurrency={formatCurrency}
-    />
     <Tabs defaultValue="overview" className="w-full">
-    <TabsList className="mb-5 flex h-auto w-full justify-start gap-2 overflow-x-auto rounded-xl border border-[#D8E1EC] bg-white p-1 shadow-sm">
-      <TabsTrigger
-        value="overview"
-        className="gap-2 rounded-lg px-5 py-2.5 text-[#5B6677] transition-all data-[state=active]:bg-[#173A63] data-[state=active]:text-white"
-      >
-        <LayoutDashboard className="w-4 h-4" />
-        نظرة عامة
-      </TabsTrigger>
-      <TabsTrigger
-        value="invoices"
-        className="gap-2 rounded-lg px-5 py-2.5 text-[#5B6677] transition-all data-[state=active]:bg-[#173A63] data-[state=active]:text-white"
-      >
-        <Receipt className="w-4 h-4" />
-        الفواتير
-      </TabsTrigger>
-      <TabsTrigger
-        value="payments"
-        className="gap-2 rounded-lg px-5 py-2.5 text-[#5B6677] transition-all data-[state=active]:bg-[#173A63] data-[state=active]:text-white"
-      >
-        <CreditCard className="w-4 h-4" />
-        الدفعات
-      </TabsTrigger>
-      <TabsTrigger
-        value="schedule"
-        className="gap-2 rounded-lg px-5 py-2.5 text-[#5B6677] transition-all data-[state=active]:bg-[#173A63] data-[state=active]:text-white"
-      >
-        <Wallet className="w-4 h-4" />
-        جدول الدفعات
-      </TabsTrigger>
-    </TabsList>
+      <TabsList className="flex h-auto w-full justify-start gap-2 overflow-x-auto rounded-xl border border-slate-200 bg-white p-1 shadow-sm">
+        <TabsTrigger
+          value="overview"
+          className="gap-2 rounded-lg px-5 py-2.5 text-[#5B6677] transition-all data-[state=active]:bg-[#22C7A1] data-[state=active]:text-white"
+        >
+          <LayoutDashboard className="w-4 h-4" />
+          نظرة عامة
+        </TabsTrigger>
+        <TabsTrigger
+          value="invoices"
+          className="gap-2 rounded-lg px-5 py-2.5 text-[#5B6677] transition-all data-[state=active]:bg-[#22C7A1] data-[state=active]:text-white"
+        >
+          <Receipt className="w-4 h-4" />
+          الفواتير
+        </TabsTrigger>
+        <TabsTrigger
+          value="payments"
+          className="gap-2 rounded-lg px-5 py-2.5 text-[#5B6677] transition-all data-[state=active]:bg-[#22C7A1] data-[state=active]:text-white"
+        >
+          <RefreshCw className="w-4 h-4" />
+          الدفعات
+        </TabsTrigger>
+        <TabsTrigger
+          value="schedule"
+          className="gap-2 rounded-lg px-5 py-2.5 text-[#5B6677] transition-all data-[state=active]:bg-[#22C7A1] data-[state=active]:text-white"
+        >
+          <Receipt className="w-4 h-4" />
+          جدول الدفعات
+        </TabsTrigger>
+      </TabsList>
 
-    <TabsContent value="overview" className="mt-0">
-      <FinancialDashboard contract={contract} formatCurrency={formatCurrency} invoices={invoices} />
-    </TabsContent>
+      <TabsContent value="overview" className="mt-4">
+        <FinancialDashboard contract={contract} formatCurrency={formatCurrency} snapshot={snapshot} />
+      </TabsContent>
 
-    <TabsContent value="invoices" className="mt-0">
-      <ContractInvoicesTabRedesigned
-        invoices={invoices}
-        formatCurrency={formatCurrency}
-        onPayInvoice={onPayInvoice}
-        onPreviewInvoice={onPreviewInvoice}
-        onCreateInvoice={onCreateInvoice}
-        onCancelInvoice={onCancelInvoice}
-        isCancellingInvoice={isCancellingInvoice}
-        onBulkCancelInvoices={onBulkCancelInvoices}
-        isBulkCancellingInvoices={isBulkCancellingInvoices}
-        onGenerateMissingInvoices={onGenerateMissingInvoices}
-        isGeneratingMissingInvoices={isGeneratingMissingInvoices}
-        contractNumber={contract.contract_number}
-        customerInfo={{
-          name: customerName,
-          phone: contract.customer?.phone,
-          email: contract.customer?.email,
-          nationalId: contract.customer?.national_id,
-          customerType: contract.customer?.customer_type,
-        }}
-        trafficViolations={trafficViolations}
-      />
-    </TabsContent>
+      <TabsContent value="invoices" className="mt-4">
+        <ContractInvoicesTabRedesigned
+          invoices={invoices}
+          formatCurrency={formatCurrency}
+          onPayInvoice={onPayInvoice}
+          onPreviewInvoice={onPreviewInvoice}
+          onCreateInvoice={onCreateInvoice}
+          onCancelInvoice={onCancelInvoice}
+          isCancellingInvoice={isCancellingInvoice}
+          onBulkCancelInvoices={onBulkCancelInvoices}
+          isBulkCancellingInvoices={isBulkCancellingInvoices}
+          onGenerateMissingInvoices={onGenerateMissingInvoices}
+          isGeneratingMissingInvoices={isGeneratingMissingInvoices}
+          billingGenerationBlocker={billingGenerationBlocker}
+          contractNumber={contract.contract_number}
+          customerInfo={{
+            name: customerName,
+            phone: contract.customer?.phone,
+            email: contract.customer?.email,
+            nationalId: contract.customer?.national_id,
+            customerType: contract.customer?.customer_type,
+          }}
+          trafficViolations={trafficViolations}
+        />
+      </TabsContent>
 
-    <TabsContent value="payments" className="mt-0">
-      <ContractPaymentsTab
-        contractId={contractId}
-        companyId={companyId}
-        invoiceIds={invoices.map(inv => inv.id)}
-        contractStartDate={contract.start_date}
-        formatCurrency={formatCurrency}
-        contractNumber={contract.contract_number}
-        customerInfo={{
-          name: customerName,
-          phone: contract.customer?.phone,
-          nationalId: contract.customer?.national_id,
-        }}
-      />
-    </TabsContent>
+      <TabsContent value="payments" className="mt-4">
+        <ContractPaymentsTab
+          contractId={contractId}
+          companyId={companyId}
+          customerId={contract.customer_id}
+          invoiceIds={invoices.map((inv) => inv.id)}
+          invoices={invoices}
+          contractStartDate={contract.start_date}
+          formatCurrency={formatCurrency}
+          contractNumber={contract.contract_number}
+          customerInfo={{
+            name: customerName,
+            phone: contract.customer?.phone,
+            nationalId: contract.customer?.national_id,
+          }}
+        />
+      </TabsContent>
 
-    <TabsContent value="schedule" className="mt-0">
-      <EnhancedPaymentScheduleTab
-        contract={contract}
-        formatCurrency={formatCurrency}
-        payments={paymentSchedules}
-        onGenerateSchedules={invoices.length > 0 && paymentSchedules.length < invoices.length ? onGeneratePaymentSchedules : undefined}
-        hasInvoices={invoices.length > 0}
-        invoices={invoices}
-      />
-    </TabsContent>
+      <TabsContent value="schedule" className="mt-4">
+        <EnhancedPaymentScheduleTab
+          formatCurrency={formatCurrency}
+          onGenerateSchedules={
+            !billingGenerationBlocker && invoices.length > 0 && paymentSchedules.length < invoices.length
+              ? onGeneratePaymentSchedules
+              : undefined
+          }
+          hasInvoices={invoices.length > 0}
+          snapshot={snapshot}
+        />
+      </TabsContent>
     </Tabs>
   </div>
 );
 
-// Vehicle Tab Component
+// ===== Vehicle Tab =====
 const VehicleTab = ({
   contract,
   customerName,
@@ -1994,100 +291,86 @@ const VehicleTab = ({
   const vehicle = contract.vehicle;
   const vehicleName = `${vehicle?.make || ''} ${vehicle?.model || ''}`.trim() || 'مركبة غير محددة';
   const fuelLabel =
-    vehicle?.fuel_type === 'petrol' ? 'بنزين' :
-    vehicle?.fuel_type === 'diesel' ? 'ديزل' :
-    vehicle?.fuel_type === 'electric' ? 'كهربائي' :
-    vehicle?.fuel_type === 'hybrid' ? 'هجين' : 'غير محدد';
-  const vehicleDetails = [
-    { label: 'اللون', value: vehicle?.color || 'غير محدد', icon: Palette, accent: 'bg-[#38BDF8]/10 text-[#38BDF8]' },
-    { label: 'رقم الهيكل', value: vehicle?.vin ? `...${vehicle.vin.slice(-8)}` : 'غير محدد', icon: Hash, accent: 'bg-[#7C83F6]/10 text-[#7C83F6]', dir: 'ltr' as const },
-    { label: 'قراءة العداد', value: `${vehicle?.current_mileage?.toLocaleString() || '0'} كم`, icon: Gauge, accent: 'bg-[#22C7A1]/10 text-[#22C7A1]' },
-    { label: 'نوع الوقود', value: fuelLabel, icon: Fuel, accent: 'bg-[#FB6B7A]/10 text-[#FB6B7A]' },
-  ];
-  
+    vehicle?.fuel_type === 'petrol'
+      ? 'بنزين'
+      : vehicle?.fuel_type === 'diesel'
+        ? 'ديزل'
+        : vehicle?.fuel_type === 'electric'
+          ? 'كهربائي'
+          : vehicle?.fuel_type === 'hybrid'
+            ? 'هجين'
+            : 'غير محدد';
+
   return (
     <div className="space-y-5">
-      <div className="rounded-xl border border-[#DDE5EF] bg-[#FCFDFE] p-4">
-        <h2 className="text-xl font-black text-[#142033]">مركبة العقد</h2>
-        <p className="mt-1 text-sm text-[#6A7688]">{customerName}</p>
-      </div>
-      {/* Vehicle Summary Card */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4 }}
-        className="overflow-hidden rounded-xl border border-[#DDE5EF] bg-white shadow-sm"
-      >
-        <div className="grid lg:grid-cols-[1.2fr_0.8fr]">
-          <div className="p-6">
-            <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-              <div className="flex items-start gap-4">
-                <div className="flex h-14 w-14 items-center justify-center rounded-lg bg-[#22C7A1]/10 text-[#22C7A1]">
-                  <Car className="h-7 w-7" />
-                </div>
-                <div>
-                  <p className="mb-1 text-sm font-semibold text-[#94A3B8]">المركبة المرتبطة بالعقد</p>
-                  <h2 className="text-2xl font-bold text-[#020617]">{vehicleName}</h2>
-                  <div className="mt-3 flex flex-wrap items-center gap-2">
-                    <span className="rounded-lg bg-[#F6F8FB] px-3 py-1 text-sm font-semibold text-[#020617]">
-                      {vehicle?.year || 'غير محدد'}
-                    </span>
-                    <span className="rounded-lg bg-[#F6F8FB] px-3 py-1 text-sm font-semibold text-[#020617]">
-                      {vehicle?.color || 'غير محدد'}
-                    </span>
-                    <span className="rounded-lg bg-[#22C7A1]/10 px-3 py-1 text-sm font-bold text-[#22C7A1]" dir="ltr">
-                      {plateNumber || 'غير محدد'}
-                    </span>
-                  </div>
+      <div className="grid gap-4 lg:grid-cols-[1.15fr_0.85fr]">
+        {/* Vehicle identity */}
+        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex items-start gap-4">
+              <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-[#22C7A1]/10 text-[#0E9E7E]">
+                <Car className="h-7 w-7" />
+              </div>
+              <div>
+                <p className="text-xs font-bold text-slate-400">المركبة المرتبطة بالعقد</p>
+                <h2 className="mt-1 text-xl font-black text-[#0F172A]">{vehicleName}</h2>
+                <div className="mt-2 flex flex-wrap items-center gap-2 text-xs font-bold text-slate-600">
+                  <span className="rounded-lg bg-slate-100 px-2.5 py-1">{vehicle?.year || 'غير محدد'}</span>
+                  <span className="rounded-lg bg-slate-100 px-2.5 py-1">{vehicle?.color || 'غير محدد'}</span>
+                  <span className="rounded-lg bg-[#22C7A1]/10 px-2.5 py-1 text-[#0E9E7E]" dir="ltr">
+                    {plateNumber || 'غير محدد'}
+                  </span>
                 </div>
               </div>
-
-              {vehicle?.id && (
+            </div>
+            {vehicle?.id && (
               <Button
                 variant="outline"
+                size="sm"
                 onClick={() => navigate(`/fleet/vehicles/${vehicle.id}`)}
-                  className="gap-2 border-[#E5EAF1] bg-white text-[#020617] hover:bg-[#F6F8FB]"
+                className="gap-2 rounded-lg border-slate-200 text-xs font-bold text-slate-700 hover:bg-slate-50"
               >
-                  <ExternalLink className="h-4 w-4" />
-                  عرض ملف المركبة
+                ملف المركبة
+                <ArrowRight className="h-3.5 w-3.5" />
               </Button>
-              )}
-            </div>
-
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-              {vehicleDetails.map((item) => (
-                <div key={item.label} className="rounded-lg border border-[#E5EAF1] bg-[#F6F8FB] p-4">
-                  <div className="mb-3 flex items-center justify-between gap-3">
-                    <span className="text-sm font-semibold text-[#94A3B8]">{item.label}</span>
-                    <div className={`flex h-9 w-9 items-center justify-center rounded-lg ${item.accent}`}>
-                      <item.icon className="h-4 w-4" />
-                    </div>
-                  </div>
-                  <p className="truncate text-lg font-bold text-[#020617]" dir={item.dir}>
-                    {item.value}
-                  </p>
-                </div>
-              ))}
-            </div>
+            )}
           </div>
 
-          <div className="border-t border-[#E5EAF1] bg-[#F6F8FB] p-6 lg:border-r lg:border-t-0">
-            <div className="grid h-full gap-4">
-              <div className="rounded-lg border border-[#E5EAF1] bg-white p-5">
-                <p className="mb-2 text-sm font-semibold text-[#94A3B8]">رقم اللوحة</p>
-                <p className="text-3xl font-black text-[#020617]" dir="ltr">{plateNumber || 'غير محدد'}</p>
+          <div className="mt-5 grid grid-cols-2 gap-3 lg:grid-cols-4">
+            {[
+              { label: 'نوع الوقود', value: fuelLabel },
+              { label: 'قراءة العداد', value: `${vehicle?.current_mileage?.toLocaleString() || '0'} كم` },
+              { label: 'رقم الهيكل', value: vehicle?.vin ? `...${vehicle.vin.slice(-8)}` : 'غير محدد', ltr: true },
+              { label: 'اللون', value: vehicle?.color || 'غير محدد' },
+            ].map((item) => (
+              <div key={item.label} className="rounded-xl border border-slate-200 bg-slate-50 p-3.5">
+                <p className="text-[11px] font-bold text-slate-400">{item.label}</p>
+                <p className="mt-1 truncate text-sm font-black text-[#0F172A]" dir={item.ltr ? 'ltr' : 'rtl'}>
+                  {item.value}
+                </p>
               </div>
-              <div className="rounded-lg border border-[#E5EAF1] bg-white p-5">
-                <p className="mb-2 text-sm font-semibold text-[#94A3B8]">العقد</p>
-                <p className="text-xl font-bold text-[#020617]" dir="ltr">{contract.contract_number}</p>
-                <p className="mt-2 text-sm text-[#94A3B8]">{customerName}</p>
-              </div>
-            </div>
+            ))}
           </div>
         </div>
-      </motion.div>
-      
-      {/* Pickup/Return Section */}
+
+        {/* Quick facts */}
+        <div className="grid gap-3">
+          <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+            <p className="text-xs font-bold text-slate-400">رقم اللوحة</p>
+            <p className="mt-1.5 text-3xl font-black tracking-wide text-[#0F172A]" dir="ltr">
+              {plateNumber || '—'}
+            </p>
+          </div>
+          <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+            <p className="text-xs font-bold text-slate-400">العقد المرتبط</p>
+            <p className="mt-1.5 text-lg font-black text-[#0F172A]" dir="ltr">
+              {contract.contract_number}
+            </p>
+            <p className="mt-1 text-xs font-semibold text-slate-500">{customerName}</p>
+          </div>
+        </div>
+      </div>
+
       <VehiclePickupReturnTabRedesigned
         contract={{
           id: contract.id,
@@ -2098,9 +381,10 @@ const VehicleTab = ({
           vehicle_plate: plateNumber || '',
           vehicle_make: contract.vehicle?.make || '',
           vehicle_model: contract.vehicle?.model || '',
-          vehicle_year: contract.vehicle?.year || new Date().getFullYear(),
+          vehicle_year: contract.vehicle?.year || 0,
           start_date: contract.start_date,
           end_date: contract.end_date,
+          vehicle_returned: contract.vehicle_returned,
         }}
         formatCurrency={formatCurrency}
       />
@@ -2108,105 +392,8 @@ const VehicleTab = ({
   );
 };
 
-// Violations Tab Component
-const ViolationsTab = ({
-  trafficViolations,
-  formatCurrency,
-  contractNumber,
-  onAddViolation,
-}: {
-  trafficViolations: ContractTrafficViolation[];
-  formatCurrency: (amount: number) => string;
-  contractNumber: string;
-  onAddViolation?: (violation: Partial<any>) => Promise<void>;
-}) => (
-  <div className="space-y-5">
-    <div className="rounded-xl border border-[#DDE5EF] bg-[#FCFDFE] p-4">
-      <h2 className="text-xl font-black text-[#142033]">مخالفات العقد</h2>
-      <p className="mt-1 text-sm text-[#6A7688]" dir="ltr">{contractNumber}</p>
-    </div>
-    <ContractViolationsTabRedesigned
-      violations={trafficViolations}
-      formatCurrency={formatCurrency}
-      contractNumber={contractNumber}
-      onAddViolation={onAddViolation}
-    />
-  </div>
-);
-
-// Documents Tab Component
-const DocumentsTab = ({
-  contract,
-}: {
-  contract: Contract;
-}) => (
-  <div className="space-y-5">
-    <div className="rounded-xl border border-[#DDE5EF] bg-[#FCFDFE] p-4">
-      <h2 className="text-xl font-black text-[#142033]">مستندات وسجل العقد</h2>
-      <p className="mt-1 text-sm text-[#6A7688]" dir="ltr">{contract.contract_number}</p>
-    </div>
-    <Tabs defaultValue="documents" className="w-full">
-    <TabsList className="mb-5 flex h-auto w-full justify-start gap-2 overflow-x-auto rounded-xl border border-[#D8E1EC] bg-white p-1 shadow-sm">
-      <TabsTrigger
-        value="documents"
-        className="gap-2 rounded-lg px-5 py-2.5 text-[#5B6677] transition-all data-[state=active]:bg-[#173A63] data-[state=active]:text-white"
-      >
-        <Folder className="w-4 h-4" />
-        المستندات
-      </TabsTrigger>
-      <TabsTrigger
-        value="timeline"
-        className="gap-2 rounded-lg px-5 py-2.5 text-[#5B6677] transition-all data-[state=active]:bg-[#173A63] data-[state=active]:text-white"
-      >
-        <GitBranch className="w-4 h-4" />
-        الجدول الزمني
-      </TabsTrigger>
-      <TabsTrigger
-        value="activity"
-        className="gap-2 rounded-lg px-5 py-2.5 text-[#5B6677] transition-all data-[state=active]:bg-[#173A63] data-[state=active]:text-white"
-      >
-        <Activity className="w-4 h-4" />
-        النشاط
-      </TabsTrigger>
-    </TabsList>
-
-    <TabsContent value="documents" className="mt-0">
-      <ContractDocuments contractId={contract.id} />
-    </TabsContent>
-
-    <TabsContent value="timeline" className="mt-0">
-      <Card className="rounded-xl border-[#DDE5EF] shadow-sm">
-        <CardHeader className="border-b border-[#E6ECF3] bg-[#FCFDFE]">
-          <CardTitle className="text-lg text-[#142033]">الجدول الزمني للعقد</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <TimelineView contract={contract} trafficViolationsCount={0} formatCurrency={(amount: number) => `${amount.toLocaleString()} ر.ق`} />
-        </CardContent>
-      </Card>
-    </TabsContent>
-
-    <TabsContent value="activity" className="mt-0">
-      <Card className="rounded-xl border-[#DDE5EF] shadow-sm">
-        <CardHeader className="border-b border-[#E6ECF3] bg-[#FCFDFE]">
-          <CardTitle className="text-lg text-[#142033]">سجل النشاط</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="py-16 text-center text-[#6A7688]">
-            <div className="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-xl bg-[#EEF5FB]">
-              <Activity className="h-10 w-10 text-[#173A63]" />
-            </div>
-            <p>سجل النشاط سيظهر هنا</p>
-          </div>
-        </CardContent>
-      </Card>
-    </TabsContent>
-    </Tabs>
-  </div>
-);
-
 // ===== Main Component =====
 const ContractDetailsPageRedesigned = () => {
-  const { t } = useFleetifyTranslation("ui");
   const { contractNumber } = useParams<{ contractNumber: string }>();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -2215,11 +402,10 @@ const ContractDetailsPageRedesigned = () => {
   const queryClient = useQueryClient();
   const { companyId, isInitializing } = useUnifiedCompanyAccess();
   const { formatCurrency } = useCurrencyFormatter();
-  const autoSyncedContractIds = useRef<Set<string>>(new Set());
 
   // State
   const requestedTab = searchParams.get('tab');
-  const [activeTab, setActiveTab] = useState(() => getInitialContractTab(requestedTab));
+  const [activeTab, setActiveTab] = useState(() => getInitialContractTabV3(requestedTab));
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
   const [isPayDialogOpen, setIsPayDialogOpen] = useState(false);
   const [isPreviewDialogOpen, setIsPreviewDialogOpen] = useState(false);
@@ -2231,7 +417,6 @@ const ContractDetailsPageRedesigned = () => {
   const [isStatusManagementOpen, setIsStatusManagementOpen] = useState(false);
   const [isConvertToLegalOpen, setIsConvertToLegalOpen] = useState(false);
   const [isTerminateDialogOpen, setIsTerminateDialogOpen] = useState(false);
-  const [isTerminating, setIsTerminating] = useState(false);
   const [isDeletePermanentDialogOpen, setIsDeletePermanentDialogOpen] = useState(false);
   const [isRemoveLegalDialogOpen, setIsRemoveLegalDialogOpen] = useState(false);
   const [isRemovingLegal, setIsRemovingLegal] = useState(false);
@@ -2246,7 +431,7 @@ const ContractDetailsPageRedesigned = () => {
   const [quickCrmStatus, setQuickCrmStatus] = useState<'answered' | 'no_answer' | 'busy'>('answered');
 
   useEffect(() => {
-    const nextTab = getInitialContractTab(requestedTab);
+    const nextTab = getInitialContractTabV3(requestedTab);
     setActiveTab((currentTab) => (currentTab === nextTab ? currentTab : nextTab));
   }, [requestedTab]);
 
@@ -2301,7 +486,7 @@ const ContractDetailsPageRedesigned = () => {
 
       // Check if input is UUID
       const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(contractNumber);
-      
+
       if (isUUID) {
         query = query.eq('id', contractNumber);
       } else {
@@ -2314,173 +499,123 @@ const ContractDetailsPageRedesigned = () => {
       return data as Contract;
     },
     enabled: !!contractNumber && !!companyId,
-    staleTime: 30000, // Cache for 30 seconds
-    gcTime: 300000, // Keep in cache for 5 minutes
+    staleTime: 30000,
+    gcTime: 300000,
   });
 
-  useEffect(() => {
-    if (!contract?.id || !companyId) return;
-    if (autoSyncedContractIds.current.has(contract.id)) return;
-
-    autoSyncedContractIds.current.add(contract.id);
-    let isActive = true;
-
-    const syncContractFinancialState = async () => {
-      const { data, error: syncError } = await (supabase as any).rpc('refresh_contract_financial_state_v1', {
-        p_contract_id: contract.id,
-      });
-
-      if (!isActive) return;
-
-      if (syncError) {
-        console.warn('[ContractDetails] automatic financial refresh skipped:', syncError);
-        return;
-      }
-
-      if (data?.changed) {
-        await Promise.all([
-          queryClient.invalidateQueries({ queryKey: ['contract-details', contractNumber, companyId] }),
-          queryClient.invalidateQueries({ queryKey: ['contract-invoices', contract.id] }),
-          queryClient.invalidateQueries({ queryKey: ['contract-payments'] }),
-          queryClient.invalidateQueries({ queryKey: ['payment-schedules'] }),
-          queryClient.invalidateQueries({ queryKey: ['contracts'] }),
-        ]);
-      }
-    };
-
-    void syncContractFinancialState();
-
-    return () => {
-      isActive = false;
-    };
-  }, [contract?.id, companyId, contractNumber, queryClient]);
+  const {
+    data: financialSyncResult,
+    error: financialSyncError,
+    isFetching: isFinancialSyncing,
+  } = useQuery(contractFinancialSyncQueryOptions(queryClient, {
+    contractId: contract?.id || '',
+    contractNumber: contract?.contract_number || contractNumber || '',
+    companyId: companyId || '',
+  }));
 
   // Fetch invoices with caching (including cancelled to show full history)
-  const { data: invoices = [] } = useQuery({
-    queryKey: ['contract-invoices', contract?.id, contract?.start_date || null],
+  const {
+    data: invoices = [],
+    error: invoicesError,
+    isLoading: areInvoicesLoading,
+  } = useQuery({
+    queryKey: ['contract-invoices', contract?.id, companyId, contract?.customer_id, 'complete-evidence'],
     queryFn: async () => {
-      if (!contract?.id || !companyId) return [];
-
-      const { data: scheduleInvoiceLinks, error: scheduleInvoiceLinksError } = await supabase
-        .from('contract_payment_schedules')
-        .select('invoice_id')
-        .eq('contract_id', contract.id)
-        .eq('company_id', companyId)
-        .not('invoice_id', 'is', null);
-
-      if (scheduleInvoiceLinksError) throw scheduleInvoiceLinksError;
-
-      const scheduleInvoiceIds = Array.from(new Set(
-        (scheduleInvoiceLinks || [])
-          .map((schedule) => schedule.invoice_id)
-          .filter(Boolean),
-      )) as string[];
-
-      let query = supabase
-        .from('invoices')
-        .select('*')
-        .eq('company_id', companyId);
-
-      query = scheduleInvoiceIds.length
-        ? query.or(`contract_id.eq.${contract.id},id.in.(${scheduleInvoiceIds.join(',')})`)
-        : query.eq('contract_id', contract.id);
-
-      if (contract.start_date) {
-        query = query.gte('due_date', `${contract.start_date.slice(0, 7)}-01`);
-      }
-
-      const { data, error } = await query.order('due_date', { ascending: true });
-
-      if (error) throw error;
-      return data as Invoice[];
-    },
-    enabled: !!contract?.id,
-    staleTime: 30000, // Cache for 30 seconds
-    gcTime: 300000, // Keep in cache for 5 minutes
-  });
-
-  const invoiceIdsForPayments = useMemo(() => invoices.map((invoice) => invoice.id).filter(Boolean), [invoices]);
-
-  const { data: contractPayments = [] } = useQuery({
-    queryKey: ['contract-payments', contract?.id, true, invoiceIdsForPayments.join(','), contract?.start_date || null],
-    queryFn: async () => {
-      if (!contract?.id || !companyId) return [];
-
-      let query = supabase
-        .from('payments')
-        .select(`
-          id,
-          amount,
-          payment_date,
-          payment_status,
-          payment_method,
-          payment_number,
-          reference_number,
-          notes,
-          invoice_id,
-          contract_id
-        `)
-        .eq('company_id', companyId);
-
-      if (invoiceIdsForPayments.length) {
-        query = query.or(`contract_id.eq.${contract.id},invoice_id.in.(${invoiceIdsForPayments.join(',')})`);
-      } else {
-        query = query.eq('contract_id', contract.id);
-      }
-
-      if (contract.start_date) {
-        query = query.gte('payment_date', contract.start_date);
-      }
-
-      const { data, error } = await query.order('payment_date', { ascending: false });
-
-      if (error) throw error;
-      return (data || []) as ContractFinancialPayment[];
+      return fetchContractInvoiceEvidence({
+        companyId: companyId || '', contractId: contract?.id || '', customerId: contract?.customer_id || '',
+      });
     },
     enabled: !!contract?.id && !!companyId,
     staleTime: 30000,
     gcTime: 300000,
   });
 
+  const invoiceIntegrityWarnings = useMemo(
+    () => (invoices as Invoice[] & { integrityWarnings?: string[] }).integrityWarnings || [],
+    [invoices],
+  );
+
+  const invoiceIdsForPayments = useMemo(
+    () => invoices.map((invoice) => invoice.id).filter(Boolean),
+    [invoices],
+  );
+
+  const {
+    data: paymentEvidenceBundle,
+    error: paymentsError,
+    isLoading: arePaymentsLoading,
+  } = useQuery({
+    ...contractPaymentEvidenceQueryOptions({ companyId: companyId || '', contractId: contract?.id || '',
+      customerId: contract?.customer_id || '', invoiceIds: invoiceIdsForPayments }),
+    enabled: !!contract?.id && !!companyId && !!contract?.customer_id && !areInvoicesLoading,
+  });
+  const contractPayments = useMemo(() => paymentEvidenceBundle?.payments || [], [paymentEvidenceBundle]);
+  const paymentIntegrityWarnings = paymentEvidenceBundle?.integrityWarnings || [];
+
   // Fetch traffic violations with caching
-  const { data: trafficViolations = [] } = useQuery({
-    queryKey: ['contract-violations', contract?.id],
+  const {
+    data: trafficViolations = [],
+    error: trafficViolationsError,
+    isLoading: areTrafficViolationsLoading,
+  } = useQuery({
+    queryKey: ['contract-violations', contract?.id, companyId],
     queryFn: async () => {
-      if (!contract?.id) return [];
+      if (!contract?.id || !companyId) return [];
 
       const { data, error } = await supabase
         .from('traffic_violations')
         .select('*')
         .eq('contract_id', contract.id)
+        .eq('company_id', companyId)
         .order('violation_date', { ascending: false });
 
       if (error) throw error;
-      return (data || []).map((violation: any) => ({
+      return (data || []).map((violation) => ({
         ...violation,
-        description: violation.description || violation.violation_description,
+        description: violation.violation_description,
       }));
     },
-    enabled: !!contract?.id,
-    staleTime: 30000, // Cache for 30 seconds
-    gcTime: 300000, // Keep in cache for 5 minutes
+    enabled: !!contract?.id && !!companyId,
+    staleTime: 30000,
+    gcTime: 300000,
   });
 
+  const unsettledTrafficViolations = useMemo(
+    () => trafficViolations.filter((violation) => ![
+      'paid',
+      'cancelled',
+      'canceled',
+      'void',
+      'voided',
+      'deleted',
+      'resolved',
+    ].includes(String(violation.status || '').trim().toLowerCase())),
+    [trafficViolations],
+  );
   const reactivationViolationTotal = useMemo(
-    () => trafficViolations.reduce(
+    () => unsettledTrafficViolations.reduce(
       (total, violation) => total + Number(violation.fine_amount || violation.total_amount || 0),
       0,
     ),
-    [trafficViolations],
+    [unsettledTrafficViolations],
   );
-  const reactivationHasViolations = trafficViolations.length > 0;
+  const reactivationHasViolations = unsettledTrafficViolations.length > 0;
 
   // Vehicle inspections
-  const { data: checkInInspections = [] } = useVehicleInspections({
+  const {
+    data: checkInInspections = [],
+    error: checkInInspectionError,
+    isLoading: isCheckInInspectionLoading,
+  } = useVehicleInspections({
     contractId: contract?.id,
     inspectionType: 'check_in',
     enabled: !!contract?.id,
   });
-  const { data: checkOutInspections = [] } = useVehicleInspections({
+  const {
+    data: checkOutInspections = [],
+    error: checkOutInspectionError,
+    isLoading: isCheckOutInspectionLoading,
+  } = useVehicleInspections({
     contractId: contract?.id,
     inspectionType: 'check_out',
     enabled: !!contract?.id,
@@ -2488,49 +623,88 @@ const ContractDetailsPageRedesigned = () => {
   const checkInInspection = checkInInspections[0] || null;
   const checkOutInspection = checkOutInspections[0] || null;
 
-  const scheduleMinDueDate = contract?.start_date ? `${contract.start_date.slice(0, 7)}-01` : null;
-
-  // Fetch payment schedules
-  const { data: paymentSchedules = [], isLoading: isLoadingPaymentSchedules } = useContractPaymentSchedules(
-    contract?.id || '',
-    scheduleMinDueDate
-  );
+  // Audit the entire persisted schedule, including undated/out-of-period rows.
+  // The financial snapshot handles display exclusions only after validation.
+  const {
+    data: paymentSchedules = [],
+    error: paymentSchedulesError,
+    isLoading: arePaymentSchedulesLoading,
+  } = useContractPaymentSchedules(contract?.id || '');
 
   const {
     activities: crmActivities = [],
     stats: crmStats,
+    error: crmActivitiesError,
     addActivity: addCrmActivity,
     isAdding: isAddingCrmActivity,
   } = useCustomerCRMActivity(contract?.customer_id || null);
 
-  const { data: contractAuditLogs = [] } = useQuery({
-    queryKey: ['contract-audit-logs', contract?.id],
+  const {
+    data: contractAuditLogs = [],
+    error: contractAuditLogsError,
+  } = useQuery({
+    queryKey: ['contract-audit-logs', contract?.id, companyId],
     queryFn: async (): Promise<ContractAuditLog[]> => {
-      if (!contract?.id) return [];
+      if (!contract?.id || !companyId) return [];
 
       const { data, error } = await supabase
         .from('audit_logs')
         .select('id, action, changes_summary, entity_name, created_at, severity, status, user_name')
+        .eq('company_id', companyId)
         .eq('resource_type', 'contract')
         .eq('resource_id', contract.id)
         .order('created_at', { ascending: false })
         .limit(20);
 
-      if (error) {
-        console.warn('Unable to load contract audit logs:', error);
-        return [];
-      }
+      if (error) throw error;
 
       return (data || []) as ContractAuditLog[];
     },
-    enabled: !!contract?.id,
+    enabled: !!contract?.id && !!companyId,
     staleTime: 60000,
   });
 
   // Hook to generate payment schedules from invoices
   const generatePaymentSchedulesFromInvoices = useGeneratePaymentSchedulesFromInvoices();
 
-  // Calculations
+  // ===== Derived state =====
+  const snapshot: ContractFinancialSnapshot = useMemo(
+    () => buildContractFinancialSnapshotV3(invoices, contractPayments, paymentSchedules, contract || undefined),
+    [contract, invoices, contractPayments, paymentSchedules],
+  );
+
+  const officialPaymentSchedules = useMemo(() => {
+    const activeIds = new Set(snapshot.activeSchedules.map((schedule) => schedule.id).filter(Boolean));
+    if (activeIds.size > 0) {
+      return paymentSchedules.filter((schedule) => activeIds.has(schedule.id));
+    }
+
+    const activeMonths = new Set(
+      snapshot.activeSchedules
+        .map((schedule) => String(schedule.due_date || '').slice(0, 7))
+        .filter(Boolean),
+    );
+    return paymentSchedules.filter((schedule) => activeMonths.has(String(schedule.due_date || '').slice(0, 7)));
+  }, [paymentSchedules, snapshot.activeSchedules]);
+
+  const billingPeriodValidation = useMemo(
+    () => contract
+      ? analyzeContractBillingPeriod({
+          startDate: contract.start_date,
+          endDate: contract.end_date,
+          contractAmount: contract.contract_amount,
+          monthlyAmount: contract.monthly_amount,
+          invoices,
+          schedules: paymentSchedules,
+        })
+      : null,
+    [contract, invoices, paymentSchedules],
+  );
+  const documentGenerationBlocker = billingPeriodValidation?.blockingMessage
+    || (checkInInspectionError || checkOutInspectionError
+      ? 'تعذر التحقق من تقارير استلام وتسليم المركبة؛ أعد تحميل الصفحة قبل إنشاء مستند رسمي.'
+      : null);
+
   const contractStats = useMemo(() => {
     if (!contract) return null;
 
@@ -2538,54 +712,41 @@ const ContractDetailsPageRedesigned = () => {
     const endDate = new Date(contract.end_date);
     const today = new Date();
 
-    const totalDays = differenceInDays(endDate, startDate);
-    const daysElapsed = differenceInDays(today, startDate);
+    const totalDays = Math.max(0, differenceInDays(endDate, startDate));
+    const daysElapsed = Math.max(0, differenceInDays(today, startDate));
     const daysRemaining = differenceInDays(endDate, today);
-
-    const totalMonths = Math.ceil(totalDays / 30);
-    const monthsElapsed = Math.max(0, Math.floor(daysElapsed / 30));
-    const monthsRemaining = Math.max(0, Math.ceil(daysRemaining / 30));
-
-    const progressPercentage = Math.max(0, Math.min(100, (daysElapsed / totalDays) * 100));
-
-    const activeFinancialInvoices = invoices.filter(isActiveFinancialInvoice);
-    const todayKey = new Intl.DateTimeFormat('en-CA', {
-      timeZone: 'Asia/Qatar',
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-    }).format(new Date());
-    const invoicesTotal = activeFinancialInvoices.reduce((sum, invoice) => sum + Number(invoice.total_amount || 0), 0);
-    const invoicePaidTotal = activeFinancialInvoices.reduce((sum, invoice) => sum + Number(invoice.paid_amount || 0), 0);
-    const openInvoices = activeFinancialInvoices.filter((invoice) => !isPaidFinancialInvoice(invoice) && getInvoiceBalance(invoice) > 1);
-    const outstandingInvoiceTotal = openInvoices.reduce((sum, invoice) => sum + getInvoiceBalance(invoice), 0);
-    const dueInvoiceTotal = openInvoices.reduce((sum, invoice) => {
-      const dueDate = String(invoice.due_date || '');
-      return !dueDate || dueDate <= todayKey ? sum + getInvoiceBalance(invoice) : sum;
-    }, 0);
-
-    const totalAmount = invoicesTotal > 0 ? invoicesTotal : (contract.monthly_amount || 0) * totalMonths;
-    const paidAmount = invoicePaidTotal > 0 ? invoicePaidTotal : contract.total_paid || 0;
+    const totalPayments = billingPeriodValidation?.availableBillingMonths
+      || snapshot.totalSchedulesCount;
+    const progressPercentage = totalDays > 0
+      ? Math.max(0, Math.min(100, Math.round((daysElapsed / totalDays) * 100)))
+      : 0;
 
     return {
-      totalAmount,
+      totalAmount: snapshot.contractTotal,
       monthlyAmount: contract.monthly_amount || 0,
       totalDays,
       daysElapsed,
       daysRemaining,
-      totalMonths,
-      monthsElapsed,
-      monthsRemaining,
+      totalMonths: totalPayments,
       progressPercentage,
-      paidPayments: monthsElapsed,
-      totalPayments: totalMonths,
-      paymentStatus: outstandingInvoiceTotal <= 1 ? 'completed' : 'pending',
-      outstandingInvoiceTotal,
-      dueInvoiceTotal,
-      openInvoiceCount: openInvoices.length,
-      extraPayments: 0,
+      paidPayments: snapshot.paidSchedulesCount,
+      totalPayments,
+      paymentStatus:
+        snapshot.contractTotal > 0 && snapshot.remainingTotal === 0 && snapshot.hasFinancialCoverage && !snapshot.financialReviewRequired
+          ? 'completed'
+          : 'pending',
     };
-  }, [contract, invoices]);
+  }, [billingPeriodValidation?.availableBillingMonths, contract, snapshot]);
+
+  const contractHealth = useMemo(
+    () => calculateContractHealthScoreV3({
+      snapshot,
+      daysRemaining: contractStats?.daysRemaining ?? null,
+      violationsCount: unsettledTrafficViolations.length,
+      contractStatus: contract?.status,
+    }),
+    [contract?.status, contractStats?.daysRemaining, snapshot, unsettledTrafficViolations.length],
+  );
 
   const customerName = useMemo(() => {
     if (!contract?.customer) return 'غير محدد';
@@ -2595,36 +756,74 @@ const ContractDetailsPageRedesigned = () => {
   const vehicleName = useMemo(() => {
     if (!contract?.vehicle) return 'غير محدد';
     const vehicle = contract.vehicle;
-    const make = vehicle.make || '';
-    const model = vehicle.model || '';
-    const year = vehicle.year || '';
-    return `${make} ${model} ${year}`.trim();
+    return `${vehicle.make || ''} ${vehicle.model || ''} ${vehicle.year || ''}`.trim();
   }, [contract?.vehicle]);
 
   const plateNumber = contract?.vehicle?.plate_number;
 
-  // Handlers
+  // ===== Handlers =====
   const handleBack = useCallback(() => {
     navigate('/contracts');
   }, [navigate]);
 
-  const handleRefresh = useCallback(() => {
-    queryClient.invalidateQueries({ queryKey: ['contract-details'] });
-  }, [queryClient]);
-
   const handlePrint = useCallback(() => {
+    if (documentGenerationBlocker) {
+      toast({
+        title: 'العقد غير جاهز للطباعة',
+        description: documentGenerationBlocker,
+        variant: 'destructive',
+      });
+      return;
+    }
     setIsPrintDialogOpen(true);
-  }, []);
+  }, [documentGenerationBlocker, toast]);
 
   const handleExport = useCallback(() => {
+    if (documentGenerationBlocker) {
+      toast({
+        title: 'العقد غير جاهز للتصدير',
+        description: documentGenerationBlocker,
+        variant: 'destructive',
+      });
+      return;
+    }
     setIsOfficialExportOpen(true);
-  }, []);
+  }, [documentGenerationBlocker, toast]);
+
+  const handleRefresh = useCallback(() => {
+    void Promise.all([
+      queryClient.invalidateQueries({ queryKey: ['contract-details', contractNumber, companyId] }),
+      queryClient.invalidateQueries({ queryKey: ['contract-financial-refresh', contract?.id, companyId] }),
+      queryClient.invalidateQueries({ queryKey: ['contract-invoices', contract?.id] }),
+      queryClient.invalidateQueries({ queryKey: ['contract-payments'] }),
+      queryClient.invalidateQueries({ queryKey: ['contract-violations', contract?.id, companyId] }),
+      queryClient.invalidateQueries({ queryKey: ['payment-schedules', contract?.id] }),
+      queryClient.invalidateQueries({ queryKey: ['contract-audit-logs', contract?.id, companyId] }),
+    ]);
+  }, [companyId, contract?.id, contractNumber, queryClient]);
 
   const handleCustomerClick = useCallback(() => {
     if (contract?.customer?.id) {
       navigate(`/customers/${contract.customer.id}`);
     }
   }, [contract, navigate]);
+
+  const handleRetryFinancialReads = useCallback(async () => {
+    if (!contract?.id || !companyId) return;
+    try {
+      await retryContractFinancialReads(queryClient, {
+        contractId: contract.id,
+        contractNumber: contract.contract_number,
+        companyId,
+      });
+    } catch {
+      toast({
+        title: 'تعذر تحميل النتائج الجديدة',
+        description: 'لم تُعد المزامنة المالية. تحقق من الاتصال ثم أعد تحميل البيانات.',
+        variant: 'destructive',
+      });
+    }
+  }, [contract?.id, contract?.contract_number, companyId, queryClient, toast]);
 
   const handleVehicleClick = useCallback(() => {
     if (contract?.vehicle?.id) {
@@ -2671,11 +870,11 @@ const ContractDetailsPageRedesigned = () => {
         title: 'تم حفظ التواصل',
         description: 'تم تحديث سجل CRM لهذا العميل.',
       });
-    } catch (error) {
-      console.error('Error saving contract CRM activity:', error);
+    } catch (saveError) {
+      console.error('Error saving contract CRM activity:', saveError);
       toast({
         title: 'تعذر حفظ التواصل',
-        description: error instanceof Error ? error.message : 'حدث خطأ أثناء تحديث سجل CRM.',
+        description: saveError instanceof Error ? saveError.message : 'حدث خطأ أثناء تحديث سجل CRM.',
         variant: 'destructive',
       });
     }
@@ -2696,207 +895,137 @@ const ContractDetailsPageRedesigned = () => {
     setIsCancelInvoiceDialogOpen(true);
   }, []);
 
-  const confirmCancelInvoice = useCallback(async (e?: React.MouseEvent) => {
-    e?.preventDefault();
-    if (!invoiceToCancel) return;
+  const confirmCancelInvoice = useCallback(
+    async (e?: React.MouseEvent) => {
+      e?.preventDefault();
+      if (!invoiceToCancel) return;
 
-    setIsCancellingInvoice(true);
-    try {
-      const { data: invoice, error: invoiceError } = await supabase
-        .from('invoices')
-        .select('id, company_id, status, payment_status, notes, invoice_number, invoice_date, due_date, paid_amount, balance_due, total_amount, journal_entry_id')
-        .eq('id', invoiceToCancel.id)
-        .eq('company_id', invoiceToCancel.company_id)
-        .maybeSingle();
-
-      if (invoiceError) throw invoiceError;
-      if (!invoice) {
-        throw new Error('لم يتم العثور على الفاتورة أو لا تملك صلاحية الوصول لها.');
-      }
-
-      if (invoice.status === 'cancelled' || invoice.payment_status === 'cancelled') {
-        toast({
-          title: 'الفاتورة ملغاة مسبقاً',
-          description: `الفاتورة ${invoice.invoice_number} ملغاة بالفعل.`,
-        });
-        return;
-      }
-
-      const { data: invoicePayments, error: paymentsError } = await supabase
-        .from('payments')
-        .select('id, payment_number, amount, payment_status, transaction_type')
-        .eq('invoice_id', invoice.id)
-        .eq('company_id', invoice.company_id);
-
-      if (paymentsError) throw paymentsError;
-
-      const ignoredPaymentStatuses = new Set(['cancelled', 'canceled', 'failed', 'voided', 'reversed', 'refunded']);
-      const activePayments = (invoicePayments || []).filter((payment) => {
-        const status = String(payment.payment_status || '').toLowerCase();
-        const transactionType = String(payment.transaction_type || 'receipt').toLowerCase();
-        return transactionType === 'receipt' && !ignoredPaymentStatuses.has(status);
-      });
-
-      if (activePayments.length > 0) {
-        const paymentSummary = activePayments
-          .slice(0, 3)
-          .map((payment) => `${payment.payment_number || 'دفعة'} (${formatCurrency(Number(payment.amount || 0))})`)
-          .join('، ');
-        throw new Error(`لا يمكن إلغاء الفاتورة لأن عليها دفعات غير ملغاة: ${paymentSummary}. ألغِ الدفعات المرتبطة أولاً ثم أعد المحاولة.`);
-      }
-
-      const previousNotes = invoice.notes ? `${invoice.notes}\n` : '';
-      const cancellationNote = `تم إلغاء الفاتورة من صفحة تفاصيل العقد بتاريخ ${new Date().toISOString()}`;
-
-      if (invoice.journal_entry_id) {
-        const { error } = await (supabase as any).rpc('cancel_invoice_with_reversal', {
-          p_invoice_id: invoice.id,
-          p_company_id: invoice.company_id,
+      setIsCancellingInvoice(true);
+      try {
+        const cancellationNote = `تم إلغاء الفاتورة من صفحة تفاصيل العقد بتاريخ ${new Date().toISOString()}`;
+        const { error } = await supabase.rpc('cancel_invoice_with_reversal', {
+          p_invoice_id: invoiceToCancel.id,
+          p_company_id: invoiceToCancel.company_id,
           p_reason: cancellationNote,
         });
 
-        if (error) {
-          throw error;
-        }
-      } else {
-        const contractStartDate = contract?.start_date;
-        const dateCorrections =
-          contractStartDate
-            ? {
-                ...(invoice.invoice_date && invoice.invoice_date < contractStartDate
-                  ? { invoice_date: contractStartDate }
-                  : {}),
-                ...(invoice.due_date && invoice.due_date < contractStartDate
-                  ? { due_date: contractStartDate }
-                  : {}),
-              }
-            : {};
-
-        const { error } = await supabase
-          .from('invoices')
-          .update({
-            status: 'cancelled',
-            payment_status: 'cancelled',
-            balance_due: 0,
-            notes: `${previousNotes}${cancellationNote}`,
-            updated_at: new Date().toISOString(),
-            ...dateCorrections,
-          })
-          .eq('id', invoice.id)
-          .eq('company_id', invoice.company_id);
-
         if (error) throw error;
-      }
 
-      toast({
-        title: 'تم إلغاء الفاتورة',
-        description: `تم إلغاء الفاتورة ${invoice.invoice_number} بنجاح`,
-      });
-
-      queryClient.invalidateQueries({ queryKey: ['contract-invoices'] });
-      queryClient.invalidateQueries({ queryKey: ['invoices'] });
-      queryClient.invalidateQueries({ queryKey: ['payment-schedules'] });
-    } catch (error) {
-      console.error('Error cancelling invoice:', error);
-      const rawMessage =
-        error instanceof Error
-          ? error.message
-          : typeof error === 'object' && error !== null && 'message' in error
-            ? String((error as { message?: unknown }).message || '')
-            : '';
-      const cancellationErrorMessage =
-        rawMessage.includes('Could not find the function public.cancel_invoice_with_reversal')
-          || rawMessage.includes('cancel_invoice_with_reversal')
-          || rawMessage.includes('schema cache')
-          ? 'إلغاء الفاتورة المرتبطة بقيد يومية يحتاج تطبيق تحديث قاعدة البيانات الجديد أولاً حتى يتم عكس القيد ثم إلغاء الفاتورة.'
-          : rawMessage.includes('Invoices with payments or journal entries cannot be deleted')
-            ? 'لا يمكن إلغاء الفاتورة بتعديل مباشر لأنها مرتبطة بدفعة أو قيد يومية. ألغِ الدفعات أولاً، ثم استخدم مسار عكس القيد لإلغاء الفاتورة.'
-            : rawMessage || 'حدث خطأ أثناء إلغاء الفاتورة';
-      toast({
-        title: 'خطأ في إلغاء الفاتورة',
-        description: cancellationErrorMessage,
-        variant: 'destructive',
-      });
-    } finally {
-      setIsCancellingInvoice(false);
-      setIsCancelInvoiceDialogOpen(false);
-      setInvoiceToCancel(null);
-    }
-  }, [companyId, contract?.start_date, formatCurrency, invoiceToCancel, queryClient, toast]);
-
-  const handleBulkCancelInvoices = useCallback(async (selectedInvoices: Invoice[]) => {
-    if (!contract?.id || !companyId || selectedInvoices.length === 0) return;
-
-    setIsBulkCancellingInvoices(true);
-    try {
-      const invoiceBatches = chunkInvoicesForCancellation(selectedInvoices);
-      let cancelledCount = 0;
-
-      for (let index = 0; index < invoiceBatches.length; index += 1) {
-        const invoiceBatch = invoiceBatches[index];
-        const { data, error } = await supabase.rpc('cancel_contract_invoices_bulk_v1', {
-          p_company_id: companyId,
-          p_contract_id: contract.id,
-          p_invoice_ids: invoiceBatch.map((invoice) => invoice.id),
-          p_reason: `إلغاء جماعي لفواتير غير صحيحة من صفحة العقد ${contract.contract_number}`,
+        toast({
+          title: 'تم إلغاء الفاتورة',
+          description: `تم إلغاء الفاتورة ${invoiceToCancel.invoice_number} بنجاح`,
         });
 
-        if (error) throw error;
-
-        const result = data as {
-          cancelled_count?: number;
-        } | null;
-        cancelledCount += Number(result?.cancelled_count || invoiceBatch.length);
-
-        if (invoiceBatches.length > 1) {
-          toast({
-            title: 'جاري إلغاء الفواتير',
-            description: `تم إلغاء ${cancelledCount} من ${selectedInvoices.length} فاتورة.`,
-          });
-        }
+        await Promise.all([
+          queryClient.invalidateQueries({ queryKey: ['contract-invoices'] }),
+          queryClient.invalidateQueries({ queryKey: ['invoices'] }),
+          queryClient.invalidateQueries({ queryKey: ['payment-schedules'] }),
+          queryClient.invalidateQueries({ queryKey: ['contract-details'] }),
+          queryClient.invalidateQueries({ queryKey: ['contract-financial-refresh'] }),
+        ]);
+      } catch (cancelError) {
+        console.error('Error cancelling invoice:', cancelError);
+        const rawMessage =
+          cancelError instanceof Error
+            ? cancelError.message
+            : typeof cancelError === 'object' && cancelError !== null && 'message' in cancelError
+              ? String((cancelError as { message?: unknown }).message || '')
+              : '';
+        const cancellationErrorMessage =
+          rawMessage.includes('Could not find the function public.cancel_invoice_with_reversal') ||
+          rawMessage.includes('cancel_invoice_with_reversal') ||
+          rawMessage.includes('schema cache')
+            ? 'إلغاء الفاتورة المرتبطة بقيد يومية يحتاج تطبيق تحديث قاعدة البيانات الجديد أولاً حتى يتم عكس القيد ثم إلغاء الفاتورة.'
+            : rawMessage.includes('Invoices with payments or journal entries cannot be deleted')
+              ? 'لا يمكن إلغاء الفاتورة بتعديل مباشر لأنها مرتبطة بدفعة أو قيد يومية. ألغِ الدفعات أولاً، ثم استخدم مسار عكس القيد لإلغاء الفاتورة.'
+              : rawMessage || 'حدث خطأ أثناء إلغاء الفاتورة';
+        toast({
+          title: 'خطأ في إلغاء الفاتورة',
+          description: cancellationErrorMessage,
+          variant: 'destructive',
+        });
+      } finally {
+        setIsCancellingInvoice(false);
+        setIsCancelInvoiceDialogOpen(false);
+        setInvoiceToCancel(null);
       }
+    },
+    [invoiceToCancel, queryClient, toast],
+  );
 
-      toast({
-        title: 'تم إلغاء الفواتير المحددة',
-        description: `تم إلغاء ${cancelledCount} فاتورة وعكس القيود المرتبطة بها بنجاح.`,
-      });
+  const handleBulkCancelInvoices = useCallback(
+    async (selectedInvoices: Invoice[]) => {
+      if (!contract?.id || !companyId || selectedInvoices.length === 0) return;
 
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ['contract-invoices'] }),
-        queryClient.invalidateQueries({ queryKey: ['invoices'] }),
-        queryClient.invalidateQueries({ queryKey: ['payment-schedules'] }),
-        queryClient.invalidateQueries({ queryKey: ['contract-details'] }),
-      ]);
-    } catch (error) {
-      console.error('[ContractDetails] bulk invoice cancellation failed:', error);
-      const rawMessage =
-        error instanceof Error
-          ? error.message
-          : typeof error === 'object' && error !== null && 'message' in error
-            ? String((error as { message?: unknown }).message || '')
-            : '';
-      const description =
-        rawMessage.includes('Paid or partially paid invoice')
-          ? 'تتضمن الفواتير المحددة فاتورة مسددة أو مسددة جزئيًا. أزلها من التحديد ثم أعد المحاولة.'
-          : rawMessage.includes('active payment')
-            ? 'إحدى الفواتير مرتبطة بدفعة نشطة. يجب إلغاء الدفعة أو إعادة توزيعها أولًا.'
-            : rawMessage.includes('statement timeout') || rawMessage.includes('57014')
-              ? 'توقف الإلغاء بسبب طول العملية. تم تقسيم العملية إلى دفعات صغيرة، أعد المحاولة وسيكمل النظام من الفواتير المتبقية.'
-            : rawMessage.includes('cancel_contract_invoices_bulk_v1')
-                || rawMessage.includes('schema cache')
-              ? 'خدمة الإلغاء الجماعي تحتاج تطبيق تحديث قاعدة البيانات الجديد أولًا.'
-              : rawMessage || 'تعذر إلغاء الفواتير المحددة.';
+      setIsBulkCancellingInvoices(true);
+      try {
+        const invoiceBatches = chunkInvoicesForCancellationV3(selectedInvoices);
+        let cancelledCount = 0;
 
-      toast({
-        title: 'لم يتم إلغاء الفواتير',
-        description,
-        variant: 'destructive',
-      });
-      throw error;
-    } finally {
-      setIsBulkCancellingInvoices(false);
-    }
-  }, [companyId, contract?.contract_number, contract?.id, queryClient, toast]);
+        for (let index = 0; index < invoiceBatches.length; index += 1) {
+          const invoiceBatch = invoiceBatches[index];
+          const { data, error } = await supabase.rpc('cancel_contract_invoices_bulk_v1', {
+            p_company_id: companyId,
+            p_contract_id: contract.id,
+            p_invoice_ids: invoiceBatch.map((invoice) => invoice.id),
+            p_reason: `إلغاء جماعي لفواتير غير صحيحة من صفحة العقد ${contract.contract_number}`,
+          });
+
+          if (error) throw error;
+
+          const result = data as { cancelled_count?: number } | null;
+          cancelledCount += Number(result?.cancelled_count || invoiceBatch.length);
+
+          if (invoiceBatches.length > 1) {
+            toast({
+              title: 'جاري إلغاء الفواتير',
+              description: `تم إلغاء ${cancelledCount} من ${selectedInvoices.length} فاتورة.`,
+            });
+          }
+        }
+
+        toast({
+          title: 'تم إلغاء الفواتير المحددة',
+          description: `تم إلغاء ${cancelledCount} فاتورة وعكس القيود المرتبطة بها بنجاح.`,
+        });
+
+        await Promise.all([
+          queryClient.invalidateQueries({ queryKey: ['contract-invoices'] }),
+          queryClient.invalidateQueries({ queryKey: ['invoices'] }),
+          queryClient.invalidateQueries({ queryKey: ['payment-schedules'] }),
+          queryClient.invalidateQueries({ queryKey: ['contract-details'] }),
+        ]);
+      } catch (bulkError) {
+        console.error('[ContractDetails] bulk invoice cancellation failed:', bulkError);
+        const rawMessage =
+          bulkError instanceof Error
+            ? bulkError.message
+            : typeof bulkError === 'object' && bulkError !== null && 'message' in bulkError
+              ? String((bulkError as { message?: unknown }).message || '')
+              : '';
+        const description =
+          rawMessage.includes('Paid or partially paid invoice')
+            ? 'تتضمن الفواتير المحددة فاتورة مسددة أو مسددة جزئيًا. أزلها من التحديد ثم أعد المحاولة.'
+            : rawMessage.includes('active payment')
+              ? 'إحدى الفواتير مرتبطة بدفعة نشطة. يجب إلغاء الدفعة أو إعادة توزيعها أولًا.'
+              : rawMessage.includes('statement timeout') || rawMessage.includes('57014')
+                ? 'توقف الإلغاء بسبب طول العملية. تم تقسيم العملية إلى دفعات صغيرة، أعد المحاولة وسيكمل النظام من الفواتير المتبقية.'
+                : rawMessage.includes('cancel_contract_invoices_bulk_v1') || rawMessage.includes('schema cache')
+                  ? 'خدمة الإلغاء الجماعي تحتاج تطبيق تحديث قاعدة البيانات الجديد أولًا.'
+                  : rawMessage || 'تعذر إلغاء الفواتير المحددة.';
+
+        toast({
+          title: 'لم يتم إلغاء الفواتير',
+          description,
+          variant: 'destructive',
+        });
+        throw bulkError;
+      } finally {
+        setIsBulkCancellingInvoices(false);
+      }
+    },
+    [companyId, contract?.contract_number, contract?.id, queryClient, toast],
+  );
 
   const handleRenew = useCallback(() => {
     setIsRenewalDialogOpen(true);
@@ -2917,7 +1046,7 @@ const ContractDetailsPageRedesigned = () => {
 
   const handleGeneratePaymentSchedules = useCallback(() => {
     if (!contract?.id) return;
-    if (!billableContractStatuses.has(String(contract.status || '').toLowerCase())) {
+    if (!billableContractStatusesV3.has(String(contract.status || '').toLowerCase())) {
       toast({
         title: 'لا يمكن إنشاء جدول دفعات',
         description: 'لا يمكن إنشاء جداول دفعات جديدة لعقد ملغي أو منتهي.',
@@ -2926,11 +1055,20 @@ const ContractDetailsPageRedesigned = () => {
       return;
     }
 
+    if (billingPeriodValidation && !billingPeriodValidation.valid) {
+      toast({
+        title: 'بيانات العقد متعارضة',
+        description: billingPeriodValidation.blockingMessage || 'راجع مدة العقد وقيمته وجدول الدفعات.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     generatePaymentSchedulesFromInvoices.mutate(contract.id);
-  }, [contract?.id, contract?.status, generatePaymentSchedulesFromInvoices, toast]);
+  }, [billingPeriodValidation, contract?.id, contract?.status, generatePaymentSchedulesFromInvoices, toast]);
 
   const handleCreateInvoiceRequest = useCallback(() => {
-    if (!billableContractStatuses.has(String(contract?.status || '').toLowerCase())) {
+    if (!billableContractStatusesV3.has(String(contract?.status || '').toLowerCase())) {
       toast({
         title: 'لا يمكن إنشاء فاتورة',
         description: 'لا يمكن إنشاء فواتير جديدة لعقد ملغي أو منتهي.',
@@ -2939,13 +1077,22 @@ const ContractDetailsPageRedesigned = () => {
       return;
     }
 
+    if (billingPeriodValidation && !billingPeriodValidation.valid) {
+      toast({
+        title: 'بيانات العقد متعارضة',
+        description: billingPeriodValidation.blockingMessage || 'راجع مدة العقد وقيمته وجدول الدفعات.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     setIsInvoiceDialogOpen(true);
-  }, [contract?.status, toast]);
+  }, [billingPeriodValidation, contract?.status, toast]);
 
   const [isGeneratingMissingInvoices, setIsGeneratingMissingInvoices] = useState(false);
   const handleGenerateMissingInvoices = useCallback(async () => {
     if (!contract?.id) return;
-    if (!billableContractStatuses.has(String(contract.status || '').toLowerCase())) {
+    if (!billableContractStatusesV3.has(String(contract.status || '').toLowerCase())) {
       toast({
         title: 'لا يمكن إنشاء فواتير',
         description: 'لا يمكن إنشاء فواتير جديدة لعقد ملغي أو منتهي.',
@@ -2954,52 +1101,38 @@ const ContractDetailsPageRedesigned = () => {
       return;
     }
 
+    if (billingPeriodValidation && !billingPeriodValidation.valid) {
+      toast({
+        title: 'بيانات العقد متعارضة',
+        description: billingPeriodValidation.blockingMessage || 'راجع مدة العقد وقيمته وجدول الدفعات.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     setIsGeneratingMissingInvoices(true);
     try {
-      console.log('Generating payment schedules for contract:', contract.id);
-      const { data: scheduleData, error: scheduleError } = await supabase.rpc('generate_payment_schedules_for_contract', {
-        p_contract_id: contract.id,
-        p_dry_run: false,
-      });
-      
-      const scheduleFailure = scheduleData && typeof scheduleData === 'object' && !Array.isArray(scheduleData)
-        && (scheduleData as Record<string, unknown>).success === false
-        ? String((scheduleData as Record<string, unknown>).error || 'فشل إنشاء جدول الدفعات')
-        : null;
-      if (scheduleError || scheduleFailure) {
-        console.error('Schedule generation error:', scheduleError);
-        throw new Error(`فشل إنشاء جدول الدفعات: ${scheduleFailure || scheduleError?.message || scheduleError?.code || 'خطأ غير معروف'}`);
-      }
-      
-      console.log('Payment schedules created:', scheduleData);
-      console.log('Generating invoices from payment schedule...');
-      
-      const { data: invoiceCount, error: invoiceError } = await supabase.rpc('generate_invoices_from_payment_schedule', {
-        p_contract_id: contract.id,
-      });
-      
-      if (invoiceError) {
-        console.error('Invoice generation error:', invoiceError);
-        throw new Error(`فشل إنشاء الفواتير: ${invoiceError.message || invoiceError.code || 'خطأ غير معروف'}`);
-      }
-      
-      console.log('Invoices created:', invoiceCount);
-      
+      const result = await generateContractBillingGraph(contract.id);
+      const invoiceCount = result.createdInvoices;
+
       queryClient.invalidateQueries({ queryKey: ['contract-invoices', contract.id] });
       queryClient.invalidateQueries({ queryKey: ['payment-schedules'] });
-      
+
       toast({
         title: invoiceCount ? 'تم إنشاء الفواتير بنجاح' : 'لا توجد فواتير ناقصة',
-        description: invoiceCount ? `تم إنشاء ${invoiceCount} فاتورة` : 'كل أشهر العقد النشطة لها فواتير بالفعل.',
+        description: invoiceCount
+          ? `تم إنشاء ${invoiceCount} فاتورة من ${result.scheduleCount} قسطاً متحققاً.`
+          : 'كل أقساط العقد المتحققة لها فواتير بالفعل.',
       });
-    } catch (error) {
-      console.error('Error generating invoices:', error);
-      const errorMessage = error instanceof Error 
-        ? error.message 
-        : typeof error === 'object' && error !== null && 'message' in error
-        ? String((error as any).message)
-        : 'حدث خطأ أثناء إنشاء الفواتير';
-      
+    } catch (generateError) {
+      console.error('Error generating invoices:', generateError);
+      const errorMessage =
+        generateError instanceof Error
+          ? generateError.message
+          : typeof generateError === 'object' && generateError !== null && 'message' in generateError
+            ? String((generateError as { message?: unknown }).message || 'حدث خطأ أثناء إنشاء الفواتير')
+            : 'حدث خطأ أثناء إنشاء الفواتير';
+
       toast({
         title: 'خطأ في إنشاء الفواتير',
         description: errorMessage,
@@ -3008,77 +1141,86 @@ const ContractDetailsPageRedesigned = () => {
     } finally {
       setIsGeneratingMissingInvoices(false);
     }
-  }, [contract?.id, contract?.status, queryClient, toast]);
+  }, [billingPeriodValidation, contract?.id, contract?.status, queryClient, toast]);
 
   // Handle add violation
-  const handleAddViolation = useCallback(async (violation: Partial<any>) => {
-    if (!contract?.id || !contract?.vehicle_id || !companyId) {
-      throw new Error('بيانات العقد غير مكتملة');
-    }
+  const handleAddViolation = useCallback(
+    async (violation: Partial<ContractViolationInput>) => {
+      if (!contract?.id || !contract?.vehicle_id || !companyId) {
+        throw new Error('بيانات العقد غير مكتملة');
+      }
+      const violationType = String(violation.violation_type || '').trim();
+      const violationDate = String(violation.violation_date || '').trim();
+      const fineAmount = Number(violation.fine_amount);
+      const requestId = String(violation.manual_request_id || '').trim();
+      if (!violationType || !violationDate || !requestId || !Number.isFinite(fineAmount) || fineAmount <= 0) {
+        throw new Error('نوع المخالفة وتاريخها ومبلغها بيانات مطلوبة');
+      }
 
-    const violationNumber =
-      violation.violation_number ||
-      `TV-${contract.contract_number || contract.id.slice(0, 8)}-${Date.now().toString().slice(-6)}`;
-
-    const { error } = await supabase
-      .from('traffic_violations')
-      .insert({
-        company_id: companyId,
-        contract_id: contract.id,
-        vehicle_id: contract.vehicle_id,
-        violation_number: violationNumber,
-        violation_type: violation.violation_type,
-        violation_date: violation.violation_date,
-        fine_amount: violation.fine_amount,
-        total_amount: violation.fine_amount,
-        location: violation.location || null,
-        violation_description: violation.description || null,
-        import_source: 'manual',
-        status: 'pending',
+      const { data, error } = await supabase.rpc('create_manual_contract_traffic_violation_v1', {
+        p_company_id: companyId,
+        p_contract_id: contract.id,
+        p_vehicle_id: contract.vehicle_id,
+        p_violation_type: violationType,
+        p_violation_date: violationDate,
+        p_fine_amount: fineAmount,
+        p_idempotency_key: requestId,
+        p_violation_number: violation.violation_number || undefined,
+        p_location: violation.location || undefined,
+        p_description: violation.description || undefined,
       });
 
-    if (error) throw error;
-
-    // Send WhatsApp notification to customer
-    try {
-      const customerPhone = contract.customer?.phone;
-      if (customerPhone) {
-        const { generateViolationNotification } = await import('@/services/whatsapp/MessageTemplates');
-        const { whatsAppService } = await import('@/services/whatsapp/WhatsAppService');
-        
-        const message = generateViolationNotification({
-          customerName: formatCustomerName(contract.customer),
-          contractNumber: contract.contract_number,
-          vehiclePlate: contract.vehicle?.plate_number || contract.license_plate || 'غير محدد',
-          violationType: violation.violation_type,
-          violationNumber,
-          violationDate: violation.violation_date,
-          fineAmount: violation.fine_amount,
-          location: violation.location,
-        });
-
-        // Try to send message (don't fail if WhatsApp is not configured)
-        if (whatsAppService.isInitialized()) {
-          await whatsAppService.sendTextMessage(customerPhone, message);
-          toast({
-            title: 'تم الإرسال',
-            description: 'تم إرسال إشعار واتساب للعميل',
-          });
-        }
+      if (error) throw error;
+      const result = data as {
+        success?: boolean;
+        created?: boolean;
+        violation_id?: string;
+        violation_number?: string;
+      } | null;
+      if (!result?.success || !result.violation_id || !result.violation_number) {
+        throw new Error('لم تؤكد قاعدة البيانات اكتمال إضافة المخالفة');
       }
-    } catch (whatsappError) {
-      console.warn('Failed to send WhatsApp notification:', whatsappError);
-      // Don't fail the whole operation if WhatsApp fails
-    }
 
-    // Invalidate queries to refresh data
-    queryClient.invalidateQueries({ queryKey: ['contract-violations', contract.id] });
-    queryClient.invalidateQueries({ queryKey: ['contract-details', contractNumber, companyId] });
-  }, [contract, companyId, contractNumber, queryClient, toast]);
+      // Send WhatsApp notification to customer
+      try {
+        const customerPhone = contract.customer?.phone;
+        if (customerPhone && result.created) {
+          const { generateViolationNotification } = await import('@/services/whatsapp/MessageTemplates');
+          const { whatsAppService } = await import('@/services/whatsapp/WhatsAppService');
+
+          const message = generateViolationNotification({
+            customerName: formatCustomerName(contract.customer),
+            contractNumber: contract.contract_number,
+            vehiclePlate: contract.vehicle?.plate_number || contract.license_plate || 'غير محدد',
+            violationType,
+            violationNumber: result.violation_number,
+            violationDate,
+            fineAmount,
+            location: violation.location || undefined,
+          });
+
+          // Try to send message (don't fail if WhatsApp is not configured)
+          if (whatsAppService.isInitialized()) {
+            await whatsAppService.sendTextMessage(customerPhone, message);
+            toast({
+              title: 'تم الإرسال',
+              description: 'تم إرسال إشعار واتساب للعميل',
+            });
+          }
+        }
+      } catch (whatsappError) {
+        console.warn('Failed to send WhatsApp notification:', whatsappError);
+      }
+
+      queryClient.invalidateQueries({ queryKey: ['contract-violations', contract.id] });
+      queryClient.invalidateQueries({ queryKey: ['contract-details', contractNumber, companyId] });
+    },
+    [contract, companyId, contractNumber, queryClient, toast],
+  );
 
   const handleOpenDeletePermanent = useCallback(async () => {
     if (!contract?.id) return;
-    if (!permanentlyDeletableContractStatuses.has(String(contract.status || '').toLowerCase())) {
+    if (!permanentlyDeletableContractStatusesV3.has(String(contract.status || '').toLowerCase())) {
       toast({
         title: 'الحذف غير مسموح',
         description: 'يجب إنهاء العقد أو إلغاؤه أولًا. لا يمكن حذف عقد نشط أو تحت إجراء قانوني.',
@@ -3088,45 +1230,6 @@ const ContractDetailsPageRedesigned = () => {
     }
     setIsDeletePermanentDialogOpen(true);
   }, [contract, toast]);
-
-  const executeTerminateContract = useCallback(async () => {
-    if (!contract?.id || !companyId) return;
-
-    setIsTerminating(true);
-    try {
-      await assertContractCanClose(companyId, contract.id);
-      const { error: contractError } = await supabase
-        .from('contracts')
-        .update({
-          status: 'cancelled',
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', contract.id)
-        .eq('company_id', companyId);
-
-      if (contractError) throw contractError;
-
-      queryClient.invalidateQueries({ queryKey: ['contract-details'] });
-      queryClient.invalidateQueries({ queryKey: ['contracts'] });
-      queryClient.invalidateQueries({ queryKey: ['vehicles'] });
-
-      toast({
-        title: 'تم إنهاء العقد',
-        description: `تم إنهاء العقد #${contract.contract_number} بنجاح`,
-      });
-
-      setIsTerminateDialogOpen(false);
-    } catch (error) {
-      console.error('خطأ في إنهاء العقد:', error);
-      toast({
-        title: 'خطأ في إنهاء العقد',
-        description: error instanceof Error ? error.message : 'حدث خطأ غير متوقع',
-        variant: 'destructive',
-      });
-    } finally {
-      setIsTerminating(false);
-    }
-  }, [contract, companyId, queryClient, toast]);
 
   const executeReactivateContract = useCallback(async () => {
     if (!contract?.id) return;
@@ -3160,11 +1263,11 @@ const ContractDetailsPageRedesigned = () => {
       });
       setIsReactivateDialogOpen(false);
       setReactivationViolationsAccepted(false);
-    } catch (error) {
-      console.error('خطأ في إعادة تفعيل العقد:', error);
+    } catch (reactivateError) {
+      console.error('خطأ في إعادة تفعيل العقد:', reactivateError);
       toast({
         title: 'تعذر إعادة تفعيل العقد',
-        description: error instanceof Error ? error.message : 'حدث خطأ غير متوقع',
+        description: reactivateError instanceof Error ? reactivateError.message : 'حدث خطأ غير متوقع',
         variant: 'destructive',
       });
     } finally {
@@ -3199,11 +1302,11 @@ const ContractDetailsPageRedesigned = () => {
       });
 
       setIsRemoveLegalDialogOpen(false);
-    } catch (error) {
-      console.error('خطأ في إزالة الإجراء القانوني:', error);
+    } catch (removeLegalError) {
+      console.error('خطأ في إزالة الإجراء القانوني:', removeLegalError);
       toast({
         title: 'خطأ في إزالة الإجراء القانوني',
-        description: error instanceof Error ? error.message : 'حدث خطأ غير متوقع',
+        description: removeLegalError instanceof Error ? removeLegalError.message : 'حدث خطأ غير متوقع',
         variant: 'destructive',
       });
     } finally {
@@ -3211,25 +1314,47 @@ const ContractDetailsPageRedesigned = () => {
     }
   }, [contract, companyId, queryClient, toast]);
 
+  // Row-level integrity warnings from the invoice/payment evidence readers.
+  // These keep legacy records visible without failing the whole page.
+  // Must run before every early return (Rules of Hooks).
+  const integrityWarnings = useMemo(
+    () => [...invoiceIntegrityWarnings, ...paymentIntegrityWarnings],
+    [invoiceIntegrityWarnings, paymentIntegrityWarnings],
+  );
+
   // Loading state
-  if (isLoading || isInitializing) {
+  if (
+    isLoading
+    || isInitializing
+    || areInvoicesLoading
+    || arePaymentsLoading
+    || areTrafficViolationsLoading
+    || arePaymentSchedulesLoading
+    || isCheckInInspectionLoading
+    || isCheckOutInspectionLoading
+  ) {
     return <PageSkeletonFallback />;
   }
 
   if (error || !contract) {
     return (
-      <div
-        className="contract-details-system min-h-screen flex items-center justify-center bg-[#F6F8FB] p-6"
-        style={contractDetailsSystemStyle}
-      >
-        <Card className="max-w-md w-full border-[#E5EAF1] shadow-sm">
+      <div className="flex min-h-screen items-center justify-center bg-[#F6F8FB] p-6" dir="rtl">
+        <Card className="max-w-md w-full border-slate-200 shadow-sm">
           <CardContent className="p-6 text-center">
-            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-lg bg-[#FB6B7A]/10">
+            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-xl bg-[#FB6B7A]/10">
               <AlertCircle className="h-8 w-8 text-[#FB6B7A]" />
             </div>
-            <h2 className="text-lg font-bold text-neutral-900 mb-2">خطأ في تحميل العقد</h2>
-            <p className="text-neutral-500 mb-4">لم يتم العثور على العقد المطلوب</p>
-            <Button onClick={handleBack} className="bg-gradient-to-r from-teal-500 to-teal-600">
+            <h2 className="mb-2 text-lg font-bold text-neutral-900">خطأ في تحميل العقد</h2>
+            <p className="mb-4 text-neutral-500">
+              {error ? 'تعذر تحميل بيانات العقد. تحقق من الاتصال ثم أعد المحاولة.' : 'لم يتم العثور على العقد المطلوب.'}
+            </p>
+            {error && (
+              <Button onClick={financialSyncResult?.readError ? handleRetryFinancialReads : handleRefresh} variant="outline" className="mb-2 w-full gap-2">
+                <RefreshCw className="h-4 w-4" />
+                إعادة المحاولة
+              </Button>
+            )}
+            <Button onClick={handleBack} className="bg-[#0F172A] hover:bg-[#1E293B]">
               العودة للقائمة
             </Button>
           </CardContent>
@@ -3238,198 +1363,353 @@ const ContractDetailsPageRedesigned = () => {
     );
   }
 
+  const failedContractSources = [
+    invoicesError ? 'الفواتير' : null,
+    paymentsError ? 'الدفعات' : null,
+    paymentSchedulesError ? 'جدول الدفعات' : null,
+    trafficViolationsError ? 'المخالفات المرورية' : null,
+  ].filter((source): source is string => Boolean(source));
+
+  const unavailableSecondarySources = [
+    contractAuditLogsError ? 'سجل تدقيق العقد' : null,
+    crmActivitiesError ? 'سجل تواصل العميل' : null,
+  ].filter((source): source is string => Boolean(source));
+
+  if (failedContractSources.length > 0) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-[#F6F8FB] p-6" dir="rtl">
+        <Card className="w-full max-w-lg border-rose-200 shadow-sm">
+          <CardContent className="p-6 text-center">
+            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-xl bg-rose-50">
+              <AlertTriangle className="h-8 w-8 text-rose-600" />
+            </div>
+            <h2 className="mb-2 text-lg font-bold text-neutral-900">بيانات العقد غير مكتملة</h2>
+            <p className="mb-5 text-sm leading-7 text-neutral-600">
+              تعذر تحميل {failedContractSources.join('، ')}. أوقف النظام عرض الأرقام حتى لا تتحول البيانات الناقصة إلى أصفار مضللة.
+            </p>
+            {invoicesError instanceof Error && (
+              <p role="alert" className="mb-5 rounded-lg bg-amber-50 p-3 text-sm leading-7 text-amber-900">
+                {invoicesError.message}
+              </p>
+            )}
+            <Button onClick={financialSyncResult?.readError ? handleRetryFinancialReads : handleRefresh} className="w-full gap-2 bg-[#0F172A] hover:bg-[#1E293B]">
+              <RefreshCw className="h-4 w-4" />
+              إعادة تحميل جميع بيانات العقد
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   const tabs = [
-    { value: 'health', label: 'صحة العقد', icon: ShieldCheck },
-    { value: 'financial', label: 'المالي', icon: Receipt },
-    { value: 'vehicle', label: 'المركبة', icon: Car },
-    { value: 'violations', label: 'المخالفات', icon: AlertCircle },
-    { value: 'documents', label: 'المستندات', icon: Folder },
-    { value: 'contract', label: 'العقد', icon: FileCheck },
+    { value: 'health', label: 'صحة العقد', icon: ShieldCheck, badge: 0 },
+    { value: 'financial', label: 'المالي', icon: Receipt, badge: snapshot.openInvoicesCount },
+    { value: 'vehicle', label: 'المركبة', icon: Car, badge: 0 },
+    { value: 'violations', label: 'المخالفات', icon: AlertCircle, badge: unsettledTrafficViolations.length },
+    { value: 'records', label: 'السجل والمستندات', icon: Folder, badge: 0 },
   ];
 
-  const contractWorkbenchContent = (
-    <>
-      {activeTab === 'health' && (
-        <ContractHealthAnalysis
-          contract={contract}
-          formatCurrency={formatCurrency}
-          paymentSchedules={paymentSchedules}
-        />
-      )}
-
-      {activeTab === 'contract' && (
-        <ContractTab
-          contract={contract}
-          paymentSchedules={paymentSchedules}
-          checkInInspection={checkInInspection}
-          checkOutInspection={checkOutInspection}
-        />
-      )}
-
-      {activeTab === 'financial' && (
-        <FinancialTab
-          contract={contract}
-          invoices={invoices}
-          payments={contractPayments}
-          paymentSchedules={paymentSchedules}
-          isLoadingPaymentSchedules={isLoadingPaymentSchedules}
-          contractId={contract.id}
-          companyId={contract.company_id}
-          formatCurrency={formatCurrency}
-          onPayInvoice={handleInvoicePay}
-          onPreviewInvoice={handleInvoicePreview}
-          onCreateInvoice={handleCreateInvoiceRequest}
-          onCancelInvoice={handleCancelInvoice}
-          isCancellingInvoice={isCancellingInvoice}
-          onBulkCancelInvoices={handleBulkCancelInvoices}
-          isBulkCancellingInvoices={isBulkCancellingInvoices}
-          onGeneratePaymentSchedules={handleGeneratePaymentSchedules}
-          onGenerateMissingInvoices={
-            billableContractStatuses.has(String(contract.status || '').toLowerCase())
-              ? handleGenerateMissingInvoices
-              : undefined
-          }
-          isGeneratingMissingInvoices={isGeneratingMissingInvoices}
-          customerName={customerName}
-          trafficViolations={trafficViolations}
-        />
-      )}
-
-      {activeTab === 'vehicle' && (
-        <VehicleTab
-          contract={contract}
-          customerName={customerName}
-          plateNumber={plateNumber}
-          formatCurrency={formatCurrency}
-        />
-      )}
-
-      {activeTab === 'violations' && (
-        <ViolationsTab
-          trafficViolations={trafficViolations}
-          formatCurrency={formatCurrency}
-          contractNumber={contract.contract_number}
-          onAddViolation={handleAddViolation}
-        />
-      )}
-
-      {activeTab === 'documents' && (
-        <DocumentsTab contract={contract} />
-      )}
-    </>
-  );
+  const paidAmount = snapshot.paidTotal;
 
   return (
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      transition={{ duration: 0.5 }}
-      className="contract-details-system min-h-screen bg-[#F6F8FB]"
-      style={contractDetailsSystemStyle}
+      transition={{ duration: 0.4 }}
+      className="min-h-screen bg-[#F6F8FB]"
       dir="rtl"
     >
-      <div className="contract-page-shell mx-auto px-4 sm:px-6">
-        <SeizedActiveContractBanner contractStatus={contract.status} vehicleStatus={contract.vehicle?.status} className="mt-4" />
-        <div className="contract-page-topbar">
-          <Button variant="ghost" onClick={handleBack} className="contract-topbar-back">
-            <ArrowRight className="h-4 w-4" />
-            العودة للعقود
-          </Button>
-          <div className="contract-topbar-identity">
-            <div className="contract-topbar-contract-number">
-              <span>ملف عقد</span>
-              <strong dir="ltr">{contract.contract_number}</strong>
-            </div>
-          </div>
-          <div className="contract-topbar-dates">
-            <span>
-              بداية العقد:
-              <b dir="ltr">{contract.start_date ? format(new Date(contract.start_date), 'dd/MM/yyyy') : '-'}</b>
-            </span>
-            <span>
-              نهاية العقد:
-              <b dir="ltr">{contract.end_date ? format(new Date(contract.end_date), 'dd/MM/yyyy') : '-'}</b>
-            </span>
-          </div>
-          <div className="contract-topbar-actions">
-            <Button variant="outline" onClick={handleExport}>
-              <Printer className="h-4 w-4" />
-              طباعة العقد
-            </Button>
-            <ContractTopbarActions
-              contract={contract}
-              onRenew={handleRenew}
-              onTerminate={handleTerminate}
-              onReactivate={handleReactivate}
-              onDeletePermanent={handleOpenDeletePermanent}
-              onConvertToLegal={() => setIsConvertToLegalOpen(true)}
-              onRemoveLegal={() => setIsRemoveLegalDialogOpen(true)}
-            />
-            <Button className="contract-primary-edit" onClick={() => setIsEditWizardOpen(true)}>
-              <FileEdit className="h-4 w-4" />
-              تعديل العقد
-            </Button>
-          </div>
-        </div>
+      <div className="mx-auto max-w-[1680px] space-y-4 px-4 pb-10 sm:px-6">
+        {/* Systemic alerts (seizure / expiry) */}
+        <SeizedActiveContractBanner
+          contractStatus={contract.status}
+          vehicleStatus={contract.vehicle?.status}
+          className="pt-4"
+        />
+        <ContractAlerts contract={contract} />
+        {isFinancialSyncing && (
+          <Alert className="border-sky-200 bg-sky-50 text-sky-900">
+            <Loader2 className="h-4 w-4 animate-spin" />
+            <AlertDescription>يجري التحقق آلياً من أرصدة العقد والفواتير والدفعات.</AlertDescription>
+          </Alert>
+        )}
+        {snapshot.financialReviewRequired && (
+          <Alert className="border-amber-300 bg-amber-50 text-amber-950">
+            <AlertTriangle className="h-4 w-4" />
+            <AlertDescription>
+              المسدد محسوب من تخصيصات الدفعات المكتملة، وتوجد أرصدة مخزنة أو روابط أقساط تحتاج مطابقة قبل اعتماد المطالبة.
+            </AlertDescription>
+          </Alert>
+        )}
 
-        <section className="contract-alerts-zone">
-          <ContractAlerts
-            contract={contract}
-          />
-        </section>
+        {!!financialSyncError && !isFinancialSyncing && (
+          <Alert className="border-amber-300 bg-amber-50 text-amber-950">
+            <AlertTriangle className="h-4 w-4" />
+            <AlertDescription className="flex flex-wrap items-center justify-between gap-3">
+              <span>{financialSyncError instanceof Error ? financialSyncError.message : 'تعذرت المزامنة الخلفية للأرصدة. لم يعتبر النظام ذلك رصيداً صفرياً.'}</span>
+              <Button type="button" size="sm" variant="outline" onClick={handleRefresh} className="gap-2">
+                <RefreshCw className="h-3.5 w-3.5" />
+                إعادة المحاولة
+              </Button>
+            </AlertDescription>
+          </Alert>
+        )}
+        {financialSyncResult?.readError && !isFinancialSyncing && !financialSyncError && (
+          <Alert className="border-amber-300 bg-amber-50 text-amber-950">
+            <AlertTriangle className="h-4 w-4" />
+            <AlertDescription className="flex flex-wrap items-center justify-between gap-3">
+              <span>{financialSyncResult.readError}</span>
+              <Button type="button" size="sm" variant="outline" onClick={handleRetryFinancialReads}>
+                إعادة تحميل النتائج فقط
+              </Button>
+            </AlertDescription>
+          </Alert>
+        )}
+        {unavailableSecondarySources.length > 0 && (
+          <Alert className="border-amber-300 bg-amber-50 text-amber-950">
+            <AlertTriangle className="h-4 w-4" />
+            <AlertDescription>
+              تعذر تحميل {unavailableSecondarySources.join(' و')}. لن يعرض النظام بيانات فارغة على أنها سجل مكتمل.
+            </AlertDescription>
+          </Alert>
+        )}
+        {integrityWarnings.length > 0 && (
+          <Alert className="border-amber-300 bg-amber-50 text-amber-950">
+            <AlertTriangle className="h-4 w-4" />
+            <AlertDescription>
+              <span className="font-bold">سجلات تحتاج مطابقة قبل اعتماد الأرقام:</span>
+              <ul className="mt-1 list-inside list-disc space-y-1 text-xs">
+                {integrityWarnings.slice(0, 5).map((warning) => (
+                  <li key={warning}>{warning}</li>
+                ))}
+              </ul>
+              {integrityWarnings.length > 5 && (
+                <span className="text-xs">و{integrityWarnings.length - 5} تنبيهاً آخر في تبويب الفواتير والدفعات.</span>
+              )}
+            </AlertDescription>
+          </Alert>
+        )}
 
-        <div className="contract-redesigned-layout">
-          <section className="contract-hero-zone">
-            <ContractCommandHeader
-              contract={contract}
-              customerName={customerName}
-              vehicleName={vehicleName}
-              plateNumber={plateNumber}
-              contractStats={contractStats}
-              invoicesCount={invoices.length}
-              violationsCount={trafficViolations.length}
-              formatCurrency={formatCurrency}
-              onBack={handleBack}
-              onEdit={() => setIsEditWizardOpen(true)}
-              onPrint={handlePrint}
-              onExport={handleExport}
-              onStatusClick={() => setIsStatusManagementOpen(true)}
-              onCustomerClick={handleCustomerClick}
-              onVehicleClick={handleVehicleClick}
-            />
-          </section>
+        {/* ===== Hero identity band ===== */}
+        <ContractHero
+          contract={contract}
+          customerName={customerName}
+          vehicleName={vehicleName}
+          plateNumber={plateNumber}
+          totalAmount={contractStats?.totalAmount || 0}
+          monthlyAmount={contractStats?.monthlyAmount || 0}
+          paidAmount={paidAmount}
+          paidPayments={contractStats?.paidPayments || 0}
+          totalPayments={contractStats?.totalPayments || 0}
+          daysRemaining={contractStats?.daysRemaining ?? null}
+          progressPercentage={contractStats?.progressPercentage || 0}
+          snapshot={snapshot}
+          formatCurrency={formatCurrency}
+          onBack={handleBack}
+          onEdit={handleAmend}
+          onStatusClick={() => setIsStatusManagementOpen(true)}
+          onCustomerClick={handleCustomerClick}
+          onVehicleClick={handleVehicleClick}
+        />
 
-          <section className="contract-decision-zone">
-            <ContractCommandCenter
+        {/* ===== Smart action strip ===== */}
+        <ContractActionBar
+          contract={contract}
+          snapshot={snapshot}
+          violationsCount={unsettledTrafficViolations.length}
+          daysRemaining={contractStats?.daysRemaining ?? null}
+          formatCurrency={formatCurrency}
+          onEdit={handleAmend}
+          onPrint={handlePrint}
+          onExport={handleExport}
+          onRefresh={handleRefresh}
+          onRenew={handleRenew}
+          onTerminate={handleTerminate}
+          onReactivate={handleReactivate}
+          onConvertToLegal={() => setIsConvertToLegalOpen(true)}
+          onRemoveLegal={() => setIsRemoveLegalDialogOpen(true)}
+          onDeletePermanent={handleOpenDeletePermanent}
+          onCollect={() => setActiveTab('financial')}
+          onOpenViolations={() => setActiveTab('violations')}
+          onOpenDocuments={() => setActiveTab('records')}
+          documentGenerationBlocker={documentGenerationBlocker}
+        />
+
+        {/* ===== Main: workbench (+ pulse rail only on the health tab) ===== */}
+        <div className={cn('grid gap-4', activeTab === 'health' && 'xl:grid-cols-[minmax(0,1fr)_360px]')}>
+          {/* Workbench */}
+          <div className="min-w-0">
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+              <div className="sticky top-0 z-30 -mx-1 rounded-2xl border border-[#E5EAF1] bg-white/90 px-1 py-2 shadow-[0_6px_24px_-16px_rgba(15,23,42,0.3)] backdrop-blur-md">
+                <TabsList className="flex h-auto w-full justify-start gap-1.5 overflow-x-auto rounded-xl bg-transparent p-1">
+                  {tabs.map((tab) => (
+                    <TabsTrigger
+                      key={tab.value}
+                      value={tab.value}
+                      className="relative gap-2 whitespace-nowrap rounded-xl px-4 py-2.5 text-xs font-black text-slate-500 transition-all hover:bg-[#F6F8FB] data-[state=active]:bg-[#22C7A1] data-[state=active]:text-white data-[state=active]:shadow-[0_8px_18px_-8px_rgba(34,199,161,0.6)]"
+                    >
+                      <tab.icon className="h-4 w-4" />
+                      {tab.label}
+                      {tab.badge > 0 && (
+                        <span
+                          className={cn(
+                            'absolute -top-0.5 left-1.5 flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[9px] font-black',
+                            tab.value === 'violations'
+                              ? 'bg-[#FB6B7A] text-white'
+                              : 'bg-[#F59E0B] text-[#452A03]',
+                          )}
+                        >
+                          {tab.badge}
+                        </span>
+                      )}
+                    </TabsTrigger>
+                  ))}
+                </TabsList>
+              </div>
+
+              <div className="mt-4 min-h-[480px]">
+                {activeTab === 'health' && (
+                  <ContractHealthAnalysis
+                    contract={contract}
+                    formatCurrency={formatCurrency}
+                    paymentSchedules={paymentSchedules}
+                    billingGenerationBlocker={billingPeriodValidation?.blockingMessage}
+                    healthScore={contractHealth.score}
+                  />
+                )}
+
+                {activeTab === 'records' && (
+                  <div className="space-y-5">
+                    <Tabs defaultValue="official" className="w-full">
+                      <TabsList className="flex h-auto w-full justify-start gap-2 overflow-x-auto rounded-xl border border-[#E5EAF1] bg-white p-1 shadow-sm">
+                        <TabsTrigger
+                          value="official"
+                          className="gap-2 rounded-lg px-5 py-2.5 text-[#5B6677] transition-all data-[state=active]:bg-[#22C7A1] data-[state=active]:text-white"
+                        >
+                          <FileCheck className="w-4 h-4" />
+                          العقد الرسمي
+                        </TabsTrigger>
+                        <TabsTrigger
+                          value="documents"
+                          className="gap-2 rounded-lg px-5 py-2.5 text-[#5B6677] transition-all data-[state=active]:bg-[#22C7A1] data-[state=active]:text-white"
+                        >
+                          <Folder className="w-4 h-4" />
+                          المستندات
+                        </TabsTrigger>
+                        <TabsTrigger
+                          value="timeline"
+                          className="gap-2 rounded-lg px-5 py-2.5 text-[#5B6677] transition-all data-[state=active]:bg-[#22C7A1] data-[state=active]:text-white"
+                        >
+                          <GitBranch className="w-4 h-4" />
+                          الجدول الزمني
+                        </TabsTrigger>
+                      </TabsList>
+
+                      <TabsContent value="official" className="mt-4">
+                        <div className="overflow-hidden rounded-2xl border border-[#E5EAF1] bg-white shadow-sm">
+                          <OfficialContractView
+                            contract={contract}
+                            paymentSchedules={officialPaymentSchedules}
+                            checkInInspection={checkInInspection}
+                            checkOutInspection={checkOutInspection}
+                            blockingMessage={documentGenerationBlocker}
+                          />
+                        </div>
+                      </TabsContent>
+
+                      <TabsContent value="documents" className="mt-4">
+                        <ContractDocuments
+                          contractId={contract.id}
+                          customerId={contract.customer_id}
+                          vehicleId={contract.vehicle_id || contract.vehicle?.id}
+                        />
+                      </TabsContent>
+
+                      <TabsContent value="timeline" className="mt-4">
+                        <Card className="rounded-2xl border-[#E5EAF1] shadow-sm">
+                          <CardHeader className="border-b border-[#E5EAF1] bg-[#F6F8FB]">
+                            <CardTitle className="text-lg text-[#0F172A]">الجدول الزمني للعقد</CardTitle>
+                          </CardHeader>
+                          <CardContent>
+                            <TimelineView
+                              contract={contract}
+                              trafficViolationsCount={trafficViolations.length}
+                              formatCurrency={formatCurrency}
+                              auditLogs={contractAuditLogs}
+                              paidTotal={snapshot.paidTotal}
+                              remainingTotal={snapshot.remainingTotal}
+                            />
+                          </CardContent>
+                        </Card>
+                      </TabsContent>
+                    </Tabs>
+                  </div>
+                )}
+
+                {activeTab === 'financial' && (
+                  <FinancialTab
+                    contract={contract}
+                    invoices={invoices}
+                    paymentSchedules={paymentSchedules}
+                    snapshot={snapshot}
+                    contractId={contract.id}
+                    companyId={contract.company_id}
+                    formatCurrency={formatCurrency}
+                    onPayInvoice={handleInvoicePay}
+                    onPreviewInvoice={handleInvoicePreview}
+                    onCreateInvoice={handleCreateInvoiceRequest}
+                    onCancelInvoice={handleCancelInvoice}
+                    isCancellingInvoice={isCancellingInvoice}
+                    onBulkCancelInvoices={handleBulkCancelInvoices}
+                    isBulkCancellingInvoices={isBulkCancellingInvoices}
+                    onGeneratePaymentSchedules={handleGeneratePaymentSchedules}
+                    onGenerateMissingInvoices={
+                      billableContractStatusesV3.has(String(contract.status || '').toLowerCase())
+                        ? handleGenerateMissingInvoices
+                        : undefined
+                    }
+                    isGeneratingMissingInvoices={isGeneratingMissingInvoices}
+                    billingGenerationBlocker={billingPeriodValidation?.blockingMessage}
+                    customerName={customerName}
+                    trafficViolations={trafficViolations}
+                  />
+                )}
+
+                {activeTab === 'vehicle' && (
+                  <VehicleTab
+                    contract={contract}
+                    customerName={customerName}
+                    plateNumber={plateNumber}
+                    formatCurrency={formatCurrency}
+                  />
+                )}
+
+                {activeTab === 'violations' && (
+                  <ContractViolationsTabRedesigned
+                    violations={trafficViolations}
+                    formatCurrency={formatCurrency}
+                    contractNumber={contract.contract_number}
+                    onAddViolation={handleAddViolation}
+                  />
+                )}
+              </div>
+            </Tabs>
+          </div>
+
+          {/* Pulse rail — visible only on the health (overview) tab */}
+          {activeTab === 'health' && (
+            <ContractPulse
               contract={contract}
-              contractStats={contractStats}
+              snapshot={snapshot}
               invoices={invoices}
-              paymentSchedules={paymentSchedules}
-              crmActivities={crmActivities}
-              auditLogs={contractAuditLogs}
-              violationsCount={trafficViolations.length}
-              formatCurrency={formatCurrency}
-              onPrimaryAction={handleRefresh}
-              onOpenFinancial={() => setActiveTab('financial')}
-              onOpenViolations={() => setActiveTab('violations')}
-              onOpenDocuments={() => setActiveTab('documents')}
-              activeTab={activeTab}
-              onTabChange={setActiveTab}
-              tabs={tabs}
-            >
-              {contractWorkbenchContent}
-            </ContractCommandCenter>
-          </section>
-
-          <section className="contract-operations-zone">
-            <ContractOperationsWorkspace
-              contract={contract}
-              contractStats={contractStats}
-              invoices={invoices}
+              payments={contractPayments}
               paymentSchedules={paymentSchedules}
               crmActivities={crmActivities}
               crmStats={crmStats}
-              violationsCount={trafficViolations.length}
+              violationsCount={unsettledTrafficViolations.length}
+              daysRemaining={contractStats?.daysRemaining ?? null}
+              auditLogs={contractAuditLogs}
               formatCurrency={formatCurrency}
               crmNote={quickCrmNote}
               callStatus={quickCrmStatus}
@@ -3441,35 +1721,34 @@ const ContractDetailsPageRedesigned = () => {
               onWhatsApp={handleWhatsAppCustomer}
               onOpenFinancial={() => setActiveTab('financial')}
               onOpenViolations={() => setActiveTab('violations')}
-              onOpenDocuments={() => setActiveTab('documents')}
             />
-          </section>
+          )}
         </div>
-
       </div>
 
-      {/* Dialogs */}
-      <AnimatePresence>
-        {selectedInvoice && (
-          <>
-            <PayInvoiceDialog
-              open={isPayDialogOpen}
-              onOpenChange={setIsPayDialogOpen}
-              invoice={selectedInvoice}
-              onPaymentCreated={() => {
-                queryClient.invalidateQueries({ queryKey: ['contract-invoices'] });
-                setIsPayDialogOpen(false);
-              }}
-            />
-            <InvoicePreviewDialog
-              invoice={selectedInvoice}
-              open={isPreviewDialogOpen}
-              onOpenChange={setIsPreviewDialogOpen}
-              customerName={customerName}
-            />
-          </>
-        )}
-      </AnimatePresence>
+      {/* ===== Dialogs ===== */}
+      {selectedInvoice && (
+        <>
+          <PayInvoiceDialog
+            open={isPayDialogOpen}
+            onOpenChange={setIsPayDialogOpen}
+            invoice={selectedInvoice}
+            onPaymentCreated={async () => {
+              await refreshContractFinancialQueries(queryClient, {
+                contractId: contract.id,
+                contractNumber: contract.contract_number,
+                companyId: contract.company_id,
+              });
+            }}
+          />
+          <InvoicePreviewDialog
+            invoice={selectedInvoice}
+            open={isPreviewDialogOpen}
+            onOpenChange={setIsPreviewDialogOpen}
+            customerName={customerName}
+          />
+        </>
+      )}
 
       <ContractInvoiceDialog
         open={isInvoiceDialogOpen}
@@ -3497,20 +1776,26 @@ const ContractDetailsPageRedesigned = () => {
         />
       )}
 
-      <ContractPrintDialog open={isPrintDialogOpen} onOpenChange={setIsPrintDialogOpen} contract={contract} />
+      <ContractPrintDialog
+        open={isPrintDialogOpen}
+        onOpenChange={setIsPrintDialogOpen}
+        contract={contract}
+        paymentSchedules={officialPaymentSchedules}
+        checkInInspection={checkInInspection}
+        checkOutInspection={checkOutInspection}
+      />
 
       <Dialog open={isOfficialExportOpen} onOpenChange={setIsOfficialExportOpen}>
         <DialogContent className="max-h-[95vh] max-w-[96vw] overflow-auto rounded-2xl bg-[#F6F8FB] p-4">
           <DialogHeader>
-            <DialogTitle className="text-right text-lg font-black text-[#142033]">
-              تصدير العقد الرسمي
-            </DialogTitle>
+            <DialogTitle className="text-right text-lg font-black text-[#142033]">تصدير العقد الرسمي</DialogTitle>
           </DialogHeader>
           <OfficialContractView
             contract={contract}
-            paymentSchedules={paymentSchedules}
+            paymentSchedules={officialPaymentSchedules}
             checkInInspection={checkInInspection}
             checkOutInspection={checkOutInspection}
+            blockingMessage={documentGenerationBlocker}
           />
         </DialogContent>
       </Dialog>
@@ -3520,44 +1805,21 @@ const ContractDetailsPageRedesigned = () => {
       <ConvertToLegalDialog open={isConvertToLegalOpen} onOpenChange={setIsConvertToLegalOpen} contract={contract} />
 
       {/* Terminate Dialog */}
-      <AlertDialog open={isTerminateDialogOpen} onOpenChange={setIsTerminateDialogOpen}>
-        <AlertDialogContent className="rounded-2xl" data-tour="contract-terminate-dialog">
-          <AlertDialogHeader>
-            <AlertDialogTitle>إنهاء العقد</AlertDialogTitle>
-            <AlertDialogDescription data-tour="contract-terminate-warning">
-              هل أنت متأكد من إنهاء العقد #{contract.contract_number}؟ سيتم تحديث حالة العقد إلى "ملغي" وتحرير المركبة.
-            </AlertDialogDescription>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => startTour('contract-terminate')}
-              className="mt-2 h-9 w-fit gap-2 rounded-lg border-emerald-200 bg-emerald-50 font-bold text-emerald-700 hover:bg-emerald-100"
-              data-tour="contract-terminate-tour-start"
-            >
-              <PlayCircle className="h-4 w-4" />
-              ابدأ الجولة التعريفية
-            </Button>
-          </AlertDialogHeader>
-          <AlertDialogFooter data-tour="contract-terminate-actions">
-            <AlertDialogCancel className="rounded-xl">إلغاء</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={executeTerminateContract}
-              disabled={isTerminating}
-              className="bg-rose-600 hover:bg-rose-700 rounded-xl"
-              data-tour="contract-terminate-submit"
-            >
-              {isTerminating ? (
-                <>
-                  <Loader2 className="w-4 h-4 ml-2 animate-spin" />
-                  جاري الإنهاء...
-                </>
-              ) : (
-                'نعم، إنهاء العقد'
-              )}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <ContractCancellationDialog
+        open={isTerminateDialogOpen}
+        onOpenChange={setIsTerminateDialogOpen}
+        contract={contract}
+        onCancelled={async () => {
+          await Promise.all([
+            queryClient.invalidateQueries({ queryKey: ['contract-details', contractNumber, companyId] }),
+            queryClient.invalidateQueries({ queryKey: ['contract-invoices', contract.id] }),
+            queryClient.invalidateQueries({ queryKey: ['payment-schedules'] }),
+            queryClient.invalidateQueries({ queryKey: ['contract-violations', contract.id] }),
+            queryClient.invalidateQueries({ queryKey: ['contracts'] }),
+            queryClient.invalidateQueries({ queryKey: ['vehicles'] }),
+          ]);
+        }}
+      />
 
       {/* Reactivate Dialog */}
       <AlertDialog
@@ -3571,7 +1833,8 @@ const ContractDetailsPageRedesigned = () => {
           <AlertDialogHeader>
             <AlertDialogTitle className="text-emerald-600">إعادة تفعيل العقد</AlertDialogTitle>
             <AlertDialogDescription data-tour="contract-reactivate-warning">
-              هل أنت متأكد من إعادة تفعيل العقد #{contract.contract_number}؟ سيتم تحديث حالته إلى "نشط" مع الحفاظ على الفواتير والدفعات والقيود القائمة دون تكرارها.
+              هل أنت متأكد من إعادة تفعيل العقد #{contract.contract_number}؟ سيتم تحديث حالته إلى &quot;نشط&quot; مع الحفاظ
+              على الفواتير والدفعات والقيود القائمة دون تكرارها.
             </AlertDialogDescription>
             {reactivationHasViolations && (
               <div className="mt-3 rounded-xl border border-amber-300 bg-amber-50 p-4 text-right">
@@ -3582,8 +1845,12 @@ const ContractDetailsPageRedesigned = () => {
                     onCheckedChange={(checked) => setReactivationViolationsAccepted(checked === true)}
                     disabled={isReactivating}
                   />
-                  <label htmlFor="accept-reactivation-violations" className="cursor-pointer text-sm font-bold leading-6 text-amber-900">
-                    أوافق على إعادة تفعيل العقد رغم وجود {trafficViolations.length} مخالفة بإجمالي {formatCurrency(reactivationViolationTotal)}، وأقر بأن المخالفات ستبقى مسجلة دون حذف أو تسوية تلقائية.
+                  <label
+                    htmlFor="accept-reactivation-violations"
+                    className="cursor-pointer text-sm font-bold leading-6 text-amber-900"
+                  >
+                    أوافق على إعادة تفعيل العقد رغم وجود {unsettledTrafficViolations.length} مخالفة غير مسددة بإجمالي{' '}
+                    {formatCurrency(reactivationViolationTotal)}، وأقر بأن المخالفات ستبقى مسجلة دون حذف أو تسوية تلقائية.
                   </label>
                 </div>
               </div>
@@ -3607,7 +1874,7 @@ const ContractDetailsPageRedesigned = () => {
                 void executeReactivateContract();
               }}
               disabled={isReactivating || (reactivationHasViolations && !reactivationViolationsAccepted)}
-              className="bg-emerald-600 hover:bg-emerald-700 rounded-xl"
+              className="rounded-xl bg-emerald-600 hover:bg-emerald-700"
               data-tour="contract-reactivate-submit"
             >
               {isReactivating ? (
@@ -3671,7 +1938,7 @@ const ContractDetailsPageRedesigned = () => {
             <AlertDialogAction
               onClick={executeRemoveLegalProcedure}
               disabled={isRemovingLegal}
-              className="bg-emerald-600 hover:bg-emerald-700 rounded-xl"
+              className="rounded-xl bg-emerald-600 hover:bg-emerald-700"
               data-tour="contract-remove-legal-submit"
             >
               {isRemovingLegal ? (
@@ -3694,7 +1961,9 @@ const ContractDetailsPageRedesigned = () => {
             <AlertDialogTitle className="text-red-600">إلغاء الفاتورة</AlertDialogTitle>
             <AlertDialogDescription asChild>
               <div className="space-y-4 text-sm text-muted-foreground" data-tour="contract-cancel-invoice-warning">
-                <p>هل أنت متأكد من إلغاء الفاتورة <strong>{invoiceToCancel?.invoice_number}</strong>؟</p>
+                <p>
+                  هل أنت متأكد من إلغاء الفاتورة <strong>{invoiceToCancel?.invoice_number}</strong>؟
+                </p>
                 <Alert className="border-red-200 bg-red-50">
                   <AlertTriangle className="h-4 w-4 text-red-600" />
                   <AlertDescription className="text-red-800">
@@ -3722,7 +1991,7 @@ const ContractDetailsPageRedesigned = () => {
                 confirmCancelInvoice(e);
               }}
               disabled={isCancellingInvoice}
-              className="bg-red-600 hover:bg-red-700 rounded-xl"
+              className="rounded-xl bg-red-600 hover:bg-red-700"
               data-tour="contract-cancel-invoice-submit"
             >
               {isCancellingInvoice ? (
@@ -3737,1432 +2006,6 @@ const ContractDetailsPageRedesigned = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-
-      <style>{`
-        .contract-details-system {
-          color: var(--contract-details-text);
-          background: #F3F6F9 !important;
-        }
-
-        .contract-page-shell {
-          position: relative;
-          width: 100%;
-          max-width: 1680px;
-          padding-bottom: 32px;
-        }
-
-        .contract-page-topbar {
-          position: sticky;
-          top: 0;
-          z-index: 40;
-          display: grid;
-          grid-template-columns: auto minmax(110px, 1fr) auto auto;
-          gap: 12px;
-          align-items: center;
-          margin: 0 -24px 16px;
-          border: 0;
-          border-bottom: 1px solid var(--contract-details-border);
-          border-radius: 0;
-          background: color-mix(in srgb, var(--contract-details-surface) 94%, transparent);
-          padding: 10px 24px;
-          backdrop-filter: blur(14px);
-          box-shadow: none;
-        }
-
-        .contract-topbar-back,
-        .contract-topbar-actions button {
-          height: 40px;
-          gap: 7px;
-          font-weight: 900;
-        }
-
-        .contract-topbar-identity {
-          min-width: 0;
-          border-inline-start: 1px solid var(--contract-details-border);
-          padding-inline-start: 14px;
-        }
-
-        .contract-topbar-contract-number span,
-        .contract-topbar-contract-number strong {
-          display: block;
-        }
-
-        .contract-topbar-contract-number span {
-          color: var(--contract-details-muted);
-          font-size: 11px;
-          font-weight: 900;
-        }
-
-        .contract-topbar-contract-number strong {
-          overflow: hidden;
-          color: var(--contract-details-text);
-          text-overflow: ellipsis;
-          white-space: nowrap;
-          font-size: 16px;
-          font-weight: 950;
-        }
-
-        .contract-topbar-dates {
-          position: static;
-          transform: none;
-          display: flex;
-          flex-wrap: wrap;
-          justify-content: center;
-          gap: 6px;
-          min-width: 0;
-        }
-
-        .contract-topbar-dates span {
-          display: inline-flex;
-          align-items: center;
-          gap: 5px;
-          border: 1px solid #DDE5EF;
-          border-radius: 999px;
-          background: #FFFFFF;
-          color: #6A7688;
-          padding: 5px 9px;
-          font-size: 11px;
-          font-weight: 900;
-          white-space: nowrap;
-        }
-
-        .contract-topbar-dates b {
-          color: #142033;
-          font-size: 12px;
-          font-weight: 950;
-        }
-
-        .contract-topbar-actions {
-          display: flex;
-          flex-wrap: wrap;
-          justify-content: flex-end;
-          gap: 8px;
-        }
-
-        .contract-topbar-actions button {
-          padding-inline: 10px !important;
-          font-size: 12px !important;
-        }
-
-        .contract-topbar-actions .contract-primary-edit {
-          background: #173A63;
-          color: white;
-        }
-
-        .contract-topbar-actions .contract-topbar-renew {
-          background: var(--contract-details-success);
-          color: white;
-          border: 0;
-        }
-
-        .contract-topbar-actions .contract-topbar-renew:hover {
-          background: #0f9f83;
-        }
-
-        .contract-topbar-actions .contract-topbar-more {
-          background: #fff;
-          color: var(--contract-details-text);
-        }
-
-        .contract-redesigned-layout {
-          display: grid;
-          grid-template-columns: minmax(0, 1fr);
-          grid-template-areas:
-            "hero"
-            "decision"
-            "operations";
-          gap: 14px;
-          align-items: start;
-        }
-
-        .contract-alerts-zone {
-          margin-bottom: 16px;
-        }
-
-        .contract-hero-zone {
-          grid-area: hero;
-          position: static;
-        }
-
-        .contract-side-rail {
-          grid-area: side;
-          display: grid;
-          gap: 14px;
-          position: static;
-        }
-
-        .contract-decision-zone {
-          grid-area: decision;
-        }
-
-        .contract-operations-zone {
-          grid-area: operations;
-        }
-
-        .contract-profile-card {
-          border-radius: 8px !important;
-          border-top: 3px solid #173A63 !important;
-        }
-
-        .contract-profile-body {
-          padding: 0 !important;
-        }
-
-        .contract-profile-main {
-          display: grid !important;
-          grid-template-columns: minmax(420px, 1.35fr) minmax(270px, 0.65fr) !important;
-          gap: 16px !important;
-          align-items: stretch !important;
-          padding: 16px 16px 0;
-        }
-
-        .contract-profile-identity {
-          border: 1px solid var(--contract-details-border) !important;
-          border-radius: 8px !important;
-          background: #FFFFFF !important;
-          padding: 18px !important;
-          box-shadow: inset -4px 0 0 #173A63;
-        }
-
-        .contract-profile-identity .contract-type-badge {
-          background: #F7F9FC !important;
-          color: #142033 !important;
-        }
-
-        .contract-profile-identity h1 {
-          white-space: normal !important;
-          word-break: break-word;
-          color: #142033 !important;
-          font-size: 26px !important;
-          line-height: 1.2 !important;
-        }
-
-        .contract-profile-identity > .grid {
-          grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-        }
-
-        .contract-profile-identity > .grid button {
-          background: #F8FAFC !important;
-          border-color: var(--contract-details-border) !important;
-        }
-
-        .contract-profile-identity > .grid button:hover {
-          border-color: #173A63 !important;
-          background: #EEF5FB !important;
-        }
-
-        .contract-profile-identity > .grid button .contract-action-icon,
-        .contract-profile-identity > .grid button .contract-action-icon svg {
-          color: #173A63 !important;
-        }
-
-        .contract-profile-progress {
-          grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-          gap: 10px !important;
-          padding: 0 !important;
-        }
-
-        .contract-profile-summary {
-          grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
-          padding: 14px 16px 16px !important;
-        }
-
-        .contract-profile-summary > div {
-          min-height: 72px;
-          align-items: center !important;
-          flex-direction: row;
-          background: #F8FAFC !important;
-        }
-
-        .contract-operations-zone .contract-operations-workspace {
-          grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-          align-items: stretch;
-        }
-
-        .contract-operations-zone .contract-crm-panel {
-          grid-column: 1 / -1;
-        }
-
-        .contract-operations-zone .contract-crm-actions {
-          grid-template-columns: minmax(96px, 0.75fr) minmax(130px, 1fr) minmax(112px, 0.8fr) !important;
-        }
-
-        .contract-hero-zone > section,
-        .contract-side-rail > *,
-        .contract-decision-zone > section,
-        .contract-operations-zone > section,
-        .contract-workbench-frame {
-          border-color: var(--contract-details-border) !important;
-          border-radius: 8px !important;
-          box-shadow: 0 8px 22px rgba(15, 23, 42, 0.06) !important;
-        }
-
-        .contract-tabs-workbench,
-        .contract-embedded-workbench {
-          scroll-margin-top: 90px;
-        }
-
-        .contract-embedded-workbench {
-          grid-column: 1 / -1;
-          overflow: hidden;
-          border: 1px solid var(--contract-details-border);
-          border-radius: 8px;
-          background: var(--contract-details-surface);
-          box-shadow: 0 14px 34px rgba(15, 23, 42, 0.06);
-        }
-
-        .contract-workbench-frame {
-          display: block !important;
-          overflow: hidden;
-          border: 1px solid var(--contract-details-border);
-          border-radius: 8px;
-          background: var(--contract-details-surface);
-        }
-
-        .contract-workbench-nav {
-          position: relative !important;
-          top: auto !important;
-          border: 0 !important;
-          border-bottom: 1px solid var(--contract-details-border) !important;
-          border-radius: 0 !important;
-          box-shadow: none !important;
-          background:
-            linear-gradient(180deg, var(--contract-details-surface) 0%, var(--contract-details-inner) 100%) !important;
-          display: grid;
-          grid-template-columns: minmax(0, 1fr);
-          gap: 16px;
-          align-items: center;
-          padding: 12px 14px;
-        }
-
-        .contract-workbench-nav > div {
-          padding: 0 !important;
-        }
-
-        .contract-workbench-tabs {
-          margin-top: 0 !important;
-          display: grid !important;
-          grid-template-columns: repeat(6, minmax(90px, 1fr));
-          overflow: visible !important;
-          background: transparent !important;
-          position: relative;
-          z-index: 2;
-          width: 100%;
-          max-width: none;
-          justify-self: stretch;
-        }
-
-        .contract-workbench-tab {
-          width: auto !important;
-          flex: 0 0 auto;
-          min-height: 44px !important;
-          border: 1px solid transparent !important;
-          background: var(--contract-details-surface) !important;
-          font-weight: 900;
-          pointer-events: auto;
-        }
-
-        .contract-workbench-content {
-          border: 0 !important;
-          border-radius: 0 !important;
-          box-shadow: none !important;
-          padding: 22px;
-          min-height: 480px;
-        }
-
-        .contract-details-system {
-          color: var(--contract-details-text);
-          font-size: 16px;
-          background: #F3F6F9 !important;
-        }
-
-        .contract-details-system .text-\\[11px\\] {
-          font-size: 13.5px !important;
-          line-height: 1.6 !important;
-        }
-
-        .contract-details-system .text-xs {
-          font-size: 12.5px !important;
-          line-height: 1.65 !important;
-        }
-
-        .contract-details-system .text-sm {
-          font-size: 14px !important;
-          line-height: 1.7 !important;
-        }
-
-        .contract-details-system .bg-slate-50,
-        .contract-details-system .bg-neutral-50,
-        .contract-details-system .bg-neutral-100,
-        .contract-details-system .bg-gray-50 {
-          background-color: var(--contract-details-inner) !important;
-        }
-
-        .contract-details-system .bg-white,
-        .contract-details-system [class*="bg-card"],
-        .contract-details-system [data-radix-tabs-content],
-        .contract-details-system table,
-        .contract-details-system thead,
-        .contract-details-system tbody {
-          background-color: var(--contract-details-surface) !important;
-        }
-
-        .contract-details-system .rounded-3xl,
-        .contract-details-system .rounded-2xl,
-        .contract-details-system .rounded-xl,
-        .contract-details-system .rounded-lg,
-        .contract-details-system .rounded-md {
-          border-radius: 8px !important;
-        }
-
-        .contract-details-system .shadow-lg,
-        .contract-details-system .shadow-xl,
-        .contract-details-system .shadow-2xl,
-        .contract-details-system .shadow-md,
-        .contract-details-system .shadow-sm {
-          box-shadow: 0 10px 28px rgba(2, 6, 23, 0.07) !important;
-        }
-
-        .contract-details-system [role="tablist"] {
-          border: 1px solid var(--contract-details-border) !important;
-          border-radius: 8px !important;
-          background: var(--contract-details-surface) !important;
-          box-shadow: 0 10px 28px rgba(2, 6, 23, 0.06) !important;
-        }
-
-        .contract-details-system [role="tab"] {
-          border-radius: 8px !important;
-          color: var(--contract-details-muted) !important;
-          font-weight: 900 !important;
-        }
-
-        .contract-details-system .border,
-        .contract-details-system .border-slate-100,
-        .contract-details-system .border-slate-200,
-        .contract-details-system .border-neutral-100,
-        .contract-details-system .border-neutral-200,
-        .contract-details-system .border-gray-100,
-        .contract-details-system .border-gray-200 {
-          border-color: var(--contract-details-border) !important;
-        }
-
-        .contract-details-system .text-slate-900,
-        .contract-details-system .text-neutral-900,
-        .contract-details-system .text-gray-900,
-        .contract-details-system .text-foreground {
-          color: var(--contract-details-text) !important;
-        }
-
-        .contract-details-system .text-slate-600,
-        .contract-details-system .text-slate-500,
-        .contract-details-system .text-neutral-600,
-        .contract-details-system .text-neutral-500,
-        .contract-details-system .text-gray-600,
-        .contract-details-system .text-gray-500,
-        .contract-details-system .text-muted-foreground {
-          color: var(--contract-details-muted) !important;
-        }
-
-        .contract-details-system .bg-gradient-to-br,
-        .contract-details-system .bg-gradient-to-r,
-        .contract-details-system .bg-gradient-to-l {
-          background-image: none !important;
-        }
-
-        .contract-details-system .bg-\\[\\#00A896\\],
-        .contract-details-system .bg-teal-500,
-        .contract-details-system .bg-teal-600,
-        .contract-details-system .bg-emerald-500,
-        .contract-details-system .bg-emerald-600,
-        .contract-details-system .from-teal-500,
-        .contract-details-system .to-teal-600,
-        .contract-details-system .from-emerald-500,
-        .contract-details-system .to-emerald-600,
-        .contract-details-system .from-\\[\\#00A896\\],
-        .contract-details-system .via-\\[\\#008F7A\\],
-        .contract-details-system .to-\\[\\#007A68\\] {
-          background-color: var(--contract-details-success) !important;
-          color: white !important;
-        }
-
-        .contract-details-system .bg-blue-50,
-        .contract-details-system .bg-sky-50,
-        .contract-details-system .bg-cyan-50 {
-          background-color: color-mix(in srgb, var(--contract-details-info) 11%, white) !important;
-        }
-
-        .contract-details-system .text-blue-600,
-        .contract-details-system .text-sky-600,
-        .contract-details-system .text-cyan-600,
-        .contract-details-system .text-blue-700,
-        .contract-details-system .text-sky-700 {
-          color: var(--contract-details-info) !important;
-        }
-
-        .contract-details-system .bg-purple-50,
-        .contract-details-system .bg-indigo-50,
-        .contract-details-system .bg-violet-50 {
-          background-color: color-mix(in srgb, var(--contract-details-focus) 11%, white) !important;
-        }
-
-        .contract-details-system .text-purple-600,
-        .contract-details-system .text-indigo-600,
-        .contract-details-system .text-violet-600,
-        .contract-details-system .text-purple-700,
-        .contract-details-system .text-indigo-700 {
-          color: var(--contract-details-focus) !important;
-        }
-
-        .contract-details-system .bg-red-50,
-        .contract-details-system .bg-rose-50,
-        .contract-details-system .bg-orange-50,
-        .contract-details-system .bg-amber-50 {
-          background-color: color-mix(in srgb, var(--contract-details-alert) 12%, white) !important;
-        }
-
-        .contract-details-system .text-red-600,
-        .contract-details-system .text-rose-600,
-        .contract-details-system .text-orange-600,
-        .contract-details-system .text-amber-600,
-        .contract-details-system .text-red-700,
-        .contract-details-system .text-rose-700,
-        .contract-details-system .text-amber-700 {
-          color: var(--contract-details-alert) !important;
-        }
-
-        .contract-details-system .bg-green-50,
-        .contract-details-system .bg-emerald-50,
-        .contract-details-system .bg-teal-50 {
-          background-color: color-mix(in srgb, var(--contract-details-success) 12%, white) !important;
-        }
-
-        .contract-details-system .text-green-600,
-        .contract-details-system .text-emerald-600,
-        .contract-details-system .text-teal-600,
-        .contract-details-system .text-green-700,
-        .contract-details-system .text-emerald-700,
-        .contract-details-system .text-teal-700 {
-          color: var(--contract-details-success) !important;
-        }
-
-        .contract-details-system button,
-        .contract-details-system [role="tab"],
-        .contract-details-system input,
-        .contract-details-system textarea,
-        .contract-details-system select {
-          border-radius: 8px !important;
-        }
-
-        .contract-details-system input,
-        .contract-details-system textarea,
-        .contract-details-system select,
-        .contract-details-system [role="combobox"] {
-          background-color: var(--contract-details-inner) !important;
-          border-color: var(--contract-details-border) !important;
-          color: var(--contract-details-text) !important;
-          -webkit-text-fill-color: var(--contract-details-text) !important;
-          caret-color: var(--contract-details-text) !important;
-          color-scheme: light;
-        }
-
-        .contract-details-system input::placeholder,
-        .contract-details-system textarea::placeholder {
-          color: var(--contract-details-muted) !important;
-          -webkit-text-fill-color: var(--contract-details-muted) !important;
-          opacity: 1 !important;
-        }
-
-        .contract-details-system input::-webkit-calendar-picker-indicator {
-          opacity: 1 !important;
-          filter: none !important;
-        }
-
-        .contract-details-system [role="tablist"] {
-          background: var(--contract-details-inner) !important;
-          border-color: var(--contract-details-border) !important;
-          gap: 0.25rem;
-          overflow-x: auto;
-          scrollbar-width: thin;
-        }
-
-        .contract-details-system [role="tab"] {
-          color: var(--contract-details-muted) !important;
-          min-height: 42px;
-        }
-
-        .contract-details-system button svg,
-        .contract-details-system [role="button"] svg,
-        .contract-details-system [role="tab"] svg,
-        .contract-details-system [role="option"] svg,
-        .contract-details-system [data-state="checked"] svg,
-        .contract-details-system [data-state="active"] svg,
-        .contract-details-system [data-selected="true"] svg {
-          color: currentColor !important;
-          stroke: currentColor !important;
-        }
-
-        .contract-details-system button[data-state="active"],
-        .contract-details-system button[data-state="checked"],
-        .contract-details-system button[aria-pressed="true"],
-        .contract-details-system [role="button"][data-state="active"],
-        .contract-details-system [role="button"][data-state="checked"],
-        .contract-details-system [role="button"][aria-pressed="true"],
-        .contract-details-system [role="option"][data-state="checked"],
-        .contract-details-system [role="option"][data-highlighted],
-        .contract-details-system [data-selected="true"] {
-          background-color: var(--contract-details-focus) !important;
-          border-color: var(--contract-details-focus) !important;
-          color: #FFFFFF !important;
-        }
-
-        .contract-details-system button[data-state="active"] *,
-        .contract-details-system button[data-state="checked"] *,
-        .contract-details-system button[aria-pressed="true"] *,
-        .contract-details-system [role="button"][data-state="active"] *,
-        .contract-details-system [role="button"][data-state="checked"] *,
-        .contract-details-system [role="button"][aria-pressed="true"] *,
-        .contract-details-system [role="option"][data-state="checked"] *,
-        .contract-details-system [role="option"][data-highlighted] *,
-        .contract-details-system [data-selected="true"] * {
-          color: inherit !important;
-        }
-
-        .contract-command-center {
-          display: grid;
-          grid-template-columns: repeat(12, minmax(0, 1fr));
-          gap: 14px;
-          align-items: stretch;
-        }
-
-        .contract-next-action {
-          grid-column: span 7;
-          display: grid;
-          grid-template-columns: minmax(0, 1fr) auto;
-          gap: 16px;
-          align-items: center;
-          overflow: hidden;
-          border: 1px solid var(--contract-details-border);
-          border-radius: 8px;
-          background: white;
-          padding: 18px;
-        }
-
-        .contract-next-action span {
-          display: inline-block;
-          color: var(--contract-details-muted);
-          font-size: 12px;
-          font-weight: 900;
-        }
-
-        .contract-next-action h2 {
-          margin: 6px 0;
-          color: var(--contract-details-text);
-          font-size: 22px;
-          font-weight: 950;
-          line-height: 1.15;
-        }
-
-        .contract-next-action p {
-          margin: 0;
-          color: var(--contract-details-muted);
-          font-size: 13px;
-          font-weight: 700;
-          line-height: 1.8;
-        }
-
-        .contract-next-action.is-money {
-          border-inline-start: 4px solid var(--contract-details-alert);
-          background: color-mix(in srgb, var(--contract-details-alert) 6%, white);
-        }
-
-        .contract-next-action.is-legal {
-          border-inline-start: 4px solid var(--contract-details-focus);
-          background: color-mix(in srgb, var(--contract-details-focus) 6%, white);
-        }
-
-        .contract-next-action.is-stable {
-          border-inline-start: 4px solid var(--contract-details-success);
-          background: color-mix(in srgb, var(--contract-details-success) 6%, white);
-        }
-
-        .contract-risk-board {
-          grid-column: span 5;
-          display: grid;
-          grid-template-columns: repeat(2, minmax(0, 1fr));
-          gap: 8px;
-        }
-
-        .contract-risk-tile {
-          min-width: 0;
-          border: 1px solid var(--contract-details-border);
-          border-radius: 8px;
-          background: white;
-          padding: 13px;
-          text-align: right;
-          transition: border-color 0.18s ease, background-color 0.18s ease;
-        }
-
-        .contract-risk-tile:hover {
-          border-color: var(--contract-details-info);
-          background: var(--contract-details-inner);
-        }
-
-        .contract-risk-tile span {
-          display: flex;
-          align-items: center;
-          gap: 6px;
-          color: var(--contract-details-muted);
-          font-size: 11px;
-          font-weight: 900;
-        }
-
-        .contract-risk-tile strong {
-          display: block;
-          margin-top: 8px;
-          color: var(--contract-details-text);
-          font-size: 20px;
-          font-weight: 950;
-          line-height: 1;
-        }
-
-        .contract-risk-tile.is-danger {
-          border-color: color-mix(in srgb, var(--contract-details-alert) 35%, white);
-          background: color-mix(in srgb, var(--contract-details-alert) 8%, white);
-        }
-
-        .contract-risk-tile.is-danger strong,
-        .contract-risk-tile.is-warning strong {
-          color: var(--contract-details-alert);
-        }
-
-        .contract-risk-tile.is-warning {
-          background: #fff7ed;
-          border-color: #fed7aa;
-        }
-
-        .contract-risk-tile.is-ok strong {
-          color: var(--contract-details-success);
-        }
-
-        .contract-activity-strip {
-          grid-column: 1 / -1;
-          display: grid;
-          grid-template-columns: 220px repeat(3, minmax(0, 1fr));
-          gap: 1px;
-          overflow: hidden;
-          border: 1px solid var(--contract-details-border);
-          border-radius: 8px;
-          background: var(--contract-details-border);
-        }
-
-        .contract-activity-strip header,
-        .contract-activity-row {
-          min-width: 0;
-          background: white;
-          padding: 13px 14px;
-        }
-
-        .contract-activity-strip header strong,
-        .contract-activity-strip header span {
-          display: block;
-        }
-
-        .contract-activity-strip header strong {
-          color: var(--contract-details-text);
-          font-size: 13px;
-          font-weight: 950;
-        }
-
-        .contract-activity-strip header span {
-          margin-top: 3px;
-          color: var(--contract-details-muted);
-          font-size: 11px;
-          font-weight: 800;
-        }
-
-        .contract-activity-row {
-          display: grid;
-          grid-template-columns: auto minmax(0, 1fr) auto;
-          align-items: center;
-          gap: 8px;
-          color: var(--contract-details-muted);
-          font-size: 12px;
-          font-weight: 800;
-        }
-
-        .contract-activity-row b {
-          overflow: hidden;
-          color: var(--contract-details-text);
-          text-overflow: ellipsis;
-          white-space: nowrap;
-          font-weight: 950;
-        }
-
-        .contract-intelligence-panel,
-        .contract-unified-timeline {
-          border: 1px solid var(--contract-details-border);
-          border-radius: 8px;
-          background: white;
-          overflow: hidden;
-        }
-
-        .contract-intelligence-panel {
-          grid-column: span 6;
-        }
-
-        .contract-unified-timeline {
-          grid-column: span 6;
-        }
-
-        .contract-intelligence-panel > header,
-        .contract-unified-timeline > header {
-          display: flex;
-          align-items: flex-start;
-          justify-content: space-between;
-          gap: 12px;
-          border-bottom: 1px solid var(--contract-details-border);
-          background: var(--contract-details-inner);
-          padding: 13px 14px;
-        }
-
-        .contract-intelligence-panel header strong,
-        .contract-unified-timeline header strong,
-        .contract-intelligence-panel header span,
-        .contract-unified-timeline header span {
-          display: block;
-        }
-
-        .contract-intelligence-panel header strong,
-        .contract-unified-timeline header strong {
-          color: var(--contract-details-text);
-          font-size: 13px;
-          font-weight: 950;
-        }
-
-        .contract-intelligence-panel header span,
-        .contract-unified-timeline header span {
-          margin-top: 3px;
-          color: var(--contract-details-muted);
-          font-size: 11px;
-          font-weight: 800;
-        }
-
-        .contract-intelligence-list {
-          display: grid;
-          gap: 0;
-        }
-
-        .contract-intelligence-item {
-          border: 0;
-          border-bottom: 1px solid var(--contract-details-border);
-          background: white;
-          padding: 13px 14px;
-          text-align: right;
-        }
-
-        .contract-intelligence-item:last-child {
-          border-bottom: 0;
-        }
-
-        .contract-intelligence-item span {
-          display: block;
-          color: var(--contract-details-text);
-          font-size: 13px;
-          font-weight: 950;
-        }
-
-        .contract-intelligence-item p {
-          margin: 4px 0 0;
-          color: var(--contract-details-muted);
-          font-size: 12px;
-          font-weight: 750;
-          line-height: 1.65;
-        }
-
-        .contract-intelligence-item.is-danger {
-          background: color-mix(in srgb, var(--contract-details-alert) 8%, white);
-        }
-
-        .contract-intelligence-item.is-danger span,
-        .contract-intelligence-item.is-warning span {
-          color: var(--contract-details-alert);
-        }
-
-        .contract-intelligence-item.is-warning {
-          background: #fff7ed;
-        }
-
-        .contract-intelligence-item.is-ok span {
-          color: var(--contract-details-success);
-        }
-
-        .contract-timeline-list {
-          display: grid;
-          max-height: 310px;
-          overflow: auto;
-        }
-
-        .contract-timeline-event {
-          display: grid;
-          grid-template-columns: auto minmax(0, 1fr) auto;
-          gap: 10px;
-          align-items: center;
-          border-bottom: 1px solid var(--contract-details-border);
-          padding: 12px 14px;
-        }
-
-        .contract-timeline-event:last-child {
-          border-bottom: 0;
-        }
-
-        .contract-timeline-event i {
-          display: inline-flex;
-          width: 32px;
-          height: 32px;
-          align-items: center;
-          justify-content: center;
-          border-radius: 8px;
-          background: var(--contract-details-inner);
-          color: var(--contract-details-info);
-          font-style: normal;
-        }
-
-        .contract-timeline-event.is-success i {
-          color: var(--contract-details-success);
-          background: color-mix(in srgb, var(--contract-details-success) 11%, white);
-        }
-
-        .contract-timeline-event.is-warning i {
-          color: var(--contract-details-alert);
-          background: color-mix(in srgb, var(--contract-details-alert) 11%, white);
-        }
-
-        .contract-timeline-event strong,
-        .contract-timeline-event span {
-          display: block;
-        }
-
-        .contract-timeline-event strong {
-          color: var(--contract-details-text);
-          font-size: 13px;
-          font-weight: 950;
-        }
-
-        .contract-timeline-event span {
-          margin-top: 3px;
-          overflow: hidden;
-          color: var(--contract-details-muted);
-          text-overflow: ellipsis;
-          white-space: nowrap;
-          font-size: 12px;
-          font-weight: 750;
-        }
-
-        .contract-timeline-event time {
-          color: var(--contract-details-muted);
-          font-size: 11px;
-          font-weight: 900;
-          white-space: nowrap;
-        }
-
-        .contract-operations-workspace {
-          display: grid;
-          grid-template-columns: 1fr;
-          gap: 14px;
-          align-items: stretch;
-        }
-
-        .contract-health-panel,
-        .contract-smart-tasks-panel,
-        .contract-crm-panel {
-          overflow: hidden;
-          border: 1px solid var(--contract-details-border);
-          border-radius: 8px;
-          background: white;
-          box-shadow: 0 10px 28px rgba(2, 6, 23, 0.06);
-        }
-
-        .contract-health-panel > header,
-        .contract-smart-tasks-panel > header,
-        .contract-crm-panel > header {
-          display: flex;
-          align-items: flex-start;
-          justify-content: space-between;
-          gap: 12px;
-          border-bottom: 1px solid var(--contract-details-border);
-          background: var(--contract-details-inner);
-          padding: 14px;
-        }
-
-        .contract-health-panel header span,
-        .contract-smart-tasks-panel header span,
-        .contract-crm-panel header span {
-          display: block;
-          color: var(--contract-details-muted);
-          font-size: 11px;
-          font-weight: 900;
-        }
-
-        .contract-health-panel h3,
-        .contract-smart-tasks-panel h3,
-        .contract-crm-panel h3 {
-          margin: 4px 0 0;
-          color: var(--contract-details-text);
-          font-size: 15px;
-          font-weight: 950;
-        }
-
-        .contract-health-score {
-          display: flex;
-          min-width: 76px;
-          align-items: baseline;
-          justify-content: center;
-          gap: 2px;
-          border-radius: 8px;
-          background: white;
-          padding: 8px 10px;
-          color: var(--contract-details-text);
-        }
-
-        .contract-health-score strong {
-          font-size: 28px;
-          font-weight: 950;
-          line-height: 1;
-        }
-
-        .contract-health-score small {
-          color: var(--contract-details-muted);
-          font-size: 11px;
-          font-weight: 900;
-        }
-
-        .contract-health-meter {
-          margin: 16px 14px 10px;
-          height: 9px;
-          overflow: hidden;
-          border-radius: 999px;
-          background: var(--contract-details-inner);
-        }
-
-        .contract-health-meter i {
-          display: block;
-          height: 100%;
-          border-radius: inherit;
-          background: var(--contract-details-success);
-        }
-
-        .contract-health-panel.is-watch .contract-health-meter i {
-          background: #f59e0b;
-        }
-
-        .contract-health-panel.is-risk .contract-health-meter i {
-          background: var(--contract-details-alert);
-        }
-
-        .contract-health-factors {
-          display: grid;
-          grid-template-columns: repeat(2, minmax(0, 1fr));
-          gap: 8px;
-          padding: 0 14px 14px;
-        }
-
-        .contract-health-factors div {
-          min-width: 0;
-          border: 1px solid var(--contract-details-border);
-          border-radius: 8px;
-          background: var(--contract-details-inner);
-          padding: 10px;
-        }
-
-        .contract-health-factors span,
-        .contract-health-factors strong {
-          display: block;
-          overflow: hidden;
-          text-overflow: ellipsis;
-          white-space: nowrap;
-        }
-
-        .contract-health-factors span {
-          color: var(--contract-details-muted);
-          font-size: 11px;
-          font-weight: 900;
-        }
-
-        .contract-health-factors strong {
-          margin-top: 4px;
-          color: var(--contract-details-text);
-          font-size: 12px;
-          font-weight: 950;
-        }
-
-        .contract-health-factors .is-risk strong {
-          color: var(--contract-details-alert);
-        }
-
-        .contract-health-factors .is-watch strong {
-          color: #b45309;
-        }
-
-        .contract-health-factors .is-good strong {
-          color: var(--contract-details-success);
-        }
-
-        .contract-smart-task-list {
-          display: grid;
-        }
-
-        .contract-smart-task {
-          display: grid;
-          grid-template-columns: auto minmax(0, 1fr) auto;
-          align-items: center;
-          gap: 10px;
-          border: 0;
-          border-bottom: 1px solid var(--contract-details-border);
-          background: white;
-          padding: 13px 14px;
-          text-align: right;
-        }
-
-        .contract-smart-task:hover {
-          background: var(--contract-details-inner);
-        }
-
-        .contract-smart-task i {
-          display: inline-flex;
-          width: 34px;
-          height: 34px;
-          align-items: center;
-          justify-content: center;
-          border-radius: 8px;
-          background: color-mix(in srgb, var(--contract-details-info) 10%, white);
-          color: var(--contract-details-info);
-          font-style: normal;
-        }
-
-        .contract-smart-task strong,
-        .contract-smart-task span {
-          display: block;
-          overflow: hidden;
-          text-overflow: ellipsis;
-          white-space: nowrap;
-        }
-
-        .contract-smart-task strong {
-          color: var(--contract-details-text);
-          font-size: 13px;
-          font-weight: 950;
-        }
-
-        .contract-smart-task span {
-          margin-top: 3px;
-          color: var(--contract-details-muted);
-          font-size: 12px;
-          font-weight: 750;
-        }
-
-        .contract-smart-task b {
-          border-radius: 999px;
-          background: color-mix(in srgb, var(--contract-details-focus) 11%, white);
-          color: var(--contract-details-focus);
-          padding: 5px 8px;
-          font-size: 11px;
-          font-weight: 950;
-          white-space: nowrap;
-        }
-
-        .contract-empty-state {
-          display: flex;
-          align-items: center;
-          gap: 8px;
-          padding: 18px 14px;
-          color: var(--contract-details-success);
-          font-size: 13px;
-          font-weight: 900;
-        }
-
-        .contract-crm-panel header button {
-          border: 1px solid var(--contract-details-border);
-          background: white;
-          color: var(--contract-details-info);
-          padding: 8px 10px;
-          font-size: 12px;
-          font-weight: 950;
-        }
-
-        .contract-crm-stats {
-          display: grid;
-          grid-template-columns: repeat(3, minmax(0, 1fr));
-          gap: 8px;
-          padding: 14px 14px 0;
-        }
-
-        .contract-crm-stats div {
-          border: 1px solid var(--contract-details-border);
-          border-radius: 8px;
-          background: var(--contract-details-inner);
-          padding: 10px;
-          text-align: center;
-        }
-
-        .contract-crm-stats strong,
-        .contract-crm-stats span {
-          display: block;
-        }
-
-        .contract-crm-stats strong {
-          color: var(--contract-details-text);
-          font-size: 17px;
-          font-weight: 950;
-        }
-
-        .contract-crm-stats span {
-          margin-top: 3px;
-          color: var(--contract-details-muted);
-          font-size: 11px;
-          font-weight: 900;
-        }
-
-        .contract-crm-last {
-          display: grid;
-          grid-template-columns: auto minmax(0, 1fr);
-          gap: 10px;
-          align-items: start;
-          margin: 12px 14px;
-          border: 1px solid var(--contract-details-border);
-          border-radius: 8px;
-          background: white;
-          padding: 11px;
-        }
-
-        .contract-crm-last svg {
-          color: var(--contract-details-success);
-        }
-
-        .contract-crm-last strong,
-        .contract-crm-last span {
-          display: block;
-          overflow: hidden;
-          text-overflow: ellipsis;
-          white-space: nowrap;
-        }
-
-        .contract-crm-last strong {
-          color: var(--contract-details-text);
-          font-size: 13px;
-          font-weight: 950;
-        }
-
-        .contract-crm-last span {
-          margin-top: 3px;
-          color: var(--contract-details-muted);
-          font-size: 12px;
-          font-weight: 750;
-        }
-
-        .contract-crm-note {
-          display: block;
-          width: calc(100% - 28px);
-          margin: 0 14px 12px;
-          resize: vertical;
-          border: 1px solid var(--contract-details-border);
-          border-radius: 8px;
-          background: var(--contract-details-inner);
-          padding: 10px;
-          color: var(--contract-details-text);
-          font-size: 13px;
-          font-weight: 750;
-          line-height: 1.6;
-        }
-
-        .contract-crm-actions {
-          display: grid;
-          grid-template-columns: minmax(110px, 0.7fr) minmax(130px, 1fr) minmax(118px, 0.8fr);
-          gap: 8px;
-          padding: 0 14px 14px;
-        }
-
-        .contract-crm-actions select,
-        .contract-crm-actions button {
-          min-width: 0;
-          height: 40px;
-          gap: 6px;
-          font-weight: 950;
-        }
-
-        @media (max-width: 1180px) {
-          .contract-page-topbar,
-          .contract-redesigned-layout,
-          .contract-workbench-nav {
-            grid-template-columns: 1fr;
-          }
-
-          .contract-redesigned-layout {
-            grid-template-areas:
-              "hero"
-              "decision"
-              "operations";
-          }
-
-          .contract-side-rail {
-            position: static;
-            grid-template-columns: 1fr;
-          }
-
-          .contract-topbar-actions {
-            justify-content: stretch;
-          }
-
-          .contract-topbar-dates {
-            position: static;
-            transform: none;
-            justify-content: center;
-          }
-
-          .contract-topbar-actions button {
-            flex: 1 1 130px;
-          }
-
-          .contract-workbench-tabs {
-            justify-content: flex-start;
-          }
-
-          .contract-command-center,
-          .contract-operations-workspace,
-          .contract-next-action,
-          .contract-activity-strip {
-            grid-template-columns: 1fr;
-          }
-
-          .contract-next-action,
-          .contract-risk-board,
-          .contract-intelligence-panel,
-          .contract-unified-timeline {
-            grid-column: 1 / -1;
-          }
-
-          .contract-operations-zone .contract-operations-workspace {
-            grid-template-columns: 1fr !important;
-          }
-
-          .contract-operations-zone .contract-crm-panel {
-            grid-column: auto;
-          }
-        }
-
-        @media (max-width: 900px) {
-          .contract-profile-main {
-            grid-template-columns: 1fr !important;
-          }
-
-          .contract-profile-summary {
-            grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-          }
-
-          .contract-profile-progress {
-            grid-template-columns: 1fr !important;
-          }
-        }
-
-        @media (max-width: 640px) {
-          .contract-workbench-tabs {
-            display: flex !important;
-            width: max-content;
-            max-width: 100%;
-            overflow-x: auto !important;
-          }
-
-          .contract-risk-board {
-            grid-template-columns: 1fr;
-          }
-
-          .contract-next-action button,
-          .contract-action-dock button {
-            width: 100%;
-          }
-
-          .contract-health-factors,
-          .contract-crm-stats,
-          .contract-crm-actions,
-          .contract-smart-task {
-            grid-template-columns: 1fr;
-          }
-
-          .contract-profile-identity > .grid {
-            grid-template-columns: 1fr !important;
-          }
-
-          .contract-smart-task b {
-            width: fit-content;
-          }
-        }
-
-        .contract-details-system [role="tab"][data-state="active"] {
-          background: var(--contract-details-focus) !important;
-          color: white !important;
-          border-color: var(--contract-details-focus) !important;
-          box-shadow: 0 8px 18px rgba(23, 58, 99, 0.18) !important;
-        }
-
-        .contract-details-system [role="tab"][data-state="active"] svg {
-          color: white !important;
-        }
-
-        .contract-details-system .hover\\:bg-slate-100:hover,
-        .contract-details-system .hover\\:bg-neutral-100:hover,
-        .contract-details-system .hover\\:bg-gray-100:hover {
-          background-color: var(--contract-details-inner) !important;
-        }
-
-        .contract-details-system .bg-primary,
-        .contract-details-system button[type="submit"] {
-          background-color: var(--contract-details-success) !important;
-          color: white !important;
-        }
-
-        .contract-details-system .bg-destructive,
-        .contract-details-system .bg-red-600,
-        .contract-details-system .bg-rose-600 {
-          background-color: var(--contract-details-alert) !important;
-          color: white !important;
-        }
-
-        .contract-details-system [class*="[&>div]:bg-primary"] > div,
-        .contract-details-system [data-radix-progress-indicator],
-        .contract-details-system .bg-primary {
-          background-color: var(--contract-details-success) !important;
-        }
-
-        .contract-details-system th {
-          color: var(--contract-details-muted) !important;
-          background: var(--contract-details-inner) !important;
-          font-weight: 700;
-        }
-
-        .contract-details-system tr:hover td {
-          background-color: color-mix(in srgb, var(--contract-details-info) 6%, white) !important;
-        }
-
-        .contract-details-system .ring-offset-background {
-          --tw-ring-offset-color: var(--contract-details-surface) !important;
-        }
-
-        .contract-details-system *:focus-visible {
-          outline-color: var(--contract-details-focus) !important;
-          --tw-ring-color: var(--contract-details-focus) !important;
-        }
-
-        @media (max-width: 768px) {
-          .contract-details-system > div {
-            padding-left: 1rem !important;
-            padding-right: 1rem !important;
-          }
-
-          .contract-details-system [role="tab"] {
-            flex: 0 0 auto;
-            padding-inline: 0.9rem !important;
-          }
-        }
-      `}</style>
     </motion.div>
   );
 };

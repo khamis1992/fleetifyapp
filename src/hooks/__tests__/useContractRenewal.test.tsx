@@ -290,12 +290,13 @@ describe('contract cancellation with traffic penalties', () => {
     });
 
     expect(state.rpc).toHaveBeenCalledWith(
-      'cancel_contract_with_company_traffic_penalties_v1',
+      'cancel_contract_with_return_and_penalties_v2',
       {
         p_company_id: 'company-1',
         p_contract_id: 'contract-1',
         p_reason: 'إلغاء بطلب الإدارة',
         p_transfer_open_penalties_to_company: true,
+        p_return_payload: null,
         p_actor_id: 'user-1',
       },
     );

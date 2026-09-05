@@ -91,7 +91,7 @@ import { useContractsData, type ContractWithVehicle as Contract } from "@/hooks/
 import { useAuth } from "@/contexts/AuthContext";
 import { useContractCreation } from "@/hooks/useContractCreation";
 import { useContractDrafts } from "@/hooks/useContractDrafts";
-import { useToast } from "@/hooks/use-toast-mock";
+import { useToast } from "@/hooks/use-toast";
 import { generateShortContractNumber } from "@/utils/contractNumberGenerator";
 import { formatDateInGregorian } from "@/utils/dateFormatter";
 import { useCurrencyFormatter } from "@/hooks/useCurrencyFormatter";

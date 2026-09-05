@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   appendLegalAccrualToProjection,
   getQatarBusinessDate,
+  resolveLegalClaimCutoffDate,
   resolveLegalClaimProjection,
 } from '../legalClaimSources';
 
@@ -64,6 +65,15 @@ describe('resolveLegalClaimProjection', () => {
 
     expect(result.rows).toHaveLength(1);
     expect(result.rows[0]).toMatchObject({ source: 'payment_schedule', source_reference: 'valid' });
+  });
+
+  it('uses the documented vehicle-return cutoff instead of including later installments', () => {
+    expect(resolveLegalClaimCutoffDate('2026-09-03', {
+      rent_cutoff_date: '2026-08-31',
+    })).toBe('2026-08-31');
+    expect(resolveLegalClaimCutoffDate('2026-09-03', {
+      rent_cutoff_date: '2026-10-01',
+    })).toBe('2026-09-03');
   });
 
   it('excludes unknown, void, and deleted invoice rows from a legal rent claim', () => {

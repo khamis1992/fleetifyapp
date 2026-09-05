@@ -51,6 +51,9 @@ type HealthIssue = {
   count?: number;
   items?: string[];
   fixable?: boolean;
+  // هل يعالج الزر هذه المشكلة بالكامل؟ false يعني أن الزر يعالج جزءًا فقط
+  // أو أن بعض البنود تحتاج تعديلًا محاسبيًا معتمدًا.
+  autoFixable?: boolean;
 };
 
 type InvoiceIssueItem = {
@@ -210,7 +213,9 @@ export const ContractHealthAnalysis: React.FC<{
   contract: Contract;
   formatCurrency: (amount: number) => string;
   paymentSchedules: PaymentScheduleLike[];
-}> = ({ contract, formatCurrency }) => {
+  billingGenerationBlocker?: string | null;
+  healthScore?: number;
+}> = ({ contract, formatCurrency, billingGenerationBlocker, healthScore }) => {
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const [isFixing, setIsFixing] = useState(false);
@@ -348,17 +353,22 @@ export const ContractHealthAnalysis: React.FC<{
 
   const health = data;
   const fixableIssuesCount = health
-    ? health.metrics.missingInvoices
-      + health.metrics.outsideInvoices.length
-      + health.metrics.paymentsBeforeStartItems.filter((payment) => !payment.is_immutable).length
-      + health.metrics.paymentsAfterEndItems.filter((payment) => !payment.is_immutable).length
-      + (health.metrics.scheduleInvoiceDifference > 1 ? 1 : 0)
-      + health.metrics.scheduleInvoiceMismatchItems.length
-      + health.metrics.invoicePaymentCorrections.length
+    ? health.issues.filter(
+        (issue) => issue.fixable && issue.autoFixable !== false && issue.severity !== 'good',
+      ).length
     : 0;
+  const displayedHealthScore = healthScore ?? health?.score ?? 0;
 
   const handleAutoFix = async () => {
     if (!health || fixableIssuesCount === 0) return;
+    if (billingGenerationBlocker) {
+      toast({
+        title: 'تعذر الإصلاح التلقائي',
+        description: billingGenerationBlocker,
+        variant: 'destructive',
+      });
+      return;
+    }
 
     setIsFixing(true);
     const fixedActions: string[] = [];
@@ -399,6 +409,19 @@ export const ContractHealthAnalysis: React.FC<{
         fixedCount += repairedInvoiceLinks;
         fixedActions.push(`تصحيح ربط فواتير بالعقد: ${repairedInvoiceLinks}`);
       }
+
+      // إعادة ربط الأقساط المربوطة بفواتير بقيمة مختلفة (مثل أقساط الإيجار
+      // المربوطة بفواتير مخالفات مرور) بفاتورة الشهر المطابقة غير المرتبطة.
+      const wrongValueRepair = await repairWrongValueScheduleInvoiceLinks({
+        contract,
+        paymentSchedules: currentPaymentSchedules,
+        now,
+      });
+      if (wrongValueRepair.repaired > 0) {
+        fixedCount += wrongValueRepair.repaired;
+        fixedActions.push(`إعادة ربط أقساط بفواتير شهرها المطابقة: ${wrongValueRepair.repaired}`);
+      }
+      reviewItems.push(...wrongValueRepair.review);
 
       const duplicateScheduleIds = getDuplicatePaymentScheduleIds(
         currentPaymentSchedules,
@@ -597,77 +620,171 @@ export const ContractHealthAnalysis: React.FC<{
     }
   };
 
-  const scoreTone = useMemo(() => {
+  const verdictTone = useMemo(() => {
     const score = health?.score || 0;
-    if (score >= 85) return 'text-emerald-700 bg-emerald-50 border-emerald-200';
-    if (score >= 65) return 'text-amber-700 bg-amber-50 border-amber-200';
-    return 'text-red-700 bg-red-50 border-red-200';
+    if (score >= 85) return { tint: 'bg-[#ECFDF9]', icon: 'text-[#0E9E7E]' };
+    if (score >= 65) return { tint: 'bg-[#FFFBEB]', icon: 'text-[#B45309]' };
+    return { tint: 'bg-[#FFF5F6]', icon: 'text-[#BE123C]' };
   }, [health?.score]);
+
+  const repairPlan = useMemo(
+    () => (health ? buildLocalContractRepairAgentPlan(health.metrics) : null),
+    [health],
+  );
 
   if (isLoading) {
     return (
-      <div className="rounded-xl border border-[#DDE5EF] bg-white p-5">
-        <div className="h-28 animate-pulse rounded-lg bg-slate-100" />
+      <div className="rounded-2xl border border-[#E5EAF1] bg-white p-5 shadow-[0_10px_30px_-22px_rgba(15,23,42,0.25)]">
+        <div className="h-28 animate-pulse rounded-lg bg-[#F6F8FB]" />
       </div>
     );
   }
 
   if (!health) return null;
 
+  const criticalIssues = health.issues.filter((issue) => issue.severity === 'critical');
+  const warningIssues = health.issues.filter((issue) => issue.severity === 'warning');
+  const infoIssues = health.issues.filter((issue) => issue.severity === 'info');
+  const goodIssues = health.issues.filter((issue) => issue.severity === 'good');
+
   return (
-    <section className="rounded-xl border border-[#DDE5EF] bg-white p-5 shadow-sm">
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <div className="mb-2 inline-flex items-center gap-2 rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-xs font-black text-blue-700">
-            <Sparkles className="h-4 w-4" />
-            {health.source === 'longcat' ? 'تحليل LongCat' : 'تحليل ذكي داخلي'}
+    <div className="space-y-4">
+      <section className="overflow-hidden rounded-2xl border border-[#E5EAF1] bg-white shadow-[0_10px_30px_-22px_rgba(15,23,42,0.25)]">
+        <PanelHeader
+          icon={Sparkles}
+          tint={verdictTone.tint}
+          iconColor={verdictTone.icon}
+          eyebrow="Contract Health"
+          title="تحليل صحة العقد"
+        />
+        <div className="p-4">
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div className="min-w-0 flex-1">
+              <div className="mb-2 inline-flex items-center gap-2 rounded-full border border-[#E5EAF1] bg-[#F6F8FB] px-3 py-1 text-xs font-black text-[#0F172A]">
+                <Sparkles className="h-4 w-4 text-[#7C83F6]" />
+                {health.source === 'longcat' ? 'تحليل LongCat' : 'تحليل ذكي داخلي'}
+              </div>
+              <p className="max-w-3xl text-sm font-semibold leading-6 text-slate-500">
+                {billingGenerationBlocker
+                  ? 'يوجد تعارض جوهري بين مدة العقد وقيمته وجدول الدفعات، ويجب تصحيحه قبل أي إصلاح مالي تلقائي.'
+                  : health.summary}
+              </p>
+              <div className="mt-3 flex flex-wrap items-center gap-2">
+                <Button variant="outline" size="sm" onClick={() => refetch()} disabled={isFetching}>
+                  <RefreshCw className={cn('h-4 w-4', isFetching && 'animate-spin')} />
+                  تحديث
+                </Button>
+                <Button
+                  size="sm"
+                  onClick={handleAutoFix}
+                  disabled={isFixing || fixableIssuesCount === 0 || Boolean(billingGenerationBlocker)}
+                  className="gap-2 bg-[#22C7A1] text-white hover:bg-[#1BAA8A]"
+                >
+                  {isFixing ? <Loader2 className="h-4 w-4 animate-spin" /> : <ShieldCheck className="h-4 w-4" />}
+                  إصلاح المشاكل تلقائيًا
+                </Button>
+                {fixableIssuesCount > 0 && (
+                  <span className="rounded-full bg-[#EEF2FF] px-2.5 py-1 text-[11px] font-black text-[#4F46E5]">
+                    {billingGenerationBlocker
+                      ? 'يلزم تصحيح بيانات العقد أولاً'
+                      : `${fixableIssuesCount} أنواع مشاكل قابلة للإصلاح`}
+                  </span>
+                )}
+              </div>
+            </div>
+            <div className="flex shrink-0 flex-col items-center">
+              <div
+                className="flex h-24 w-24 flex-col items-center justify-center rounded-full border-[6px]"
+                style={{
+                  borderColor:
+                    displayedHealthScore >= 85
+                      ? '#22C7A1'
+                      : displayedHealthScore >= 65
+                        ? '#F59E0B'
+                        : '#FB6B7A',
+                }}
+              >
+                <span className={cn('text-2xl font-black leading-none', displayedHealthScore >= 85 ? 'text-[#0E9E7E]' : displayedHealthScore >= 65 ? 'text-[#B45309]' : 'text-[#BE123C]')}>
+                  {displayedHealthScore}
+                </span>
+                <span className="mt-0.5 text-[10px] font-bold text-slate-400">درجة الصحة</span>
+              </div>
+            </div>
           </div>
-          <h2 className="text-xl font-black text-[#142033]">تحليل صحة العقد</h2>
-          <p className="mt-1 max-w-3xl text-sm font-medium leading-6 text-[#6A7688]">{health.summary}</p>
-        </div>
-        <div className="flex items-center gap-2">
-          <div className={cn('rounded-xl border px-4 py-3 text-center', scoreTone)}>
-            <p className="text-xs font-bold">درجة الصحة</p>
-            <p className="text-2xl font-black">{health.score}%</p>
-          </div>
-          <Button variant="outline" onClick={() => refetch()} disabled={isFetching}>
-            <RefreshCw className={cn('h-4 w-4', isFetching && 'animate-spin')} />
-            تحديث
-          </Button>
-          <Button
-            onClick={handleAutoFix}
-            disabled={isFixing || fixableIssuesCount === 0}
-            className="gap-2 bg-[#22C7A1] text-white hover:bg-[#1BAA8A]"
-          >
-            {isFixing ? <Loader2 className="h-4 w-4 animate-spin" /> : <ShieldCheck className="h-4 w-4" />}
-            إصلاح المشاكل تلقائيًا
-          </Button>
-        </div>
-      </div>
 
-      <div className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-        <HealthMetric label="الفواتير الناقصة" value={String(health.metrics.missingInvoices)} icon={FileWarning} tone="amber" />
-        <HealthMetric label="دفعات قبل البداية" value={String(health.metrics.paymentsBeforeStart)} icon={CalendarX} tone="red" />
-        <HealthMetric label="إجمالي المدفوع" value={formatCurrency(health.metrics.totalPaid)} icon={CreditCard} tone="emerald" />
-        <HealthMetric label="تجاوز قيمة العقد" value={formatCurrency(health.metrics.overpaidAmount)} icon={TrendingUp} tone="red" />
-      </div>
-
-      <div className="mt-5 rounded-lg border border-emerald-200 bg-emerald-50 p-4">
-        <div className="flex items-start gap-3">
-          <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-emerald-700" />
-          <div>
-            <p className="font-black text-emerald-900">القرار المقترح</p>
-            <p className="mt-1 text-sm font-bold leading-6 text-emerald-800">{health.recommendation}</p>
+          <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+            <StatTile label="الفواتير الناقصة" value={String(health.metrics.missingInvoices)} icon={FileWarning} tint="bg-[#FFFBEB]" iconColor="text-[#B45309]" />
+            <StatTile label="دفعات قبل البداية" value={String(health.metrics.paymentsBeforeStart)} icon={CalendarX} tint="bg-[#FFF5F6]" iconColor="text-[#BE123C]" />
+            <StatTile label="إجمالي المدفوع" value={formatCurrency(health.metrics.totalPaid)} icon={CreditCard} tint="bg-[#ECFDF9]" iconColor="text-[#0E9E7E]" />
+            <StatTile label="تجاوز قيمة العقد" value={formatCurrency(health.metrics.overpaidAmount)} icon={TrendingUp} tint="bg-[#FFF5F6]" iconColor="text-[#BE123C]" />
           </div>
         </div>
-      </div>
+      </section>
 
-      <div className="mt-5 grid gap-3 lg:grid-cols-2">
-        {health.issues.map((issue, index) => (
-          <IssueCard key={`${issue.title}-${index}`} issue={issue} />
-        ))}
-      </div>
-    </section>
+      <section className="overflow-hidden rounded-2xl border border-[#E5EAF1] bg-white shadow-[0_10px_30px_-22px_rgba(15,23,42,0.25)]">
+        <PanelHeader
+          icon={AlertTriangle}
+          tint="bg-[#FFF5F6]"
+          iconColor="text-[#BE123C]"
+          eyebrow="Issues"
+          title="المشاكل المكتشفة"
+        />
+        <div className="space-y-4 p-4">
+          {criticalIssues.length > 0 && <SeverityGroup label="مشاكل حرجة" issues={criticalIssues} autoFixBlocked={Boolean(billingGenerationBlocker)} />}
+          {warningIssues.length > 0 && <SeverityGroup label="تحذيرات" issues={warningIssues} autoFixBlocked={Boolean(billingGenerationBlocker)} />}
+          {infoIssues.length > 0 && <SeverityGroup label="ملاحظات" issues={infoIssues} autoFixBlocked={Boolean(billingGenerationBlocker)} />}
+          {goodIssues.length > 0 && <SeverityGroup label="سليم" issues={goodIssues} autoFixBlocked={Boolean(billingGenerationBlocker)} />}
+        </div>
+      </section>
+
+      <section className="overflow-hidden rounded-2xl border border-[#E5EAF1] bg-white shadow-[0_10px_30px_-22px_rgba(15,23,42,0.25)]">
+        <PanelHeader
+          icon={ShieldCheck}
+          tint="bg-[#ECFDF9]"
+          iconColor="text-[#0E9E7E]"
+          eyebrow="Repair"
+          title="أدوات الإصلاح"
+        />
+        <div className="p-4">
+          <div className="rounded-xl border border-[#E5EAF1] bg-[#F6F8FB] p-4">
+            <div className="flex items-start gap-3">
+              <ShieldCheck
+                className={cn(
+                  'mt-0.5 h-5 w-5 shrink-0',
+                  (health.issues.filter((issue) => issue.severity === 'critical').length > 0)
+                    ? 'text-[#BE123C]'
+                    : 'text-[#0E9E7E]',
+                )}
+              />
+              <div>
+                <p className="text-sm font-black text-[#0F172A]">القرار المقترح</p>
+                <p className="mt-1 text-sm font-semibold leading-6 text-slate-600">
+                  {billingGenerationBlocker
+                    ? 'صحح قيمة العقد أو شهر بداية الفوترة والقسط الخارج عن المدة، ثم أعد تشغيل الإصلاح التلقائي.'
+                    : health.recommendation}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {repairPlan && repairPlan.actions.length > 0 && (
+            <ul className="mt-4 space-y-2">
+              {repairPlan.actions.map((action) => (
+                <li key={action.tool} className="flex items-start gap-3 rounded-xl border border-[#E5EAF1] bg-[#F6F8FB] p-3">
+                  <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-[#EEF2FF] text-[11px] font-black text-[#4F46E5]">
+                    {action.priority}
+                  </span>
+                  <div>
+                    <p className="text-sm font-bold text-[#0F172A]">{getRepairToolLabel(action.tool)}</p>
+                    <p className="mt-0.5 text-xs font-semibold leading-5 text-slate-500">{action.reason}</p>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      </section>
+    </div>
   );
 };
 
@@ -1089,10 +1206,18 @@ function buildLocalContractHealth(metrics: ReturnType<typeof buildContractHealth
   if (metrics.scheduleInvoiceDifference > 1 || metrics.scheduleInvoiceMismatchItems.length > 0) {
     const scheduleIssue = issues[issues.length - 1];
     if (scheduleIssue) {
+      const wrongLinkCount = metrics.scheduleInvoiceMismatchItems.filter(
+        (item) => item.reason === 'wrong_link' || item.reason === 'date_mismatch' || item.reason === 'duplicate_link',
+      ).length;
+      const amountOnlyCount = metrics.scheduleInvoiceMismatchItems.filter(
+        (item) => item.reason !== 'wrong_link' && item.reason !== 'date_mismatch' && item.reason !== 'duplicate_link',
+      ).length;
+
       scheduleIssue.detail = metrics.scheduleInvoiceDifference > 1
         ? `يوجد فرق مالي بين جدول الدفعات والفواتير بقيمة ${metricsFormatCurrency(metrics, metrics.scheduleInvoiceDifference)}. مجموع جدول الدفعات ${metricsFormatCurrency(metrics, metrics.scheduleTotal)}، ومجموع الفواتير ${metricsFormatCurrency(metrics, metrics.invoicesTotal)}.`
         : `يوجد ربط غير متطابق بين الأقساط والفواتير رغم أن الإجمالي المالي لا يظهر فرقًا كبيرًا.`;
-      scheduleIssue.fixable = true;
+      scheduleIssue.fixable = wrongLinkCount > 0;
+      scheduleIssue.autoFixable = wrongLinkCount > 0 && amountOnlyCount === 0;
       scheduleIssue.items = metrics.scheduleInvoiceMismatchItems.slice(0, 8).map((item) => {
         if (item.reason === 'date_mismatch') {
           return `قسط ${item.installment_number || '-'} بتاريخ ${formatDateLabel(item.due_date)}: تاريخ استحقاق الفاتورة لا يطابق شهر القسط - الفاتورة ${item.invoice_number}`;
@@ -1179,58 +1304,94 @@ function buildLocalContractHealth(metrics: ReturnType<typeof buildContractHealth
   };
 }
 
-const HealthMetric: React.FC<{
+const PanelHeader: React.FC<{
+  icon: React.ElementType;
+  tint: string;
+  iconColor: string;
+  eyebrow: string;
+  title: string;
+}> = ({ icon: Icon, tint, iconColor, eyebrow, title }) => (
+  <div className="flex items-center gap-3 border-b border-[#E5EAF1] bg-[#F6F8FB] px-4 py-3">
+    <div className={cn('flex h-8 w-8 items-center justify-center rounded-lg', tint)}>
+      <Icon className={cn('h-4 w-4', iconColor)} />
+    </div>
+    <div>
+      <p className="text-[10px] font-black uppercase tracking-wide text-slate-400">{eyebrow}</p>
+      <p className="text-sm font-black text-[#0F172A]">{title}</p>
+    </div>
+  </div>
+);
+
+const StatTile: React.FC<{
   label: string;
   value: string;
   icon: React.ElementType;
-  tone: 'emerald' | 'amber' | 'red';
-}> = ({ label, value, icon: Icon, tone }) => {
-  const toneClass = {
-    emerald: 'bg-emerald-50 text-emerald-700',
-    amber: 'bg-amber-50 text-amber-700',
-    red: 'bg-red-50 text-red-700',
-  }[tone];
-
-  return (
-    <div className="rounded-lg border border-[#DDE5EF] bg-[#FCFDFE] p-4">
-      <div className="flex items-center justify-between gap-3">
-        <div>
-          <p className="text-xs font-bold text-[#6A7688]">{label}</p>
-          <p className="mt-2 text-lg font-black text-[#142033]">{value}</p>
-        </div>
-        <div className={cn('rounded-lg p-2', toneClass)}>
-          <Icon className="h-5 w-5" />
-        </div>
+  tint: string;
+  iconColor: string;
+}> = ({ label, value, icon: Icon, tint, iconColor }) => (
+  <div className="rounded-xl border border-[#E5EAF1] bg-white p-4">
+    <div className="flex items-center justify-between gap-3">
+      <div>
+        <p className="text-[11px] font-bold text-slate-500">{label}</p>
+        <p className="mt-2 text-base font-black text-[#0F172A]">{value}</p>
+      </div>
+      <div className={cn('flex h-8 w-8 items-center justify-center rounded-lg', tint)}>
+        <Icon className={cn('h-4 w-4', iconColor)} />
       </div>
     </div>
-  );
-};
+  </div>
+);
 
-const IssueCard: React.FC<{ issue: HealthIssue }> = ({ issue }) => {
+const SeverityGroup: React.FC<{
+  label: string;
+  issues: HealthIssue[];
+  autoFixBlocked?: boolean;
+}> = ({ label, issues, autoFixBlocked }) => (
+  <div>
+    <p className="mb-2 text-[11px] font-black uppercase tracking-wide text-slate-400">{label}</p>
+    <div className="grid gap-3 lg:grid-cols-2">
+      {issues.map((issue, index) => (
+        <IssueCard key={`${issue.title}-${index}`} issue={issue} autoFixBlocked={autoFixBlocked} />
+      ))}
+    </div>
+  </div>
+);
+
+const IssueCard: React.FC<{ issue: HealthIssue; autoFixBlocked?: boolean }> = ({ issue, autoFixBlocked }) => {
   const styles = {
-    critical: 'border-red-200 bg-red-50 text-red-800',
-    warning: 'border-amber-200 bg-amber-50 text-amber-800',
-    info: 'border-blue-200 bg-blue-50 text-blue-800',
-    good: 'border-emerald-200 bg-emerald-50 text-emerald-800',
+    critical: 'border-[#FB6B7A]/30 bg-[#FFF5F6] text-[#BE123C]',
+    warning: 'border-[#F59E0B]/30 bg-[#FFFBEB] text-[#B45309]',
+    info: 'border-[#38BDF8]/30 bg-[#F0F9FF] text-[#0369A1]',
+    good: 'border-[#22C7A1]/30 bg-[#ECFDF9] text-[#0E9E7E]',
   }[issue.severity];
   const Icon = issue.severity === 'good' ? CheckCircle2 : AlertTriangle;
 
   return (
-    <div className={cn('rounded-lg border p-4', styles)}>
+    <div className={cn('rounded-xl border p-4', styles)}>
       <div className="flex items-start gap-3">
         <Icon className="mt-0.5 h-5 w-5 shrink-0" />
         <div>
-          <p className="font-black">{issue.title}</p>
-          <p className="mt-1 text-sm font-medium leading-6">{issue.detail}</p>
+          <p className="text-sm font-black">{issue.title}</p>
+          <p className="mt-1 text-sm font-semibold leading-6">{issue.detail}</p>
           {issue.items && issue.items.length > 0 && (
-            <ul className="mt-3 space-y-1 rounded-md bg-white/65 p-2 text-xs font-bold leading-5">
+            <ul className="mt-3 space-y-1 rounded-lg bg-white/65 p-2 text-xs font-semibold leading-5">
               {issue.items.slice(0, 8).map((item, index) => (
                 <li key={`${issue.title}-${index}`}>{item}</li>
               ))}
             </ul>
           )}
           {issue.fixable && issue.severity !== 'good' && (
-            <p className="mt-2 text-xs font-black">يمكن إصلاح هذه المشكلة من زر الإصلاح التلقائي بالأعلى.</p>
+            autoFixBlocked ? (
+              <p className="mt-2 text-xs font-black">
+                يلزم تصحيح مدة العقد وقيمته وجدول الأقساط قبل تشغيل الإصلاح التلقائي.
+              </p>
+            ) : issue.autoFixable === false ? (
+              <p className="mt-2 text-xs font-black">
+                يمكن للزر أعلى الصفحة معالجة الروابط القابلة للتصحيح، بينما تحتاج فروق المبالغ المتبقية إلى تعديل محاسبي معتمد يحافظ على القيد المرحّل.
+              </p>
+            ) : (
+              <p className="mt-2 text-xs font-black">يمكن إصلاح هذه المشكلة من زر الإصلاح التلقائي بالأعلى.</p>
+            )
           )}
         </div>
       </div>
@@ -1563,6 +1724,131 @@ async function repairScheduleLinkedInvoiceContracts({
   }
 
   return repairedCount;
+}
+
+/**
+ * إصلاح روابط الأقساط ذات القيمة الخاطئة: قسط نشط مربوط بفاتورة قيمتها تختلف عن
+ * قيمة القسط بينما توجد فاتورة أخرى لنفس العقد ونفس شهر الفاتورة قيمتها مطابقة
+ * للقسط بالضبط وغير مربوطة بأي قسط. النمط الفعلي الذي كشفه LTO202437: أقساط إيجار
+ * (1050-1060) رُبطت بفواتير مخالفات مرور TV (300-500) بدل فواتير إيجار الشهر.
+ *
+ * قاعدة الأمان (منع النمط المعكوس): يُصلح الربط فقط عندما تكون الفاتورة الحالية
+ * غير إيجارية (مخالفة TV/غرامة) والبديل فاتورة إيجار مطابقة. أما إن كان القسط
+ * مربوطًا بفاتورة إيجار قيمتها أكبر (نمط أقساط المخالفات 500 المربوطة بفواتير
+ * إيجار 2100 في عقود مثل C-ALF-0048) فيُترك لمراجعة محاسبية معتمدة لأن فك
+ * الربط قد ييتم فاتورة إيجار مدفوعة لا قسط إيجار لها.
+ *
+ * العملية إعادة ربط schedule.invoice_id فقط: لا تعيد تسعير فاتورة مرحّلة ولا تلمس
+ * أي مبلغ أو قيد أو دفعة.
+ */
+async function repairWrongValueScheduleInvoiceLinks({
+  contract,
+  paymentSchedules,
+  now,
+}: {
+  contract: Contract;
+  paymentSchedules: PaymentScheduleLike[];
+  now: string;
+}) {
+  const activeSchedules = paymentSchedules.filter(
+    (schedule) => !isCancelled(schedule.status) && schedule.invoice_id,
+  );
+  if (activeSchedules.length === 0) return { repaired: 0, review: [] as string[] };
+
+  const linkedInvoiceIds = Array.from(
+    new Set(activeSchedules.map((schedule) => schedule.invoice_id as string)),
+  );
+
+  const { data: linkedInvoices, error: linkedError } = await supabase
+    .from('invoices')
+    .select('id, invoice_number, total_amount, invoice_month, invoice_date, due_date, status')
+    .in('id', linkedInvoiceIds)
+    .eq('company_id', contract.company_id);
+
+  if (linkedError) throw linkedError;
+
+  const { data: contractInvoices, error: contractInvoicesError } = await supabase
+    .from('invoices')
+    .select('id, invoice_number, total_amount, invoice_month, invoice_date, due_date, status')
+    .eq('contract_id', contract.id)
+    .eq('company_id', contract.company_id)
+    .not('status', 'in', '(cancelled,void,deleted)');
+
+  if (contractInvoicesError) throw contractInvoicesError;
+
+  const invoicesBoundToOtherSchedules = new Set(
+    paymentSchedules
+      .filter((schedule) => schedule.invoice_id)
+      .map((schedule) => schedule.invoice_id as string),
+  );
+
+  const isNonRentInvoiceNumber = (invoiceNumber: string | null | undefined) =>
+    String(invoiceNumber || '').startsWith('TV-');
+
+  const review: string[] = [];
+  let repaired = 0;
+
+  for (const schedule of activeSchedules) {
+    const scheduleAmount = Number(schedule.amount || 0);
+    if (scheduleAmount <= 0) continue;
+
+    const linkedInvoice = (linkedInvoices || []).find((invoice) => invoice.id === schedule.invoice_id);
+    if (!linkedInvoice) continue;
+
+    const linkedAmount = Number(linkedInvoice.total_amount || 0);
+    if (Math.abs(scheduleAmount - linkedAmount) <= 0.01) continue;
+
+    const linkedMonth = getInvoiceMonthKey(linkedInvoice) || String(schedule.due_date || '').slice(0, 7);
+    const scheduleMonth = String(schedule.due_date || '').slice(0, 7);
+    const candidateMonths = Array.from(new Set([linkedMonth, scheduleMonth].filter(Boolean)));
+
+    const candidate = (contractInvoices || []).find((invoice) => {
+      if (invoicesBoundToOtherSchedules.has(invoice.id)) return false;
+      if (isCancelled(invoice.status)) return false;
+      const invoiceMonth = getInvoiceMonthKey(invoice);
+      return candidateMonths.includes(invoiceMonth)
+        && Math.abs(Number(invoice.total_amount || 0) - scheduleAmount) <= 0.01;
+    });
+
+    if (!candidate) {
+      continue;
+    }
+
+    // قاعدة الأمان: أصلح فقط النمط "قسط إيجار مربوط بفاتورة مخالفة".
+    // نمط "قسط مخالفة مربوط بفاتورة إيجار" يُترك للمراجعة لأن فكه قد ييتم فاتورة إيجار مدفوعة.
+    const linkedIsNonRent = isNonRentInvoiceNumber(linkedInvoice.invoice_number);
+    const candidateIsRent = !isNonRentInvoiceNumber(candidate.invoice_number);
+    if (!linkedIsNonRent || !candidateIsRent) {
+      review.push(
+        `قسط ${schedule.installment_number || '-'} (${formatRepairAmount(scheduleAmount)}) مربوط بفاتورة ${linkedInvoice.invoice_number} بقيمة مختلفة (${formatRepairAmount(linkedAmount)}) والبديل المطابق ${candidate.invoice_number} — تركناه للمراجعة لأن فك الربط قد ييتم فاتورة إيجار مدفوعة بلا قسط. يتطلب تعديلًا محاسبيًا معتمدًا.`,
+      );
+      continue;
+    }
+
+    const { error: updateError } = await supabase
+      .from('contract_payment_schedules')
+      .update({
+        invoice_id: candidate.id,
+        notes: `أعيد ربط القسط بفاتورة شهره المطابقة ${candidate.invoice_number} من إصلاح صحة العقد بتاريخ ${now}. كان مربوطًا بفاتورة ${linkedInvoice.invoice_number} بقيمة مختلفة. تصحيح رابط فقط دون لمس أي مبلغ أو قيد.`,
+        updated_at: now,
+      })
+      .eq('id', schedule.id)
+      .eq('contract_id', contract.id)
+      .eq('company_id', contract.company_id);
+
+    if (updateError) throw updateError;
+
+    // امنع إعادة استخدام نفس الفاتورة البديلة لقسط آخر في نفس التشغيل.
+    invoicesBoundToOtherSchedules.add(candidate.id);
+    schedule.invoice_id = candidate.id;
+    repaired += 1;
+  }
+
+  return { repaired, review };
+}
+
+function formatRepairAmount(value: number) {
+  return `${value.toLocaleString('ar-QA')} ر.ق`;
 }
 
 async function recalculateCurrentContractInvoicePaymentTotals({

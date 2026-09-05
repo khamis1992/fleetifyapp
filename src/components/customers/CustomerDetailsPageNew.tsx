@@ -1,59 +1,55 @@
 /**
- * صفحة تفاصيل العميل - التصميم المحسّن (Modern Bento Style)
- * تصميم عصري مع نظام ألوان التيل (Teal) وتأثيرات الزجاج
+ * صفحة تفاصيل العميل — التجربة الجديدة "غرفة قيادة العميل"
  *
- * @component CustomerDetailsPageNew
+ * فلسفة التصميم (V3) — نفس لغة تصميم صفحة العقد:
+ * - Hero فاتح بألوان التطبيق يجيب بنظرة واحدة: من العميل، حال العلاقة،
+ *   كم له وكم عليه، وكيف نصل إليه فوراً.
+ * - شريط إجراء واحد ذكي يرشّح "الخطوة التالية" حسب حالة الملف
+ *   (تحصيل، مخالفات، فرصة تجديد، متابعة متأخرة، نمو).
+ * - تبويبات لاصقة بشارات عدد — كل تبويب مسؤول عن عالم واحد فقط
+ *   (نظرة عامة / العقود والمركبات / المالي / المخالفات / السجلات).
+ * - عمود "نبض العميل": صحة الملف، فرص التجديد، تسجيل مكالمة سريع،
+ *   وآخر النشاط — بدل توزيعها على تبويبات متفرقة.
+ *
+ * كل منطق الأعمال (الاستعلامات، الإجراءات، الحوارات) محفوظ كما هو.
  */
 
-import React, { type CSSProperties, useState, useMemo, useCallback, useRef } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useEffect, useState, useMemo, useCallback, useRef } from 'react';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
 import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
 import { calculateContractTotalAmount } from '@/utils/contractCalculations';
 import { formatCustomerName } from '@/utils/formatCustomerName';
+import { getInvoiceDisplayLabel } from '@/utils/invoiceBillingMonth';
 import { PageSkeletonFallback } from '@/components/common/LazyPageWrapper';
-import { 
-  useCustomerDocuments, 
-  useUploadCustomerDocument, 
+import {
+  useCustomerDocuments,
+  useUploadCustomerDocument,
 } from '@/hooks/useCustomerDocuments';
 import { useCustomerCRMActivity } from '@/hooks/useCustomerCRMActivity';
 import { useDeleteCustomer } from '@/hooks/useEnhancedCustomers';
 import { InvoicePreviewDialog } from '@/components/finance/InvoicePreviewDialog';
 import { motion } from 'framer-motion';
 import {
-  ArrowRight,
-  Edit3,
-  FileText,
-  Trash2,
-  Phone,
-  Mail,
-  Cake,
-  CreditCard,
-  User,
-  Wallet,
-  Car,
-  Plus,
+  AlertCircle,
   AlertTriangle,
-  MessageSquare,
-  Activity,
+  Car,
+  CreditCard,
+  FileImage,
+  FileText,
+  Folder,
+  Loader2,
+  RefreshCw,
+  Sparkles,
   Star,
   Upload,
-  Folder,
-  FileImage,
-  Printer,
-  Share2,
-  Gavel,
-  Database,
-  RefreshCw,
-  Bell,
-  MoreHorizontal,
+  User,
+  Wallet,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { useToast } from '@/components/ui/use-toast';
+import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { UnifiedPaymentForm } from '@/components/finance/UnifiedPaymentForm';
 import { EnhancedCustomerForm } from '@/components/customers/EnhancedCustomerForm';
@@ -74,21 +70,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '@/components/ui/tooltip';
-
 import {
   MissingDataWarnings,
   PersonalInfoTab,
@@ -101,32 +83,22 @@ import {
   ViolationsTab,
   ActivityTab,
   DocumentCard,
+  type CustomerDocument,
 } from './tabs';
-import type { CustomerDocument } from './tabs';
-
-import { useFleetifyTranslation } from "@/hooks/useTranslation";
-import { systemColorPattern } from '@/lib/design-system/systemColorPattern';
-
-const customerDetailsTheme = systemColorPattern.colors;
-const customerDetailsSystemStyle = {
-  '--customer-details-text': customerDetailsTheme.text,
-  '--customer-details-surface': customerDetailsTheme.surface,
-  '--customer-details-inner': customerDetailsTheme.innerSurface,
-  '--customer-details-muted': customerDetailsTheme.secondaryText,
-  '--customer-details-border': customerDetailsTheme.border,
-  '--customer-details-info': customerDetailsTheme.info,
-  '--customer-details-alert': customerDetailsTheme.alert,
-  '--customer-details-focus': customerDetailsTheme.focus,
-  '--customer-details-success': customerDetailsTheme.success,
-} as CSSProperties;
+import { CustomerHero } from './customer-details-v3/CustomerHero';
+import { CustomerActionBar } from './customer-details-v3/CustomerActionBar';
+import { CustomerPulse } from './customer-details-v3/CustomerPulse';
+import {
+  buildCustomerSnapshotV3,
+  buildProfileCompletionV3,
+  getInitialCustomerTabV3,
+} from './customer-details-v3/tokens';
 
 // ===== Main Component =====
-const SHOW_LEGACY_CUSTOMER_DETAILS = false;
-
 const CustomerDetailsPageNew = () => {
-  const { t } = useFleetifyTranslation("ui");
   const { customerId } = useParams<{ customerId: string }>();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { toast } = useToast();
   const { companyId, isAuthenticating } = useUnifiedCompanyAccess();
   const { formatCurrency } = useCurrencyFormatter();
@@ -135,13 +107,21 @@ const CustomerDetailsPageNew = () => {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   // State
-  const [activeTab, setActiveTab] = useState('ai-summary');
+  const requestedTab = searchParams.get('tab');
+  const [activeTab, setActiveTab] = useState(() => getInitialCustomerTabV3(requestedTab));
   const [isPaymentDialogOpen, setIsPaymentDialogOpen] = useState(false);
-  const [selectedDocumentType, setSelectedDocumentType] = useState<string>('identity');
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [selectedInvoice, setSelectedInvoice] = useState<any | null>(null);
   const [isInvoiceDialogOpen, setIsInvoiceDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  const [quickCrmNote, setQuickCrmNote] = useState('');
+  const [quickCrmStatus, setQuickCrmStatus] = useState<'answered' | 'no_answer' | 'busy'>('answered');
+
+  useEffect(() => {
+    const nextTab = getInitialCustomerTabV3(requestedTab);
+    setActiveTab((currentTab) => (currentTab === nextTab ? currentTab : nextTab));
+  }, [requestedTab]);
 
   // Queries
   const { data: customer, isLoading: loadingCustomer, error: customerError } = useQuery({
@@ -236,13 +216,18 @@ const CustomerDetailsPageNew = () => {
         console.error('Error fetching traffic violations:', error);
         return [];
       }
-      return data?.filter(v => v.contract?.customer_id === customerId) || [];
+      return data?.filter((v: any) => v.contract?.customer_id === customerId) || [];
     },
     enabled: !!customerId && !!companyId,
   });
 
-  const { activities: crmActivitiesMain } = useCustomerCRMActivity(customerId || '');
-  
+  const {
+    activities: crmActivities = [],
+    stats: crmStats,
+    addActivity: addCrmActivity,
+    isAdding: isAddingCrmActivity,
+  } = useCustomerCRMActivity(customerId || '');
+
   const { data: scheduledFollowups = [] } = useQuery({
     queryKey: ['customer-followups-count', customerId, companyId],
     queryFn: async () => {
@@ -259,88 +244,174 @@ const CustomerDetailsPageNew = () => {
     enabled: !!customerId && !!companyId,
   });
 
-  // Computed
+  // ===== Derived state =====
   const customerName = useMemo(() => {
     if (!customer) return 'غير محدد';
     return formatCustomerName(customer, { preferArabic: true });
   }, [customer]);
 
-  const stats = useMemo(() => {
-    const activeContracts = contracts.filter(c => c.status === 'active').length;
-    const totalPayments = payments.reduce((sum, p) => sum + (p.amount || 0), 0);
-    const totalContractAmount = contracts.filter(c => c.status === 'active').reduce((sum, c) => sum + calculateContractTotalAmount(c), 0);
-    const totalPaid = contracts.filter(c => c.status === 'active').reduce((sum, c) => sum + (c.balance_due || 0), 0);
-    const outstandingAmount = totalContractAmount - totalPaid;
-    
-    const today = new Date();
-    const overdueInvoicesAmount = customerInvoices
-      .filter(inv => {
-        const isUnpaid = inv.payment_status !== 'paid' && inv.payment_status !== 'completed';
-        const isOverdue = inv.due_date && new Date(inv.due_date) < today;
-        return isUnpaid && isOverdue;
-      })
-      .reduce((sum, inv) => sum + ((inv.total_amount || 0) - (inv.paid_amount || 0)), 0);
+  const initials = useMemo(() => {
+    if (!customerName || customerName === 'غير محدد') return '؟';
+    return customerName
+      .split(' ')
+      .filter((part: string) => part.length > 0)
+      .slice(0, 2)
+      .map((part: string) => part[0])
+      .join('')
+      .toUpperCase();
+  }, [customerName]);
 
-    const unpaidViolationsAmount = trafficViolations
-      .filter(v => v.status !== 'paid')
-      .reduce((sum, v) => sum + (v.fine_amount || 0), 0);
+  const snapshot = useMemo(
+    () =>
+      buildCustomerSnapshotV3({
+        contracts,
+        invoices: customerInvoices,
+        trafficViolations,
+        scheduledFollowups,
+      }),
+    [contracts, customerInvoices, trafficViolations, scheduledFollowups],
+  );
 
-    const totalLateAmount = overdueInvoicesAmount + unpaidViolationsAmount;
+  const completion = useMemo(
+    () => buildProfileCompletionV3(customer, documents.length),
+    [customer, documents.length],
+  );
 
-    return { 
-      activeContracts, 
-      outstandingAmount, 
-      totalPayments,
-      overdueInvoicesAmount,
-      unpaidViolationsAmount,
-      totalLateAmount
-    };
-  }, [contracts, payments, customerInvoices, trafficViolations]);
+  const activeContractsValue = useMemo(
+    () =>
+      contracts
+        .filter((contract: any) => contract.status === 'active')
+        .reduce((sum: number, contract: any) => sum + calculateContractTotalAmount(contract), 0),
+    [contracts],
+  );
 
-  const getInitials = (name: string): string => {
-    if (!name || name === 'غير محدد') return '؟';
-    const names = name.split(' ').filter(n => n.length > 0);
-    return names.slice(0, 2).map(n => n[0]).join('').toUpperCase();
-  };
+  // ===== Handlers =====
+  const handleBack = useCallback(() => navigate('/customers'), [navigate]);
+  const handleEdit = useCallback(() => setIsEditDialogOpen(true), []);
 
-  // Handlers
-  const handleBack = () => navigate('/customers');
-  const handleEdit = () => setIsEditDialogOpen(true);
-  const handlePrint = () => window.print();
-
-  const [isUploading, setIsUploading] = useState(false);
-
-  const handleFileSelect = useCallback(async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const files = event.target.files;
-    if (!files || files.length === 0 || !customerId) return;
-    const file = files[0];
-    if (file.size > 10 * 1024 * 1024) {
-      toast({ title: 'خطأ', description: 'حجم الملف كبير جداً', variant: 'destructive' });
+  const handleCall = useCallback(() => {
+    if (!customer?.phone) {
+      toast({ title: 'رقم الهاتف غير متوفر', description: 'لا يوجد رقم هاتف مسجل لهذا العميل', variant: 'destructive' });
       return;
     }
-    
-    setIsUploading(true);
-    try {
-      await uploadDocument.mutateAsync({
-        customer_id: customerId,
-        document_type: selectedDocumentType,
-        document_name: file.name,
-        file: file,
-      });
-      toast({ title: 'تم الرفع بنجاح', description: 'تم رفع المستند بنجاح' });
-    } catch (error) {
-      toast({ 
-        title: 'فشل الرفع', 
-        description: 'حدث خطأ أثناء رفع المستند',
-        variant: 'destructive' 
-      });
-    } finally {
-      setIsUploading(false);
-      event.target.value = '';
-    }
-  }, [customerId, selectedDocumentType, uploadDocument, toast]);
+    window.open(`tel:${customer.phone}`, '_self');
+  }, [customer?.phone, toast]);
 
-  const handleDeleteCustomer = async () => {
+  const handleWhatsApp = useCallback(() => {
+    if (!customer?.phone) {
+      toast({ title: 'رقم الهاتف غير متوفر', description: 'لا يوجد رقم هاتف مسجل لهذا العميل', variant: 'destructive' });
+      return;
+    }
+    const cleanedNumber = customer.phone.replace(/[^0-9]/g, '');
+    if (!cleanedNumber || cleanedNumber.length < 7) {
+      toast({ title: 'رقم الهاتف غير صالح', description: 'رقم الهاتف لا يمكن استخدامه مع واتساب', variant: 'destructive' });
+      return;
+    }
+    window.open(`https://wa.me/${cleanedNumber}`, '_blank', 'noopener,noreferrer');
+  }, [customer?.phone, toast]);
+
+  const handleCreateContract = useCallback(() => {
+    if (!customerId) return;
+    navigate(`/contracts?customer=${customerId}`);
+  }, [customerId, navigate]);
+
+  const handleOpenCrm = useCallback(() => {
+    if (!customerId) return;
+    navigate(`/customers/crm?customer=${customerId}`);
+  }, [customerId, navigate]);
+
+  const handleOpenLegal = useCallback(() => {
+    const activeContract = contracts?.find((contract: any) => contract.status === 'active');
+    if (activeContract) {
+      navigate(`/legal/lawsuit/prepare/${activeContract.id}`);
+    } else {
+      toast({ title: 'لا يوجد عقد نشط', description: 'يجب أن يكون للعميل عقد نشط لإنشاء قضية', variant: 'destructive' });
+    }
+  }, [contracts, navigate, toast]);
+
+  const handleOpenLegalData = useCallback(() => navigate('/legal/lawsuit-data'), [navigate]);
+
+  const handleRenewContract = useCallback(
+    (contractId: string) => {
+      const contract = contracts.find((item: any) => item.id === contractId);
+      navigate(`/contracts/${contract?.contract_number || contractId}`);
+    },
+    [contracts, navigate],
+  );
+
+  const handlePrint = useCallback(() => window.print(), []);
+
+  const handleShare = useCallback(() => {
+    const url = window.location.href;
+    if (navigator.share) {
+      navigator.share({ title: customerName, url }).catch(() => {});
+    } else {
+      navigator.clipboard.writeText(url);
+      toast({ title: 'تم نسخ الرابط', description: 'تم نسخ رابط العميل إلى الحافظة' });
+    }
+  }, [customerName, toast]);
+
+  const handleFileSelect = useCallback(
+    async (event: React.ChangeEvent<HTMLInputElement>) => {
+      const files = event.target.files;
+      if (!files || files.length === 0 || !customerId) return;
+      const file = files[0];
+      if (file.size > 10 * 1024 * 1024) {
+        toast({ title: 'خطأ', description: 'حجم الملف كبير جداً', variant: 'destructive' });
+        return;
+      }
+
+      setIsUploading(true);
+      try {
+        await uploadDocument.mutateAsync({
+          customer_id: customerId,
+          document_type: 'identity',
+          document_name: file.name,
+          file: file,
+        });
+        toast({ title: 'تم الرفع بنجاح', description: 'تم رفع المستند بنجاح' });
+      } catch {
+        toast({
+          title: 'فشل الرفع',
+          description: 'حدث خطأ أثناء رفع المستند',
+          variant: 'destructive',
+        });
+      } finally {
+        setIsUploading(false);
+        event.target.value = '';
+      }
+    },
+    [customerId, uploadDocument, toast],
+  );
+
+  const handleSaveQuickCrmActivity = useCallback(async () => {
+    if (!customerId) return;
+
+    try {
+      await addCrmActivity({
+        note_type: 'phone',
+        title: 'متابعة من صفحة العميل',
+        content: quickCrmNote.trim() || 'تم تسجيل محاولة تواصل من صفحة تفاصيل العميل.',
+        call_status: quickCrmStatus,
+        is_important: quickCrmStatus !== 'answered',
+      });
+
+      setQuickCrmNote('');
+      toast({
+        title: 'تم حفظ التواصل',
+        description: 'تم تحديث سجل CRM لهذا العميل.',
+      });
+    } catch (saveError) {
+      console.error('Error saving customer CRM activity:', saveError);
+      toast({
+        title: 'تعذر حفظ التواصل',
+        description: saveError instanceof Error ? saveError.message : 'حدث خطأ أثناء تحديث سجل CRM.',
+        variant: 'destructive',
+      });
+    }
+  }, [addCrmActivity, customerId, quickCrmNote, quickCrmStatus, toast]);
+
+  const handleDeleteCustomer = useCallback(async () => {
     if (!customerId || !companyId) return;
 
     try {
@@ -351,1158 +422,449 @@ const CustomerDetailsPageNew = () => {
     } finally {
       setIsDeleteDialogOpen(false);
     }
-  };
+  }, [companyId, customerId, deleteCustomer, navigate]);
 
-  // Loading & Error States
+  // ===== Loading & Error States =====
   if (isAuthenticating || !companyId || loadingCustomer) {
     return <PageSkeletonFallback />;
   }
 
   if (customerError || !customer) {
     return (
-      <div
-        className="customer-details-system min-h-screen flex items-center justify-center bg-[#F6F8FB] p-4"
-        style={customerDetailsSystemStyle}
-      >
-        <motion.div
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          className="bg-white rounded-2xl p-10 max-w-md w-full border border-slate-200 shadow-xl text-center"
-        >
-          <div className="w-16 h-16 bg-rose-50 rounded-2xl flex items-center justify-center mx-auto mb-5">
-            <AlertTriangle className="w-8 h-8 text-rose-500" />
+      <div className="flex min-h-screen items-center justify-center bg-[#F6F8FB] p-6" dir="rtl">
+        <div className="w-full max-w-md rounded-2xl border border-[#E5EAF1] bg-white p-8 text-center shadow-sm">
+          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-xl bg-[#FB6B7A]/10">
+            <AlertCircle className="h-8 w-8 text-[#FB6B7A]" />
           </div>
-          <h3 className="text-xl font-bold text-slate-900 mb-2">خطأ في تحميل البيانات</h3>
-          <p className="text-slate-500 mb-6 text-sm">لم يتم العثور على هذا العميل أو حدث خطأ أثناء التحميل</p>
-          <Button onClick={handleBack} className="bg-slate-900 hover:bg-slate-800 text-white px-6">
-            <ArrowRight className="w-4 h-4 ml-2" />
+          <h2 className="mb-2 text-lg font-black text-[#0F172A]">خطأ في تحميل البيانات</h2>
+          <p className="mb-5 text-sm font-semibold text-slate-500">
+            لم يتم العثور على هذا العميل أو حدث خطأ أثناء التحميل
+          </p>
+          <Button onClick={handleBack} className="gap-2 rounded-xl bg-[#0F172A] px-6 font-bold hover:bg-[#1E293B]">
             العودة للعملاء
           </Button>
-        </motion.div>
+        </div>
       </div>
     );
   }
 
-  const overdueFollowups = scheduledFollowups.filter(f => new Date(f.scheduled_date) <= new Date()).length;
-  const primaryContract = contracts.find((contract: any) => contract.status === 'active') || contracts[0];
   const latestPayment = payments[0];
   const latestInvoice = customerInvoices[0];
-  const identityNumber = customer.national_id || '-';
-  const completionChecks = [
-    Boolean(customerName && customerName !== 'غير محدد'),
-    Boolean(customer.phone),
-    Boolean(identityNumber && identityNumber !== '-'),
-    Boolean(customer?.email),
-    documents.length > 0,
+
+  const tabs = [
+    { value: 'overview', label: 'نظرة عامة', icon: Sparkles, badge: 0 },
+    { value: 'contracts', label: 'العقود والمركبات', icon: FileText, badge: 0 },
+    { value: 'financial', label: 'المالي', icon: Wallet, badge: snapshot.openInvoicesCount },
+    { value: 'violations', label: 'المخالفات', icon: AlertTriangle, badge: trafficViolations.length },
+    { value: 'records', label: 'السجلات والمستندات', icon: Folder, badge: 0 },
   ];
-  const profileCompletion = Math.round((completionChecks.filter(Boolean).length / completionChecks.length) * 100);
-  const riskState = stats.totalLateAmount > 0
-    ? { label: 'متابعة عاجلة', tone: 'danger', helper: 'توجد مبالغ متأخرة تحتاج إجراء' }
-    : stats.activeContracts > 0
-      ? { label: 'عميل نشط', tone: 'success', helper: 'العلاقة نشطة ولا توجد متأخرات حرجة' }
-      : { label: 'ملف هادئ', tone: 'neutral', helper: 'لا توجد عقود نشطة حالياً' };
 
   return (
-    <TooltipProvider>
-    <div
-      className="customer-details-system min-h-screen bg-[#F6F8FB]"
-      style={customerDetailsSystemStyle}
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.4 }}
+      className="min-h-screen bg-[#F6F8FB]"
+      dir="rtl"
     >
-      {/* ─── Slim Header ─── */}
-        <header className="sticky top-0 z-40 border-b border-[#DDE5EF] bg-white/95 backdrop-blur">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6">
-            <div className="flex items-center justify-between h-14">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleBack}
-                className="-mr-2 gap-2 text-[#536173] hover:bg-[#EEF5FB] hover:text-[#173A63]"
-              >
-                <ArrowRight className="w-4 h-4" />
-                <span className="text-sm font-medium">العملاء</span>
-              </Button>
+      <div className="mx-auto max-w-[1680px] space-y-4 px-4 pb-10 pt-4 sm:px-6">
+        {/* Systemic data-quality alerts */}
+        <MissingDataWarnings customer={customer} />
 
-              <div className="flex items-center gap-1.5">
-                {customer?.phone && (
-                  <>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => {
-                            if (!customer?.phone) {
-                              toast({ title: 'رقم الهاتف غير متوفر', description: 'لا يوجد رقم هاتف مسجل لهذا العميل', variant: 'destructive' });
-                              return;
-                            }
-                            window.open(`tel:${customer.phone}`, '_self');
-                          }}
-                          className="h-9 w-9 rounded-lg p-0 text-[#173A63] hover:bg-[#EEF5FB] hover:text-[#173A63]"
+        {/* ===== Hero identity band ===== */}
+        <CustomerHero
+          customer={customer}
+          customerName={customerName}
+          initials={initials}
+          snapshot={snapshot}
+          completion={completion}
+          contractsCount={contracts.length}
+          formatCurrency={formatCurrency}
+          onBack={handleBack}
+          onEdit={handleEdit}
+          onCall={handleCall}
+          onWhatsApp={handleWhatsApp}
+          onOpenContracts={() => setActiveTab('contracts')}
+        />
+
+        {/* ===== Smart action strip ===== */}
+        <CustomerActionBar
+          snapshot={snapshot}
+          formatCurrency={formatCurrency}
+          onAddPayment={() => setIsPaymentDialogOpen(true)}
+          onCreateContract={handleCreateContract}
+          onUploadDocument={() => fileInputRef.current?.click()}
+          onOpenCrm={handleOpenCrm}
+          onOpenViolations={() => setActiveTab('violations')}
+          onOpenFinancial={() => setActiveTab('financial')}
+          onOpenContracts={() => setActiveTab('contracts')}
+          onRenewContract={handleRenewContract}
+          onEdit={handleEdit}
+          onPrint={handlePrint}
+          onShare={handleShare}
+          onOpenLegal={handleOpenLegal}
+          onOpenLegalData={handleOpenLegalData}
+          onDelete={() => setIsDeleteDialogOpen(true)}
+        />
+
+        {/* ===== Main: workbench (+ pulse rail only on the overview tab) ===== */}
+        <div className={cn('grid gap-4', activeTab === 'overview' && 'xl:grid-cols-[minmax(0,1fr)_360px]')}>
+          {/* Workbench */}
+          <div className="min-w-0">
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+              <div className="sticky top-0 z-30 -mx-1 rounded-2xl border border-[#E5EAF1] bg-white/90 px-1 py-2 shadow-[0_6px_24px_-16px_rgba(15,23,42,0.3)] backdrop-blur-md">
+                <TabsList className="flex h-auto w-full justify-start gap-1.5 overflow-x-auto rounded-xl bg-transparent p-1">
+                  {tabs.map((tab) => (
+                    <TabsTrigger
+                      key={tab.value}
+                      value={tab.value}
+                      className="relative gap-2 whitespace-nowrap rounded-xl px-4 py-2.5 text-xs font-black text-slate-500 transition-all hover:bg-[#F6F8FB] data-[state=active]:bg-[#22C7A1] data-[state=active]:text-white data-[state=active]:shadow-[0_8px_18px_-8px_rgba(34,199,161,0.6)]"
+                    >
+                      <tab.icon className="h-4 w-4" />
+                      {tab.label}
+                      {tab.badge > 0 && (
+                        <span
+                          className={cn(
+                            'absolute -top-0.5 left-1.5 flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[9px] font-black',
+                            tab.value === 'violations'
+                              ? 'bg-[#FB6B7A] text-white'
+                              : 'bg-[#F59E0B] text-[#452A03]',
+                          )}
                         >
-                          <Phone className="w-4 h-4" />
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent><p>اتصال بالعميل</p></TooltipContent>
-                    </Tooltip>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => {
-                            if (!customer?.phone) {
-                              toast({ title: 'رقم الهاتف غير متوفر', description: 'لا يوجد رقم هاتف مسجل لهذا العميل', variant: 'destructive' });
-                              return;
-                            }
-                            const whatsappNumber = customer.phone || customer.phone;
-                            const cleanedNumber = whatsappNumber.replace(/[^0-9]/g, '');
-                            if (!cleanedNumber || cleanedNumber.length < 7) {
-                              toast({ title: 'رقم الهاتف غير صالح', description: 'رقم الهاتف لا يمكن استخدامه مع واتساب', variant: 'destructive' });
-                              return;
-                            }
-                            window.open(`https://wa.me/${cleanedNumber}`, '_blank');
-                          }}
-                          className="h-9 w-9 rounded-lg p-0 text-emerald-700 hover:bg-emerald-50 hover:text-emerald-700"
-                        >
-                          <MessageSquare className="w-4 h-4" />
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent><p>مراسلة واتساب</p></TooltipContent>
-                    </Tooltip>
-                  </>
-                )}
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => {
-                        if (!customerId) { toast({ title: 'خطأ', description: 'معرف العميل غير متوفر', variant: 'destructive' }); return; }
-                        navigate(`/customers/crm?customer=${customerId}`);
-                      }}
-                      className="h-9 w-9 rounded-lg p-0 text-[#173A63] hover:bg-[#EEF5FB] hover:text-[#173A63]"
-                    >
-                      <Activity className="w-4 h-4" />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent><p>إدارة علاقات العميل</p></TooltipContent>
-                </Tooltip>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => {
-                        if (!customerId) { toast({ title: 'خطأ', description: 'معرف العميل غير متوفر', variant: 'destructive' }); return; }
-                        navigate(`/contracts?customer=${customerId}`);
-                      }}
-                      className="h-9 w-9 rounded-lg p-0 text-[#173A63] hover:bg-[#EEF5FB] hover:text-[#173A63]"
-                    >
-                      <Plus className="w-4 h-4" />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent><p>إنشاء عقد جديد</p></TooltipContent>
-                </Tooltip>
-
-                <div className="mx-1 h-6 w-px bg-[#DDE5EF]" />
-
-                <Button
-                  size="sm"
-                  onClick={handleEdit}
-                  className="h-9 gap-1.5 rounded-lg bg-[#173A63] px-3 text-xs text-white hover:bg-[#173A63]/90"
-                >
-                  <Edit3 className="w-3.5 h-3.5" />
-                  تعديل
-                </Button>
-
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="sm" className="h-9 w-9 rounded-lg p-0 text-[#536173] hover:bg-[#EEF5FB] hover:text-[#173A63]">
-                      <MoreHorizontal className="w-5 h-5" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-56">
-                    <DropdownMenuItem onClick={handleEdit} className="gap-2">
-                      <Edit3 className="w-4 h-4" />
-                      تعديل البيانات
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={handlePrint} className="gap-2">
-                      <Printer className="w-4 h-4" />
-                      طباعة
-                    </DropdownMenuItem>
-                    <DropdownMenuItem className="gap-2" onClick={() => {
-                      const url = window.location.href;
-                      if (navigator.share) {
-                        navigator.share({ title: customerName, url }).catch(() => {});
-                      } else {
-                        navigator.clipboard.writeText(url);
-                        toast({ title: 'تم نسخ الرابط', description: 'تم نسخ رابط العميل إلى الحافظة' });
-                      }
-                    }}>
-                      <Share2 className="w-4 h-4" />
-                      مشاركة
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem
-                      className="gap-2 text-indigo-700 focus:text-indigo-700 focus:bg-indigo-50"
-                      onClick={() => {
-                        const activeContract = contracts?.find((c: any) => c.status === 'active');
-                        if (activeContract) {
-                          navigate(`/legal/lawsuit/prepare/${activeContract.id}`);
-                        } else {
-                          toast({ title: 'لا يوجد عقد نشط', description: 'يجب أن يكون للعميل عقد نشط لإنشاء قضية', variant: 'destructive' });
-                        }
-                      }}
-                    >
-                      <Gavel className="w-4 h-4" />
-                      إنشاء قضية قانونية
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      className="gap-2 text-blue-700 focus:text-blue-700 focus:bg-blue-50"
-                      onClick={() => navigate('/legal/lawsuit-data')}
-                    >
-                      <Database className="w-4 h-4" />
-                      عرض بيانات التقاضي
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem
-                      className="gap-2 text-rose-600 focus:text-rose-600 focus:bg-rose-50"
-                      onClick={() => setIsDeleteDialogOpen(true)}
-                    >
-                      <Trash2 className="w-4 h-4" />
-                      حذف العميل
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
-            </div>
-          </div>
-        </header>
-
-      <main className="w-full max-w-none px-4 py-6 sm:px-6 lg:px-8">
-        <div className="customer-command-grid grid gap-5 xl:grid-cols-[360px_minmax(0,1fr)]">
-          <motion.aside
-            initial={{ opacity: 0, x: 18 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.35 }}
-            className="space-y-4 xl:sticky xl:top-[76px] xl:self-start"
-          >
-            <section className="overflow-hidden rounded-xl border border-[#DDE5EF] bg-white shadow-sm">
-              <div className="bg-[#142033] px-5 py-5 text-white">
-                <div className="flex items-start justify-between gap-4">
-                  <Avatar className="h-16 w-16 rounded-xl border border-white/20 bg-white/10">
-                    <AvatarFallback className="rounded-xl bg-white text-xl font-black text-[#142033]">
-                      {getInitials(customerName)}
-                    </AvatarFallback>
-                  </Avatar>
-                  <Badge
-                    className={cn(
-                      "border-0 px-3 py-1 text-xs font-bold",
-                      riskState.tone === 'danger' ? "bg-rose-500 text-white" : riskState.tone === 'success' ? "bg-emerald-500 text-white" : "bg-white/15 text-white"
-                    )}
-                  >
-                    {riskState.label}
-                  </Badge>
-                </div>
-                <div className="mt-5">
-                  <p className="text-xs font-semibold text-white/55">ملف العميل</p>
-                  <h1 className="mt-1 text-2xl font-black leading-tight tracking-normal text-white">{customerName}</h1>
-                  <p className="mt-2 text-sm leading-6 text-white/70">{riskState.helper}</p>
-                </div>
+                          {tab.badge}
+                        </span>
+                      )}
+                    </TabsTrigger>
+                  ))}
+                </TabsList>
               </div>
 
-              <div className="space-y-4 p-5">
-                <div className="grid grid-cols-2 gap-2">
-                  <div className="rounded-lg border border-[#DDE5EF] bg-[#F8FAFC] p-3">
-                    <p className="text-[11px] font-bold text-[#6A7688]">رقم الهوية</p>
-                    <p className="mt-1 truncate text-sm font-black text-[#142033]" dir="ltr">{identityNumber}</p>
-                  </div>
-                  <div className="rounded-lg border border-[#DDE5EF] bg-[#F8FAFC] p-3">
-                    <p className="text-[11px] font-bold text-[#6A7688]">اكتمال الملف</p>
-                    <p className="mt-1 text-sm font-black text-[#142033]">{profileCompletion}%</p>
-                  </div>
-                </div>
-
-                <div className="h-2 overflow-hidden rounded-full bg-[#E7EDF4]">
-                  <div className="h-full rounded-full bg-[#173A63]" style={{ width: `${profileCompletion}%` }} />
-                </div>
-
-                <div className="space-y-2">
-                  <a href={customer?.phone ? `tel:${customer.phone}` : undefined} className="flex items-center justify-between rounded-lg border border-[#DDE5EF] bg-white px-3 py-2.5 text-sm transition-colors hover:border-[#173A63] hover:bg-[#F8FAFC]">
-                    <span className="flex items-center gap-2 font-bold text-[#142033]"><Phone className="h-4 w-4 text-[#173A63]" /> الهاتف</span>
-                    <span className="font-semibold text-[#536173]" dir="ltr">{customer.phone || '-'}</span>
-                  </a>
-                  <div className="flex items-center justify-between rounded-lg border border-[#DDE5EF] bg-white px-3 py-2.5 text-sm">
-                    <span className="flex items-center gap-2 font-bold text-[#142033]"><Mail className="h-4 w-4 text-[#173A63]" /> البريد</span>
-                    <span className="max-w-[160px] truncate font-semibold text-[#536173]">{customer?.email || '-'}</span>
-                  </div>
-                  <div className="flex items-center justify-between rounded-lg border border-[#DDE5EF] bg-white px-3 py-2.5 text-sm">
-                    <span className="flex items-center gap-2 font-bold text-[#142033]"><Cake className="h-4 w-4 text-[#173A63]" /> الميلاد</span>
-                    <span className="font-semibold text-[#536173]">{customer?.date_of_birth || '-'}</span>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-2">
-                  <Button className="h-10 gap-2 bg-[#173A63] text-white hover:bg-[#142033]" onClick={() => setIsPaymentDialogOpen(true)}>
-                    <CreditCard className="h-4 w-4" />
-                    تسجيل دفعة
-                  </Button>
-                  <Button variant="outline" className="h-10 gap-2 border-[#DDE5EF] text-[#173A63] hover:bg-[#EEF5FB]" onClick={() => navigate(`/customers/crm?customer=${customerId}`)}>
-                    <Activity className="h-4 w-4" />
-                    CRM
-                  </Button>
-                  <Button variant="outline" className="h-10 gap-2 border-[#DDE5EF] text-[#536173] hover:bg-[#F8FAFC]" onClick={() => setActiveTab('notes')}>
-                    <MessageSquare className="h-4 w-4" />
-                    ملاحظة
-                  </Button>
-                  <Button variant="outline" className="h-10 gap-2 border-[#DDE5EF] text-[#536173] hover:bg-[#F8FAFC]" onClick={() => fileInputRef.current?.click()}>
-                    <Upload className="h-4 w-4" />
-                    مستند
-                  </Button>
-                </div>
-              </div>
-            </section>
-
-            <section className="rounded-xl border border-[#DDE5EF] bg-white p-4 shadow-sm">
-              <div className="mb-3 flex items-center justify-between">
-                <h2 className="text-sm font-black text-[#142033]">مختصر العلاقة</h2>
-                <Badge className="border border-[#DDE5EF] bg-[#F8FAFC] text-[#536173]">{contracts.length} عقد</Badge>
-              </div>
-              <div className="space-y-3">
-                <button type="button" onClick={() => primaryContract && navigate(`/contracts/${primaryContract.contract_number || primaryContract.id}`)} className="w-full rounded-lg border border-[#DDE5EF] bg-[#F8FAFC] p-3 text-right transition-colors hover:border-[#173A63]">
-                  <p className="text-[11px] font-bold text-[#6A7688]">العقد الحالي</p>
-                  <p className="mt-1 truncate text-sm font-black text-[#142033]">{primaryContract?.contract_number || primaryContract?.id || 'لا يوجد عقد'}</p>
-                </button>
-                <div className="grid grid-cols-2 gap-2">
-                  <div className="rounded-lg bg-[#F8FAFC] p-3">
-                    <p className="text-[11px] font-bold text-[#6A7688]">آخر فاتورة</p>
-                    <p className="mt-1 truncate text-sm font-black text-[#142033]">{latestInvoice?.invoice_number || '-'}</p>
-                  </div>
-                  <div className="rounded-lg bg-[#F8FAFC] p-3">
-                    <p className="text-[11px] font-bold text-[#6A7688]">آخر دفعة</p>
-                    <p className="mt-1 text-sm font-black text-[#142033]">{latestPayment ? formatCurrency(latestPayment.amount || 0) : '-'}</p>
-                  </div>
-                </div>
-              </div>
-            </section>
-
-            <MissingDataWarnings customer={customer} />
-          </motion.aside>
-
-          <div className="min-w-0 space-y-5">
-            <motion.section
-              initial={{ opacity: 0, y: 16 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.35 }}
-              className="overflow-hidden rounded-xl border border-[#DDE5EF] bg-white shadow-sm"
-            >
-              <div className="grid gap-0 lg:grid-cols-[1.1fr_0.9fr]">
-                <div className="border-b border-[#DDE5EF] p-5 lg:border-b-0 lg:border-l">
-                  <div className="mb-4 flex items-center justify-between gap-3">
-                    <div>
-                      <p className="text-xs font-bold text-[#6A7688]">لوحة القرار المالي</p>
-                      <h2 className="mt-1 text-xl font-black text-[#142033]">ما الذي يحتاج انتباهك الآن؟</h2>
-                    </div>
-                    <Button variant="outline" className="h-9 gap-2 border-[#DDE5EF] text-[#173A63] hover:bg-[#EEF5FB]" onClick={() => setActiveTab('activity')}>
-                      <Activity className="h-4 w-4" />
-                      النشاط
-                    </Button>
-                  </div>
-                  <div className="grid gap-3 sm:grid-cols-3">
-                    <div className="rounded-lg border border-[#DDE5EF] bg-[#F8FAFC] p-4">
-                      <p className="text-xs font-bold text-[#6A7688]">المستحق</p>
-                      <p className="mt-2 text-2xl font-black text-[#142033]">{formatCurrency(stats.outstandingAmount)}</p>
-                    </div>
-                    <div className="rounded-lg border border-rose-200 bg-rose-50 p-4">
-                      <p className="text-xs font-bold text-rose-700">المتأخر</p>
-                      <p className="mt-2 text-2xl font-black text-rose-700">{formatCurrency(stats.totalLateAmount)}</p>
-                    </div>
-                    <div className="rounded-lg border border-[#DDE5EF] bg-[#F8FAFC] p-4">
-                      <p className="text-xs font-bold text-[#6A7688]">المدفوع</p>
-                      <p className="mt-2 text-2xl font-black text-[#142033]">{formatCurrency(stats.totalPayments)}</p>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="p-5">
-                  <div className="mb-4 flex items-center justify-between">
-                    <h2 className="text-sm font-black text-[#142033]">إجراءات مقترحة</h2>
-                    {overdueFollowups > 0 && <Badge className="bg-rose-500 text-white">{overdueFollowups} متابعة متأخرة</Badge>}
-                  </div>
-                  <div className="space-y-2">
-                    <Button className="h-11 w-full justify-between bg-[#173A63] px-4 text-white hover:bg-[#142033]" onClick={() => setIsPaymentDialogOpen(true)}>
-                      <span className="flex items-center gap-2"><CreditCard className="h-4 w-4" /> تسجيل دفعة لهذا العميل</span>
-                      <ArrowRight className="h-4 w-4 rotate-180" />
-                    </Button>
-                    <Button variant="outline" className="h-11 w-full justify-between border-[#DDE5EF] px-4 text-[#142033] hover:bg-[#F8FAFC]" onClick={() => setActiveTab('invoices')}>
-                      <span className="flex items-center gap-2"><Wallet className="h-4 w-4 text-[#173A63]" /> مراجعة الفواتير والمخالفات</span>
-                      <ArrowRight className="h-4 w-4 rotate-180" />
-                    </Button>
-                    <Button variant="outline" className="h-11 w-full justify-between border-[#DDE5EF] px-4 text-[#142033] hover:bg-[#F8FAFC]" onClick={() => navigate(`/customers/crm?customer=${customerId}`)}>
-                      <span className="flex items-center gap-2"><Phone className="h-4 w-4 text-[#173A63]" /> فتح سجل الاتصال والمتابعة</span>
-                      <ArrowRight className="h-4 w-4 rotate-180" />
-                    </Button>
-                    {stats.totalLateAmount > 0 && (
-                      <Button variant="outline" className="h-11 w-full justify-between border-rose-200 bg-rose-50 px-4 text-rose-700 hover:bg-rose-100" onClick={() => {
-                        if (primaryContract) navigate(`/legal/lawsuit/prepare/${primaryContract.id}`);
-                        else toast({ title: 'لا يوجد عقد نشط', description: 'يجب توفر عقد للبدء في الإجراء القانوني', variant: 'destructive' });
-                      }}>
-                        <span className="flex items-center gap-2"><Gavel className="h-4 w-4" /> بدء إجراء قانوني</span>
-                        <ArrowRight className="h-4 w-4 rotate-180" />
-                      </Button>
-                    )}
-                  </div>
-                </div>
-              </div>
-            </motion.section>
-
-            <motion.section
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.08 }}
-              className="grid gap-3 md:grid-cols-2 xl:grid-cols-4"
-            >
-              {[
-                { label: 'العقود النشطة', value: stats.activeContracts, icon: FileText, action: () => setActiveTab('contracts') },
-                { label: 'الفواتير', value: customerInvoices.length, icon: Wallet, action: () => setActiveTab('invoices') },
-                { label: 'المخالفات', value: trafficViolations.length, icon: AlertTriangle, action: () => setActiveTab('violations'), danger: trafficViolations.length > 0 },
-                { label: 'المرفقات', value: documents.length, icon: Folder, action: () => fileInputRef.current?.click() },
-              ].map((item) => (
-                <button
-                  key={item.label}
-                  type="button"
-                  onClick={item.action}
-                  className={cn(
-                    "group rounded-xl border bg-white p-4 text-right shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md",
-                    item.danger ? "border-rose-200 hover:border-rose-300" : "border-[#DDE5EF] hover:border-[#173A63]"
-                  )}
-                >
-                  <div className="mb-4 flex items-center justify-between">
-                    <div className={cn("flex h-10 w-10 items-center justify-center rounded-lg", item.danger ? "bg-rose-50 text-rose-600" : "bg-[#EEF5FB] text-[#173A63]")}>
-                      <item.icon className="h-5 w-5" />
-                    </div>
-                    <ArrowRight className="h-4 w-4 rotate-180 text-[#9AA6B6] transition-transform group-hover:-translate-x-1" />
-                  </div>
-                  <p className="text-2xl font-black text-[#142033]">{item.value}</p>
-                  <p className="mt-1 text-xs font-bold text-[#6A7688]">{item.label}</p>
-                </button>
-              ))}
-            </motion.section>
-
-            <motion.section
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.14 }}
-              className="overflow-hidden rounded-xl border border-[#DDE5EF] bg-white shadow-sm"
-            >
-              <Tabs value={activeTab} onValueChange={setActiveTab} className="grid min-h-[620px] lg:grid-cols-[230px_minmax(0,1fr)]">
-                <div className="border-b border-[#DDE5EF] bg-[#F8FAFC] p-3 lg:border-b-0 lg:border-l">
-                  <div className="mb-3 px-2">
-                    <p className="text-xs font-bold text-[#6A7688]">ملف العميل الكامل</p>
-                    <p className="mt-1 text-sm font-black text-[#142033]">اختر القسم المطلوب</p>
-                  </div>
-                  <TabsList className="flex h-auto w-full flex-row gap-1 overflow-x-auto bg-transparent p-0 lg:flex-col lg:overflow-visible">
-                    {[
-                      { value: 'ai-summary', label: 'ملخص AI', icon: Star },
-                      { value: 'info', label: 'البيانات', icon: User },
-                      { value: 'phones', label: 'الأرقام', icon: Phone },
-                      { value: 'contracts', label: 'العقود', icon: FileText },
-                      { value: 'vehicles', label: 'المركبات', icon: Car },
-                      { value: 'invoices', label: 'الفواتير', icon: Wallet },
-                      { value: 'payments', label: 'المدفوعات', icon: CreditCard },
-                      { value: 'violations', label: 'المخالفات', icon: AlertTriangle, badge: trafficViolations.length > 0 ? trafficViolations.length : null },
-                      { value: 'notes', label: 'المتابعة', icon: MessageSquare },
-                      { value: 'activity', label: 'النشاط', icon: Activity },
-                    ].map((tab) => (
-                      <TabsTrigger
-                        key={tab.value}
-                        value={tab.value}
-                        className={cn(
-                          "h-10 min-w-fit justify-start gap-2 rounded-lg border border-transparent px-3 text-xs font-black transition-colors lg:w-full",
-                          "data-[state=active]:border-[#173A63] data-[state=active]:bg-[#173A63] data-[state=active]:text-white",
-                          "data-[state=inactive]:bg-white data-[state=inactive]:text-[#536173] hover:text-[#142033]"
-                        )}
-                      >
-                        <tab.icon className="h-4 w-4" />
-                        {tab.label}
-                        {'badge' in tab && tab.badge && (
-                          <Badge className="mr-auto h-5 min-w-5 border-0 bg-rose-100 px-1.5 text-[10px] font-black text-rose-700">
-                            {tab.badge}
-                          </Badge>
-                        )}
-                      </TabsTrigger>
-                    ))}
-                  </TabsList>
-                </div>
-
-                <div className="min-w-0 p-5">
-                  <TabsContent value="ai-summary" className="mt-0">
+              <div className="mt-4 min-h-[480px]">
+                {/* ===== Overview: AI summary + relationship glance ===== */}
+                {activeTab === 'overview' && (
+                  <div className="space-y-5">
                     <CustomerAISummary
                       customer={customer}
                       contracts={contracts}
                       invoices={customerInvoices}
                       payments={payments}
                       violations={trafficViolations}
-                      activities={crmActivitiesMain}
+                      activities={crmActivities}
                       scheduledFollowups={scheduledFollowups}
                       formatCurrency={formatCurrency}
-                      onCreateContract={() => navigate(`/contracts?customer=${customerId}`)}
-                      onOpenCrm={() => navigate(`/customers/crm?customer=${customerId}`)}
+                      onCreateContract={handleCreateContract}
+                      onOpenCrm={handleOpenCrm}
                     />
-                  </TabsContent>
-                  <TabsContent value="info" className="mt-0">
-                    {loadingCustomer ? (
-                      <div className="flex items-center justify-center h-32">
-                        <RefreshCw className="w-6 h-6 animate-spin text-slate-300" />
-                      </div>
-                    ) : (
-                      <PersonalInfoTab customer={customer} />
-                    )}
-                  </TabsContent>
-                  <TabsContent value="phones" className="mt-0">
-                    {loadingCustomer ? (
-                      <div className="flex items-center justify-center h-32">
-                        <RefreshCw className="w-6 h-6 animate-spin text-slate-300" />
-                      </div>
-                    ) : (
-                      <PhoneNumbersTab customer={customer} />
-                    )}
-                  </TabsContent>
-                  <TabsContent value="contracts" className="mt-0">
+
+                    <div className="grid gap-3 sm:grid-cols-3">
+                      {[
+                        {
+                          label: 'قيمة العقود النشطة',
+                          value: formatCurrency(activeContractsValue),
+                          icon: FileText,
+                          tone: 'teal' as const,
+                          action: () => setActiveTab('contracts'),
+                        },
+                        {
+                          label: 'آخر دفعة',
+                          value: latestPayment ? formatCurrency(latestPayment.amount || 0) : '—',
+                          hint: latestPayment?.payment_date,
+                          icon: CreditCard,
+                          tone: 'ink' as const,
+                          action: () => setActiveTab('financial'),
+                        },
+                        {
+                          label: 'آخر فاتورة',
+                          value: latestInvoice
+                            ? getInvoiceDisplayLabel(latestInvoice)
+                            : '—',
+                          hint: latestInvoice
+                            ? [latestInvoice.invoice_number, latestInvoice.total_amount ? formatCurrency(latestInvoice.total_amount) : null]
+                                .filter(Boolean)
+                                .join(' · ')
+                            : undefined,
+                          icon: Wallet,
+                          tone: 'ink' as const,
+                          action: () => setActiveTab('financial'),
+                        },
+                      ].map((item) => (
+                        <button
+                          key={item.label}
+                          type="button"
+                          onClick={item.action}
+                          className={cn(
+                            'group rounded-2xl border bg-white p-4 text-right shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md',
+                            item.tone === 'teal'
+                              ? 'border-[#22C7A1]/25 hover:border-[#22C7A1]/50'
+                              : 'border-[#E5EAF1] hover:border-slate-300',
+                          )}
+                        >
+                          <div className="mb-3 flex items-center justify-between">
+                            <div
+                              className={cn(
+                                'flex h-9 w-9 items-center justify-center rounded-lg',
+                                item.tone === 'teal' ? 'bg-[#22C7A1]/10 text-[#0E9E7E]' : 'bg-[#F6F8FB] text-slate-500',
+                              )}
+                            >
+                              <item.icon className="h-[18px] w-[18px]" />
+                            </div>
+                          </div>
+                          <p className="text-[11px] font-bold text-slate-500">{item.label}</p>
+                          <p className="mt-1 truncate text-lg font-black text-[#0F172A]">{item.value}</p>
+                          {item.hint && <p className="mt-0.5 text-[11px] font-semibold text-slate-400">{item.hint}</p>}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* ===== Contracts + vehicles ===== */}
+                {activeTab === 'contracts' && (
+                  <div className="space-y-5">
                     {loadingContracts ? (
-                      <div className="flex items-center justify-center h-32">
-                        <RefreshCw className="w-6 h-6 animate-spin text-slate-300" />
-                      </div>
+                      <TabLoadingState />
                     ) : (
                       <ContractsTab contracts={contracts} navigate={navigate} customerId={customerId || ''} />
                     )}
-                  </TabsContent>
-                  <TabsContent value="vehicles" className="mt-0">
-                    {loadingContracts ? (
-                      <div className="flex items-center justify-center h-32">
-                        <RefreshCw className="w-6 h-6 animate-spin text-slate-300" />
+                    <div className="overflow-hidden rounded-2xl border border-[#E5EAF1] bg-white shadow-sm">
+                      <div className="flex items-center gap-2.5 border-b border-[#E5EAF1] bg-[#F6F8FB] px-4 py-3">
+                        <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#38BDF8]/12 text-[#0369A1]">
+                          <Car className="h-4 w-4" />
+                        </div>
+                        <h3 className="text-sm font-black text-[#0F172A]">المركبات المرتبطة بالعقود النشطة</h3>
                       </div>
-                    ) : (
-                      <VehiclesTab contracts={contracts} navigate={navigate} />
-                    )}
-                  </TabsContent>
-                  <TabsContent value="invoices" className="mt-0">
-                    {loadingInvoices ? (
-                      <div className="flex items-center justify-center h-32">
-                        <RefreshCw className="w-6 h-6 animate-spin text-slate-300" />
+                      <div className="p-4">
+                        {loadingContracts ? (
+                          <TabLoadingState />
+                        ) : (
+                          <VehiclesTab contracts={contracts} navigate={navigate} />
+                        )}
                       </div>
-                    ) : (
-                      <InvoicesTab
-                        invoices={customerInvoices}
-                        onInvoiceClick={(invoice) => {
-                          setSelectedInvoice(invoice);
-                          setIsInvoiceDialogOpen(true);
-                        }}
-                        violations={trafficViolations}
-                        customerName={customerName}
-                        customerPhone={customer.phone}
-                        customerIdNumber={customer.national_id || undefined}
-                      />
-                    )}
-                  </TabsContent>
-                  <TabsContent value="payments" className="mt-0">
-                    {loadingPayments ? (
-                      <div className="flex items-center justify-center h-32">
-                        <RefreshCw className="w-6 h-6 animate-spin text-slate-300" />
-                      </div>
-                    ) : (
-                      <PaymentsTab 
-                        payments={payments} 
-                        navigate={navigate} 
-                        onAddPayment={() => setIsPaymentDialogOpen(true)} 
-                        customerName={customerName}
-                        customerPhone={customer.phone}
-                        customerIdNumber={customer.national_id || undefined}
-                      />
-                    )}
-                  </TabsContent>
-                  <TabsContent value="violations" className="mt-0">
-                    {loadingViolations ? (
-                      <div className="flex items-center justify-center h-32">
-                        <RefreshCw className="w-6 h-6 animate-spin text-slate-300" />
-                      </div>
-                    ) : (
-                      <ViolationsTab violations={trafficViolations} navigate={navigate} isLoading={loadingViolations} />
-                    )}
-                  </TabsContent>
-                  <TabsContent value="activity" className="mt-0">
-                    <ActivityTab 
-                      customerId={customerId || ''} 
-                      companyId={companyId || ''} 
-                      contracts={contracts}
-                      payments={payments}
-                      violations={trafficViolations}
-                    />
-                  </TabsContent>
-                  <TabsContent value="notes" className="mt-0">
-                    {loadingCustomer ? (
-                      <div className="flex items-center justify-center h-32">
-                        <RefreshCw className="w-6 h-6 animate-spin text-slate-300" />
-                      </div>
-                    ) : (
-                      <NotesTab 
-                        customerId={customerId || ''} 
-                        customerPhone={customer.phone}
-                        companyId={companyId || ''}
-                      />
-                    )}
-                  </TabsContent>
-                </div>
-              </Tabs>
-            </motion.section>
-
-            <motion.section
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2 }}
-              className="rounded-xl border border-[#DDE5EF] bg-white p-5 shadow-sm"
-            >
-              <div className="mb-5 flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
-                <div>
-                  <h3 className="text-base font-black text-[#142033]">مستندات العميل</h3>
-                  <p className="mt-1 text-xs font-semibold text-[#6A7688]">{documents.length} مستند محفوظ في ملف العميل</p>
-                </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="h-9 gap-2 border-[#DDE5EF] text-[#173A63] hover:bg-[#EEF5FB]"
-                  onClick={() => fileInputRef.current?.click()}
-                  disabled={isUploading}
-                >
-                  {isUploading ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
-                  {isUploading ? 'جاري الرفع...' : 'رفع مستند'}
-                </Button>
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  className="hidden"
-                  onChange={handleFileSelect}
-                  accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
-                />
-              </div>
-
-              {documents.length > 0 ? (
-                <div className="grid grid-cols-2 gap-4 md:grid-cols-3 xl:grid-cols-4">
-                  {documents.map((doc: CustomerDocument, index: number) => (
-                    <DocumentCard key={doc.id} doc={doc} index={index} />
-                  ))}
-                </div>
-              ) : (
-                <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-                  {['صورة العميل', 'رخصة القيادة', 'الهوية الوطنية', 'عقد الإيجار'].map((placeholder, index) => (
-                    <button
-                      type="button"
-                      key={index}
-                      className="aspect-[4/3] rounded-xl border border-dashed border-[#B8C6D8] bg-[#F8FAFC] text-[#6A7688] transition-colors hover:border-[#173A63] hover:bg-[#EEF5FB] hover:text-[#173A63]"
-                      onClick={() => fileInputRef.current?.click()}
-                    >
-                      <FileImage className="mx-auto mb-2 h-7 w-7" />
-                      <p className="text-xs font-black">{placeholder}</p>
-                    </button>
-                  ))}
-                </div>
-              )}
-            </motion.section>
-          </div>
-        </div>
-
-        {SHOW_LEGACY_CUSTOMER_DETAILS && (
-          <>
-        {/* ─── Hero Profile Card ─── */}
-        <motion.div
-          initial={{ opacity: 0, y: 16 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4 }}
-          className="overflow-hidden rounded-xl border border-[#DDE5EF] bg-white shadow-sm"
-        >
-          <div className="p-6">
-            <div className="flex flex-col lg:flex-row lg:items-center gap-6">
-              {/* Avatar & Identity */}
-              <div className="flex items-center gap-5 min-w-0">
-                <div className="relative flex-shrink-0">
-                  <div className="h-[76px] w-[76px] rounded-xl bg-[#173A63] p-[3px] shadow-sm">
-                    <Avatar className="w-full h-full rounded-[13px] border-2 border-white">
-                      <AvatarFallback className="rounded-lg bg-[#142033] text-xl font-bold text-white">
-                        {getInitials(customerName)}
-                      </AvatarFallback>
-                    </Avatar>
+                    </div>
                   </div>
-                  {customer.is_active && (
-                    <div className="absolute -bottom-0.5 -right-0.5 w-5 h-5 bg-emerald-500 rounded-full border-[3px] border-white shadow-sm" />
-                  )}
-                </div>
-
-                <div className="min-w-0">
-                  <div className="flex items-center gap-3 mb-1">
-                    <h1 className="truncate text-2xl font-black tracking-tight text-[#142033] sm:text-3xl">{customerName}</h1>
-                    {customer.is_blacklisted && (
-                      <Badge className="bg-amber-50 text-amber-700 border border-amber-200 gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold flex-shrink-0">
-                        <Star className="w-3 h-3 fill-amber-400 text-amber-400" />{t("vip")}</Badge>
-                    )}
-                  </div>
-                  <p className="text-sm text-slate-500">{'عميل'}</p>
-                </div>
-              </div>
-
-              {/* Info Pills */}
-              <div className="flex-1 flex flex-wrap items-center gap-3 lg:justify-end">
-                <div className="flex items-center gap-3 rounded-xl border border-[#DDE5EF] bg-[#FCFDFE] px-4 py-2.5">
-                  <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg bg-[#EEF5FB]">
-                    <Cake className="h-[18px] w-[18px] text-[#173A63]" />
-                  </div>
-                  <div>
-                    <p className="text-[11px] font-medium text-rose-500/80">تاريخ الميلاد</p>
-                    <p className="text-sm font-semibold text-slate-900">{customer.date_of_birth || '-'}</p>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-3 rounded-xl border border-[#DDE5EF] bg-[#FCFDFE] px-4 py-2.5">
-                  <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg bg-[#EEF5FB]">
-                    <Phone className="h-[18px] w-[18px] text-[#173A63]" />
-                  </div>
-                  <div>
-                    <p className="text-[11px] font-medium text-sky-500/80">رقم الهاتف</p>
-                    <p className="text-sm font-semibold text-slate-900 font-mono" dir="ltr">{customer.phone || '-'}</p>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-3 rounded-xl border border-[#DDE5EF] bg-[#FCFDFE] px-4 py-2.5">
-                  <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg bg-[#EEF5FB]">
-                    <Mail className="h-[18px] w-[18px] text-[#173A63]" />
-                  </div>
-                  <div>
-                    <p className="text-[11px] font-medium text-violet-500/80">البريد الإلكتروني</p>
-                    <p className="text-sm font-semibold text-slate-900 truncate max-w-[180px]">{customer.email || '-'}</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </motion.div>
-
-        <MissingDataWarnings customer={customer} />
-
-        {/* ─── Stats Strip ─── */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-          {/* Active Contracts */}
-          <motion.div
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.08 }}
-            className="group relative overflow-hidden rounded-xl border border-[#DDE5EF] bg-white p-4 shadow-sm transition-colors hover:border-[#173A63]"
-          >
-            <div className="absolute bottom-3 right-0 top-3 w-1 rounded-full bg-[#173A63]" />
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#EEF5FB] text-[#173A63]">
-                <FileText className="h-5 w-5" />
-              </div>
-            </div>
-            <p className="text-2xl font-black text-[#142033]">{stats.activeContracts}</p>
-            <p className="text-xs font-medium text-slate-500 mt-0.5">العقود النشطة</p>
-          </motion.div>
-
-          {/* Outstanding Amount */}
-          <motion.div
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.14 }}
-            className="group relative overflow-hidden rounded-xl border border-[#DDE5EF] bg-white p-4 shadow-sm transition-colors hover:border-[#173A63]"
-          >
-            <div className="absolute bottom-3 right-0 top-3 w-1 rounded-full bg-amber-500" />
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-amber-50 text-amber-700">
-                <Wallet className="h-5 w-5" />
-              </div>
-            </div>
-            <p className="text-2xl font-black text-[#142033]">
-              {stats.outstandingAmount.toLocaleString()}
-              <span className="text-sm font-semibold text-slate-400 mr-1">ر.ق</span>
-            </p>
-            <p className="text-xs font-medium text-slate-500 mt-0.5">المبلغ المستحق</p>
-          </motion.div>
-
-          {/* Late Amounts */}
-          <motion.div
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-            className="group relative overflow-hidden rounded-xl border border-[#DDE5EF] bg-white p-4 shadow-sm transition-colors hover:border-red-300"
-          >
-            <div className="absolute right-0 top-3 bottom-3 w-1 rounded-full bg-rose-500" />
-            <div className="flex items-center justify-between mb-3">
-              <div className="w-10 h-10 rounded-xl bg-rose-50 flex items-center justify-center group-hover:scale-110 transition-transform">
-                <AlertTriangle className="w-5 h-5 text-rose-600" />
-              </div>
-            </div>
-            <p className="text-2xl font-bold text-slate-900">
-              {stats.totalLateAmount.toLocaleString()}
-              <span className="text-sm font-semibold text-slate-400 mr-1">ر.ق</span>
-            </p>
-            <p className="text-xs font-medium text-slate-500 mt-0.5">المبالغ المتأخرة</p>
-            {(stats.overdueInvoicesAmount > 0 || stats.unpaidViolationsAmount > 0) && (
-              <div className="mt-2 flex flex-wrap gap-1.5">
-                {stats.overdueInvoicesAmount > 0 && (
-                  <span className="text-[10px] px-2 py-0.5 bg-rose-50 text-rose-600 rounded-full border border-rose-100">
-                    فواتير: {stats.overdueInvoicesAmount.toLocaleString()}
-                  </span>
                 )}
-                {stats.unpaidViolationsAmount > 0 && (
-                  <span className="text-[10px] px-2 py-0.5 bg-rose-50 text-rose-600 rounded-full border border-rose-100">
-                    مخالفات: {stats.unpaidViolationsAmount.toLocaleString()}
-                  </span>
-                )}
-              </div>
-            )}
-            {stats.totalLateAmount > 0 && (
-              <Button
-                size="sm"
-                onClick={() => {
-                  const activeContract = contracts.find((contract: any) => contract.status === 'active');
-                  if (activeContract) {
-                    navigate(`/legal/lawsuit/prepare/${activeContract.id}`);
-                  } else {
-                    toast({ title: 'لا يوجد عقد نشط', description: 'يجب أن يكون للعميل عقد نشط لإنشاء قضية', variant: 'destructive' });
-                  }
-                }}
-                className="mt-3 w-full h-8 text-xs bg-rose-500 hover:bg-rose-600 text-white gap-1.5 rounded-lg"
-              >
-                <Gavel className="w-3.5 h-3.5" />
-                إنشاء قضية
-              </Button>
-            )}
-          </motion.div>
 
-          {/* Total Payments */}
-          <motion.div
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.26 }}
-            className="group relative overflow-hidden rounded-xl border border-[#DDE5EF] bg-white p-4 shadow-sm transition-colors hover:border-[#173A63]"
-          >
-            <div className="absolute bottom-3 right-0 top-3 w-1 rounded-full bg-[#173A63]" />
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#EEF5FB] text-[#173A63]">
-                <CreditCard className="h-5 w-5" />
-              </div>
-            </div>
-            <p className="text-2xl font-black text-[#142033]">
-              {stats.totalPayments.toLocaleString()}
-              <span className="text-sm font-semibold text-slate-400 mr-1">ر.ق</span>
-            </p>
-            <p className="text-xs font-medium text-slate-500 mt-0.5">إجمالي المدفوعات</p>
-          </motion.div>
-        </div>
+                {/* ===== Financial: invoices + payments ===== */}
+                {activeTab === 'financial' && (
+                  <Tabs defaultValue="invoices" className="w-full">
+                    <TabsList className="flex h-auto w-full justify-start gap-2 overflow-x-auto rounded-xl border border-[#E5EAF1] bg-white p-1 shadow-sm">
+                      <TabsTrigger
+                        value="invoices"
+                        className="gap-2 rounded-lg px-5 py-2.5 text-[#5B6677] transition-all data-[state=active]:bg-[#22C7A1] data-[state=active]:text-white"
+                      >
+                        <Wallet className="h-4 w-4" />
+                        الفواتير
+                      </TabsTrigger>
+                      <TabsTrigger
+                        value="payments"
+                        className="gap-2 rounded-lg px-5 py-2.5 text-[#5B6677] transition-all data-[state=active]:bg-[#22C7A1] data-[state=active]:text-white"
+                      >
+                        <RefreshCw className="h-4 w-4" />
+                        الدفعات
+                      </TabsTrigger>
+                    </TabsList>
 
-        {/* ─── CRM Quick Bar ─── */}
-        <motion.div
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-          className="flex flex-col items-start justify-between gap-3 rounded-xl border border-[#DDE5EF] bg-white px-5 py-3.5 shadow-sm sm:flex-row sm:items-center"
-        >
-          <div className="flex items-center gap-3">
-            <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg bg-[#173A63] text-white shadow-sm">
-              <MessageSquare className="h-[18px] w-[18px]" />
-            </div>
-            <div>
-              <p className="text-sm font-semibold text-slate-800">مركز إدارة العلاقات</p>
-              <p className="text-xs text-slate-500">
-                {crmActivitiesMain.length} ملاحظة • {scheduledFollowups.length} متابعة قادمة
-                {overdueFollowups > 0 && (
-                  <span className="text-rose-500 font-semibold mr-1.5">• {overdueFollowups} متأخرة</span>
-                )}
-              </p>
-            </div>
-          </div>
-          <div className="flex items-center gap-2 flex-wrap">
-            {customer?.phone && (
-              <>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="h-8 gap-1.5 rounded-lg border-[#D8E1EC] text-xs text-[#536173] hover:border-[#173A63] hover:bg-[#EEF5FB] hover:text-[#173A63]"
-                  onClick={() => window.open(`tel:${customer.phone}`)}
-                >
-                  <Phone className="w-3.5 h-3.5" />
-                  اتصال
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="h-8 gap-1.5 rounded-lg border-[#D8E1EC] text-xs text-[#536173] hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-700"
-                  onClick={() => window.open(`https://wa.me/${customer.phone?.replace(/[^0-9]/g, '')}`)}
-                >
-                  <MessageSquare className="w-3.5 h-3.5" />
-                  واتساب
-                </Button>
-              </>
-            )}
-            <Button
-              size="sm"
-              className="h-8 gap-1.5 rounded-lg bg-[#173A63] text-xs text-white hover:bg-[#173A63]/90"
-              onClick={() => setActiveTab('notes')}
-            >
-              <Plus className="w-3.5 h-3.5" />
-              إضافة ملاحظة
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              className="h-8 gap-1.5 rounded-lg border-[#D8E1EC] text-xs text-[#536173] hover:border-amber-200 hover:bg-amber-50 hover:text-amber-700"
-              onClick={() => setActiveTab('notes')}
-            >
-              <Bell className="w-3.5 h-3.5" />
-              المتابعة
-            </Button>
-          </div>
-        </motion.div>
+                    <TabsContent value="invoices" className="mt-4">
+                      {loadingInvoices ? (
+                        <TabLoadingState />
+                      ) : (
+                        <InvoicesTab
+                          invoices={customerInvoices}
+                          onInvoiceClick={(invoice) => {
+                            setSelectedInvoice(invoice);
+                            setIsInvoiceDialogOpen(true);
+                          }}
+                          violations={trafficViolations}
+                          customerName={customerName}
+                          customerPhone={customer.phone}
+                          customerIdNumber={customer.national_id || undefined}
+                        />
+                      )}
+                    </TabsContent>
 
-        {/* ─── Tabs Section ─── */}
-        <motion.div
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.25 }}
-          className="overflow-hidden rounded-xl border border-[#DDE5EF] bg-white shadow-sm"
-        >
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <div className="px-4 pt-4 pb-0">
-              <TabsList className="flex h-auto w-full flex-nowrap justify-start gap-1 overflow-x-auto rounded-xl border border-[#DDE5EF] bg-[#F8FAFC] p-1">
-                {[
-                  { value: 'ai-summary', label: 'ملخص AI', icon: Star },
-                  { value: 'info', label: 'معلومات العميل', icon: User },
-                  { value: 'phones', label: 'أرقام الهاتف', icon: Phone },
-                  { value: 'contracts', label: 'العقود', icon: FileText },
-                  { value: 'vehicles', label: 'المركبات', icon: Car },
-                  { value: 'invoices', label: 'الفواتير', icon: Wallet },
-                  { value: 'payments', label: 'المدفوعات', icon: CreditCard },
-                  { value: 'violations', label: 'المخالفات', icon: AlertTriangle, badge: trafficViolations.length > 0 ? trafficViolations.length : null },
-                  { value: 'notes', label: 'المتابعة', icon: MessageSquare },
-                  { value: 'activity', label: 'سجل النشاط', icon: Activity },
-                ].map((tab) => (
-                  <TabsTrigger
-                    key={tab.value}
-                    value={tab.value}
-                    className={cn(
-                      "whitespace-nowrap rounded-lg px-3.5 py-2 text-xs font-bold transition-colors gap-1.5",
-                      "data-[state=active]:border data-[state=active]:border-[#173A63] data-[state=active]:bg-[#173A63] data-[state=active]:text-white data-[state=active]:shadow-sm",
-                      "data-[state=inactive]:text-[#6A7688] hover:text-[#142033]"
-                    )}
-                  >
-                    <tab.icon className="w-3.5 h-3.5" />
-                    {tab.label}
-                    {'badge' in tab && tab.badge && (
-                      <Badge className="mr-0.5 text-[10px] h-4 min-w-[16px] px-1 bg-rose-100 text-rose-700 border-0 rounded-full font-semibold">
-                        {tab.badge}
-                      </Badge>
-                    )}
-                  </TabsTrigger>
-                ))}
-              </TabsList>
-            </div>
+                    <TabsContent value="payments" className="mt-4">
+                      {loadingPayments ? (
+                        <TabLoadingState />
+                      ) : (
+                        <PaymentsTab
+                          payments={payments}
+                          navigate={navigate}
+                          onAddPayment={() => setIsPaymentDialogOpen(true)}
+                          customerName={customerName}
+                          customerPhone={customer.phone}
+                          customerIdNumber={customer.national_id || undefined}
+                        />
+                      )}
+                    </TabsContent>
+                  </Tabs>
+                )}
 
-            <div className="p-6">
-              <TabsContent value="ai-summary" className="mt-0">
-                <CustomerAISummary
-                  customer={customer}
-                  contracts={contracts}
-                  invoices={customerInvoices}
-                  payments={payments}
-                  violations={trafficViolations}
-                  activities={crmActivitiesMain}
-                  scheduledFollowups={scheduledFollowups}
-                  formatCurrency={formatCurrency}
-                  onCreateContract={() => navigate(`/contracts?customer=${customerId}`)}
-                  onOpenCrm={() => navigate(`/customers/crm?customer=${customerId}`)}
-                />
-              </TabsContent>
-              <TabsContent value="info" className="mt-0">
-                {loadingCustomer ? (
-                  <div className="flex items-center justify-center h-32">
-                    <RefreshCw className="w-6 h-6 animate-spin text-slate-300" />
-                  </div>
-                ) : (
-                  <PersonalInfoTab customer={customer} />
-                )}
-              </TabsContent>
-              <TabsContent value="phones" className="mt-0">
-                {loadingCustomer ? (
-                  <div className="flex items-center justify-center h-32">
-                    <RefreshCw className="w-6 h-6 animate-spin text-slate-300" />
-                  </div>
-                ) : (
-                  <PhoneNumbersTab customer={customer} />
-                )}
-              </TabsContent>
-              <TabsContent value="contracts" className="mt-0">
-                {loadingContracts ? (
-                  <div className="flex items-center justify-center h-32">
-                    <RefreshCw className="w-6 h-6 animate-spin text-slate-300" />
-                  </div>
-                ) : (
-                  <ContractsTab contracts={contracts} navigate={navigate} customerId={customerId || ''} />
-                )}
-              </TabsContent>
-              <TabsContent value="vehicles" className="mt-0">
-                {loadingContracts ? (
-                  <div className="flex items-center justify-center h-32">
-                    <RefreshCw className="w-6 h-6 animate-spin text-slate-300" />
-                  </div>
-                ) : (
-                  <VehiclesTab contracts={contracts} navigate={navigate} />
-                )}
-              </TabsContent>
-              <TabsContent value="invoices" className="mt-0">
-                {loadingInvoices ? (
-                  <div className="flex items-center justify-center h-32">
-                    <RefreshCw className="w-6 h-6 animate-spin text-slate-300" />
-                  </div>
-                ) : (
-                  <InvoicesTab
-                    invoices={customerInvoices}
-                    onInvoiceClick={(invoice) => {
-                      setSelectedInvoice(invoice);
-                      setIsInvoiceDialogOpen(true);
-                    }}
-                    violations={trafficViolations}
-                    customerName={customerName}
-                    customerPhone={customer.phone}
-                    customerIdNumber={customer.national_id || undefined}
-                  />
-                )}
-              </TabsContent>
-              <TabsContent value="payments" className="mt-0">
-                {loadingPayments ? (
-                  <div className="flex items-center justify-center h-32">
-                    <RefreshCw className="w-6 h-6 animate-spin text-slate-300" />
-                  </div>
-                ) : (
-                  <PaymentsTab 
-                    payments={payments} 
-                    navigate={navigate} 
-                    onAddPayment={() => setIsPaymentDialogOpen(true)} 
-                    customerName={customerName}
-                    customerPhone={customer.phone}
-                    customerIdNumber={customer.national_id || undefined}
-                  />
-                )}
-              </TabsContent>
-              <TabsContent value="violations" className="mt-0">
-                {loadingViolations ? (
-                  <div className="flex items-center justify-center h-32">
-                    <RefreshCw className="w-6 h-6 animate-spin text-slate-300" />
-                  </div>
-                ) : (
+                {/* ===== Violations ===== */}
+                {activeTab === 'violations' && (
                   <ViolationsTab violations={trafficViolations} navigate={navigate} isLoading={loadingViolations} />
                 )}
-              </TabsContent>
-              <TabsContent value="activity" className="mt-0">
-                <ActivityTab 
-                  customerId={customerId || ''} 
-                  companyId={companyId || ''} 
-                  contracts={contracts}
-                  payments={payments}
-                  violations={trafficViolations}
-                />
-              </TabsContent>
-              <TabsContent value="notes" className="mt-0">
-                {loadingCustomer ? (
-                  <div className="flex items-center justify-center h-32">
-                    <RefreshCw className="w-6 h-6 animate-spin text-slate-300" />
-                  </div>
-                ) : (
-                  <NotesTab 
-                    customerId={customerId || ''} 
-                    customerPhone={customer.phone}
-                    companyId={companyId || ''}
-                  />
-                )}
-              </TabsContent>
-            </div>
-          </Tabs>
-        </motion.div>
 
-        {/* ─── Attachments Section ─── */}
-        <motion.div
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3 }}
-          className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm"
-        >
-          <div className="flex items-center justify-between mb-5">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center">
-                <Folder className="w-5 h-5 text-slate-600" />
+                {/* ===== Records: personal data + documents + activity ===== */}
+                {activeTab === 'records' && (
+                  <Tabs defaultValue="info" className="w-full">
+                    <TabsList className="flex h-auto w-full justify-start gap-2 overflow-x-auto rounded-xl border border-[#E5EAF1] bg-white p-1 shadow-sm">
+                      <TabsTrigger
+                        value="info"
+                        className="gap-2 rounded-lg px-5 py-2.5 text-[#5B6677] transition-all data-[state=active]:bg-[#22C7A1] data-[state=active]:text-white"
+                      >
+                        <User className="h-4 w-4" />
+                        البيانات الشخصية
+                      </TabsTrigger>
+                      <TabsTrigger
+                        value="documents"
+                        className="gap-2 rounded-lg px-5 py-2.5 text-[#5B6677] transition-all data-[state=active]:bg-[#22C7A1] data-[state=active]:text-white"
+                      >
+                        <Folder className="h-4 w-4" />
+                        المستندات
+                      </TabsTrigger>
+                      <TabsTrigger
+                        value="activity"
+                        className="gap-2 rounded-lg px-5 py-2.5 text-[#5B6677] transition-all data-[state=active]:bg-[#22C7A1] data-[state=active]:text-white"
+                      >
+                        <RefreshCw className="h-4 w-4" />
+                        النشاط والمتابعة
+                      </TabsTrigger>
+                    </TabsList>
+
+                    <TabsContent value="info" className="mt-4">
+                      <div className="grid gap-4 lg:grid-cols-2">
+                        <div className="overflow-hidden rounded-2xl border border-[#E5EAF1] bg-white shadow-sm">
+                          <div className="border-b border-[#E5EAF1] bg-[#F6F8FB] px-4 py-3">
+                            <h3 className="text-sm font-black text-[#0F172A]">البيانات الأساسية</h3>
+                          </div>
+                          <div className="p-4">
+                            <PersonalInfoTab customer={customer} />
+                          </div>
+                        </div>
+                        <div className="overflow-hidden rounded-2xl border border-[#E5EAF1] bg-white shadow-sm">
+                          <div className="border-b border-[#E5EAF1] bg-[#F6F8FB] px-4 py-3">
+                            <h3 className="text-sm font-black text-[#0F172A]">أرقام التواصل</h3>
+                          </div>
+                          <div className="p-4">
+                            <PhoneNumbersTab customer={customer} />
+                          </div>
+                        </div>
+                      </div>
+                    </TabsContent>
+
+                    <TabsContent value="documents" className="mt-4">
+                      <div className="rounded-2xl border border-[#E5EAF1] bg-white p-5 shadow-sm">
+                        <div className="mb-5 flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
+                          <div>
+                            <h3 className="text-base font-black text-[#0F172A]">مستندات العميل</h3>
+                            <p className="mt-1 text-xs font-semibold text-slate-500">
+                              {documents.length} مستند محفوظ في ملف العميل
+                            </p>
+                          </div>
+                          <Button
+                            size="sm"
+                            onClick={() => fileInputRef.current?.click()}
+                            disabled={isUploading}
+                            className="h-9 gap-2 rounded-xl bg-[#22C7A1] px-4 text-xs font-black text-white shadow-[0_8px_20px_-8px_rgba(34,199,161,0.6)] hover:bg-[#0E9E7E]"
+                          >
+                            {isUploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+                            {isUploading ? 'جاري الرفع...' : 'رفع مستند'}
+                          </Button>
+                        </div>
+
+                        {documents.length > 0 ? (
+                          <div className="grid grid-cols-2 gap-4 md:grid-cols-3 xl:grid-cols-4">
+                            {documents.map((doc: CustomerDocument, index: number) => (
+                              <DocumentCard key={doc.id} doc={doc} index={index} />
+                            ))}
+                          </div>
+                        ) : (
+                          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                            {['صورة العميل', 'رخصة القيادة', 'الهوية الوطنية', 'عقد الإيجار'].map((placeholder, index) => (
+                              <button
+                                type="button"
+                                key={index}
+                                className="flex aspect-[4/3] flex-col items-center justify-center rounded-xl border border-dashed border-[#B8C6D8] bg-[#F6F8FB] text-slate-400 transition-colors hover:border-[#22C7A1] hover:bg-[#ECFDF9] hover:text-[#0E9E7E]"
+                                onClick={() => fileInputRef.current?.click()}
+                              >
+                                <FileImage className="mb-2 h-7 w-7" />
+                                <p className="text-xs font-black">{placeholder}</p>
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </TabsContent>
+
+                    <TabsContent value="activity" className="mt-4">
+                      <div className="space-y-5">
+                        <div className="overflow-hidden rounded-2xl border border-[#E5EAF1] bg-white shadow-sm">
+                          <div className="flex items-center gap-2.5 border-b border-[#E5EAF1] bg-[#F6F8FB] px-4 py-3">
+                            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#7C83F6]/12 text-[#4F46E5]">
+                              <Star className="h-4 w-4" />
+                            </div>
+                            <h3 className="text-sm font-black text-[#0F172A]">سجل المتابعة والملاحظات</h3>
+                          </div>
+                          <div className="p-4">
+                            <NotesTab
+                              customerId={customerId || ''}
+                              customerPhone={customer.phone}
+                              companyId={companyId || ''}
+                            />
+                          </div>
+                        </div>
+                        <ActivityTab
+                          customerId={customerId || ''}
+                          companyId={companyId || ''}
+                          contracts={contracts}
+                          payments={payments}
+                          violations={trafficViolations}
+                        />
+                      </div>
+                    </TabsContent>
+                  </Tabs>
+                )}
               </div>
-              <div>
-                <h3 className="text-sm font-semibold text-slate-900">المرفقات</h3>
-                <p className="text-xs text-slate-500">{documents.length} مستند</p>
-              </div>
-            </div>
-            <Button
-              variant="outline"
-              size="sm"
-              className="gap-2 border-slate-200 text-slate-600 hover:bg-slate-50 hover:border-slate-300 rounded-lg h-8 text-xs"
-              onClick={() => fileInputRef.current?.click()}
-              disabled={isUploading}
-            >
-              {isUploading ? (
-                <>
-                  <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                  جاري الرفع...
-                </>
-              ) : (
-                <>
-                  <Upload className="w-3.5 h-3.5" />
-                  رفع مستند
-                </>
-              )}
-            </Button>
-            <input
-              ref={fileInputRef}
-              type="file"
-              className="hidden"
-              onChange={handleFileSelect}
-              accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
-            />
+            </Tabs>
           </div>
 
-          {documents.length > 0 ? (
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-              {documents.map((doc: CustomerDocument, index: number) => (
-                <DocumentCard key={doc.id} doc={doc} index={index} />
-              ))}
-            </div>
-          ) : (
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-              {['صورة العميل', 'رخصة القيادة', 'الهوية الوطنية', 'عقد الإيجار'].map((placeholder, index) => (
-                <div
-                  key={index}
-                  className="aspect-[4/3] bg-slate-50 rounded-xl border-2 border-dashed border-slate-200 flex flex-col items-center justify-center text-slate-400 hover:border-indigo-300 hover:text-indigo-500 hover:bg-indigo-50/30 transition-all cursor-pointer group"
-                  onClick={() => fileInputRef.current?.click()}
-                >
-                  <FileImage className="w-7 h-7 mb-2 group-hover:scale-110 transition-transform" />
-                  <p className="text-xs font-medium">{placeholder}</p>
-                </div>
-              ))}
-            </div>
+          {/* Pulse rail — visible only on the overview tab */}
+          {activeTab === 'overview' && (
+            <CustomerPulse
+              snapshot={snapshot}
+              completion={completion}
+              crmActivities={crmActivities}
+              crmStats={crmStats}
+              quickCrmNote={quickCrmNote}
+              callStatus={quickCrmStatus}
+              isSavingCall={isAddingCrmActivity}
+              onCrmNoteChange={setQuickCrmNote}
+              onCallStatusChange={setQuickCrmStatus}
+              onSaveCall={handleSaveQuickCrmActivity}
+              onEdit={handleEdit}
+              onUploadDocument={() => fileInputRef.current?.click()}
+              onOpenCrm={handleOpenCrm}
+              onRenewContract={handleRenewContract}
+            />
           )}
-        </motion.div>
-          </>
-        )}
-      </main>
+        </div>
+      </div>
 
-      {/* ─── Edit Dialog ─── */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        className="hidden"
+        onChange={handleFileSelect}
+        accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
+      />
+
+      {/* ===== Edit Dialog ===== */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto border-slate-200">
+        <DialogContent className="max-h-[90vh] max-w-4xl overflow-y-auto border-[#E5EAF1]">
           <DialogHeader>
-            <DialogTitle className="text-xl font-bold flex items-center gap-2 text-slate-900">
-              <div className="w-8 h-8 rounded-lg bg-indigo-50 flex items-center justify-center">
-                <Edit3 className="w-4 h-4 text-indigo-600" />
+            <DialogTitle className="flex items-center gap-2 text-xl font-black text-[#0F172A]">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#22C7A1]/10">
+                <User className="h-4 w-4 text-[#0E9E7E]" />
               </div>
               تعديل بيانات العميل
             </DialogTitle>
@@ -1525,7 +887,7 @@ const CustomerDetailsPageNew = () => {
         </DialogContent>
       </Dialog>
 
-      {/* ─── Payment Dialog ─── */}
+      {/* ===== Payment Dialog ===== */}
       <UnifiedPaymentForm
         open={isPaymentDialogOpen}
         onOpenChange={setIsPaymentDialogOpen}
@@ -1533,12 +895,13 @@ const CustomerDetailsPageNew = () => {
         customerId={customerId}
         onSuccess={() => {
           queryClient.invalidateQueries({ queryKey: ['customer-payments-new', customerId, companyId] });
+          queryClient.invalidateQueries({ queryKey: ['customer-invoices', customerId, companyId] });
           setIsPaymentDialogOpen(false);
           toast({ title: 'تم تسجيل الدفعة بنجاح' });
         }}
       />
 
-      {/* ─── Invoice Preview Dialog ─── */}
+      {/* ===== Invoice Preview Dialog ===== */}
       <InvoicePreviewDialog
         open={isInvoiceDialogOpen}
         onOpenChange={setIsInvoiceDialogOpen}
@@ -1546,51 +909,48 @@ const CustomerDetailsPageNew = () => {
         customerName={customerName}
       />
 
-      {/* ─── Delete Confirmation Dialog ─── */}
+      {/* ===== Delete Confirmation Dialog ===== */}
       <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-        <AlertDialogContent className="max-w-md border-slate-200">
+        <AlertDialogContent className="rounded-2xl border-[#E5EAF1]">
           <AlertDialogHeader>
-            <div className="flex items-center gap-3 mb-2">
-              <div className="w-12 h-12 rounded-2xl bg-rose-50 flex items-center justify-center">
-                <Trash2 className="w-6 h-6 text-rose-500" />
+            <div className="mb-2 flex items-center gap-3">
+              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#FB6B7A]/10">
+                <AlertTriangle className="h-6 w-6 text-[#FB6B7A]" />
               </div>
-              <AlertDialogTitle className="text-xl font-bold text-slate-900">
-                حذف العميل نهائياً
-              </AlertDialogTitle>
+              <AlertDialogTitle className="text-xl font-black text-[#0F172A]">حذف العميل نهائياً</AlertDialogTitle>
             </div>
             <AlertDialogDescription asChild>
               <div className="space-y-4">
-                <div className="p-4 bg-slate-50 rounded-xl border border-slate-200">
-                  <p className="text-sm text-slate-600 font-medium mb-2">
-                    هل أنت متأكد من حذف العميل:
+                <div className="rounded-xl border border-[#E5EAF1] bg-[#F6F8FB] p-4">
+                  <p className="mb-2 text-sm font-bold text-slate-600">هل أنت متأكد من حذف العميل:</p>
+                  <p className="text-base font-black text-[#0F172A]">{customerName}</p>
+                  <p className="mt-1 text-xs font-semibold text-slate-500">
+                    رقم الهوية: {customer?.national_id || 'غير محدد'}
                   </p>
-                  <p className="text-base font-bold text-slate-900">{customerName}</p>
-                  <p className="text-xs text-slate-500 mt-1">رقم الهوية: {customer?.national_id || 'غير محدد'}</p>
-                </div>
-                
-                <div className="p-4 bg-rose-50 border border-rose-200 rounded-xl">
-                  <div className="flex items-start gap-2">
-                    <AlertTriangle className="w-5 h-5 text-rose-500 flex-shrink-0 mt-0.5" />
-                    <div className="text-sm text-rose-700">
-                      <p className="font-bold mb-2">⚠️ تحذير مهم:</p>
-                      <ul className="space-y-1 text-xs">
-                        <li>• سيتم حذف جميع بيانات العميل نهائياً</li>
-                        <li>• لا يمكن التراجع عن هذا الإجراء</li>
-                        <li>• سيتم الاحتفاظ بالعقود والفواتير المرتبطة (للأرشيف)</li>
-                      </ul>
-                    </div>
-                  </div>
                 </div>
 
-                {(stats.activeContracts > 0 || stats.totalLateAmount > 0) && (
-                  <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl">
-                    <p className="font-bold text-amber-800 mb-2 text-sm">⚠️ ملاحظات:</p>
-                    <ul className="space-y-1 text-xs text-amber-700">
-                      {stats.activeContracts > 0 && (
-                        <li>• يوجد <strong>{stats.activeContracts} عقود نشطة</strong> - يُفضل إلغاؤها أولاً</li>
+                <div className="rounded-xl border border-[#FB6B7A]/25 bg-[#FFF5F6] p-4">
+                  <p className="mb-2 text-sm font-black text-[#BE123C]">تحذير مهم:</p>
+                  <ul className="list-inside space-y-1 text-xs font-semibold text-[#BE123C]">
+                    <li>• سيتم حذف جميع بيانات العميل نهائياً</li>
+                    <li>• لا يمكن التراجع عن هذا الإجراء</li>
+                    <li>• سيتم الاحتفاظ بالعقود والفواتير المرتبطة (للأرشيف)</li>
+                  </ul>
+                </div>
+
+                {(snapshot.activeContracts > 0 || snapshot.dueNowTotal > 0) && (
+                  <div className="rounded-xl border border-[#F59E0B]/25 bg-[#FFFBEB] p-4">
+                    <p className="mb-2 text-sm font-black text-[#B45309]">ملاحظات قبل الحذف:</p>
+                    <ul className="space-y-1 text-xs font-semibold text-[#B45309]">
+                      {snapshot.activeContracts > 0 && (
+                        <li>
+                          • يوجد <strong>{snapshot.activeContracts} عقود نشطة</strong> — يُفضل إلغاؤها أولاً
+                        </li>
                       )}
-                      {stats.totalLateAmount > 0 && (
-                        <li>• يوجد مبالغ مستحقة بقيمة <strong>{formatCurrency(stats.totalLateAmount)}</strong></li>
+                      {snapshot.dueNowTotal > 0 && (
+                        <li>
+                          • يوجد مبالغ مستحقة بقيمة <strong>{formatCurrency(snapshot.dueNowTotal)}</strong>
+                        </li>
                       )}
                     </ul>
                   </div>
@@ -1599,322 +959,24 @@ const CustomerDetailsPageNew = () => {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="gap-2">
-            <AlertDialogCancel className="flex-1 rounded-xl">
-              إلغاء
-            </AlertDialogCancel>
-            <AlertDialogAction 
+            <AlertDialogCancel className="flex-1 rounded-xl font-bold">إلغاء</AlertDialogCancel>
+            <AlertDialogAction
               onClick={handleDeleteCustomer}
-              className="flex-1 bg-rose-500 hover:bg-rose-600 text-white rounded-xl"
+              className="flex-1 rounded-xl bg-[#FB6B7A] font-black text-white hover:bg-[#E5484F]"
             >
-              <Trash2 className="w-4 h-4 ml-2" />
               حذف نهائياً
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-
-      <style>{`
-        .customer-details-system {
-          color: var(--customer-details-text);
-          font-size: 16px;
-          background:
-            linear-gradient(180deg, rgba(246, 248, 251, 0.72), var(--customer-details-inner) 260px),
-            var(--customer-details-inner) !important;
-        }
-
-        .customer-details-system .text-\\[11px\\] {
-          font-size: 13.5px !important;
-          line-height: 1.6 !important;
-        }
-
-        .customer-details-system .text-xs {
-          font-size: 14px !important;
-          line-height: 1.65 !important;
-        }
-
-        .customer-details-system .text-sm {
-          font-size: 15.5px !important;
-          line-height: 1.7 !important;
-        }
-
-        .customer-details-system button,
-        .customer-details-system input,
-        .customer-details-system textarea,
-        .customer-details-system [role="combobox"] {
-          font-size: 15px !important;
-        }
-
-        .customer-details-system header {
-          background: color-mix(in srgb, var(--customer-details-surface) 94%, transparent) !important;
-          border-color: var(--customer-details-border) !important;
-          backdrop-filter: blur(14px);
-        }
-
-        .customer-details-system main {
-          max-width: none !important;
-        }
-
-        .customer-details-system .bg-white,
-        .customer-details-system [class*="bg-card"] {
-          background-color: var(--customer-details-surface) !important;
-        }
-
-        .customer-details-system .bg-slate-50,
-        .customer-details-system .bg-slate-100,
-        .customer-details-system .bg-gray-50,
-        .customer-details-system .bg-neutral-50 {
-          background-color: var(--customer-details-inner) !important;
-        }
-
-        .customer-details-system .rounded-3xl,
-        .customer-details-system .rounded-2xl,
-        .customer-details-system .rounded-xl,
-        .customer-details-system .rounded-lg,
-        .customer-details-system .rounded-md {
-          border-radius: 8px !important;
-        }
-
-        .customer-details-system .shadow-xl,
-        .customer-details-system .shadow-lg,
-        .customer-details-system .shadow-md,
-        .customer-details-system .shadow-sm {
-          box-shadow: 0 10px 28px rgba(2, 6, 23, 0.07) !important;
-        }
-
-        .customer-details-system .border,
-        .customer-details-system .border-slate-100,
-        .customer-details-system .border-slate-200,
-        .customer-details-system .border-slate-300,
-        .customer-details-system .border-gray-200 {
-          border-color: var(--customer-details-border) !important;
-        }
-
-        .customer-details-system .text-slate-900,
-        .customer-details-system .text-gray-900,
-        .customer-details-system .text-neutral-900,
-        .customer-details-system .text-foreground {
-          color: var(--customer-details-text) !important;
-        }
-
-        .customer-details-system .text-slate-800,
-        .customer-details-system .text-slate-700,
-        .customer-details-system .text-slate-600,
-        .customer-details-system .text-slate-500,
-        .customer-details-system .text-gray-600,
-        .customer-details-system .text-muted-foreground {
-          color: var(--customer-details-muted) !important;
-        }
-
-        .customer-details-system .bg-gradient-to-br,
-        .customer-details-system .bg-gradient-to-r,
-        .customer-details-system .bg-gradient-to-l {
-          background-image: none !important;
-        }
-
-        .customer-details-system .from-indigo-500,
-        .customer-details-system .via-violet-500,
-        .customer-details-system .to-fuchsia-500,
-        .customer-details-system .bg-indigo-600,
-        .customer-details-system .bg-violet-600,
-        .customer-details-system .bg-indigo-500,
-        .customer-details-system .bg-violet-500 {
-          background-color: var(--customer-details-focus) !important;
-          color: white !important;
-        }
-
-        .customer-details-system .bg-slate-900,
-        .customer-details-system .hover\\:bg-slate-800:hover {
-          background-color: var(--customer-details-text) !important;
-          color: white !important;
-        }
-
-        .customer-details-system .bg-emerald-50,
-        .customer-details-system .bg-green-50,
-        .customer-details-system .bg-teal-50 {
-          background-color: color-mix(in srgb, var(--customer-details-success) 12%, white) !important;
-        }
-
-        .customer-details-system .text-emerald-600,
-        .customer-details-system .text-emerald-700,
-        .customer-details-system .text-green-600,
-        .customer-details-system .text-teal-600 {
-          color: var(--customer-details-success) !important;
-        }
-
-        .customer-details-system .bg-sky-50,
-        .customer-details-system .bg-blue-50,
-        .customer-details-system .bg-cyan-50 {
-          background-color: color-mix(in srgb, var(--customer-details-info) 12%, white) !important;
-        }
-
-        .customer-details-system .text-sky-500,
-        .customer-details-system .text-sky-600,
-        .customer-details-system .text-sky-700,
-        .customer-details-system .text-blue-600,
-        .customer-details-system .text-blue-700 {
-          color: var(--customer-details-info) !important;
-        }
-
-        .customer-details-system .bg-violet-50,
-        .customer-details-system .bg-indigo-50 {
-          background-color: color-mix(in srgb, var(--customer-details-focus) 12%, white) !important;
-        }
-
-        .customer-details-system .text-violet-500,
-        .customer-details-system .text-violet-600,
-        .customer-details-system .text-violet-700,
-        .customer-details-system .text-indigo-600,
-        .customer-details-system .text-indigo-700 {
-          color: var(--customer-details-focus) !important;
-        }
-
-        .customer-details-system .bg-rose-50,
-        .customer-details-system .bg-amber-50,
-        .customer-details-system .bg-orange-50 {
-          background-color: color-mix(in srgb, var(--customer-details-alert) 12%, white) !important;
-        }
-
-        .customer-details-system .bg-rose-500,
-        .customer-details-system .bg-rose-600 {
-          background-color: var(--customer-details-alert) !important;
-          color: white !important;
-        }
-
-        .customer-details-system .text-rose-500,
-        .customer-details-system .text-rose-600,
-        .customer-details-system .text-rose-700,
-        .customer-details-system .text-amber-700,
-        .customer-details-system .text-amber-800 {
-          color: var(--customer-details-alert) !important;
-        }
-
-        .customer-details-system main > div:nth-of-type(1) {
-          border-top: 4px solid var(--customer-details-focus) !important;
-        }
-
-        .customer-details-system main > div:nth-of-type(1) > div {
-          padding: 1.5rem !important;
-        }
-
-        .customer-details-system main > div:nth-of-type(1) .w-\\[76px\\] {
-          width: 68px !important;
-          height: 68px !important;
-          padding: 0 !important;
-          background: var(--customer-details-focus) !important;
-          box-shadow: none !important;
-        }
-
-        .customer-details-system main > div:nth-of-type(1) [class*="AvatarFallback"],
-        .customer-details-system main > div:nth-of-type(1) .bg-slate-900 {
-          background: var(--customer-details-text) !important;
-        }
-
-        .customer-details-system main > div:nth-of-type(3) > div {
-          min-height: 132px;
-          border-radius: 8px !important;
-        }
-
-        .customer-details-system main > div:nth-of-type(3) > div:nth-child(1) .absolute {
-          background-color: var(--customer-details-info) !important;
-        }
-
-        .customer-details-system main > div:nth-of-type(3) > div:nth-child(2) .absolute,
-        .customer-details-system main > div:nth-of-type(3) > div:nth-child(4) .absolute {
-          background-color: var(--customer-details-focus) !important;
-        }
-
-        .customer-details-system main > div:nth-of-type(3) > div:nth-child(3) .absolute {
-          background-color: var(--customer-details-alert) !important;
-        }
-
-        .customer-details-system [role="tablist"] {
-          background: var(--customer-details-inner) !important;
-          border-color: var(--customer-details-border) !important;
-          gap: 0.25rem !important;
-          scrollbar-width: thin;
-        }
-
-        .customer-details-system [role="tab"] {
-          min-height: 40px;
-          color: var(--customer-details-muted) !important;
-          border-radius: 8px !important;
-        }
-
-        .customer-details-system [role="tab"][data-state="active"] {
-          background: var(--customer-details-focus) !important;
-          color: white !important;
-          border-color: var(--customer-details-focus) !important;
-          box-shadow: 0 8px 18px rgba(23, 58, 99, 0.18) !important;
-        }
-
-        .customer-details-system [role="tab"][data-state="active"] svg,
-        .customer-details-system [role="tab"][data-state="active"] span {
-          color: white !important;
-        }
-
-        .customer-details-system button,
-        .customer-details-system input,
-        .customer-details-system textarea,
-        .customer-details-system [role="combobox"] {
-          border-radius: 8px !important;
-        }
-
-        .customer-details-system input,
-        .customer-details-system textarea,
-        .customer-details-system [role="combobox"] {
-          background: var(--customer-details-inner) !important;
-          border-color: var(--customer-details-border) !important;
-        }
-
-        .customer-details-system .border-dashed:hover {
-          border-color: var(--customer-details-focus) !important;
-          background: color-mix(in srgb, var(--customer-details-focus) 6%, white) !important;
-          color: var(--customer-details-focus) !important;
-        }
-
-        .customer-details-system *:focus-visible {
-          outline-color: var(--customer-details-focus) !important;
-          --tw-ring-color: var(--customer-details-focus) !important;
-        }
-
-        .customer-details-system .customer-command-grid {
-          border-top: 0 !important;
-        }
-
-        .customer-details-system .customer-command-grid > div,
-        .customer-details-system .customer-command-grid > aside {
-          padding: 0 !important;
-        }
-
-        .customer-details-system .customer-command-grid [role="tablist"] {
-          border: 0 !important;
-          background: transparent !important;
-          padding: 0 !important;
-        }
-
-        @media (max-width: 768px) {
-          .customer-details-system header {
-            position: static !important;
-          }
-
-          .customer-details-system main {
-            padding-left: 1rem !important;
-            padding-right: 1rem !important;
-          }
-
-          .customer-details-system main > div:nth-of-type(1) .flex-1 {
-            justify-content: stretch !important;
-          }
-
-          .customer-details-system [role="tab"] {
-            flex: 0 0 auto;
-            padding-inline: 0.85rem !important;
-          }
-        }
-      `}</style>
-    </div>
-    </TooltipProvider>
+    </motion.div>
   );
 };
+
+const TabLoadingState = () => (
+  <div className="flex h-32 items-center justify-center">
+    <Loader2 className="h-6 w-6 animate-spin text-slate-300" />
+  </div>
+);
 
 export default CustomerDetailsPageNew;

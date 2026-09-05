@@ -50,7 +50,17 @@ function createReadyState(violationsCount = 0): LawsuitPreparationState {
     'ibanCertificate', 'representativeId', 'violations', 'violationsEvidence',
     'criminalComplaint', 'violationsTransfer',
   ] as const;
-  const documents = Object.fromEntries(ids.map((id) => [id, readyDocument(id)]));
+  const documents = Object.fromEntries(ids.map((id) => [id, readyDocument(id)])) as LawsuitPreparationState['documents'];
+  documents.contract.sourceDocumentId = 'signed-contract-document-1';
+  documents.contract.identityVerification = {
+    status: 'matched',
+    expectedName: 'مدعى عليه',
+    extractedName: 'مدعى عليه',
+    expectedId: '29850400215',
+    extractedId: '29850400215',
+    reason: 'Exact identity match',
+    checkedAt: '2026-08-26T00:00:00.000Z',
+  };
 
   return {
     contract: { vehicle_id: 'vehicle-1', license_plate: '1234' },
@@ -106,5 +116,33 @@ describe('getFilingReadiness', () => {
     expect(readiness.percentage).toBe(100);
     expect(readiness.missingReasons).not.toContain('الملف القانوني لم يعتمد بعد.');
     expect(readiness.finalizationReasons).toContain('مراجعة الوكيل لم تبدأ أو لم تعتمد بعد.');
+  });
+
+  it('uses the loaded contract evidence as the single signed-lease readiness source', () => {
+    const state = createReadyState(0);
+
+    const readiness = getFilingReadiness(state);
+
+    expect(readiness.signedLease).toMatchObject({
+      hasSignedLease: true,
+      hasIdentityMatch: true,
+      isComplete: true,
+    });
+    expect(readiness.canStartFiling).toBe(true);
+  });
+
+  it('blocks filing when the loaded signed contract has no identity match', () => {
+    const state = createReadyState(0);
+    state.documents.contract.identityVerification = {
+      ...state.documents.contract.identityVerification!,
+      status: 'mismatch',
+    };
+
+    const readiness = getFilingReadiness(state);
+
+    expect(readiness.signedLease.hasSignedLease).toBe(true);
+    expect(readiness.signedLease.hasIdentityMatch).toBe(false);
+    expect(readiness.signedLease.blockingReason).toBe('الهوية غير متحققة');
+    expect(readiness.canStartFiling).toBe(false);
   });
 });

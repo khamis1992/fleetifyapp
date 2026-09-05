@@ -31,7 +31,10 @@ import {
   isMemoSnapshotCurrent,
   prepareCurrentFilingState,
 } from './documentGenerators';
-import { selectLegalContractDocument } from './contractDocumentSelection';
+import {
+  getEffectiveLegalIdentityMatchStatus,
+  selectLegalContractDocument,
+} from './contractDocumentSelection';
 import { registerLegalCase } from './caseRegistration';
 import { getCurrentLegalCase, type LawsuitLegalCase } from './taqadiFiling';
 import {
@@ -435,8 +438,10 @@ async function loadBatchContractState(
     file_path: document.file_path,
     mime_type: document.mime_type,
     legal_identity_match_status: normalizeLegalIdentityMatchStatus(
-      document.legal_identity_match_status,
+      getEffectiveLegalIdentityMatchStatus(document),
     ),
+    legal_identity_expected_id: document.legal_identity_expected_id,
+    legal_identity_extracted_id: document.legal_identity_extracted_id,
   }));
 
   const [profileResult, noticesResult, damagesResult, snapshotsResult] = await Promise.all([

@@ -28,7 +28,7 @@ import {
   useUpdateContractStatus,
 } from '@/hooks/useContractRenewal';
 import { cn } from '@/lib/utils';
-import { revertContractLegalProcedure } from '@/services/contractLegalProcedureService';
+import { LEGAL_REVERSAL_MIN_REASON_LENGTH, revertContractLegalProcedure } from '@/services/contractLegalProcedureService';
 import { ContractCancellationImpactPanel } from './ContractCancellationImpactPanel';
 
 type EditableContractStatus = 'active' | 'suspended' | 'cancelled';
@@ -157,7 +157,8 @@ export const ContractStatusManagement: React.FC<ContractStatusManagementProps> =
     || statusData.status === 'cancelled'
     || isUnderLegalProcedure;
   const trimmedReason = statusData.reason.trim();
-  const reasonIsValid = !reasonRequired || trimmedReason.length >= 5;
+  const minReasonLength = isUnderLegalProcedure ? LEGAL_REVERSAL_MIN_REASON_LENGTH : 5;
+  const reasonIsValid = !reasonRequired || [...trimmedReason].length >= minReasonLength;
   const cancellationRequiresTransfer = statusData.status === 'cancelled'
     && cancellationImpact.data?.requiresCompanyTransfer === true;
   const cancellationIsReady = statusData.status !== 'cancelled' || (
@@ -349,7 +350,7 @@ export const ContractStatusManagement: React.FC<ContractStatusManagementProps> =
               className={cn('resize-none text-right leading-6', reasonRequired && trimmedReason.length > 0 && !reasonIsValid && 'border-destructive')}
             />
             {reasonRequired && !reasonIsValid && (
-              <p className="text-xs text-muted-foreground">اكتب سببًا واضحًا من 5 أحرف على الأقل لإكمال الإجراء.</p>
+              <p className="text-xs text-muted-foreground">اكتب سببًا واضحًا من {minReasonLength} أحرف على الأقل لإكمال الإجراء.</p>
             )}
           </div>
 

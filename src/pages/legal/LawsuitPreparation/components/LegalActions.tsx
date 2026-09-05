@@ -24,7 +24,6 @@ import {
 import { useLawsuitPreparationContext } from '../store';
 import { LawsuitCaseWorkflowCard } from './LawsuitCaseWorkflowCard';
 import { TaqadiAutomationPanel } from './TaqadiAutomationPanel';
-import { useSignedLeaseValidation } from '@/hooks/legal/useSignedLeaseValidation';
 import { getFilingReadiness } from '../utils/filingReadiness';
 
 const mandatoryDocIds = ['memo', 'claims', 'docsList', 'contract', 'commercialRegister', 'ibanCertificate', 'representativeId'] as const;
@@ -75,22 +74,21 @@ function StationHeader({
 
 export function LegalActions() {
   const { state, actions } = useLawsuitPreparationContext();
-  const { documents, taqadiData, ui, contract, companyId } = state;
-
-  // Check for signed lease verification
-  const { hasSignedLease, hasIdentityMatch, canConvertToLegal, blockingReason } = useSignedLeaseValidation(
-    contract?.id,
-    companyId ?? undefined
-  );
+  const { documents, taqadiData, ui } = state;
 
   const readiness = getFilingReadiness(state);
+  const {
+    hasSignedLease,
+    hasIdentityMatch,
+    isComplete: signedLeaseComplete,
+    blockingReason,
+  } = readiness.signedLease;
   const readyCount = readiness.documents.ready;
   const allDocumentsReady = readiness.documents.isComplete;
   const contractReady = documents.contract.status === 'ready';
   const taqadiReady = readiness.taqadiComplete;
   const preparationReady = readiness.canStartFiling;
-  // HARD GATE: Must have signed lease and identity match to proceed
-  const allReady = preparationReady && canConvertToLegal;
+  const allReady = preparationReady;
   const hasDocumentsForZip = mandatoryDocIds.some((docId) => documents[docId].status === 'ready');
 
   return (
@@ -146,12 +144,12 @@ export function LegalActions() {
           </div>
         )}
         
-        {!canConvertToLegal && blockingReason && (
+        {!signedLeaseComplete && blockingReason && (
           <div className="lawsuit-warning-strip" style={{ backgroundColor: '#fef3c7', borderColor: '#f59e0b' }}>
             <AlertCircle className="h-5 w-5" style={{ color: '#f59e0b' }} />
             <span>
-              <strong>⛔ حظر التحويل للقانوني:</strong> {blockingReason}. 
-              يجب رفع نسخة العقد الموقع والتحقق من الهوية قبل إعادة الرفع أو التحديث.
+              <strong>⛔ حظر الرفع القانوني:</strong> {blockingReason}.
+              يجب رفع نسخة العقد الموقع والتحقق من الهوية قبل إضافة الملف إلى طابور الرفع.
             </span>
           </div>
         )}
@@ -159,7 +157,7 @@ export function LegalActions() {
 
       {/* المحطة ② — الرفع الآلي (لوحة وكيل تقاضي بتصميمها الجديد) */}
       <TaqadiAutomationPanel 
-        canConvertToLegal={canConvertToLegal}
+        canConvertToLegal={signedLeaseComplete}
         blockingReason={blockingReason}
       />
 

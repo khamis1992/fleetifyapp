@@ -13,6 +13,7 @@ import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
 import { useTourGuide } from '@/components/tour-guide';
 import type { Contract } from '@/types/contracts';
 import { buildInvoiceMonthRangeFilter, isActiveInvoice } from '@/utils/invoiceBillingMonth';
+import { contractBusinessDate } from '@/utils/contractScheduleSettlement';
 
 interface ContractInvoiceDialogProps {
   open: boolean;
@@ -26,10 +27,18 @@ function monthKey(value: string): string {
 }
 
 function defaultInvoiceMonth(contract: Contract | null | undefined): string {
-  const today = new Date().toISOString().slice(0, 7);
+  const today = contractBusinessDate().slice(0, 7);
   if (!contract?.start_date) return today;
   return monthKey(contract.start_date) > today ? monthKey(contract.start_date) : today;
 }
+
+const addOneMonth = (month: string): string | null => {
+  if (!/^\d{4}-\d{2}$/.test(month)) return null;
+  const date = new Date(`${month}-01T00:00:00Z`);
+  if (Number.isNaN(date.getTime())) return null;
+  date.setUTCMonth(date.getUTCMonth() + 1);
+  return date.toISOString().slice(0, 10);
+};
 
 export const ContractInvoiceDialog = ({
   open,
@@ -49,11 +58,10 @@ export const ContractInvoiceDialog = ({
   }, [open, contract?.id, contract?.start_date]);
 
   const monthStart = `${invoiceMonth}-01`;
-  const nextMonthStart = useMemo(() => {
-    const date = new Date(`${monthStart}T00:00:00Z`);
-    date.setUTCMonth(date.getUTCMonth() + 1);
-    return date.toISOString().slice(0, 10);
-  }, [monthStart]);
+  const nextMonthStart = useMemo(
+    () => addOneMonth(invoiceMonth) ?? '',
+    [invoiceMonth],
+  );
 
   const { data: existingInvoice, isLoading: checkingInvoice } = useQuery({
     queryKey: ['contract-invoice-month', companyId, contract?.id, invoiceMonth],
@@ -69,7 +77,7 @@ export const ContractInvoiceDialog = ({
       if (error) throw error;
       return data?.find(isActiveInvoice) ?? null;
     },
-    enabled: open && Boolean(companyId && contract?.id && invoiceMonth),
+    enabled: open && Boolean(companyId && contract?.id && invoiceMonth) && nextMonthStart !== '',
   });
 
   const monthWithinContract = useMemo(() => {
@@ -82,7 +90,7 @@ export const ContractInvoiceDialog = ({
       toast.error('تعذر تحديد العقد أو الشركة');
       return;
     }
-    if (!monthWithinContract) {
+    if (!monthWithinContract || !invoiceMonth || nextMonthStart === '') {
       toast.error('شهر الفاتورة خارج فترة العقد');
       return;
     }
@@ -127,7 +135,13 @@ export const ContractInvoiceDialog = ({
       onOpenChange(false);
     } catch (error) {
       console.error('Contract invoice generation failed:', error);
-      toast.error(error instanceof Error ? error.message : 'تعذر إنشاء الفاتورة');
+      const rpcMessage =
+        error instanceof Error
+          ? error.message
+          : typeof error === 'object' && error !== null && 'message' in error
+            ? String((error as { message?: unknown }).message || '')
+            : '';
+      toast.error(rpcMessage || 'تعذر إنشاء الفاتورة');
     } finally {
       setIsSubmitting(false);
     }

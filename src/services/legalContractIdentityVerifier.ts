@@ -73,6 +73,28 @@ export const toLegalIdentityVerification = (
   checkedAt: document.legal_identity_checked_at,
 });
 
+async function throwEdgeFunctionError(
+  error: unknown,
+  fallbackMessage: string,
+): Promise<never> {
+  let detail = '';
+  const context = (error as { context?: unknown } | null)?.context;
+  if (context instanceof Response) {
+    try {
+      const payload = await context.clone().json() as { error?: unknown; message?: unknown };
+      detail = String(payload.error || payload.message || '').trim();
+    } catch {
+      try {
+        detail = (await context.clone().text()).trim();
+      } catch {
+        detail = '';
+      }
+    }
+  }
+  if (!detail && error instanceof Error) detail = error.message;
+  throw new Error(detail ? `${fallbackMessage}: ${detail}` : fallbackMessage);
+}
+
 export async function verifyLegalContractDocumentIdentity(
   companyId: string,
   document: LegalContractDocumentIdentityRow,
@@ -84,33 +106,45 @@ export async function verifyLegalContractDocumentIdentity(
     const { error } = await supabase.functions.invoke('contract-id-scanner', {
       body: { mode: 'document', contractDocumentId: document.id },
     });
-    if (error) throw error;
+    if (error) await throwEdgeFunctionError(error, 'تعذر فحص نسخة العقد');
   } else if (document.mime_type === 'application/pdf') {
-    const { data: blob, error: downloadError } = await supabase.storage
-      .from('contract-documents')
-      .download(document.file_path);
-    if (downloadError || !blob) {
-      throw downloadError || new Error('تعذر تنزيل نسخة العقد لفحصها');
+    const { data: storedOcrResult, error: storedOcrError } = await supabase.functions.invoke(
+      'contract-id-scanner',
+      {
+        body: { mode: 'stored_ocr', contractDocumentId: document.id },
+      },
+    );
+    if (storedOcrError) {
+      await throwEdgeFunctionError(storedOcrError, 'تعذر استخدام نتيجة الفحص المحفوظة');
     }
 
-    const file = new File(
-      [blob],
-      document.document_name || 'signed-contract.pdf',
-      { type: 'application/pdf' },
-    );
-    const pageImages = await convertAllPagesToImages(file, 2, 10);
-    const pages = pageImages.map((imageBase64, index) => ({
-      pageNumber: index + 1,
-      imageBase64,
-    }));
-    const { error } = await supabase.functions.invoke('contract-id-scanner', {
-      body: {
-        mode: 'pages',
-        contractDocumentId: document.id,
-        pages,
-      },
-    });
-    if (error) throw error;
+    if (storedOcrResult?.outcome === 'stored_ocr_unavailable') {
+      const { data: blob, error: downloadError } = await supabase.storage
+        .from('contract-documents')
+        .download(document.file_path);
+      if (downloadError || !blob) {
+        throw downloadError || new Error('تعذر تنزيل نسخة العقد لفحصها');
+      }
+
+      const file = new File(
+        [blob],
+        document.document_name || 'signed-contract.pdf',
+        { type: 'application/pdf' },
+      );
+      const pageImages = await convertAllPagesToImages(file, 2, 10);
+      const pages = pageImages.map((imageBase64, index) => ({
+        pageNumber: index + 1,
+        imageBase64,
+      }));
+      const { error } = await supabase.functions.invoke('contract-id-scanner', {
+        body: {
+          mode: 'pages',
+          contractDocumentId: document.id,
+          pages,
+        },
+      });
+      if (error) await throwEdgeFunctionError(error, 'تعذر فحص صفحات نسخة العقد');
+    }
   } else {
     throw new Error('صيغة نسخة العقد لا تدعم فحص الهوية الآلي');
   }

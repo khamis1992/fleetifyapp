@@ -14,22 +14,27 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { ContractPrintView } from './ContractPrintView';
+import { OfficialContractLetterDocument } from './OfficialContractLetterDocument';
 import type { Contract } from '@/types/contracts';
+import type { PaymentSchedule } from '@/types/payment-schedules';
+import type { VehicleInspection } from '@/hooks/useVehicleInspections';
 
 interface ContractPrintDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  contract: Contract & {
-    customer?: any;
-    vehicle?: any;
-  };
+  contract: Contract;
+  paymentSchedules?: PaymentSchedule[];
+  checkInInspection?: VehicleInspection | null;
+  checkOutInspection?: VehicleInspection | null;
 }
 
 export const ContractPrintDialog: React.FC<ContractPrintDialogProps> = ({
   open,
   onOpenChange,
   contract,
+  paymentSchedules = [],
+  checkInInspection = null,
+  checkOutInspection = null,
 }) => {
   const printRef = useRef<HTMLDivElement>(null);
 
@@ -97,7 +102,12 @@ export const ContractPrintDialog: React.FC<ContractPrintDialogProps> = ({
         </DialogHeader>
         
         <div ref={printRef} className="print-preview">
-          <ContractPrintView contract={contract} />
+          <OfficialContractLetterDocument
+            contract={contract}
+            paymentSchedules={paymentSchedules}
+            checkInInspection={checkInInspection}
+            checkOutInspection={checkOutInspection}
+          />
         </div>
       </DialogContent>
     </Dialog>

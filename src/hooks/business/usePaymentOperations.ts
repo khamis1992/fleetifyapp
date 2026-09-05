@@ -12,6 +12,7 @@ import {
 } from '@/schemas/payment.schema';
 import { assertFinancialPeriodOpen } from '@/services/financialControls';
 import { useFinanceAccessGuard } from '@/hooks/finance/useFinanceAccessGuard';
+import { PaymentRecordedReadError, readPaymentAfterCommit } from '@/services/paymentCommitResult';
 
 export interface PaymentOperationsOptions {
   autoCreateJournalEntry?: boolean;
@@ -118,6 +119,9 @@ export const usePaymentOperations = (options: PaymentOperationsOptions = {}) => 
 
   // Create payment operation
   const createPayment = useMutation({
+    // Only the explicit pre-commit number-collision loop below may retry.
+    // Never inherit the application's blanket retry of financial commands.
+    retry: false,
     mutationFn: async (data: EnhancedPaymentData & {
       idempotencyKey?: string;
       registrationMetadata?: PaymentRegistrationMetadata;
@@ -582,15 +586,13 @@ export const usePaymentOperations = (options: PaymentOperationsOptions = {}) => 
           insertedPayment = null;
           error = atomicError;
         } else {
-          const { data: createdPayment, error: fetchCreatedError } = await supabase
+          insertedPayment = await readPaymentAfterCommit(paymentId, companyId, (confirmedId) => supabase
             .from('payments')
             .select('*')
-            .eq('id', paymentId)
+            .eq('id', confirmedId)
             .eq('company_id', companyId)
-            .single();
-
-          insertedPayment = createdPayment;
-          error = fetchCreatedError;
+            .single());
+          error = null;
         }
 
         if (!error) {
@@ -677,6 +679,13 @@ export const usePaymentOperations = (options: PaymentOperationsOptions = {}) => 
       toast.success(`تم إنشاء ${paymentType} بنجاح`);
     },
     onError: (error: unknown) => {
+      if (error instanceof PaymentRecordedReadError) {
+        queryClient.invalidateQueries({ queryKey: ['payments'] });
+        queryClient.invalidateQueries({ queryKey: ['contract-payments'] });
+        queryClient.invalidateQueries({ queryKey: ['contract-invoices'] });
+        toast.warning('تم تسجيل الدفعة، وتعذر تحديث العرض', { description: error.message });
+        return;
+      }
       const errorMessage = error instanceof Error ? error.message : 'حدث خطأ أثناء إنشاء الدفعة'
       console.error('💥 [usePaymentOperations] Create payment error:', error);
       toast.error(errorMessage);
@@ -925,6 +934,10 @@ export const usePaymentOperations = (options: PaymentOperationsOptions = {}) => 
       queryClient.invalidateQueries({ queryKey: ['payments'] });
       queryClient.invalidateQueries({ queryKey: ['payment', payment.id] });
       queryClient.invalidateQueries({ queryKey: ['invoices'] });
+      queryClient.invalidateQueries({ queryKey: ['contract-invoices'] });
+      queryClient.invalidateQueries({ queryKey: ['contract-payments'] });
+      queryClient.invalidateQueries({ queryKey: ['payment-schedules'] });
+      queryClient.invalidateQueries({ queryKey: ['contract-details'] });
       queryClient.invalidateQueries({ queryKey: ['banks'] });
       queryClient.invalidateQueries({ queryKey: ['bank-transactions'] });
       queryClient.invalidateQueries({ queryKey: ['treasury-summary'] });

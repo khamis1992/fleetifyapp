@@ -168,6 +168,16 @@ export function resolveLegalClaimProjection(
   };
 }
 
+export function resolveLegalClaimCutoffDate(
+  asOfDate: string,
+  breakdown: LegalClaimBreakdown | null,
+): string {
+  const cutoff = breakdown?.rent_cutoff_date;
+  return typeof cutoff === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(cutoff)
+    ? (cutoff < asOfDate ? cutoff : asOfDate)
+    : asOfDate;
+}
+
 /** يضيف الأجرة الممتدة قانونياً كسطر مستقل، بلا تحويلها إلى فاتورة محاسبية. */
 export function appendLegalAccrualToProjection(
   projection: LegalClaimProjection,
@@ -278,14 +288,16 @@ export async function loadLegalClaimProjection(
   if (scheduleResult.error) throw scheduleResult.error;
   if (breakdownResult.error) throw breakdownResult.error;
 
+  const breakdown = (breakdownResult.data || null) as LegalClaimBreakdown | null;
+  const claimCutoffDate = resolveLegalClaimCutoffDate(asOfDate, breakdown);
   const projection = resolveLegalClaimProjection(
     (invoiceResult.data || []) as InvoiceClaimRow[],
     (scheduleResult.data || []) as PaymentScheduleClaimRow[],
-    asOfDate,
+    claimCutoffDate,
   );
   return appendLegalAccrualToProjection(
     projection,
-    (breakdownResult.data || null) as LegalClaimBreakdown | null,
+    breakdown,
     asOfDate,
   );
 }

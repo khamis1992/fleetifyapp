@@ -26,6 +26,12 @@ export interface FilingReadiness {
     generating: number;
     isComplete: boolean;
   };
+  signedLease: {
+    hasSignedLease: boolean;
+    hasIdentityMatch: boolean;
+    isComplete: boolean;
+    blockingReason?: string;
+  };
   legalStatus: ReturnType<typeof evaluateLegalCaseReadiness>;
   profileApproved: boolean;
   snapshotApprovedAndCurrent: boolean;
@@ -49,6 +55,24 @@ export function getFilingReadiness(state: LawsuitPreparationState): FilingReadin
   ).length;
   const missing = requiredDocuments.length - ready - generating;
   const documentsComplete = ready === requiredDocuments.length;
+  const contractDocument = state.documents.contract;
+  const hasSignedLease = Boolean(
+    contractDocument.status === 'ready'
+      && contractDocument.sourceDocumentId
+      && contractDocument.url,
+  );
+  const hasIdentityMatch = Boolean(
+    hasSignedLease && contractDocument.identityVerification?.status === 'matched',
+  );
+  const signedLeaseComplete = hasSignedLease && hasIdentityMatch;
+  let signedLeaseBlockingReason: string | undefined;
+  if (!hasSignedLease && !hasIdentityMatch) {
+    signedLeaseBlockingReason = 'عقد موقّع مطابق غير موجود والهوية غير متحققة';
+  } else if (!hasSignedLease) {
+    signedLeaseBlockingReason = 'عقد موقّع مطابق غير موجود';
+  } else if (!hasIdentityMatch) {
+    signedLeaseBlockingReason = 'الهوية غير متحققة';
+  }
   const defendantContact = getDefendantContact(state);
   const latestSnapshot = state.memoSnapshots[0];
   const profileApproved = state.litigationProfile?.legal_review_status === 'approved';
@@ -72,6 +96,9 @@ export function getFilingReadiness(state: LawsuitPreparationState): FilingReadin
   // user-facing list.
   const missingReasons = [...legalStatus.issues];
   if (!documentsComplete) missingReasons.push(`الحافظة الإلزامية غير مكتملة (${ready}/${requiredDocuments.length}).`);
+  if (!signedLeaseComplete && signedLeaseBlockingReason) {
+    missingReasons.push(signedLeaseBlockingReason);
+  }
   if (!taqadiComplete) missingReasons.push('بيانات تقاضي النهائية غير مكتملة.');
 
   const finalizationReasons: string[] = [];
@@ -80,6 +107,7 @@ export function getFilingReadiness(state: LawsuitPreparationState): FilingReadin
 
   const preparationChecks = [
     documentsComplete,
+    signedLeaseComplete,
     legalStatus.issues.length === 0,
     taqadiComplete,
   ];
@@ -101,6 +129,12 @@ export function getFilingReadiness(state: LawsuitPreparationState): FilingReadin
       missing: Math.max(0, missing),
       generating,
       isComplete: documentsComplete,
+    },
+    signedLease: {
+      hasSignedLease,
+      hasIdentityMatch,
+      isComplete: signedLeaseComplete,
+      blockingReason: signedLeaseBlockingReason,
     },
     legalStatus,
     profileApproved,

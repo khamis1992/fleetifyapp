@@ -8,6 +8,9 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import type { LegalClaimScope } from '@/types/legalClaimScope';
+import { revertContractLegalProcedure } from '@/services/contractLegalProcedureService';
+import { convertContractToLegal } from '@/services/contractLegalConversion';
+import { refreshLegalConversionQueries } from '@/utils/legalConversionQueries';
 
 export interface ConvertToLegalParams {
   contractId: string;
@@ -166,6 +169,10 @@ const useLegacyConvertToLegal = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
+    // A legal conversion is an idempotent database workflow, but a failed
+    // validation must not be retried automatically. Retrying a deterministic
+    // 4xx only floods the audit/API logs and hides the first useful error.
+    retry: false,
     mutationFn: async (params: ConvertToLegalParams & { contract: ContractForLegal }) => {
       if (!user?.id) throw new Error('المستخدم غير مصرح له');
 
@@ -504,89 +511,20 @@ void useLegacyConvertToLegal;
 void useLegacyCloseLegalCase;
 void useLegacyRevertFromLegal;
 
-type ConvertLegalResult = {
-  legal_case: { id: string };
-  case_number: string;
-  total_case_value: number;
-  blocked?: boolean;
-  message_ar?: string;
-  claim_scope?: LegalClaimScope;
-};
-
 export const useConvertToLegal = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   return useMutation({
+    retry: false,
     mutationFn: async (params: ConvertToLegalParams & { contract: ContractForLegal }) => {
       if (!user?.id) throw new Error('المستخدم غير مصرح له');
-      const eligibleStatuses = new Set(['active', 'cancelled', 'canceled', 'closed', 'expired']);
-      if (!eligibleStatuses.has((params.contract.status || '').toLowerCase())) {
-        throw new Error('حالة العقد الحالية لا تسمح بإنشاء مطالبة قانونية.');
-      }
-      
-      // Pre-flight check: Verify signed lease and identity before attempting RPC
-      // The RPC will also check, but we want to show a better error message here
-      const callBooleanRpc = supabase.rpc as unknown as (
-        name: string,
-        args: Record<string, unknown>,
-      ) => Promise<{ data: boolean | null; error: { message?: string } | null }>;
-      const [leaseCheck, identityCheck] = await Promise.all([
-        callBooleanRpc('check_contract_has_verified_signed_lease_v1', {
-          p_company_id: params.contract.company_id,
-          p_contract_id: params.contract.id,
-        }),
-        callBooleanRpc('check_contract_identity_verified_v1', {
-          p_company_id: params.contract.company_id,
-          p_contract_id: params.contract.id,
-        }),
-      ]);
-      
-      if (leaseCheck.error) console.warn('Lease check error:', leaseCheck.error);
-      if (identityCheck.error) console.warn('Identity check error:', identityCheck.error);
-      
-      const hasSignedLease = leaseCheck.data ?? false;
-      const hasIdentityMatch = identityCheck.data ?? false;
-      
-      if (!hasSignedLease) {
-        throw new Error('لا يمكن التحويل للشؤون القانونية: عقد موقّع مطابق غير موجود. يجب رفع نسخة العقد الموقع (signed_contract) أولاً.');
-      }
-      
-      if (!hasIdentityMatch) {
-        throw new Error('لا يمكن التحويل للشؤون القانونية: الهوية غير متحققة. يجب التحقق من هوية العميل أولاً.');
-      }
-      
-      const { data, error } = await (supabase.rpc as unknown as (
-        name: string,
-        args: Record<string, unknown>,
-      ) => Promise<{ data: unknown; error: { message?: string } | null }>)(
-        'convert_contract_to_legal_collection_v2', {
-        p_company_id: params.contract.company_id,
-        p_contract_id: params.contract.id,
-        p_notes: params.notes || '',
-        p_priority: params.priority || 'high',
-        p_case_type: params.caseType || 'payment_collection',
-        p_vehicle_returned: params.vehicleReturned ?? false,
-        p_claim_scope: params.claimScope || 'full_outstanding',
-        p_actor_id: user.id,
-      });
-      if (error) throw error;
-      const result = data as unknown as ConvertLegalResult;
-      if (result?.blocked) {
-        throw new Error(
-          result.message_ar
-          || 'لا توجد نسخة عقد PDF مطابقة للعميل. تم إنشاء طلب واتساب تلقائي للمسؤولين.',
-        );
-      }
-      return { legalCase: result.legal_case, caseNumber: result.case_number, totalCaseValue: Number(result.total_case_value || 0) };
+      return convertContractToLegal({ ...params,actorId:user.id });
     },
     onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ['contract-details'] });
-      queryClient.invalidateQueries({ queryKey: ['contracts'] });
-      queryClient.invalidateQueries({ queryKey: ['legal-cases'] });
-      queryClient.invalidateQueries({ queryKey: ['legal-case-stats'] });
-      queryClient.invalidateQueries({ queryKey: ['vehicles'] });
-      queryClient.invalidateQueries({ queryKey: ['signed-lease-validation'] });
       toast.success(`تم التحويل بنجاح - قضية رقم ${data.caseNumber}`);
+    },
+    onSettled: async () => {
+      if (!await refreshLegalConversionQueries(queryClient)) toast.error('تعذر تحديث بعض البيانات؛ تحقق من حالة العقد دون إعادة التحويل.');
     },
     onError: (error: Error) => toast.error('فشل في تحويل العقد للشؤون القانونية', { description: error.message }),
   });
@@ -626,22 +564,22 @@ export const useRevertFromLegal = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async ({ contractId, reason }: { contractId: string; reason: string }) => {
+    mutationFn: async ({ contractId, reason, idempotencyKey }: { contractId: string; reason: string; idempotencyKey?: string }) => {
       if (!user?.id || !user.profile?.company_id) throw new Error('المستخدم غير مصرح له');
-      const { data, error } = await supabase.rpc('revert_contract_from_legal_v1', {
-        p_company_id: user.profile.company_id,
-        p_contract_id: contractId,
-        p_reason: reason,
-        p_actor_id: user.id,
+      return revertContractLegalProcedure({
+        companyId: user.profile.company_id,
+        contractId,
+        reason,
+        idempotencyKey,
       });
-      if (error) throw error;
-      return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['contract-details'] });
       queryClient.invalidateQueries({ queryKey: ['contracts'] });
       queryClient.invalidateQueries({ queryKey: ['legal-cases'] });
       queryClient.invalidateQueries({ queryKey: ['vehicles'] });
+      queryClient.invalidateQueries({ queryKey: ['manual-legal-delinquency-queue'] });
+      queryClient.invalidateQueries({ queryKey: ['existing-legal-case'] });
       toast.success('تم إلغاء الإجراء القانوني بنجاح');
     },
     onError: (error: Error) => toast.error('فشل في إلغاء الإجراء القانوني', { description: error.message }),

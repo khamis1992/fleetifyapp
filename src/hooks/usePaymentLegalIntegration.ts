@@ -1,264 +1,53 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
-import { differenceInDays, isAfter, startOfDay } from "date-fns";
+import { useCanonicalRentalArrears } from '@/hooks/useCanonicalRentalArrears';
+import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
+import { fetchRentalArrears, type VerifiedRentalArrears } from '@/services/rentalArrears';
+import { contractBusinessDate } from '@/utils/contractScheduleSettlement';
+import { convertSelectedContractsToLegal } from '@/services/batchContractLegalConversion';
+import { refreshLegalConversionQueries } from '@/utils/legalConversionQueries';
 
-export interface LatePaymentCustomer {
-  customer_id: string;
-  customer_name: string;
-  customer_phone?: string;
-  customer_email?: string;
-  contract_id?: string;
-  contract_number?: string;
-  vehicle_id?: string;
-  vehicle_plate?: string;
-  total_outstanding: number;
-  oldest_unpaid_date: string;
-  days_overdue: number;
-  unpaid_months: number;
-  last_payment_date?: string;
-  monthly_rent: number;
-  total_fines: number;
-}
-
-/**
- * Hook to get customers with late payments (after 10th of month)
- */
-export const useLatePaymentCustomers = () => {
-  const { user } = useAuth();
-
-  return useQuery({
-    queryKey: ['late-payment-customers'],
-    queryFn: async () => {
-      if (!user?.id) throw new Error('المستخدم غير مصرح له');
-
-      // Get user's company
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('company_id')
-        .eq('user_id', user.id)
-        .single();
-
-      if (!profile?.company_id) throw new Error('لم يتم العثور على الشركة');
-
-      // Get all active contracts with their customers
-      const { data: contracts, error: contractsError } = await supabase
-        .from('contracts')
-        .select(`
-          id,
-          contract_number,
-          customer_id,
-          vehicle_id,
-          monthly_amount,
-          start_date,
-          end_date,
-          status,
-          customers (
-            id,
-            first_name,
-            last_name,
-            first_name_ar,
-            last_name_ar,
-            company_name,
-            company_name_ar,
-            customer_type,
-            phone,
-            email
-          ),
-          vehicles (
-            id,
-            plate_number
-          )
-        `)
-        .eq('company_id', profile.company_id)
-        .eq('status', 'active');
-
-      if (contractsError) throw contractsError;
-
-      if (!contracts || contracts.length === 0) {
-        return [];
-      }
-
-      // Get payment receipts for these contracts
-      const contractIds = contracts.map(c => c.id).filter(Boolean);
-      if (contractIds.length === 0) {
-        return [];
-      }
-      const { data: payments, error: paymentsError } = await supabase
-        .from('rental_payment_receipts')
-        .select('*')
-        .in('contract_id', contractIds)
-        .eq('company_id', profile.company_id);
-
-      if (paymentsError) throw paymentsError;
-
-      // Calculate late payment customers
-      const lateCustomers: LatePaymentCustomer[] = [];
-      const today = startOfDay(new Date());
-      const currentDay = today.getDate();
-
-      for (const contract of contracts) {
-        // Group payments by customer
-        const customerPayments = payments?.filter(p => p.contract_id === contract.id) || [];
-        
-        // Calculate total paid and outstanding
-        const totalPaid = customerPayments.reduce((sum, p) => sum + (p.total_paid || 0), 0);
-        const totalFines = customerPayments.reduce((sum, p) => sum + (p.fine || 0), 0);
-        
-        // Get oldest unpaid month
-        const paidMonths = customerPayments.map(p => p.month).filter(Boolean);
-        const contractStart = new Date(contract.start_date);
-        const monthsSinceStart = Math.floor((today.getTime() - contractStart.getTime()) / (1000 * 60 * 60 * 24 * 30));
-        
-        // Check if customer has unpaid months
-        const unpaidMonths = monthsSinceStart - paidMonths.length;
-        
-        if (unpaidMonths > 0) {
-          // Find oldest unpaid date (assuming monthly payments)
-          const oldestUnpaidDate = new Date(contractStart);
-          oldestUnpaidDate.setMonth(oldestUnpaidDate.getMonth() + paidMonths.length);
-          
-          const daysOverdue = differenceInDays(today, oldestUnpaidDate);
-          
-          // Check if payment is late (after 10th of month or 30+ days overdue)
-          const isLate = currentDay > 10 || daysOverdue >= 30;
-          
-          if (isLate) {
-            const lastPayment = customerPayments
-              .sort((a, b) => new Date(b.payment_date).getTime() - new Date(a.payment_date).getTime())[0];
-
-            lateCustomers.push({
-              customer_id: contract.customer_id,
-              customer_name: (contract.customers as any)?.customer_type === 'individual'
-                ? `${(contract.customers as any)?.first_name || ''} ${(contract.customers as any)?.last_name || ''}`.trim() || 'غير معروف'
-                : (contract.customers as any)?.company_name || 'غير معروف',
-              customer_phone: (contract.customers as any)?.phone,
-              customer_email: (contract.customers as any)?.email,
-              contract_id: contract.id,
-              contract_number: contract.contract_number,
-              vehicle_id: contract.vehicle_id ?? undefined,
-              vehicle_plate: (contract.vehicles as any)?.plate_number,
-              total_outstanding: unpaidMonths * (contract.monthly_amount || 0),
-              oldest_unpaid_date: oldestUnpaidDate.toISOString(),
-              days_overdue: daysOverdue,
-              unpaid_months: unpaidMonths,
-              last_payment_date: lastPayment?.payment_date,
-              monthly_rent: contract.monthly_amount || 0,
-              total_fines: totalFines,
-            });
-          }
-        }
-      }
-
-      return lateCustomers;
-    },
-    enabled: !!user?.id,
-    refetchInterval: 1000 * 60 * 60, // Refetch every hour
-  });
-};
+export type LatePaymentCustomer = VerifiedRentalArrears;
+export const useLatePaymentCustomers = useCanonicalRentalArrears;
 
 /**
  * Hook to automatically create legal cases for customers with 30+ days overdue
  */
 export const useAutoCreateLegalCases = () => {
   const { user } = useAuth();
+  const {companyId,isInitializing}=useUnifiedCompanyAccess();
   const queryClient = useQueryClient();
 
   return useMutation({
+    retry: false,
     mutationFn: async (customers: LatePaymentCustomer[]) => {
       if (!user?.id) throw new Error('المستخدم غير مصرح له');
 
-      // Get user's company
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('company_id')
-        .eq('user_id', user.id)
-        .single();
-
-      if (!profile?.company_id) throw new Error('لم يتم العثور على الشركة');
-
-      // Filter customers with 30+ days overdue
-      const eligibleCustomers = customers.filter(c => c.days_overdue >= 30);
-
-      if (eligibleCustomers.length === 0) {
-        return { created: 0, skipped: 0 };
+      if(isInitializing||!companyId) throw new Error('تعذر التحقق من الشركة');
+      const current=await fetchRentalArrears(companyId,contractBusinessDate());
+      const verifiedById=new Map(current.verified.map(row=>[row.contract_id,row]));
+      const failed:Array<{contractId:string;message:string}>=[];
+      const eligible:VerifiedRentalArrears[]=[];
+      for(const selected of customers) {
+        const fresh=verifiedById.get(selected.contract_id);
+        if(!fresh||fresh.customer_id!==selected.customer_id||fresh.days_overdue<30) {
+          failed.push({contractId:selected.contract_id,message:'تغيرت المتأخرات أو تحتاج مطابقة؛ لم يبدأ التحويل لهذا العقد.'});
+        } else eligible.push(fresh);
       }
-
-      let created = 0;
-      let skipped = 0;
-
-      for (const customer of eligibleCustomers) {
-        // Check if case already exists for this customer
-        const { data: existingCase } = await supabase
-          .from('legal_cases')
-          .select('id')
-          .eq('company_id', profile.company_id)
-          .eq('client_id', customer.customer_id)
-          .eq('case_type', 'rental')
-          .in('case_status', ['active', 'on_hold'])
-          .single();
-
-        if (existingCase) {
-          skipped++;
-          continue;
-        }
-
-        // Generate case number
-        const { data: caseNumber, error: numberError } = await supabase
-          .rpc('generate_legal_case_number', { company_id_param: profile.company_id });
-
-        if (numberError) {
-          console.error('Error generating case number:', numberError);
-          skipped++;
-          continue;
-        }
-
-        // Create legal case
-        const { error: caseError } = await supabase
-          .from('legal_cases')
-          .insert({
-            company_id: profile.company_id,
-            case_number: caseNumber,
-            case_title: `Late Rent Payment - ${customer.customer_name}`,
-            case_title_ar: `تأخر دفع الإيجار - ${customer.customer_name}`,
-            case_type: 'rental',
-            case_status: 'active',
-            priority: customer.days_overdue >= 60 ? 'high' : 'medium',
-            client_id: customer.customer_id,
-            client_name: customer.customer_name,
-            client_phone: customer.customer_phone,
-            client_email: customer.customer_email,
-            description: `العميل متأخر عن دفع الإيجار لمدة ${customer.days_overdue} يوم. إجمالي المبلغ المستحق: ${customer.total_outstanding} ريال`,
-            case_value: customer.total_outstanding,
-            legal_fees: 0,
-            court_fees: 0,
-            other_expenses: 0,
-            total_costs: 0,
-            billing_status: 'pending',
-            tags: ['تأخر دفع', 'إيجار', 'تلقائي'],
-            legal_team: [],
-            is_confidential: false,
-            created_by: user.id,
-          });
-
-        if (caseError) {
-          console.error('Error creating legal case:', caseError);
-          skipped++;
-        } else {
-          created++;
-        }
-      }
-
-      return { created, skipped, total: eligibleCustomers.length };
+      if(eligible.length===0) return {converted:[],failed,ineligible:0};
+      const result=await convertSelectedContractsToLegal(companyId,user.id,eligible);
+      return {...result,failed:[...failed,...result.failed]};
     },
     onSuccess: (result) => {
-      queryClient.invalidateQueries({ queryKey: ['legal-cases'] });
-      queryClient.invalidateQueries({ queryKey: ['late-payment-customers'] });
-      
-      if (result.created > 0) {
-        toast.success(`تم إنشاء ${result.created} قضية قانونية تلقائياً`);
+      if (result.converted.length > 0) {
+        toast.success(`تم تأكيد تحويل ${result.converted.length} عقد عبر المسار القانوني`);
       }
+      if (result.failed.length > 0) toast.error(`تعذر تأكيد تحويل ${result.failed.length} عقد؛ راجع التفاصيل قبل إعادة المحاولة.`);
+    },
+    onSettled: async () => {
+      if (!await refreshLegalConversionQueries(queryClient)) toast.error('تعذر تحديث بعض البيانات؛ تحقق من حالة العقود دون إعادة التحويل.');
     },
     onError: (error: unknown) => {
       console.error('Error auto-creating legal cases:', error);

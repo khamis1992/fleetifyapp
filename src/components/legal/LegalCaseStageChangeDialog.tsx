@@ -65,8 +65,8 @@ type StageVisual = {
 
 const STAGE_VISUALS: Record<LegalWorkflowStage, StageVisual> = {
   preparation: { description: 'استكمال المستندات وتجهيز ملف الرفع', icon: FileCheck2 },
-  filed: { description: 'تم إيداع الدعوى في بوابة تقاضي', icon: Landmark },
-  awaiting_acceptance: { description: 'الطلب لدى المحكمة للمراجعة والقبول', icon: Hourglass },
+  filed: { description: 'تم إرسال الدعوى ولم يُسجل قبول المحكمة بعد', icon: Landmark },
+  awaiting_acceptance: { description: 'تم تأكيد الإيداع والدعوى بانتظار قرار القبول', icon: Hourglass },
   hearings: { description: 'قُبلت الدعوى وبدأت مرحلة الجلسات', icon: CalendarDays },
   reserved_for_judgment: { description: 'انتهت المرافعة والدعوى محجوزة للحكم', icon: CircleDotDashed },
   judgment_issued: { description: 'صدر حكم وتم توثيق منطوقه', icon: Gavel },

@@ -207,8 +207,8 @@ type TaqadiAutomationDatabase = {
         };
         Returns: TaqadiFilingJob;
       };
-      resume_taqadi_filing_job_v1: {
-        Args: { p_company_id: string; p_job_id: string };
+      resume_taqadi_filing_job_v2: {
+        Args: { p_company_id: string; p_job_id: string; p_payload: TaqadiFilingPayload };
         Returns: TaqadiFilingJob;
       };
       cancel_taqadi_filing_job_v1: {
@@ -730,19 +730,31 @@ export async function retryTaqadiFilingJob(
   return data as unknown as TaqadiFilingJob;
 }
 
-export async function resumeTaqadiFilingJob(companyId: string, jobId: string) {
+export async function resumeTaqadiFilingJob(companyId: string, jobId: string, payload: TaqadiFilingPayload) {
+  // Documents/snapshot IDs can change even when claim amounts and text do not.
+  // The server refreshes and resumes atomically; never fall back to stale v1.
   const { data, error } = await callAutomationRpc(
-    'resume_taqadi_filing_job_v1',
+    'resume_taqadi_filing_job_v2',
     {
       p_company_id: companyId,
-      p_job_id: jobId,
+      p_job_id: jobId,
+      p_payload: payload,
     },
   );
-  if (error) throw error;
-  return data as unknown as TaqadiFilingJob;
-}
-
-export async function cancelTaqadiFilingJob(
+  if (error) {
+    if ('code' in error && error.code === 'PGRST202') {
+      throw new Error('تحديث الاستئناف الآمن غير منشور بعد؛ لم تُستخدم حزمة الرفع القديمة.');
+    }
+    throw error;
+  }
+  const resumed = data as unknown as TaqadiFilingJob | null;
+  if (!resumed || resumed.id !== jobId || resumed.company_id !== companyId || resumed.status !== 'queued') {
+    throw new Error('لم تؤكد قاعدة البيانات استئناف عملية الرفع المطلوبة. حدّث الحالة قبل إعادة المحاولة.');
+  }
+  return resumed;
+}
+
+export async function cancelTaqadiFilingJob(
   companyId: string,
   jobId: string,
   reason: string,
@@ -816,7 +828,7 @@ export const TAQADI_STATUS_LABELS: Record<TaqadiFilingStatus, string> = {
   uploading_documents: 'رفع المستندات',
   reviewing: 'المراجعة النهائية',
   submitting: 'جاري الاعتماد',
-  filed: 'تم رفع الدعوى',
+  filed: 'تم الإيداع في تقاضي',
   needs_human: 'تحتاج تدخلًا',
   failed: 'فشل الرفع',
   cancelled: 'ملغاة',

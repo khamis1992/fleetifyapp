@@ -4,6 +4,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { createAuditLog } from '@/hooks/useAuditLog';
 import { calculateCanonicalRenewalEndDate } from '@/utils/contractCalculations';
+import type { Json } from '@/integrations/supabase/types';
 
 interface ContractRenewalData {
   contract_id: string;
@@ -347,12 +348,14 @@ export const useUpdateContractStatus = () => {
       reason,
       companyId,
       transferTrafficViolationsToCompany = false,
+      vehicleReturn = null,
     }: {
       contractId: string;
       status: 'suspended' | 'cancelled' | 'active';
       reason?: string;
       companyId?: string;
       transferTrafficViolationsToCompany?: boolean;
+      vehicleReturn?: Json | null;
     }) => {
       const updateData: any = {
         status,
@@ -397,13 +400,14 @@ export const useUpdateContractStatus = () => {
           throw new Error('تعذر تحديد الشركة المرتبطة بالعقد');
         }
 
-        const { data: cancellationResult, error: cancellationError } = await (supabase as any).rpc(
-          'cancel_contract_with_company_traffic_penalties_v1',
+        const { data: cancellationResult, error: cancellationError } = await supabase.rpc(
+          'cancel_contract_with_return_and_penalties_v2',
           {
             p_company_id: resolvedCompanyId,
             p_contract_id: contractId,
             p_reason: reason?.trim() || '',
             p_transfer_open_penalties_to_company: transferTrafficViolationsToCompany,
+            p_return_payload: vehicleReturn,
             p_actor_id: user?.id || null,
           },
         );

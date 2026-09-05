@@ -1099,8 +1099,6 @@ const FinancialTrackingInner: React.FC = () => {
         {/* Unpaid by Month Tab */}
         <TabsContent value="unpaid-by-month" className="space-y-6 mt-6">
           <UnpaidByMonthView 
-            allCustomers={allCustomers}
-            allReceipts={allReceipts}
             companyId={companyId}
           />
         </TabsContent>

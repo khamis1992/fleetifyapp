@@ -25,6 +25,7 @@ const normalizeArabicName = (value?: string | null) => String(value || "")
   .replace(/ة/g, "ه")
   .replace(/ؤ/g, "و")
   .replace(/ئ/g, "ي")
+  .replace(/[،؛؟۔]/g, " ")
   .replace(/[^\u0600-\u06FF0-9 ]/g, " ")
   .replace(/\s+/g, " ")
   .trim();
@@ -43,6 +44,10 @@ export function assessLegalContractIdentity(input: {
   const extractedName = normalizeArabicName(input.extractedName) || null;
   const expectedId = normalizeId(input.expectedId) || null;
   const extractedId = normalizeId(input.extractedId) || null;
+  const extractedNameTokens = extractedName?.split(" ").filter(Boolean) ?? [];
+  const extractedNameLooksLikeTenant = extractedNameTokens.length >= 2
+    && extractedNameTokens.length <= 9
+    && !/(?:^| )(?:الطرف|للطرف|العقد|بموجب|المستاجر|الموجر|لاحقا|بلفظ|يمكن|استرجاع)(?: |$)/u.test(extractedName ?? "");
 
   const assessNames = (): LegalContractIdentityAssessment | null => {
     if (!expectedName || !extractedName) return null;
@@ -87,9 +92,25 @@ export function assessLegalContractIdentity(input: {
     return null;
   };
 
-  if (input.authoritativeName) {
-    const nameAssessment = assessNames();
-    if (nameAssessment) return nameAssessment;
+  // A conflicting complete QID is always a hard blocker, even when OCR happens
+  // to spell the customer name correctly.
+  if (expectedId && extractedId && expectedId !== extractedId) {
+    return {
+      status: "mismatch",
+      expectedName,
+      extractedName,
+      expectedId,
+      extractedId,
+      reason: "The identity number in the signed contract belongs to a different person.",
+    };
+  }
+
+  // A plausible tenant name extracted from the contract's labelled tenant
+  // field is authoritative. An attached ID card must never overrule a different
+  // or incomplete named tenant. Obvious legal prose is treated as noisy OCR.
+  if (input.authoritativeName && extractedNameLooksLikeTenant) {
+    const authoritativeNameAssessment = assessNames();
+    if (authoritativeNameAssessment) return authoritativeNameAssessment;
   }
 
   if (expectedId && extractedId) {
@@ -103,13 +124,16 @@ export function assessLegalContractIdentity(input: {
         reason: "The identity number in the signed contract matches the defendant.",
       };
     }
+  }
+
+  if (input.authoritativeName && extractedName && !extractedNameLooksLikeTenant) {
     return {
-      status: "mismatch",
+      status: "unverified",
       expectedName,
       extractedName,
       expectedId,
       extractedId,
-      reason: "The identity number in the signed contract belongs to a different person.",
+      reason: "The labelled tenant-name extraction contains legal prose and is not reliable identity evidence.",
     };
   }
 

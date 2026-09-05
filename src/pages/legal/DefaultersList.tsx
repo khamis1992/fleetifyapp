@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -12,6 +12,7 @@ import {
 } from '@/components/ui/table';
 import { ResponsiveTable } from '@/components/ui/ResponsiveTable'
 import { useLatePaymentCustomers, useAutoCreateLegalCases } from '@/hooks/usePaymentLegalIntegration';
+import { rentalArrearsReviewLabels } from '@/services/rentalArrears';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { 
@@ -25,16 +26,21 @@ import {
   Scale
 } from 'lucide-react';
 import { formatCurrency } from '@/lib/utils';
-import { format, differenceInDays } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 import { ar } from 'date-fns/locale';
 import { HelpIcon } from '@/components/help/HelpIcon';
-import { financialHelpContent } from '@/data/helpContent';
 import '@/styles/legal-system.css';
 
 export const DefaultersList: React.FC = () => {
-  const { data: lateCustomers, isLoading, error } = useLatePaymentCustomers();
+  const { data, isLoading, error, scopeKey } = useLatePaymentCustomers();
+  const lateCustomers=data?.verified;
+  const reviews=data?.review||[];
   const autoCreateCases = useAutoCreateLegalCases();
   const [selectedCustomers, setSelectedCustomers] = useState<string[]>([]);
+  const [conversionErrors,setConversionErrors] = useState<Array<{contractId:string;message:string}>>([]);
+  useEffect(()=>{setSelectedCustomers([]);setConversionErrors([]);},[scopeKey]);
+  const eligibleCustomers=lateCustomers?.filter(row=>row.days_overdue>=30)||[];
+  const selectedEligible=eligibleCustomers.filter(row=>selectedCustomers.includes(row.contract_id));
   const getRowId = (customer: { contract_id?: string; customer_id: string }) =>
     customer.contract_id || customer.customer_id;
 
@@ -47,22 +53,27 @@ export const DefaultersList: React.FC = () => {
   };
 
   const handleSelectAll = () => {
-    if (selectedCustomers.length === lateCustomers?.length) {
+    if (selectedEligible.length === eligibleCustomers.length) {
       setSelectedCustomers([]);
     } else {
-      setSelectedCustomers(lateCustomers?.map(getRowId) || []);
+      setSelectedCustomers(eligibleCustomers.map(getRowId));
     }
   };
 
   const handleCreateLegalCases = async () => {
     if (!lateCustomers) return;
     
-    const selectedCustomerData = lateCustomers.filter(c => 
+    const selectedCustomerData = eligibleCustomers.filter(c =>
       selectedCustomers.includes(getRowId(c))
     );
     
-    await autoCreateCases.mutateAsync(selectedCustomerData);
-    setSelectedCustomers([]);
+    try {
+      const result = await autoCreateCases.mutateAsync(selectedCustomerData);
+      setConversionErrors(result.failed);
+      setSelectedCustomers(result.failed.map(item=>item.contractId));
+    } catch (error) {
+      setConversionErrors([{contractId:'',message:error instanceof Error ? error.message : 'تعذر تأكيد التحويل؛ تحقق من حالة العقود.'}]);
+    }
   };
 
   const getDaysOverdueBadge = (days: number) => {
@@ -95,13 +106,13 @@ export const DefaultersList: React.FC = () => {
       <Alert variant="destructive">
         <AlertTriangle className="h-4 w-4" />
         <AlertDescription>
-          حدث خطأ أثناء تحميل قائمة المتأخرين. يرجى المحاولة مرة أخرى.
+          {error.message}
         </AlertDescription>
       </Alert>
     );
   }
 
-  const totalOutstanding = lateCustomers?.reduce((sum, c) => sum + c.total_outstanding, 0) || 0;
+  const totalOutstanding = (lateCustomers?.reduce((sum, c) => sum + Math.round(c.total_outstanding*100), 0) || 0)/100;
   const eligibleForLegalAction = lateCustomers?.filter(c => c.days_overdue >= 30).length || 0;
 
   return (
@@ -128,25 +139,40 @@ export const DefaultersList: React.FC = () => {
                   </CardDescription>
                 </div>
               </div>
-              {selectedCustomers.length > 0 && (
+              {selectedEligible.length > 0 && (
                 <Button
                   onClick={handleCreateLegalCases}
                   disabled={autoCreateCases.isPending}
                   className="bg-teal-500 hover:bg-teal-600 rounded-xl shadow-sm"
                 >
                   <Scale className="h-4 w-4 mr-2" />
-                  إنشاء قضايا قانونية ({selectedCustomers.length})
+                  إنشاء قضايا قانونية ({selectedEligible.length})
                 </Button>
               )}
             </div>
           </CardHeader>
         </Card>
 
+      {conversionErrors.length > 0 && <Alert variant="destructive">
+        <AlertDescription>
+          <p>لم يُؤكد تحويل العقود التالية. تحقق من حالتها قبل إعادة المحاولة:</p>
+          <ul>{conversionErrors.map((item,index)=><li key={item.contractId || index}>
+            {lateCustomers?.find(customer=>customer.contract_id===item.contractId)?.contract_number || item.contractId}: {item.message}
+          </li>)}</ul>
+        </AlertDescription>
+      </Alert>}
+      {reviews.length>0 && <Alert>
+        <AlertTriangle className="h-4 w-4"/><AlertDescription>
+          <p>عقود تحتاج مطابقة ({reviews.length}) — مستبعدة من الإجمالي والتحويل، ولا تعني رصيدًا صفرًا:</p>
+          <ul>{reviews.map(row=><li key={row.contract_id}>{row.contract_number} — {row.customer_name}: {row.review_reasons.map(code=>rentalArrearsReviewLabels[code]).join('، ')}</li>)}</ul>
+        </AlertDescription>
+      </Alert>}
+
       {/* Statistics Cards */}
       <div className="grid gap-4 md:grid-cols-3">
         <Card className="bg-white border border-slate-200 rounded-xl hover:border-teal-500/50 hover:shadow-sm transition-all duration-300">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-slate-700">إجمالي المتأخرين</CardTitle>
+            <CardTitle className="text-sm font-medium text-slate-700">إجمالي العقود المتأخرة</CardTitle>
             <div className="p-2 rounded-xl bg-teal-500 shadow-sm">
               <AlertTriangle className="h-4 w-4 text-white" />
             </div>
@@ -154,7 +180,7 @@ export const DefaultersList: React.FC = () => {
           <CardContent>
             <div className="text-2xl font-bold text-slate-900">{lateCustomers?.length || 0}</div>
             <p className="text-xs text-slate-500">
-              {eligibleForLegalAction} مؤهل للإجراء القانوني
+              {eligibleForLegalAction} تجاوز 30 يومًا؛ يتطلب تحقق المسار القانوني
             </p>
           </CardContent>
         </Card>
@@ -199,8 +225,8 @@ export const DefaultersList: React.FC = () => {
         <CardHeader>
           <div className="flex items-center justify-between">
             <CardTitle className="text-slate-900">تفاصيل المتأخرين</CardTitle>
-            <Button variant="outline" size="sm" onClick={handleSelectAll} className="border-slate-200 hover:border-teal-500/50 rounded-xl">
-              {selectedCustomers.length === lateCustomers?.length ? 'إلغاء التحديد' : 'تحديد الكل'}
+            <Button variant="outline" size="sm" onClick={handleSelectAll} disabled={autoCreateCases.isPending||eligibleCustomers.length===0} className="border-slate-200 hover:border-teal-500/50 rounded-xl">
+              {selectedEligible.length>0&&selectedEligible.length===eligibleCustomers.length ? 'إلغاء التحديد' : 'تحديد الكل'}
             </Button>
           </div>
         </CardHeader>
@@ -213,7 +239,8 @@ export const DefaultersList: React.FC = () => {
                   <TableHead className="w-12">
                     <input
                       type="checkbox"
-                      checked={selectedCustomers.length === lateCustomers?.length && lateCustomers.length > 0}
+                      checked={selectedEligible.length===eligibleCustomers.length&&eligibleCustomers.length>0}
+                      disabled={autoCreateCases.isPending||eligibleCustomers.length===0}
                       onChange={handleSelectAll}
                       className="rounded border-slate-300"
                     />
@@ -243,6 +270,7 @@ export const DefaultersList: React.FC = () => {
                         <input
                           type="checkbox"
                           checked={selectedCustomers.includes(rowId)}
+                          disabled={customer.days_overdue<30||autoCreateCases.isPending}
                           onChange={() => handleSelectCustomer(rowId)}
                           className="rounded border-slate-300"
                         />
@@ -264,17 +292,13 @@ export const DefaultersList: React.FC = () => {
                       <TableCell className="font-bold text-destructive">
                         {formatCurrency(customer.total_outstanding)}
                       </TableCell>
-                      <TableCell>{formatCurrency(customer.monthly_rent)}</TableCell>
+                      <TableCell>{customer.monthly_rent===null?'غير متوفر':formatCurrency(customer.monthly_rent)}</TableCell>
                       <TableCell>
-                        {customer.total_fines > 0 ? (
-                          <span className="text-destructive">{formatCurrency(customer.total_fines)}</span>
-                        ) : (
-                          '-'
-                        )}
+                        غير محسوبة في هذا التقرير
                       </TableCell>
                       <TableCell>
                         {customer.last_payment_date ? (
-                          format(new Date(customer.last_payment_date), 'dd MMM yyyy', { locale: ar })
+                          format(parseISO(customer.last_payment_date), 'dd MMM yyyy', { locale: ar })
                         ) : (
                           'لا يوجد'
                         )}
@@ -301,7 +325,7 @@ export const DefaultersList: React.FC = () => {
                 ) : (
                   <TableRow>
                     <TableCell colSpan={11} className="text-center py-8 text-muted-foreground">
-                      لا يوجد عملاء متأخرون عن الدفع
+                      {reviews.length>0?'لا توجد متأخرات متحققة حاليًا؛ توجد عقود تحتاج مطابقة.':'لا توجد فواتير إيجار متأخرة ضمن البيانات المتحققة.'}
                     </TableCell>
                   </TableRow>
                 )}
@@ -317,8 +341,8 @@ export const DefaultersList: React.FC = () => {
         <Alert className="bg-white border border-slate-200 rounded-xl">
           <FileText className="h-4 w-4 text-teal-600" />
           <AlertDescription className="text-slate-700">
-            <strong>ملاحظة:</strong> يتم إدراج العملاء تلقائياً في هذه القائمة إذا لم يدفعوا حتى يوم 10 من كل شهر.
-            العملاء الذين تجاوزت متأخراتهم 30 يوماً مؤهلون لإنشاء قضايا قانونية تلقائياً.
+            <strong>ملاحظة:</strong> يحسب التقرير المتبقي على فواتير الإيجار بعد استحقاقها من تخصيصات الدفعات الحالية، ولا يشمل الغرامات والمخالفات.
+            تجاوز 30 يومًا يتيح طلب التحويل؛ ولا يغني عن التحقق من المستندات والمطالبة القانونية.
           </AlertDescription>
         </Alert>
       )}

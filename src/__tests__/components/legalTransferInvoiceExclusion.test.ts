@@ -18,7 +18,10 @@ describe('legal transfer invoice exclusion', () => {
     expect(wizardSource).toContain(
       "invoices.filter((invoice) => !excludedInvoiceIds.has(invoice.id))",
     );
-    expect(wizardSource).toContain('includedInvoiceOutstanding + Number(contract?.late_fine_amount || 0)');
+    expect(wizardSource).toContain("callRpc<LegalClaimStatement>('calculate_legal_claim_statement_v4'");
+    expect(wizardSource).toContain('p_excluded_invoice_ids: Array.from(excludedInvoiceIds)');
+    expect(wizardSource).toContain('claimStatement.total.toFixed(2)');
+    expect(wizardSource).toContain('assertLegalReadinessClaim(data, claimScope, businessDate)');
   });
 
   it('persists included and excluded invoice evidence in the readiness audit', () => {
@@ -32,7 +35,7 @@ describe('legal transfer invoice exclusion', () => {
     expect(wizardSource).toContain("changeClaimScope('traffic_violations_only')");
     expect(wizardSource).toContain('مخالفات مرورية فقط');
     expect(wizardSource).toContain("claimScope === 'traffic_violations_only'");
-    expect(wizardSource).toContain('complete_legal_transfer_readiness_with_scope_v1');
+    expect(wizardSource).toContain("complete_legal_transfer_readiness_v2");
     expect(wizardSource).toContain('p_claim_scope: claimScope');
     expect(wizardSource).toContain('claimScope,');
   });

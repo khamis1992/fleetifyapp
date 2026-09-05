@@ -15,6 +15,7 @@ export type LegalEmployeeReviewStatus =
   | 'deferred'
   | 'employee_rejected'
   | 'manager_overridden'
+  | 'system_verified'
   | 'cancelled';
 
 export type LegalEmployeeReviewDecision =

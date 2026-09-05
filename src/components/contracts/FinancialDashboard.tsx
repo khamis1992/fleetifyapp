@@ -5,56 +5,42 @@
  */
 
 import { useMemo } from 'react';
-import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { DollarSign, TrendingUp, AlertCircle, Wallet, CheckCircle, Clock, ArrowUpRight, ArrowDownRight } from 'lucide-react';
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
+import { Card, CardContent } from '@/components/ui/card';
+import { DollarSign, TrendingUp, AlertCircle, Wallet, CheckCircle, Clock, ArrowUpRight } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { cn } from '@/lib/utils';
 import type { Contract } from '@/types/contracts';
-import { calculateContractTotalAmount } from '@/utils/contractCalculations';
-
-interface Invoice {
-  id: string;
-  total_amount?: number;
-  paid_amount?: number;
-  balance_due?: number;
-  payment_status?: string;
-  status?: string;
-}
+import type { ContractFinancialSnapshot } from './contract-details-v3/tokens';
 
 interface FinancialDashboardProps {
   contract: Contract;
   formatCurrency: (amount: number) => string;
-  invoices?: Invoice[];
+  snapshot: ContractFinancialSnapshot;
 }
 
-export const FinancialDashboard = ({ contract, formatCurrency, invoices = [] }: FinancialDashboardProps) => {
-  // حساب البيانات المالية من الفواتير (مصدر موحد)
+export const FinancialDashboard = ({ contract, formatCurrency, snapshot }: FinancialDashboardProps) => {
+  // جميع بطاقات الصفحة تعتمد اللقطة المالية المركزية نفسها.
   const financialData = useMemo(() => {
-    const contractAmount = calculateContractTotalAmount(contract);
+    const contractAmount = snapshot.contractTotal;
     const monthlyAmount = contract.monthly_amount || 0;
-    
-    // حساب المدفوع من الفواتير (نفس طريقة حساب تبويب الفواتير)
-    const totalPaidFromInvoices = invoices.reduce((sum, inv) => sum + (inv.paid_amount || 0), 0);
-    
-    // استخدام المدفوع من الفواتير إذا كانت موجودة، وإلا استخدام قيمة العقد
-    const totalPaid = invoices.length > 0 ? totalPaidFromInvoices : (contract.total_paid || 0);
-    
-    // حساب المتبقي
-    const balanceDue = Math.max(0, contractAmount - totalPaid);
+    const totalPaid = snapshot.paidTotal;
+    const balanceDue = snapshot.remainingTotal;
 
     // نسبة الدفع
-    const paymentPercentage = contractAmount > 0 ? Math.min(100, Math.round((totalPaid / contractAmount) * 100)) : 0;
+    const paymentPercentage = contractAmount > 0 ? Math.min(balanceDue > 0 ? 99 : 100, Math.floor((totalPaid / contractAmount) * 100)) : 0;
 
     // المبالغ الإضافية (إذا تجاوز المدفوع قيمة العقد)
-    const extraPayments = Math.max(0, totalPaid - contractAmount);
+    const extraPayments = Math.max(0, snapshot.activePaymentsTotal - contractAmount);
 
     // حالة الدفع
     const getPaymentStatus = () => {
-      if (paymentPercentage >= 100) return { label: 'مسدد بالكامل', variant: 'default' as const, color: 'text-green-600', bg: 'bg-green-50' };
-      if (paymentPercentage >= 50) return { label: 'مسدد جزئياً', variant: 'secondary' as const, color: 'text-amber-600', bg: 'bg-amber-50' };
-      return { label: 'مسدد قليلاً', variant: 'secondary' as const, color: 'text-orange-600', bg: 'bg-orange-50' };
+      if (snapshot.financialReviewRequired) return { label: 'يحتاج مطابقة', variant: 'secondary' as const, color: 'text-[#B45309]', bg: 'bg-[#FFFBEB]' };
+      if (contractAmount > 0 && balanceDue === 0) return { label: 'مسدد بالكامل', variant: 'default' as const, color: 'text-[#0E9E7E]', bg: 'bg-[#ECFDF9]' };
+      if (paymentPercentage >= 50) return { label: 'مسدد جزئياً', variant: 'secondary' as const, color: 'text-[#B45309]', bg: 'bg-[#FFFBEB]' };
+      if (totalPaid <= 0.01) return { label: 'غير مسدد', variant: 'secondary' as const, color: 'text-[#BE123C]', bg: 'bg-[#FFF5F6]' };
+      return { label: 'مسدد قليلاً', variant: 'secondary' as const, color: 'text-[#B45309]', bg: 'bg-[#FFFBEB]' };
     };
 
     return {
@@ -66,7 +52,7 @@ export const FinancialDashboard = ({ contract, formatCurrency, invoices = [] }: 
       extraPayments,
       paymentStatus: getPaymentStatus(),
     };
-  }, [contract, invoices]);
+  }, [contract.monthly_amount, snapshot]);
 
   // بيانات الرسم البياني الدائري
   const chartData = useMemo(() => {
@@ -74,7 +60,7 @@ export const FinancialDashboard = ({ contract, formatCurrency, invoices = [] }: 
       {
         name: 'المدفوع',
         value: financialData.totalPaid,
-        fill: '#10b981',
+        fill: '#22C7A1',
       },
     ];
 
@@ -82,7 +68,7 @@ export const FinancialDashboard = ({ contract, formatCurrency, invoices = [] }: 
       data.push({
         name: 'إضافي',
         value: financialData.extraPayments,
-        fill: '#f97316',
+        fill: '#F59E0B',
       });
     }
 
@@ -90,7 +76,7 @@ export const FinancialDashboard = ({ contract, formatCurrency, invoices = [] }: 
       data.push({
         name: 'المتبقي',
         value: financialData.balanceDue,
-        fill: '#e5e7eb',
+        fill: '#E5EAF1',
       });
     }
 
@@ -99,119 +85,123 @@ export const FinancialDashboard = ({ contract, formatCurrency, invoices = [] }: 
 
   return (
     <div className="space-y-5">
+      {!snapshot.hasFinancialCoverage && (
+        <div className="flex items-start gap-3 rounded-xl border border-[#F59E0B]/35 bg-[#FFFBEB] p-4 text-sm text-[#92400E]">
+          <AlertCircle className="mt-0.5 h-5 w-5 shrink-0" />
+          <div>
+            <p className="font-black">البيانات المالية غير مكتملة</p>
+            <p className="mt-1">
+              يوجد {snapshot.missingInvoiceMonthsCount} قسطاً بلا فاتورة شهرية؛ لذلك لا تعني الفواتير الصفرية أن العقد مسدد.
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* البطاقات الإحصائية العلوية */}
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {/* بطاقة قيمة العقد */}
-        <Card className="rounded-xl border-[#DDE5EF] shadow-sm transition-colors hover:border-[#173A63]">
-          <CardContent className="p-5">
-            <div className="flex items-start justify-between">
-              <div className="flex-1">
-                <p className="text-sm font-medium text-slate-600 mb-2">قيمة العقد</p>
-                <p className="text-2xl font-bold text-slate-900 mb-1">
-                  {formatCurrency(financialData.contractAmount)}
+        <div className="rounded-2xl border border-[#E5EAF1] bg-white p-4 shadow-[0_10px_30px_-22px_rgba(15,23,42,0.25)]">
+          <div className="flex items-start justify-between">
+            <div className="flex-1">
+              <p className="text-[11px] font-bold text-slate-500 mb-2">قيمة العقد</p>
+              <p className="text-base font-black text-[#0F172A] mb-1">
+                {formatCurrency(financialData.contractAmount)}
+              </p>
+              {financialData.monthlyAmount > 0 && (
+                <p className="text-xs text-slate-500">
+                  {formatCurrency(financialData.monthlyAmount)} / شهر
                 </p>
-                {financialData.monthlyAmount > 0 && (
-                  <p className="text-xs text-slate-500">
-                    {formatCurrency(financialData.monthlyAmount)} / شهر
-                  </p>
-                )}
-              </div>
-              <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-[#EEF5FB] text-[#173A63]">
-                <DollarSign className="h-6 w-6" />
-              </div>
+              )}
             </div>
-          </CardContent>
-        </Card>
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#EEF2FF] text-[#4F46E5]">
+              <DollarSign className="h-4 w-4" />
+            </div>
+          </div>
+        </div>
 
         {/* بطاقة المدفوع */}
-        <Card className="rounded-xl border-[#DDE5EF] shadow-sm transition-colors hover:border-[#173A63]">
-          <CardContent className="p-5">
-            <div className="flex items-start justify-between">
-              <div className="flex-1">
-                <p className="text-sm font-medium text-slate-600 mb-2">المدفوع</p>
-                <div className="flex items-center gap-2 mb-1">
-                  <p className="text-2xl font-bold text-green-600">
-                    {formatCurrency(financialData.totalPaid)}
-                  </p>
-                  <Badge variant="secondary" className="text-xs bg-green-100 text-green-700 hover:bg-green-100">
-                    {financialData.paymentPercentage}%
-                  </Badge>
-                </div>
-                <div className="flex items-center gap-1 text-xs text-green-600">
-                  <ArrowUpRight className="w-3 h-3" />
-                  <span>{financialData.paymentStatus.label}</span>
-                </div>
+        <div className="rounded-2xl border border-[#E5EAF1] bg-white p-4 shadow-[0_10px_30px_-22px_rgba(15,23,42,0.25)]">
+          <div className="flex items-start justify-between">
+            <div className="flex-1">
+              <p className="text-[11px] font-bold text-slate-500 mb-2">المدفوع</p>
+              <div className="flex items-center gap-2 mb-1">
+                <p className={cn('text-base font-black', financialData.totalPaid > 0 ? 'text-[#0E9E7E]' : 'text-[#BE123C]')}>
+                  {formatCurrency(financialData.totalPaid)}
+                </p>
+                <Badge variant="secondary" className={cn('text-xs', financialData.paymentStatus.bg, financialData.paymentStatus.color)}>
+                  {financialData.paymentPercentage}%
+                </Badge>
               </div>
-              <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-[#EEF5FB] text-[#173A63]">
-                <Wallet className="h-6 w-6" />
+              <div className={cn('flex items-center gap-1 text-xs', financialData.paymentStatus.color)}>
+                <ArrowUpRight className="w-3 h-3" />
+                <span>{financialData.paymentStatus.label}</span>
               </div>
             </div>
-            {/* شريط التقدم */}
-            <div className="mt-3">
-              <Progress value={financialData.paymentPercentage} className="h-2" />
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#ECFDF9] text-[#0E9E7E]">
+              <Wallet className="h-4 w-4" />
             </div>
-          </CardContent>
-        </Card>
+          </div>
+          {/* شريط التقدم */}
+          <div className="mt-3">
+            <Progress value={financialData.paymentPercentage} className="h-2" />
+          </div>
+        </div>
 
         {/* بطاقة المتبقي */}
-        <Card className={cn(
-          "rounded-xl border-[#DDE5EF] shadow-sm transition-colors hover:border-[#173A63]",
+        <div className={cn(
+          "rounded-2xl border bg-white p-4 shadow-[0_10px_30px_-22px_rgba(15,23,42,0.25)]",
           financialData.balanceDue > 0
-            ? "border-red-200/50 hover:border-red-300"
-            : "border-slate-200/50 hover:border-slate-300"
+            ? "border-[#FB6B7A]/40"
+            : "border-[#E5EAF1]"
         )}>
-          <CardContent className="p-5">
-            <div className="flex items-start justify-between">
-              <div className="flex-1">
-                <p className="text-sm font-medium text-slate-600 mb-2">المتبقي</p>
-                <p className={cn(
-                  "text-2xl font-bold mb-1",
-                  financialData.balanceDue > 0 ? "text-red-600" : "text-slate-400"
-                )}>
-                  {formatCurrency(financialData.balanceDue)}
-                </p>
-                {financialData.balanceDue > 0 ? (
-                  <div className="flex items-center gap-1 text-xs text-red-600">
-                    <Clock className="w-3 h-3" />
-                    <span>قيد الانتظار</span>
-                  </div>
-                ) : (
-                  <div className="flex items-center gap-1 text-xs text-green-600">
-                    <CheckCircle className="w-3 h-3" />
-                    <span>تم السداد</span>
-                  </div>
-                )}
-              </div>
-              <div className={cn(
-                "flex h-12 w-12 items-center justify-center rounded-lg",
-                financialData.balanceDue > 0
-                  ? "bg-red-50"
-                  : "bg-[#EEF5FB]"
+          <div className="flex items-start justify-between">
+            <div className="flex-1">
+              <p className="text-[11px] font-bold text-slate-500 mb-2">المتبقي</p>
+              <p className={cn(
+                "text-base font-black mb-1",
+                financialData.balanceDue > 0 ? "text-[#BE123C]" : "text-slate-400"
               )}>
-                <AlertCircle className={cn(
-                  "w-6 h-6",
-                  financialData.balanceDue > 0 ? "text-red-600" : "text-slate-400"
-                )} />
-              </div>
+                {formatCurrency(financialData.balanceDue)}
+              </p>
+              {financialData.balanceDue > 0 ? (
+                <div className="flex items-center gap-1 text-xs text-[#BE123C]">
+                  <Clock className="w-3 h-3" />
+                  <span>قيد الانتظار</span>
+                </div>
+              ) : (
+                <div className="flex items-center gap-1 text-xs text-[#0E9E7E]">
+                  <CheckCircle className="w-3 h-3" />
+                  <span>{snapshot.financialReviewRequired ? 'يحتاج مطابقة' : financialData.contractAmount > 0 ? 'تم السداد' : 'القيمة غير محددة'}</span>
+                </div>
+              )}
             </div>
-          </CardContent>
-        </Card>
+            <div className={cn(
+              "flex h-8 w-8 items-center justify-center rounded-lg",
+              financialData.balanceDue > 0
+                ? "bg-[#FFF5F6] text-[#BE123C]"
+                : "bg-[#ECFDF9] text-[#0E9E7E]"
+            )}>
+              <AlertCircle className="w-4 h-4" />
+            </div>
+          </div>
+        </div>
 
       </div>
 
       {/* الرسم البياني والتفاصيل */}
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
         {/* الرسم البياني الدائري */}
-        <Card className="rounded-xl border-[#DDE5EF] shadow-sm lg:col-span-1">
-          <CardHeader className="pb-4">
-            <CardTitle className="text-lg flex items-center gap-2">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#EEF5FB] text-[#173A63]">
-                <DollarSign className="h-4 w-4" />
-              </div>
-              توزيع المدفوعات
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
+        <Card className="rounded-2xl border-[#E5EAF1] shadow-[0_10px_30px_-22px_rgba(15,23,42,0.25)] lg:col-span-1">
+          <div className="flex items-center gap-3 border-b border-[#E5EAF1] bg-[#F6F8FB] px-4 py-3">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#EEF2FF] text-[#4F46E5]">
+              <DollarSign className="h-4 w-4" />
+            </div>
+            <div>
+              <p className="text-[10px] font-black uppercase text-slate-400">Overview</p>
+              <h3 className="text-sm font-black text-[#0F172A]">توزيع المدفوعات</h3>
+            </div>
+          </div>
+          <CardContent className="p-4">
             {chartData.length > 0 ? (
               <div className="space-y-4">
                 <ResponsiveContainer width="100%" height={250}>
@@ -235,10 +225,10 @@ export const FinancialDashboard = ({ contract, formatCurrency, invoices = [] }: 
                       formatter={(value) => formatCurrency(value as number)}
                       contentStyle={{
                         backgroundColor: '#fff',
-                        border: '1px solid #e5e7eb',
+                        border: '1px solid #E5EAF1',
                         borderRadius: '12px',
                         padding: '12px',
-                        boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+                        boxShadow: '0 10px 30px -22px rgba(15,23,42,0.25)',
                       }}
                     />
                   </PieChart>
@@ -253,9 +243,9 @@ export const FinancialDashboard = ({ contract, formatCurrency, invoices = [] }: 
                           className="w-3 h-3 rounded-full"
                           style={{ backgroundColor: item.fill }}
                         />
-                        <span className="text-slate-600">{item.name}</span>
+                        <span className="text-slate-500">{item.name}</span>
                       </div>
-                      <span className="font-semibold text-slate-900">
+                      <span className="font-black text-[#0F172A]">
                         {formatCurrency(item.value)}
                       </span>
                     </div>
@@ -272,30 +262,31 @@ export const FinancialDashboard = ({ contract, formatCurrency, invoices = [] }: 
         </Card>
 
         {/* ملخص تفصيلي */}
-        <Card className="rounded-xl border-[#DDE5EF] shadow-sm lg:col-span-2">
-          <CardHeader className="pb-4">
-            <CardTitle className="text-lg flex items-center gap-2">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#EEF5FB] text-[#173A63]">
-                <TrendingUp className="h-4 w-4" />
-              </div>
-              تفاصيل المدفوعات
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
+        <Card className="rounded-2xl border-[#E5EAF1] shadow-[0_10px_30px_-22px_rgba(15,23,42,0.25)] lg:col-span-2">
+          <div className="flex items-center gap-3 border-b border-[#E5EAF1] bg-[#F6F8FB] px-4 py-3">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#ECFDF9] text-[#0E9E7E]">
+              <TrendingUp className="h-4 w-4" />
+            </div>
+            <div>
+              <p className="text-[10px] font-black uppercase text-slate-400">Breakdown</p>
+              <h3 className="text-sm font-black text-[#0F172A]">تفاصيل المدفوعات</h3>
+            </div>
+          </div>
+          <CardContent className="p-4">
             <div className="space-y-3">
               {/* صف قيمة العقد */}
-              <div className="flex items-center justify-between rounded-xl border border-[#DDE5EF] bg-[#FCFDFE] p-4 transition-colors hover:border-[#173A63]">
+              <div className="flex items-center justify-between rounded-xl border border-[#E5EAF1] bg-[#F6F8FB] p-4">
                 <div className="flex items-center gap-3">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#EEF5FB] text-[#173A63]">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#EEF2FF] text-[#4F46E5]">
                     <DollarSign className="h-5 w-5" />
                   </div>
                   <div>
-                    <p className="text-sm font-medium text-slate-700">قيمة العقد الأساسية</p>
+                    <p className="text-sm font-bold text-[#0F172A]">قيمة العقد الأساسية</p>
                     <p className="text-xs text-slate-500">المبلغ الإجمالي المتفق عليه</p>
                   </div>
                 </div>
                 <div className="text-left">
-                  <p className="text-lg font-bold text-teal-700">{formatCurrency(financialData.contractAmount)}</p>
+                  <p className="text-lg font-black text-[#0E9E7E]">{formatCurrency(financialData.contractAmount)}</p>
                   {financialData.monthlyAmount > 0 && (
                     <p className="text-xs text-slate-500">{formatCurrency(financialData.monthlyAmount)} شهرياً</p>
                   )}
@@ -303,19 +294,19 @@ export const FinancialDashboard = ({ contract, formatCurrency, invoices = [] }: 
               </div>
 
               {/* صف المدفوع */}
-              <div className="flex items-center justify-between rounded-xl border border-[#DDE5EF] bg-[#FCFDFE] p-4 transition-colors hover:border-[#173A63]">
+              <div className="flex items-center justify-between rounded-xl border border-[#E5EAF1] bg-[#F6F8FB] p-4">
                 <div className="flex items-center gap-3">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#EEF5FB] text-[#173A63]">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#ECFDF9] text-[#0E9E7E]">
                     <Wallet className="h-5 w-5" />
                   </div>
                   <div>
-                    <p className="text-sm font-medium text-slate-700">المدفوع حتى الآن</p>
+                    <p className="text-sm font-bold text-[#0F172A]">المدفوع حتى الآن</p>
                     <p className="text-xs text-slate-500">نسبة السداد: {financialData.paymentPercentage}%</p>
                   </div>
                 </div>
                 <div className="text-left">
-                  <p className="text-lg font-bold text-green-700">{formatCurrency(financialData.totalPaid)}</p>
-                  <Badge className="bg-green-100 text-green-700 hover:bg-green-100">
+                  <p className={cn('text-lg font-black', financialData.totalPaid > 0 ? 'text-[#0E9E7E]' : 'text-[#BE123C]')}>{formatCurrency(financialData.totalPaid)}</p>
+                  <Badge className={cn(financialData.paymentStatus.bg, financialData.paymentStatus.color)}>
                     {financialData.paymentStatus.label}
                   </Badge>
                 </div>
@@ -323,38 +314,38 @@ export const FinancialDashboard = ({ contract, formatCurrency, invoices = [] }: 
 
               {/* صف المبالغ الإضافية */}
               {financialData.extraPayments > 0 && (
-                <div className="flex items-center justify-between rounded-xl border border-amber-200 bg-amber-50 p-4 transition-colors hover:border-amber-300">
+                <div className="flex items-center justify-between rounded-xl border border-[#F59E0B]/30 bg-[#FFFBEB] p-4">
                   <div className="flex items-center gap-3">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-amber-100">
-                      <TrendingUp className="w-5 h-5 text-orange-600" />
+                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#FFFBEB] text-[#B45309]">
+                      <TrendingUp className="w-5 h-5" />
                     </div>
                     <div>
-                      <p className="text-sm font-medium text-slate-700">مبالغ إضافية</p>
+                      <p className="text-sm font-bold text-[#0F172A]">مبالغ إضافية</p>
                       <p className="text-xs text-slate-500">فوق قيمة العقد الأساسية</p>
                     </div>
                   </div>
                   <div className="text-left">
-                    <p className="text-lg font-bold text-orange-700">{formatCurrency(financialData.extraPayments)}</p>
-                    <p className="text-xs text-orange-600">+ {formatCurrency(financialData.totalPaid)} إجمالي</p>
+                    <p className="text-lg font-black text-[#B45309]">{formatCurrency(financialData.extraPayments)}</p>
+                    <p className="text-xs text-[#B45309]">{formatCurrency(snapshot.activePaymentsTotal)} إجمالي المخصص للعقد</p>
                   </div>
                 </div>
               )}
 
               {/* صف المتبقي */}
               {financialData.balanceDue > 0 && (
-                <div className="flex items-center justify-between rounded-xl border border-red-200 bg-red-50 p-4 transition-colors hover:border-red-300">
+                <div className="flex items-center justify-between rounded-xl border border-[#FB6B7A]/30 bg-[#FFF5F6] p-4">
                   <div className="flex items-center gap-3">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-red-100">
-                      <AlertCircle className="w-5 h-5 text-red-600" />
+                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#FFF5F6] text-[#BE123C]">
+                      <AlertCircle className="w-5 h-5" />
                     </div>
                     <div>
-                      <p className="text-sm font-medium text-slate-700">المبلغ المتبقي</p>
+                      <p className="text-sm font-bold text-[#0F172A]">المبلغ المتبقي</p>
                       <p className="text-xs text-slate-500">يجب سداده</p>
                     </div>
                   </div>
                   <div className="text-left">
-                    <p className="text-lg font-bold text-red-700">{formatCurrency(financialData.balanceDue)}</p>
-                    <Badge variant="outline" className="border-red-200 text-red-600">
+                    <p className="text-lg font-black text-[#BE123C]">{formatCurrency(financialData.balanceDue)}</p>
+                    <Badge variant="outline" className="border-[#FB6B7A]/40 text-[#BE123C]">
                       قيد الانتظار
                     </Badge>
                   </div>
@@ -362,18 +353,18 @@ export const FinancialDashboard = ({ contract, formatCurrency, invoices = [] }: 
               )}
 
               {/* صف الإجمالي الكلي */}
-              <div className="flex items-center justify-between rounded-xl border border-[#DDE5EF] bg-white p-4 transition-colors hover:border-[#173A63]">
+              <div className="flex items-center justify-between rounded-xl border border-[#E5EAF1] bg-white p-4">
                 <div className="flex items-center gap-3">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#EEF5FB] text-[#173A63]">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#ECFDF9] text-[#0E9E7E]">
                     <CheckCircle className="h-5 w-5" />
                   </div>
                   <div>
-                    <p className="text-sm font-bold text-slate-800">الإجمالي الكلي</p>
-                    <p className="text-xs text-slate-500">جميع المدفوعات</p>
+                    <p className="text-sm font-black text-[#0F172A]">الإجمالي الكلي</p>
+                    <p className="text-xs text-slate-500">مجموع الدفعات المخصصة للعقد</p>
                   </div>
                 </div>
                 <div className="text-left">
-                  <p className="text-xl font-bold text-slate-900">{formatCurrency(financialData.totalPaid)}</p>
+                  <p className="text-xl font-black text-[#0F172A]">{formatCurrency(snapshot.activePaymentsTotal)}</p>
                 </div>
               </div>
             </div>

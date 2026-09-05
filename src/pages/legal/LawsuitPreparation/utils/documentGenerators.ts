@@ -28,7 +28,10 @@ import { calculateDelinquencyAmounts } from '@/utils/calculateDelinquencyAmounts
 import { normalizeLegalIdentityMatchStatus } from '@/services/legalContractIdentityVerifier';
 import { createInitialState } from '../store/reducer';
 import { getLawsuitClaimAmounts } from './claimAmounts';
-import { selectLegalContractDocument } from './contractDocumentSelection';
+import {
+  getEffectiveLegalIdentityMatchStatus,
+  selectLegalContractDocument,
+} from './contractDocumentSelection';
 import { loadLegalClaimProjection } from './legalClaimSources';
 import type {
   LawsuitPreparationState,
@@ -308,13 +311,21 @@ export function isMemoSnapshotCurrent(
   snapshot: LegalMemoSnapshot | undefined,
 ): boolean {
   if (!snapshot) return false;
-  const current = JSON.parse(JSON.stringify(buildMemoDocumentData(state))) as Record<string, unknown>;
-  const frozen = JSON.parse(JSON.stringify(snapshot.payload)) as Record<string, unknown>;
-  for (const key of ['documentReference', 'caseNumber', 'filingDate']) {
-    delete current[key];
-    delete frozen[key];
+  // This predicate runs while the preparation page is still loading its
+  // contract/calculation queries. An approved snapshot may arrive first, so
+  // building the live memo can legitimately be impossible for a short time.
+  // Treat that state as "not current" instead of crashing the whole route.
+  try {
+    const current = JSON.parse(JSON.stringify(buildMemoDocumentData(state))) as Record<string, unknown>;
+    const frozen = JSON.parse(JSON.stringify(snapshot.payload)) as Record<string, unknown>;
+    for (const key of ['documentReference', 'caseNumber', 'filingDate']) {
+      delete current[key];
+      delete frozen[key];
+    }
+    return JSON.stringify(stableMemoValue(current)) === JSON.stringify(stableMemoValue(frozen));
+  } catch {
+    return false;
   }
-  return JSON.stringify(stableMemoValue(current)) === JSON.stringify(stableMemoValue(frozen));
 }
 
 /** يعيد النسخة المعتمدة إن كانت لا تزال مطابقة، وإلا يعيد المسودة الحية. */
@@ -487,7 +498,7 @@ export async function loadCanonicalLawsuitState(
       .order('created_at'),
     supabase
       .from('contract_documents')
-      .select('id, document_name, document_type, file_path, mime_type, created_at, legal_identity_match_status, legal_evidence_state')
+      .select('id, document_name, document_type, file_path, mime_type, created_at, legal_identity_match_status, legal_evidence_state, legal_identity_expected_id, legal_identity_extracted_id')
       .eq('contract_id', contractId)
       .eq('company_id', companyId)
       .order('created_at', { ascending: false }),
@@ -561,8 +572,10 @@ export async function loadCanonicalLawsuitState(
     file_path: document.file_path,
     mime_type: document.mime_type,
     legal_identity_match_status: normalizeLegalIdentityMatchStatus(
-      document.legal_identity_match_status,
+      getEffectiveLegalIdentityMatchStatus(document),
     ),
+    legal_identity_expected_id: document.legal_identity_expected_id,
+    legal_identity_extracted_id: document.legal_identity_extracted_id,
   }));
   state.violationEvidenceDocuments = state.contractEvidenceDocuments
     .filter((document) => document.document_type === 'violations_proof')

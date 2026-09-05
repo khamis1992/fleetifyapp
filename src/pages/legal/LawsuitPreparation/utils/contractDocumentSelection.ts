@@ -5,8 +5,27 @@ export interface ContractDocumentCandidate {
   file_path: string | null;
   mime_type: string | null;
   legal_identity_match_status?: string | null;
+  legal_identity_expected_id?: string | null;
+  legal_identity_extracted_id?: string | null;
   legal_evidence_state?: string | null;
 }
+
+const normalizeIdentityNumber = (value: string | null | undefined): string =>
+  String(value || '').replace(/[^0-9]/g, '');
+
+export const hasExactIdentityNumberMatch = (document: ContractDocumentCandidate): boolean => {
+  const expectedId = normalizeIdentityNumber(document.legal_identity_expected_id);
+  const extractedId = normalizeIdentityNumber(document.legal_identity_extracted_id);
+  return expectedId.length === 11 && expectedId === extractedId;
+};
+
+export const getEffectiveLegalIdentityMatchStatus = (
+  document: ContractDocumentCandidate,
+): string | null | undefined => (
+  hasExactIdentityNumberMatch(document)
+    ? 'matched'
+    : document.legal_identity_match_status
+);
 
 const normalizeDocumentName = (value: string | null): string =>
   (value || '')
@@ -20,7 +39,11 @@ const scoreContractDocument = (
 ): number => {
   if (!document.file_path) return -1;
   if ((document.legal_evidence_state || 'active') !== 'active') return -1;
-  if (identityMode === 'matched' && document.legal_identity_match_status !== 'matched') return -1;
+  if (
+    identityMode === 'matched'
+    && document.legal_identity_match_status !== 'matched'
+    && !hasExactIdentityNumberMatch(document)
+  ) return -1;
   if (identityMode === 'pending' && document.legal_identity_match_status !== 'pending') return -1;
 
   const type = (document.document_type || '').toLocaleLowerCase();

@@ -1,6 +1,25 @@
 import { useEffect, useRef } from 'react';
 import { performanceLogger, type PerformanceLog } from '@/lib/performanceLogger';
 
+type BrowserMemoryInfo = {
+  usedJSHeapSize: number;
+  totalJSHeapSize: number;
+  jsHeapSizeLimit?: number;
+};
+
+export const calculateMemoryUsage = (memory: BrowserMemoryInfo) => {
+  const capacity = memory.jsHeapSizeLimit && memory.jsHeapSizeLimit > 0
+    ? memory.jsHeapSizeLimit
+    : memory.totalJSHeapSize;
+  const ratio = capacity > 0 ? memory.usedJSHeapSize / capacity : 0;
+
+  return {
+    capacity,
+    ratio,
+    percentage: ratio * 100,
+  };
+};
+
 export const getGlobalPerformanceMetrics = (): Map<string, PerformanceLog> => {
   return new Map(
     performanceLogger.exportLogs().map((log, index) => [
@@ -86,17 +105,17 @@ export const useMemoryMonitor = (intervalMs: number = 30000, enabled: boolean = 
 
     if ('memory' in performance) {
       const logMemoryUsage = () => {
-        // @ts-ignore - memory property exists in some browsers
-        const memory = performance.memory;
+        const memory = (performance as Performance & { memory?: BrowserMemoryInfo }).memory;
         if (memory) {
           const usedMB = (memory.usedJSHeapSize / 1024 / 1024).toFixed(2);
-          const totalMB = (memory.totalJSHeapSize / 1024 / 1024).toFixed(2);
-          const usagePercent = (memory.usedJSHeapSize / memory.totalJSHeapSize * 100).toFixed(1);
+          const { capacity, ratio, percentage } = calculateMemoryUsage(memory);
+          const totalMB = (capacity / 1024 / 1024).toFixed(2);
+          const usagePercent = percentage.toFixed(1);
           
           console.log(`📊 [MEMORY] Used: ${usedMB}MB / ${totalMB}MB (${usagePercent}%)`);
           
           // Alert if memory usage is critically high (>90% instead of >80%)
-          if (memory.usedJSHeapSize / memory.totalJSHeapSize > 0.9) {
+          if (ratio > 0.9) {
             console.warn(`⚠️ [MEMORY] High memory usage detected: ${usagePercent}%`);
           }
         }

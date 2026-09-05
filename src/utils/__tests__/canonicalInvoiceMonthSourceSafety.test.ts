@@ -38,9 +38,11 @@ describe('canonical invoice-month source safety', () => {
     expect(contractPayments).toMatch(
       /payment\.invoice\?\.invoice_month\s*\|\|\s*payment\.invoice\?\.invoice_date/,
     );
-    expect(contractPayments).toContain(
-      'invoice_number, invoice_month, invoice_date, due_date',
-    );
+    // Invoice presentation now comes from the parent's scoped evidence, not a
+    // second Supabase join with a separately refreshed version of the invoice.
+    expect(contractPayments).toContain('const invoiceById = new Map(invoices.map(');
+    expect(contractPayments).toContain('invoice: invoice ? { ...invoice, due_date: invoice.due_date || null }');
+    expect(contractPayments).not.toContain('invoice:invoices!invoice_id');
     expect(quickPayment).toContain(
       'parseDateOnly(getInvoiceBillingDate(invoice))',
     );
@@ -187,7 +189,7 @@ describe('canonical invoice-month source safety', () => {
     );
 
     expect(dailyAgent).toContain('const auditedContracts = await loadContractsForAudit(');
-    expect(dailyAgent).toContain('auditedContracts\n      .filter(');
+    expect(dailyAgent).toMatch(/auditedContracts\s*\.filter\(/);
     expect(dailyAgent).toContain('.map((contract: any) => contract.id)');
     expect(systemWorker).toContain('contract.missing_billing_graph');
     expect(systemWorker).toContain('activeInvoices.length === 0');
@@ -344,7 +346,7 @@ describe('canonical invoice-month source safety', () => {
 
     expect(wizard).toContain('const billingDefinitionChanged =');
     expect(wizard).toContain(
-      'تعديل العميل أو شروط الفوترة متوقف من هذه الشاشة لحماية الفواتير والقيود',
+      'تعديل العميل أو المركبة أو شروط الفوترة متوقف من هذه الشاشة لحماية الفواتير والقيود',
     );
     expect(wizard).not.toContain('subtotal: newMonthlyAmount');
     expect(wizard).not.toContain('total_amount: newMonthlyAmount');
@@ -366,12 +368,15 @@ describe('canonical invoice-month source safety', () => {
     const list = readSource('src/pages/ContractsRedesigned.tsx');
     const details = readSource('src/components/contracts/ContractDetailsPageRedesigned.tsx');
     const legal = readSource('src/hooks/useConvertToLegal.ts');
+    const reactivation = readSource('src/services/contractReactivationService.ts');
 
-    expect(details).toContain('const canReactivate = false');
+    expect(details).toContain('await reactivateCancelledContract({');
     expect(details).not.toMatch(/executeReactivateContract[\s\S]*?status:\s*'active'/);
-    expect(details).toContain("show: contract.status === 'active'");
+    expect(reactivation).toContain("'reactivate_cancelled_contract_atomic_v1'");
+    expect(reactivation).not.toContain(".update({ status: 'active' })");
     expect(list).not.toContain("status: 'active',\n        reason:");
-    expect(legal).toContain("params.contract.status !== 'active'");
+    expect(legal).toContain("const eligibleStatuses = new Set(['active', 'cancelled', 'canceled', 'closed', 'expired'])");
+    expect(legal).toContain("'convert_contract_to_legal_collection_v2'");
   });
 
   it('keeps financially touched schedule mismatches review-only in contract health repair', () => {

@@ -5,6 +5,7 @@
 
 import React, { createContext, useContext, useReducer, useCallback, useEffect, useMemo, useRef } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { invalidateContractDocumentDependents } from '@/utils/contractDocumentQueries';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -19,6 +20,7 @@ import {
 import { openLegalCase, registerLegalCase } from '../utils/caseRegistration';
 import { exportDocumentsAsZip } from '../utils/zipExport';
 import {
+  getEffectiveLegalIdentityMatchStatus,
   selectContractDocumentForIdentityScan,
   selectLegalContractDocument,
 } from '../utils/contractDocumentSelection';
@@ -168,8 +170,11 @@ export function LawsuitPreparationProvider({
   // ==========================================
   
   // Fetch contract data
+  // Distinct key: this query returns a composed {contract, customer, vehicle}
+  // shape that must never be cached under the details-page 'contract-details'
+  // prefix (whose rows carry nested joins and are read by other call sites).
   const { isLoading: contractLoading } = useQuery({
-    queryKey: ['contract-details', contractId, companyId],
+    queryKey: ['lawsuit-contract-details', contractId, companyId],
     staleTime: 0,
     queryFn: async () => {
       if (!companyId) throw new Error('معرف الشركة غير موجود');
@@ -340,8 +345,10 @@ export function LawsuitPreparationProvider({
           file_path: document.file_path,
           mime_type: document.mime_type,
           legal_identity_match_status: normalizeLegalIdentityMatchStatus(
-            document.legal_identity_match_status,
+            getEffectiveLegalIdentityMatchStatus(document),
           ),
+          legal_identity_expected_id: document.legal_identity_expected_id,
+          legal_identity_extracted_id: document.legal_identity_extracted_id,
           legal_evidence_state: normalizeLegalEvidenceState(
             document.legal_evidence_state,
           ),
@@ -1103,15 +1110,7 @@ export function LawsuitPreparationProvider({
           });
         }
 
-        await Promise.all([
-          queryClient.invalidateQueries({
-            queryKey: ['contract-document', contractId, companyId],
-          }),
-          queryClient.invalidateQueries({
-            queryKey: ['contract-violation-evidence-documents', contractId, companyId],
-          }),
-          queryClient.invalidateQueries({ queryKey: ['contract-documents', contractId] }),
-        ]);
+        await invalidateContractDocumentDependents(queryClient, companyId, contractId);
       }
 
       toast.success(`تم رفع ${state.documents[docId].name} وحفظه في مكانه الصحيح`);

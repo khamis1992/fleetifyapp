@@ -823,6 +823,18 @@ function buildReconciliationScenario(
       Math.abs(terms.total_amount - calculatedTotal) > Math.max(1, monthly * 0.02)) {
     reasons.push("written total does not equal monthly amount multiplied by duration");
   }
+  // A pre-existing billing graph is independent evidence. Never let a weak or
+  // incomplete OCR extraction flatten a valid split-period schedule (for
+  // example 900 + 35x1800 + 900) into equal monthly rows. Any disagreement is
+  // assigned for review before the autonomous apply RPC can touch the graph.
+  if (graph.activeScheduleCount > 0 && duration &&
+      graph.activeScheduleCount !== duration) {
+    reasons.push("existing schedule count differs from the extracted installment duration");
+  }
+  if (graph.activeScheduleCount > 0 && total && monthly &&
+      Math.abs(graph.scheduleTotal - total) > Math.max(1, monthly * 0.02)) {
+    reasons.push("existing schedule total differs from the signed total");
+  }
   const signedStartMonth = monthKey(startDate);
   const signedEndMonth = monthKey(endDate);
   if (firstBillingMonth && signedStartMonth && firstBillingMonth < signedStartMonth) {
@@ -830,6 +842,10 @@ function buildReconciliationScenario(
   }
   if (lastBillingMonth && signedEndMonth && lastBillingMonth > signedEndMonth) {
     reasons.push("installment graph extends beyond the signed period");
+  }
+  if (graph.activeScheduleCount > 0 && graph.lastScheduleMonth && lastBillingMonth &&
+      graph.lastScheduleMonth !== lastBillingMonth) {
+    reasons.push("existing schedule end month differs from the extracted installment graph");
   }
   if (graph.hasPaymentHistory) {
     reasons.push("protected payment history requires financial review");

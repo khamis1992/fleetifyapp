@@ -14,6 +14,12 @@ describe('delinquency legal case stage change', () => {
     expect(delinquencyPage).toContain(".in('workflow_stage', activeWorkflowStages)");
   });
 
+  it('loads the identity and evidence fields used to detect a signed contract', () => {
+    expect(delinquencyPage).toContain('legal_identity_match_status,');
+    expect(delinquencyPage).toContain('legal_evidence_state');
+    expect(delinquencyPage).toContain('selectLegalContractDocument(');
+  });
+
   it('uses audited workflow RPCs and never writes case_status directly', () => {
     expect(dialog).toContain("db.rpc('transition_legal_case_workflow_v1'");
     expect(dialog).toContain("db.rpc('close_legal_case_final_v1'");
@@ -33,7 +39,7 @@ describe('delinquency legal case stage change', () => {
 
   it('shows the court acceptance wait state as an action card', () => {
     expect(workflowHook).toContain("{ value: 'awaiting_acceptance', label: 'بانتظار قبول الدعوى' }");
-    expect(dialog).toContain('الطلب لدى المحكمة للمراجعة والقبول');
+    expect(dialog).toContain('تم تأكيد الإيداع والدعوى بانتظار قرار القبول');
     expect(dialog).toContain('ما الإجراء التالي؟');
     expect(dialog).not.toContain('<SelectTrigger');
   });

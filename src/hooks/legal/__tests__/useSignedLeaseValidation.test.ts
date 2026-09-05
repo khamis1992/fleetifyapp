@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { createElement, type ReactNode } from 'react';
 import { useSignedLeaseValidation } from '../useSignedLeaseValidation';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -23,9 +24,8 @@ describe('useSignedLeaseValidation', () => {
     vi.clearAllMocks();
   });
 
-  const wrapper = ({ children }: { children: React.ReactNode }) => (
-    <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
-  );
+  const wrapper = ({ children }: { children: ReactNode }) =>
+    createElement(QueryClientProvider, { client: queryClient }, children);
 
   it('should return false for all checks when no contract or company ID', () => {
     const { result } = renderHook(() => useSignedLeaseValidation(), { wrapper });

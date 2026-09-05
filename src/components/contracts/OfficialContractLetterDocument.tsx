@@ -3,11 +3,32 @@ import type { Contract } from '@/types/contracts';
 import type { PaymentSchedule } from '@/types/payment-schedules';
 import type { VehicleInspection } from '@/hooks/useVehicleInspections';
 
+type OfficialCustomer = NonNullable<Contract['customer']> & {
+  full_name?: string | null;
+  name?: string | null;
+  qid?: string | null;
+  license_number?: string | null;
+  mobile?: string | null;
+  phone_number?: string | null;
+};
+
+type OfficialVehicle = NonNullable<Contract['vehicle']> & {
+  vehicle_name?: string | null;
+  license_plate?: string | null;
+  vin_number?: string | null;
+};
+
+type OfficialContract = Contract & {
+  customer?: OfficialCustomer | null;
+  vehicle?: OfficialVehicle | null;
+  deposit_amount?: unknown;
+  security_deposit?: unknown;
+  payment_method?: unknown;
+  odometer_reading?: unknown;
+};
+
 type OfficialContractLetterDocumentProps = {
-  contract: Contract & {
-    customer?: any;
-    vehicle?: any;
-  };
+  contract: OfficialContract;
   paymentSchedules?: PaymentSchedule[];
   checkInInspection?: VehicleInspection | null;
   checkOutInspection?: VehicleInspection | null;
@@ -45,6 +66,11 @@ const formatCurrency = (value?: number | null) => {
   })} ر.ق`;
 };
 
+const toPositiveAmount = (value: unknown) => {
+  const amount = Number(value);
+  return Number.isFinite(amount) && amount > 0 ? amount : 0;
+};
+
 const valueOrDash = (value: unknown) => {
   if (value === null || value === undefined || value === '') return '-';
   return String(value);
@@ -65,7 +91,7 @@ const uniquePhotoUrls = (...groups: Array<string[] | undefined>) => (
   Array.from(new Set(groups.flatMap((group) => group || []).filter(Boolean)))
 );
 
-const getCustomerName = (customer: any) => {
+const getCustomerName = (customer?: OfficialCustomer | null) => {
   if (!customer) return '-';
   if (customer.customer_type === 'corporate') {
     return customer.company_name_ar || customer.company_name || customer.name || '-';
@@ -76,7 +102,7 @@ const getCustomerName = (customer: any) => {
   ].filter(Boolean).join(' ') || customer.full_name || customer.name || '-';
 };
 
-const getVehicleName = (vehicle: any) => {
+const getVehicleName = (vehicle?: OfficialVehicle | null) => {
   if (!vehicle) return '-';
   return [
     vehicle.make,
@@ -119,10 +145,15 @@ export const OfficialContractLetterDocument: React.FC<OfficialContractLetterDocu
   checkInInspection = null,
   checkOutInspection = null,
 }) => {
-  const customer = contract.customer || {};
-  const vehicle = contract.vehicle || {};
+  const customer = contract.customer;
+  const vehicle = contract.vehicle;
   const customerName = useMemo(() => getCustomerName(customer), [customer]);
   const vehicleName = useMemo(() => getVehicleName(vehicle), [vehicle]);
+  const depositAmount = toPositiveAmount(
+    contract.deposit_amount ?? contract.security_deposit,
+  );
+  const hasSecurityDeposit = depositAmount > 0;
+  const earlyTerminationCompensation = toPositiveAmount(contract.monthly_amount) * 2;
   const issueDate = contract.contract_date || contract.created_at || new Date().toISOString();
   const contractNumber = contract.contract_number || contract.id || '-';
   const inspectionItems = [
@@ -142,11 +173,14 @@ export const OfficialContractLetterDocument: React.FC<OfficialContractLetterDocu
   const financialRows = [
     { label: 'قيمة العقد الإجمالية', value: formatCurrency(contract.contract_amount) },
     { label: 'القسط الشهري', value: formatCurrency(contract.monthly_amount) },
-    { label: 'مبلغ التأمين', value: formatCurrency((contract as any).deposit_amount || (contract as any).security_deposit) },
-    { label: 'طريقة الدفع', value: valueOrDash((contract as any).payment_method) },
+    { label: 'مبلغ التأمين', value: hasSecurityDeposit ? formatCurrency(depositAmount) : 'غير مسجل' },
+    { label: 'طريقة الدفع', value: valueOrDash(contract.payment_method) },
   ];
   const monthlyRentText = contract.monthly_amount ? formatCurrency(contract.monthly_amount) : '(     ) ريال قطري';
-  const depositText = formatCurrency((contract as any).deposit_amount || (contract as any).security_deposit || 8000);
+  const depositText = formatCurrency(depositAmount);
+  const earlyTerminationCompensationText = earlyTerminationCompensation > 0
+    ? formatCurrency(earlyTerminationCompensation)
+    : 'قيمة قسطين إيجاريين شهريين';
   const inspectionPhotos = uniquePhotoUrls(checkInInspection?.photo_urls, checkOutInspection?.photo_urls);
 
   return (
@@ -568,9 +602,9 @@ export const OfficialContractLetterDocument: React.FC<OfficialContractLetterDocu
             <DetailRow label="السجل التجاري" value={COMPANY.cr} />
             <DetailRow label="العنوان" value={COMPANY.address} />
             <DetailRow label="الطرف الثاني" value={customerName} />
-            <DetailRow label="رقم الهوية / السجل" value={valueOrDash(customer.national_id || customer.qid || customer.license_number)} />
-            <DetailRow label="رقم الهاتف" value={valueOrDash(customer.phone || customer.mobile || customer.phone_number)} />
-            <DetailRow label="البريد الإلكتروني" value={valueOrDash(customer.email)} />
+            <DetailRow label="رقم الهوية / السجل" value={valueOrDash(customer?.national_id || customer?.qid || customer?.license_number)} />
+            <DetailRow label="رقم الهاتف" value={valueOrDash(customer?.phone || customer?.mobile || customer?.phone_number)} />
+            <DetailRow label="البريد الإلكتروني" value={valueOrDash(customer?.email)} />
           </tbody>
         </table>
       </Section>
@@ -579,10 +613,10 @@ export const OfficialContractLetterDocument: React.FC<OfficialContractLetterDocu
         <table className="official-table">
           <tbody>
             <DetailRow label="المركبة" value={vehicleName} />
-            <DetailRow label="رقم اللوحة" value={valueOrDash(vehicle.plate_number || vehicle.license_plate)} />
-            <DetailRow label="رقم الهيكل" value={valueOrDash(vehicle.vin || vehicle.vin_number)} />
-            <DetailRow label="اللون" value={valueOrDash(vehicle.color)} />
-            <DetailRow label="قراءة العداد" value={valueOrDash((contract as any).odometer_reading || vehicle.current_mileage)} />
+            <DetailRow label="رقم اللوحة" value={valueOrDash(vehicle?.plate_number || vehicle?.license_plate)} />
+            <DetailRow label="رقم الهيكل" value={valueOrDash(vehicle?.vin || vehicle?.vin_number)} />
+            <DetailRow label="اللون" value={valueOrDash(vehicle?.color)} />
+            <DetailRow label="قراءة العداد" value={valueOrDash(contract.odometer_reading || vehicle?.current_mileage)} />
           </tbody>
         </table>
       </Section>
@@ -654,7 +688,11 @@ export const OfficialContractLetterDocument: React.FC<OfficialContractLetterDocu
             إقرار من الطرف الثاني: يقر الطرف الثاني ويوافق على أن غرامة التأخير المذكورة أعلاه هي تقدير عادل
             ومعقول للضرر الذي يلحق بالطرف الأول نتيجة التأخير، وأنه قد قبلها بكامل إرادته ورضاه.
           </p>
-          <p>يحق للمؤجر حجز مبلغ التأمين كاملاً دون حاجة لإثبات إذا تأخر المستأجر عن السداد، أو لحقت بالمركبة أضرار، أو أخل المستأجر بأي شرط من شروط العقد.</p>
+          {hasSecurityDeposit ? (
+            <p>يحق للمؤجر حجز مبلغ التأمين كاملاً دون حاجة لإثبات إذا تأخر المستأجر عن السداد، أو لحقت بالمركبة أضرار، أو أخل المستأجر بأي شرط من شروط العقد.</p>
+          ) : (
+            <p>لا يطبق حجز مبلغ تأمين نقدي على هذا العقد لعدم تسجيل مبلغ تأمين ضمن بياناته.</p>
+          )}
         </div>
       </Section>
 
@@ -699,20 +737,29 @@ export const OfficialContractLetterDocument: React.FC<OfficialContractLetterDocu
 
       <Section title="المادة (7): مبلغ التأمين (ضمان الالتزام)">
         <div className="clause-body">
-          <p>
-            يلتزم الطرف الثاني عند التوقيع على هذا العقد أن يسلم الطرف الأول قيمة {depositText} كتأمين نقدي
-            لضمان الوفاء بالتزاماته بموجب هذا العقد.
-          </p>
-          <p>يغطي مبلغ التأمين كافة الالتزامات المالية المترتبة على المستأجر، بما في ذلك:</p>
-          <BulletList
-            items={[
-              'أي مبالغ مستحقة غير مدفوعة، مثل الأقساط والغرامات والمخالفات.',
-              'الشرط الجزائي المنصوص عليه في العقد.',
-              'التعويضات عن الأضرار أو الهلاك أو الحجز.',
-              'أي مبالغ أخرى مترتبة بموجب هذا العقد.',
-              'يحق للمؤجر تحصيل أو حجز مبلغ التأمين مباشرة متى أخل المستأجر بأي من التزاماته، ويعد هذا الشرط إقراراً خطياً من المستأجر بعدم الاعتراض.',
-            ]}
-          />
+          {hasSecurityDeposit ? (
+            <>
+              <p>
+                يلتزم الطرف الثاني عند التوقيع على هذا العقد أن يسلم الطرف الأول قيمة {depositText} كتأمين نقدي
+                لضمان الوفاء بالتزاماته بموجب هذا العقد.
+              </p>
+              <p>يغطي مبلغ التأمين كافة الالتزامات المالية المترتبة على المستأجر، بما في ذلك:</p>
+              <BulletList
+                items={[
+                  'أي مبالغ مستحقة غير مدفوعة، مثل الأقساط والغرامات والمخالفات.',
+                  'الشرط الجزائي المنصوص عليه في العقد.',
+                  'التعويضات عن الأضرار أو الهلاك أو الحجز.',
+                  'أي مبالغ أخرى مترتبة بموجب هذا العقد.',
+                  'يحق للمؤجر تحصيل أو حجز مبلغ التأمين مباشرة متى أخل المستأجر بأي من التزاماته، ويعد هذا الشرط إقراراً خطياً من المستأجر بعدم الاعتراض.',
+                ]}
+              />
+            </>
+          ) : (
+            <p>
+              لم يسجل على هذا العقد مبلغ تأمين نقدي. لا يجوز إنشاء مبلغ تأمين أو اعتباره مدفوعاً أو الخصم منه
+              ما لم يثبت ذلك بمستند أو ملحق تعاقدي موثق.
+            </p>
+          )}
         </div>
       </Section>
 
@@ -749,7 +796,9 @@ export const OfficialContractLetterDocument: React.FC<OfficialContractLetterDocu
           <BulletList
             items={[
               'يتم فحص المركبة عند الإرجاع بحضور الطرفين.',
-              'يحق للمؤجر خصم قيمة الإصلاحات من مبلغ التأمين عند وجود أضرار تتجاوز الاستهلاك الطبيعي.',
+              hasSecurityDeposit
+                ? 'يحق للمؤجر خصم قيمة الإصلاحات من مبلغ التأمين عند وجود أضرار تتجاوز الاستهلاك الطبيعي.'
+                : 'تسجل تكاليف الإصلاح المثبتة كمطالبة مستقلة عند وجود أضرار تتجاوز الاستهلاك الطبيعي، ولا تعامل كتسوية من مبلغ تأمين غير مسجل.',
             ]}
           />
         </div>
@@ -838,8 +887,10 @@ export const OfficialContractLetterDocument: React.FC<OfficialContractLetterDocu
               'إخطار الطرف الأول كتابياً قبل ثلاثين (30) يوماً على الأقل.',
               'تسليم المركبة للطرف الأول بحالة جيدة.',
               'سداد جميع المستحقات المالية من أقساط وغرامات ومخالفات.',
-              'دفع تعويض جزائي مقطوع للطرف الأول قدره 3,000 ريال قطري، بما يعادل قسطين إيجاريين شهريين.',
-              'يُخصم من مبلغ التأمين أي مستحقات أخرى أو تكاليف إصلاح أضرار بالمركبة، ويُسترد الباقي للطرف الثاني.',
+              `دفع تعويض جزائي مقطوع للطرف الأول قدره ${earlyTerminationCompensationText}، بما يعادل قسطين إيجاريين شهريين.`,
+              hasSecurityDeposit
+                ? 'يُخصم من مبلغ التأمين أي مستحقات أخرى أو تكاليف إصلاح أضرار بالمركبة، ويُسترد الباقي للطرف الثاني.'
+                : 'لا توجد تسوية من مبلغ تأمين غير مسجل؛ وتوثق أي مستحقات أخرى أو تكاليف إصلاح كمطالبات مستقلة.',
               'لا يحق للطرف الثاني إنهاء العقد من جانب واحد دون موافقة الطرف الأول، وإلا اعتبر ذلك إخلالاً جوهرياً.',
             ]}
           />
@@ -963,9 +1014,9 @@ export const OfficialContractLetterDocument: React.FC<OfficialContractLetterDocu
         <div className="appendix-note-title">معلومات المركبة:</div>
         <table className="official-table">
           <tbody>
-            <DetailRow label="رقم اللوحة" value={vehicle.plate_number || vehicle.license_plate || '_____________________________'} />
+            <DetailRow label="رقم اللوحة" value={vehicle?.plate_number || vehicle?.license_plate || '_____________________________'} />
             <DetailRow label="النوع والموديل" value={vehicleName !== '-' ? vehicleName : '_____________________________'} />
-            <DetailRow label="رقم الهيكل (VIN)" value={vehicle.vin || vehicle.vin_number || '_____________________________'} />
+            <DetailRow label="رقم الهيكل (VIN)" value={vehicle?.vin || vehicle?.vin_number || '_____________________________'} />
             <DetailRow label="تاريخ الفحص" value="____/____/________" />
             <DetailRow label="الفاحص" value="_____________________________" />
           </tbody>

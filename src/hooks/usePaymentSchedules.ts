@@ -5,6 +5,7 @@ import { useToast } from "@/hooks/use-toast";
 import { usePermissions } from "@/hooks/usePermissions";
 import { useUnifiedCompanyAccess } from "@/hooks/useUnifiedCompanyAccess";
 import * as Sentry from '@sentry/react';
+import { readContractPaymentPages } from '@/services/readContractPaymentPages';
 import {
   PaymentSchedule,
   PaymentScheduleCreationData,
@@ -15,32 +16,43 @@ import {
 // Hook to fetch payment schedules for a specific contract
 export const useContractPaymentSchedules = (contractId: string, minDueDate?: string | null) => {
   const { user } = useAuth();
+  const { companyId, isInitializing } = useUnifiedCompanyAccess();
 
   return useQuery({
-    queryKey: ['payment-schedules', contractId, minDueDate || null],
+    queryKey: ['payment-schedules', contractId, minDueDate || null, companyId],
     queryFn: async () => {
       Sentry.addBreadcrumb({ category: 'payment_schedules', message: 'Fetching contract payment schedules', level: 'info', data: { contractId, minDueDate } });
       if (!user?.id) throw new Error('المستخدم غير مصرح له');
+      if (!companyId) throw new Error('تعذر تحديد الشركة الحالية');
 
-      let query = supabase
-        .from('contract_payment_schedules')
-        .select('*')
-        .eq('contract_id', contractId);
+      try {
+        const data = await readContractPaymentPages<PaymentSchedule>(async (afterId) => {
+          let query = supabase
+            .from('contract_payment_schedules')
+            .select('*')
+            .eq('contract_id', contractId)
+            .eq('company_id', companyId);
 
-      if (minDueDate) {
-        query = query.gte('due_date', minDueDate);
-      }
+          if (minDueDate) {
+            query = query.gte('due_date', minDueDate);
+          }
 
-      const { data, error } = await query.order('installment_number', { ascending: true });
-
-      if (error) {
+          query = query.order('id', { ascending: true }).limit(200);
+          if (afterId) query = query.gt('id', afterId);
+          const { data, error } = await query;
+          return { data: data as PaymentSchedule[] | null, error };
+        });
+        if (data.some((row) => row.company_id !== companyId || row.contract_id !== contractId)) {
+          throw new Error('جدول الدفعات لا يطابق الشركة والعقد الحاليين.');
+        }
+        Sentry.addBreadcrumb({ category: 'payment_schedules', message: 'Contract payment schedules fetched', level: 'info', data: { count: data.length } });
+        return data.sort((a, b) => a.installment_number - b.installment_number || a.id.localeCompare(b.id));
+      } catch (error) {
         Sentry.captureException(error, { tags: { feature: 'payment_schedules', action: 'fetch_contract_schedules', component: 'useContractPaymentSchedules' }, extra: { contractId } });
         throw error;
       }
-      Sentry.addBreadcrumb({ category: 'payment_schedules', message: 'Contract payment schedules fetched', level: 'info', data: { count: data?.length || 0 } });
-      return data as PaymentSchedule[];
     },
-    enabled: !!user?.id && !!contractId,
+    enabled: !!user?.id && !!contractId && !!companyId && !isInitializing,
     staleTime: 30000, // Cache for 30 seconds
     gcTime: 300000, // Keep in cache for 5 minutes
   });

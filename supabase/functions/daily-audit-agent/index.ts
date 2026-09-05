@@ -456,6 +456,13 @@ async function auditCompany({
     }
   });
 
+  await safeStep(result, "detect_wrong_value_schedule_invoice_links", async () => {
+    const wrongValueLinks = await detectWrongValueScheduleInvoiceLinks(supabase, company.id, maxContractsPerCompany, targetContractIds, result.reviewItems);
+    if (wrongValueLinks > 0) {
+      result.reviewItems.push(`${wrongValueLinks} rent schedule installments are linked to invoices with a different value (often traffic-fine invoices); relink to the matching unlinked month invoice via contract health auto-fix.`);
+    }
+  });
+
   await safeStep(result, "repair_payment_journal_integrity", async () => {
     const journal = await repairPaymentJournalIntegrity(supabase, company.id, !dryRun, maxJournalRepairBatch);
     result.accounting.paymentJournalNeedsCreate = journal.needsCreate;
@@ -1184,6 +1191,114 @@ async function syncSchedulePaymentStates(
   }
 
   return synced;
+}
+
+// كشف روابط الأقساط الخاطئة قيمةً: قسط نشط مربوط بفاتورة قيمتها تختلف عن قيمة
+// القسط بينما توجد فاتورة أخرى لنفس العقد ونفس الشهر قيمتها مطابقة للقسط وغير
+// مرتبطة بأي قسط. النمط الفعلي (LTO202437): أقساط إيجار رُبطت بفواتير مخالفات TV.
+// قاعدة الأمان: يُبلَّغ فقط عن النمط الآمن للإصلاح (فاتورة حالية غير إيجارية TV
+// وبديل إيجاري مطابق). نمط أقساط المخالفات المربوطة بفواتير إيجار أكبر يُبلَّغ
+// كمراجعة معتمدة لأن فك الربط قد ييتم فاتورة إيجار مدفوعة.
+// الكشف فقط — الإصلاح عبر زر صحة العقد (repairWrongValueScheduleInvoiceLinks).
+async function detectWrongValueScheduleInvoiceLinks(
+  supabase: any,
+  companyId: string,
+  limit: number,
+  targetContractIds: string[] | null,
+  reviewItems: string[],
+) {
+  const contracts = await loadContractsForAudit(supabase, companyId, limit, targetContractIds, false);
+  const contractIds = contracts.map((contract: any) => contract.id);
+  if (contractIds.length === 0) return 0;
+
+  const { data: schedules, error: schedulesError } = await supabase
+    .from("contract_payment_schedules")
+    .select("id, contract_id, installment_number, due_date, amount, status, invoice_id")
+    .eq("company_id", companyId)
+    .in("contract_id", contractIds)
+    .limit(limit * 60);
+
+  if (schedulesError) throw schedulesError;
+
+  const activeSchedules = (schedules || []).filter(
+    (schedule: any) => !isCancelledStatus(schedule.status) && schedule.invoice_id && Number(schedule.amount || 0) > 0,
+  );
+  if (activeSchedules.length === 0) return 0;
+
+  const linkedInvoiceIds = Array.from(new Set(activeSchedules.map((schedule: any) => schedule.invoice_id)));
+  const { data: linkedInvoices, error: linkedError } = await supabase
+    .from("invoices")
+    .select("id, invoice_number, total_amount, invoice_month")
+    .in("id", linkedInvoiceIds)
+    .eq("company_id", companyId);
+
+  if (linkedError) throw linkedError;
+
+  const contractIdsWithMismatch = Array.from(new Set(
+    activeSchedules
+      .filter((schedule: any) => {
+        const linkedInvoice = (linkedInvoices || []).find((invoice: any) => invoice.id === schedule.invoice_id);
+        return Boolean(linkedInvoice)
+          && Math.abs(Number(schedule.amount || 0) - Number(linkedInvoice.total_amount || 0)) > 0.01;
+      })
+      .map((schedule: any) => schedule.contract_id),
+  ));
+  if (contractIdsWithMismatch.length === 0) return 0;
+
+  // جلب كل فواتير العقود المشتبه بها لتحديد إن كانت فاتورة بديلة مطابقة موجودة
+  const { data: contractInvoices, error: contractInvoicesError } = await supabase
+    .from("invoices")
+    .select("id, contract_id, invoice_number, total_amount, invoice_month, status")
+    .eq("company_id", companyId)
+    .in("contract_id", contractIdsWithMismatch)
+    .not("status", "in", "(cancelled,void,deleted)");
+
+  if (contractInvoicesError) throw contractInvoicesError;
+
+  const invoiceIdsBoundToSchedules = new Set(
+    (schedules || [])
+      .filter((schedule: any) => schedule.invoice_id)
+      .map((schedule: any) => schedule.invoice_id),
+  );
+
+  const isNonRentInvoiceNumber = (invoiceNumber: any) =>
+    String(invoiceNumber || "").startsWith("TV-");
+
+  let wrongLinkCount = 0;
+  for (const schedule of activeSchedules) {
+    const linkedInvoice = (linkedInvoices || []).find((invoice: any) => invoice.id === schedule.invoice_id);
+    if (!linkedInvoice) continue;
+    const scheduleAmount = Number(schedule.amount || 0);
+    if (Math.abs(scheduleAmount - Number(linkedInvoice.total_amount || 0)) <= 0.01) continue;
+
+    // النمط الآمن للإصلاح فقط: الفاتورة الحالية مخالفة TV.
+    if (!isNonRentInvoiceNumber(linkedInvoice.invoice_number)) continue;
+
+    const contract = contracts.find((item: any) => item.id === schedule.contract_id);
+    const candidateMonths = Array.from(new Set(
+      [
+        String(linkedInvoice.invoice_month || "").slice(0, 7),
+        String(schedule.due_date || "").slice(0, 7),
+      ].filter(Boolean),
+    ));
+
+    const matchingCandidate = (contractInvoices || []).find((invoice: any) =>
+      invoice.contract_id === schedule.contract_id
+      && !invoiceIdsBoundToSchedules.has(invoice.id)
+      && !isNonRentInvoiceNumber(invoice.invoice_number)
+      && candidateMonths.includes(String(invoice.invoice_month || "").slice(0, 7))
+      && Math.abs(Number(invoice.total_amount || 0) - scheduleAmount) <= 0.01,
+    );
+
+    if (matchingCandidate) {
+      wrongLinkCount += 1;
+      reviewItems.push(
+        `Contract ${contract?.contract_number || schedule.contract_id}: installment ${schedule.installment_number || "-"} (${scheduleAmount} QAR) is linked to traffic invoice ${linkedInvoice.invoice_number} (${linkedInvoice.total_amount} QAR) while matching rent invoice ${matchingCandidate.invoice_number} is unlinked — relink via contract health auto-fix.`,
+      );
+    }
+  }
+
+  return wrongLinkCount;
 }
 
 async function detectDuplicatePayments(

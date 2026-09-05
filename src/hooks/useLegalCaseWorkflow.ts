@@ -17,7 +17,7 @@ export type LegalWorkflowStage =
 
 export const LEGAL_WORKFLOW_STAGES: Array<{ value: LegalWorkflowStage; label: string }> = [
   { value: 'preparation', label: 'تجهيز الملف' },
-  { value: 'filed', label: 'تم رفع الدعوى' },
+  { value: 'filed', label: 'تم إيداع الدعوى' },
   { value: 'awaiting_acceptance', label: 'بانتظار قبول الدعوى' },
   { value: 'hearings', label: 'الجلسات' },
   { value: 'reserved_for_judgment', label: 'محجوزة للحكم' },

@@ -47,9 +47,12 @@ export const supabase = createClient<Database>(supabaseConfig.url, supabaseConfi
     fetch: async (url, options, retries = 1, delay = 500) => {
       const requestUrl = String(url);
       const isAuthRequest = requestUrl.includes('/auth/v1/');
+      const isContractIdScanner = requestUrl.includes('/functions/v1/contract-id-scanner');
       // Auth refresh tokens are single-use and rotated. Retrying the same auth
       // request after an interrupted response can invalidate session recovery.
-      const maxRetries = isAuthRequest ? 0 : retries;
+      // Contract identity scans can transmit multiple document pages and write
+      // an assessment, so an HTTP-level retry would duplicate the whole scan.
+      const maxRetries = isAuthRequest || isContractIdScanner ? 0 : retries;
 
       // Add timeout to prevent hanging requests with retry logic
       for (let attempt = 0; attempt <= maxRetries; attempt++) {
