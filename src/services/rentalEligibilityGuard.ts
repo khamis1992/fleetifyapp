@@ -1,7 +1,5 @@
 import { supabase } from '@/integrations/supabase/client';
 
-export const UNPAID_PENALTY_BLOCK_AMOUNT_QAR = 500;
-export const UNPAID_PENALTY_BLOCK_COUNT = 3;
 export const TRAFFIC_VIOLATIONS_PATH = '/fleet/traffic-violations';
 
 export type RentalGuardLevel = 'allow' | 'warn' | 'block';
@@ -47,9 +45,6 @@ const summarizeUnpaid = (
   };
 }, { count: 0, total: 0 });
 
-const exceedsPenaltyThreshold = ({ count, total }: PenaltySummary) =>
-  total >= UNPAID_PENALTY_BLOCK_AMOUNT_QAR || count >= UNPAID_PENALTY_BLOCK_COUNT;
-
 const formatQar = (amount: number) => new Intl.NumberFormat('ar-QA', {
   maximumFractionDigits: 2,
 }).format(amount);
@@ -76,11 +71,7 @@ export function evaluateRentalEligibility(input: RentalGuardInput): RentalGuardR
   if (vehiclePenalties.count > 0) {
     const message = `على المركبة ${vehiclePenalties.count} مخالفة غير مسددة بإجمالي ${formatQar(vehiclePenalties.total)} ر.ق`;
     violationMessages.push(message);
-    if (exceedsPenaltyThreshold(vehiclePenalties)) {
-      violationBlocks.push(`لا يمكن تأجير هذه المركبة: ${message.replace('على المركبة ', '')}`);
-    } else {
-      warnings.push(`تنبيه: ${message}`);
-    }
+    warnings.push(`تنبيه: ${message}`);
   }
 
   if (customerPenalties.count > 0) {

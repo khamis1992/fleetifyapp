@@ -60,14 +60,25 @@ const excludedStatuses = new Set([
   'voided',
   'reversed',
   'deleted',
+  'inactive',
 ]);
 const isExcludedStatus = (value: string | null | undefined) =>
   excludedStatuses.has((value || '').trim().toLowerCase());
 
-const isRentalInvoice = (invoice: InvoiceClaimRow) => (
-  invoice.penalty_id == null
-  && invoice.invoice_type?.trim().toLowerCase() === 'sales'
-);
+function isRentalInvoice(invoice: InvoiceClaimRow, schedules: PaymentScheduleClaimRow[]) {
+  if (invoice.penalty_id != null || invoice.invoice_number?.trim().toUpperCase().startsWith('TV-')) return false;
+  const type = invoice.invoice_type?.trim().toLowerCase();
+  if (type === 'sales') return true;
+  if (type !== 'service') return false;
+
+  // The billing engine emits service invoices. Match the canonical rental reader:
+  // one active schedule link with the same amount and billing month.
+  const links = schedules.filter(schedule => schedule.invoice_id === invoice.id && !isExcludedStatus(schedule.status));
+  const billingMonth = monthKey(invoice.invoice_month || invoice.due_date);
+  return links.length === 1 && billingMonth !== null
+    && invoice.total_amount != null && links[0].amount === invoice.total_amount
+    && monthKey(links[0].due_date) === billingMonth;
+}
 
 /** تاريخ يوم العمل القانوني في قطر، بصرف النظر عن منطقة جهاز المشغل. */
 export function getQatarBusinessDate(value = new Date()): string {
@@ -98,7 +109,7 @@ export function resolveLegalClaimProjection(
       typeof invoice.due_date === 'string' && invoice.due_date <= asOfDate
     ))
     .filter((invoice) => !isExcludedStatus(invoice.status) && !isExcludedStatus(invoice.payment_status))
-    .filter(isRentalInvoice)
+    .filter(invoice => isRentalInvoice(invoice, schedules))
     .filter((invoice) => invoiceOutstanding(invoice) > 0)
     .map((invoice) => {
       const outstanding = invoiceOutstanding(invoice);

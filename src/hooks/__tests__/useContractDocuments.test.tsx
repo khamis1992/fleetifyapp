@@ -2,23 +2,29 @@ import type { ReactNode } from 'react';
 import { act, cleanup, renderHook } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { useCreateContractDocument, useDeleteContractDocument } from '../useContractDocuments';
+import {
+  useCreateContractDocument,
+  useDeleteContractDocument,
+  useDeleteContractViewDocument,
+} from '../useContractDocuments';
 import { contractDocumentsKey } from '@/utils/contractDocumentQueries';
 
-const { single, remove, success, errorToast, dbDelete } = vi.hoisted(() => ({
+const { single, remove, success, errorToast, dbDelete, fromTable, storageBucket } = vi.hoisted(() => ({
   single: vi.fn(), remove: vi.fn(), success: vi.fn(), errorToast: vi.fn(), dbDelete: vi.fn(),
+  fromTable: vi.fn(), storageBucket: vi.fn(),
 }));
 vi.mock('@/contexts/AuthContext', () => ({ useAuth: () => ({ user: { id: 'user-1' } }) }));
 vi.mock('@/hooks/useUnifiedCompanyAccess', () => ({ useUnifiedCompanyAccess: () => ({ companyId: 'company-1' }) }));
 vi.mock('sonner', () => ({ toast: { success, error: errorToast } }));
 vi.mock('@/integrations/supabase/client', () => ({
   supabase: {
-    from: () => {
+    from: (table: string) => {
+      fromTable(table);
       const chain = { select: () => chain, insert: () => chain, eq: () => chain,
         delete: () => { dbDelete(); return chain; }, single };
       return chain;
     },
-    storage: { from: () => ({ remove }) },
+    storage: { from: (bucket: string) => { storageBucket(bucket); return { remove }; } },
   },
 }));
 
@@ -98,5 +104,54 @@ describe('contract document mutations refresh evidence consumers', () => {
     expect(success).not.toHaveBeenCalled();
     expect(errorToast).toHaveBeenCalledWith(expect.stringContaining('مرتبط بسجلات أخرى'));
     for (const key of keys) expect(client.getQueryState(key)?.isInvalidated).toBe(false);
+  });
+
+  it('deletes a customer document from its real table and shared storage bucket', async () => {
+    single.mockResolvedValueOnce({
+      data: { file_path: 'company-1/customer-documents/customer-1/id.pdf', customer_id: 'customer-1', company_id: 'company-1' },
+      error: null,
+    }).mockResolvedValueOnce({ data: { id: 'customer-doc-1' }, error: null });
+    client.setQueryData(['customer-documents', 'customer-1'], []);
+
+    const { result } = renderHook(() => useDeleteContractViewDocument(), { wrapper });
+    await act(async () => {
+      await result.current.mutateAsync({
+        id: 'customer-doc-1',
+        contract_id: doc.contract_id,
+        sourceType: 'customer',
+        sourceOwnerId: 'customer-1',
+      });
+    });
+
+    expect(fromTable.mock.calls.map(([table]) => table)).toEqual(['customer_documents', 'customer_documents']);
+    expect(storageBucket).toHaveBeenCalledWith('documents');
+    expect(remove).toHaveBeenCalledWith(['company-1/customer-documents/customer-1/id.pdf']);
+    expect(client.getQueryState(['customer-documents', 'customer-1'])?.isInvalidated).toBe(true);
+  });
+
+  it('authorizes a vehicle through its company before deleting its document', async () => {
+    single.mockResolvedValueOnce({ data: { id: 'vehicle-1' }, error: null })
+      .mockResolvedValueOnce({ data: { document_url: 'company-1/vehicle-documents/vehicle-1/file.pdf', vehicle_id: 'vehicle-1' }, error: null })
+      .mockResolvedValueOnce({ data: { id: 'vehicle-doc-1' }, error: null });
+    client.setQueryData(['vehicle-document-files', 'company-1', 'vehicle-1'], []);
+
+    const { result } = renderHook(() => useDeleteContractViewDocument(), { wrapper });
+    await act(async () => {
+      await result.current.mutateAsync({
+        id: 'vehicle-doc-1',
+        contract_id: doc.contract_id,
+        sourceType: 'vehicle',
+        sourceOwnerId: 'vehicle-1',
+      });
+    });
+
+    expect(fromTable.mock.calls.map(([table]) => table)).toEqual([
+      'vehicles',
+      'vehicle_documents',
+      'vehicle_documents',
+    ]);
+    expect(storageBucket).toHaveBeenCalledWith('documents');
+    expect(remove).toHaveBeenCalledWith(['company-1/vehicle-documents/vehicle-1/file.pdf']);
+    expect(client.getQueryState(['vehicle-document-files', 'company-1', 'vehicle-1'])?.isInvalidated).toBe(true);
   });
 });

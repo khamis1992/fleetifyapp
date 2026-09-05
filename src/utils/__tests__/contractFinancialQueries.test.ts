@@ -11,6 +11,8 @@ const affected = [
   ['payment-schedules', scope.contractId, null, scope.companyId],
   ['contract-audit-logs', scope.contractId, scope.companyId],
   ['canonical-rental-month-summary', scope.companyId, '2026-08'],
+  ['lawsuit-contract-details', scope.contractId, scope.companyId],
+  ['legal-claim-projection', scope.contractId, scope.companyId],
 ];
 const unaffected = [
   ['contract-details', 'LTO-OTHER', scope.companyId],
@@ -21,6 +23,8 @@ const unaffected = [
   ['contract-audit-logs', scope.contractId, 'other-company'],
   ['contract-financial-refresh', scope.contractId, scope.companyId],
   ['canonical-rental-month-summary', 'other-company', '2026-08'],
+  ['lawsuit-contract-details', 'other-contract', scope.companyId],
+  ['legal-claim-projection', scope.contractId, 'other-company'],
 ];
 let client: QueryClient;
 let unsubscribe: (() => void)[];

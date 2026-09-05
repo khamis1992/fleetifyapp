@@ -112,7 +112,7 @@ function getStepStatuses(state: LawsuitPreparationState): Record<TabId, StepStat
   const missing = readiness.documents.missing;
   const evidenceIssues = readiness.legalStatus.issues.length;
   const overviewDone = Boolean(
-    state.contract && state.customer && state.calculations && state.vehicle,
+    state.contract && state.customer && state.vehicle,
   );
 
   return {
@@ -833,7 +833,7 @@ export default function LawsuitPreparationPage() {
   }
 
   return (
-    <LawsuitPreparationProvider contractId={contractId}>
+    <LawsuitPreparationProvider key={contractId} contractId={contractId}>
       <div className="min-h-screen bg-[#F6F8FB]">
         <LawsuitPreparationContent />
       </div>

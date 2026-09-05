@@ -39,7 +39,7 @@ export function LegalOverview() {
   const { state } = useLawsuitPreparationContext();
   const { calculations, contract, customer, financialClaimSource, overdueInvoices, trafficViolations, vehicle } = state;
 
-  if (!contract || !calculations) {
+  if (!contract) {
     return (
       <div className="lawsuit-empty-panel">
         <strong>جاري تجهيز بيانات القضية</strong>
@@ -63,7 +63,7 @@ export function LegalOverview() {
           </div>
           <div className="lawsuit-case-value">
             <span>قيمة المطالبة</span>
-            <strong>{formatQar(calculations.total)}</strong>
+            <strong>{calculations ? formatQar(calculations.total) : 'لم تكتمل المراجعة المالية'}</strong>
           </div>
         </div>
 
@@ -103,6 +103,7 @@ export function LegalOverview() {
         </div>
       </section>
 
+      {calculations ? <>
       <section className="lawsuit-section-panel">
         <div className="lawsuit-section-heading compact">
           <div>
@@ -157,6 +158,7 @@ export function LegalOverview() {
           <small>بالريال القطري</small>
         </article>
       </section>
+      </> : <div className="lawsuit-empty-panel" role="status">لم تكتمل مراجعة المطالبة المالية بعد. بيانات العقد أعلاه مستقلة عن حالة المطالبة.</div>}
     </motion.div>
   );
 }

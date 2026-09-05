@@ -5,7 +5,12 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Badge } from '@/components/ui/badge';
 import { Plus, Download, Trash2, FileText, Upload, Eye, Car, CheckCircle, AlertCircle, AlertTriangle, FileImage, RefreshCw, PlayCircle, ScanLine, IdCard, FileSpreadsheet, ShieldCheck, CreditCard, Receipt, FileSignature } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { useContractDocuments, useCreateContractDocument, useDeleteContractDocument } from '@/hooks/useContractDocuments';
+import {
+  type ContractDocument,
+  useContractDocuments,
+  useCreateContractDocument,
+  useDeleteContractViewDocument,
+} from '@/hooks/useContractDocuments';
 import { DocumentUploadDialog, DocumentUploadData } from './DocumentUploadDialog';
 import { ContractHtmlViewer } from './ContractHtmlViewer';
 import { ContractPdfData } from '@/utils/contractPdfGenerator';
@@ -156,7 +161,7 @@ export function ContractDocuments({ contractId, customerId, vehicleId }: Contrac
   const [selectedDocumentForPreview, setSelectedDocumentForPreview] = React.useState<any>(null);
   const [isDocumentPreviewOpen, setIsDocumentPreviewOpen] = React.useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false);
-  const [documentToDelete, setDocumentToDelete] = React.useState<string | null>(null);
+  const [documentToDelete, setDocumentToDelete] = React.useState<ContractDocument | null>(null);
   const {
     data: documents = [],
     isLoading,
@@ -164,7 +169,7 @@ export function ContractDocuments({ contractId, customerId, vehicleId }: Contrac
     refetch: refetchDocuments,
   } = useContractDocuments(contractId, customerId, vehicleId);
   const createDocument = useCreateContractDocument();
-  const deleteDocument = useDeleteContractDocument();
+  const deleteDocument = useDeleteContractViewDocument();
   const { companyId } = useUnifiedCompanyAccess();
 
   // Vision OCR: ID card scan proposals
@@ -296,15 +301,20 @@ export function ContractDocuments({ contractId, customerId, vehicleId }: Contrac
     }
   };
 
-  const handleDelete = (documentId: string) => {
-    setDocumentToDelete(documentId);
+  const handleDelete = (document: ContractDocument) => {
+    setDocumentToDelete(document);
     setDeleteDialogOpen(true);
   };
 
   const confirmDelete = async () => {
     if (documentToDelete) {
       try {
-        await deleteDocument.mutateAsync(documentToDelete);
+        await deleteDocument.mutateAsync({
+          id: documentToDelete.id,
+          contract_id: documentToDelete.contract_id,
+          sourceType: documentToDelete.sourceType,
+          sourceOwnerId: documentToDelete.sourceOwnerId,
+        });
         setDeleteDialogOpen(false);
         setDocumentToDelete(null);
       } catch (error) {
@@ -471,21 +481,58 @@ export function ContractDocuments({ contractId, customerId, vehicleId }: Contrac
 
   const queryClient = useQueryClient();
 
-  const handleChangeDocumentType = async (documentId: string, newType: string) => {
+  const handleChangeDocumentType = async (document: ContractDocument, newType: string) => {
     try {
       if (!companyId) throw new Error('تعذر تحديد الشركة الحالية');
-      const { error } = await supabase
-        .from('contract_documents')
-        .update({ document_type: newType })
-        .eq('id', documentId)
-        .eq('contract_id', contractId)
-        .eq('company_id', companyId)
-        .select('id')
-        .single();
+      const sourceType = document.sourceType || 'contract';
+      let error: { message: string } | null = null;
+
+      if (sourceType === 'customer') {
+        if (!document.sourceOwnerId) throw new Error('تعذر تحديد العميل مالك المستند');
+        ({ error } = await supabase
+          .from('customer_documents')
+          .update({ document_type: newType })
+          .eq('id', document.id)
+          .eq('customer_id', document.sourceOwnerId)
+          .eq('company_id', companyId)
+          .select('id')
+          .single());
+      } else if (sourceType === 'vehicle') {
+        if (!document.sourceOwnerId) throw new Error('تعذر تحديد المركبة مالكة المستند');
+        const { error: vehicleError } = await supabase
+          .from('vehicles')
+          .select('id')
+          .eq('id', document.sourceOwnerId)
+          .eq('company_id', companyId)
+          .single();
+        if (vehicleError) throw vehicleError;
+        ({ error } = await supabase
+          .from('vehicle_documents')
+          .update({ document_type: newType })
+          .eq('id', document.id)
+          .eq('vehicle_id', document.sourceOwnerId)
+          .select('id')
+          .single());
+      } else {
+        ({ error } = await supabase
+          .from('contract_documents')
+          .update({ document_type: newType })
+          .eq('id', document.id)
+          .eq('contract_id', contractId)
+          .eq('company_id', companyId)
+          .select('id')
+          .single());
+      }
       
       if (error) throw error;
       
       await invalidateContractDocumentDependents(queryClient, companyId, contractId);
+      if (sourceType === 'customer' && document.sourceOwnerId) {
+        await queryClient.invalidateQueries({ queryKey: ['customer-documents', document.sourceOwnerId] });
+      }
+      if (sourceType === 'vehicle' && document.sourceOwnerId) {
+        await queryClient.invalidateQueries({ queryKey: ['vehicle-document-files', companyId, document.sourceOwnerId] });
+      }
       toast.success('تم تغيير نوع المستند');
     } catch (error) {
       console.error('Error updating document type:', error);
@@ -774,7 +821,7 @@ export function ContractDocuments({ contractId, customerId, vehicleId }: Contrac
                               <Select
                                 value={document.document_type}
                                 onValueChange={(value) => {
-                                  handleChangeDocumentType(document.id, value);
+                                  handleChangeDocumentType(document, value);
                                 }}
                               >
                                 <SelectTrigger
@@ -828,21 +875,20 @@ export function ContractDocuments({ contractId, customerId, vehicleId }: Contrac
                                 </Button>
                               )}
 
-                              {/* Only show delete button for contract documents, not customer documents */}
-                              {document.sourceBucket === 'contract-documents' && (
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  className="h-8 w-8 border-[#FB6B7A]/30 p-0 text-[#BE123C] hover:bg-[#FFF5F6]"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleDelete(document.id);
-                                  }}
-                                  title="حذف"
-                                >
-                                  <Trash2 className="h-3.5 w-3.5" />
-                                </Button>
-                              )}
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="h-8 w-8 border-[#FB6B7A]/30 p-0 text-[#BE123C] hover:bg-[#FFF5F6]"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleDelete(document);
+                                }}
+                                disabled={deleteDocument.isPending}
+                                aria-label={`حذف ${document.document_name}`}
+                                title="حذف"
+                              >
+                                <Trash2 className="h-3.5 w-3.5" />
+                              </Button>
                             </div>
                           </motion.div>
                         );
@@ -1204,7 +1250,18 @@ export function ContractDocuments({ contractId, customerId, vehicleId }: Contrac
           <AlertDialogHeader>
             <AlertDialogTitle>تأكيد الحذف</AlertDialogTitle>
             <AlertDialogDescription data-tour="contract-document-delete-warning">
-              هل أنت متأكد من حذف هذا المستند؟ لا يمكن التراجع عن هذا الإجراء.
+              هل أنت متأكد من حذف «{documentToDelete?.document_name || 'هذا المستند'}»؟
+              {documentToDelete?.sourceType === 'customer' && (
+                <span className="mt-2 block font-bold text-amber-700">
+                  هذا مستند مشترك من ملف العميل، وسيُحذف من ملف العميل وجميع العقود التي تعرضه.
+                </span>
+              )}
+              {documentToDelete?.sourceType === 'vehicle' && (
+                <span className="mt-2 block font-bold text-amber-700">
+                  هذا مستند مشترك من ملف المركبة، وسيُحذف من ملف المركبة وجميع العقود التي تعرضه.
+                </span>
+              )}
+              <span className="mt-2 block">لا يمكن التراجع عن هذا الإجراء.</span>
             </AlertDialogDescription>
             <Button
               type="button"
@@ -1218,8 +1275,10 @@ export function ContractDocuments({ contractId, customerId, vehicleId }: Contrac
             </Button>
           </AlertDialogHeader>
           <AlertDialogFooter data-tour="contract-document-delete-actions">
-            <AlertDialogCancel>إلغاء</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmDelete}>حذف</AlertDialogAction>
+            <AlertDialogCancel disabled={deleteDocument.isPending}>إلغاء</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDelete} disabled={deleteDocument.isPending}>
+              {deleteDocument.isPending ? 'جارٍ الحذف…' : 'حذف المستند'}
+            </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

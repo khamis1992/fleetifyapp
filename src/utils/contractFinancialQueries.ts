@@ -20,6 +20,8 @@ export async function refreshContractFinancialQueries(
     ['contract-details', contractNumber, companyId],
     // Details routes accept both the human-readable number and the UUID.
     ['contract-details', contractId, companyId],
+    ['lawsuit-contract-details', contractId, companyId],
+    ['legal-claim-projection', contractId, companyId],
     ['contract-invoices', contractId],
     ['contract-payments', contractId],
     ['payment-schedules', contractId],

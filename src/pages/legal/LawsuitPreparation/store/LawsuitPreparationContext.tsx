@@ -173,9 +173,11 @@ export function LawsuitPreparationProvider({
   // Distinct key: this query returns a composed {contract, customer, vehicle}
   // shape that must never be cached under the details-page 'contract-details'
   // prefix (whose rows carry nested joins and are read by other call sites).
-  const { isLoading: contractLoading } = useQuery({
+  const { data: contractData, isLoading: contractLoading } = useQuery({
     queryKey: ['lawsuit-contract-details', contractId, companyId],
     staleTime: 0,
+    refetchOnWindowFocus: true,
+    refetchInterval: 30_000,
     queryFn: async () => {
       if (!companyId) throw new Error('معرف الشركة غير موجود');
       const { data: contract, error } = await supabase
@@ -191,49 +193,56 @@ export function LawsuitPreparationProvider({
       // Fetch customer
       let customer = null;
       if (contract.customer_id) {
-        const { data: cust } = await supabase
+        const { data: cust, error: customerError } = await supabase
           .from('customers')
           .select('id, first_name, first_name_ar, last_name, last_name_ar, customer_type, company_name, company_name_ar, national_id, nationality, phone, email, address, country')
           .eq('id', contract.customer_id)
           .eq('company_id', companyId)
           .single();
+        if (customerError) throw customerError;
         customer = cust;
       }
       
       // Fetch vehicle
       let vehicle = null;
       if (contract.vehicle_id) {
-        const { data: veh } = await supabase
+        const { data: veh, error: vehicleError } = await supabase
           .from('vehicles')
           .select('make, model, year, plate_number, color, vin, status')
           .eq('id', contract.vehicle_id)
           .eq('company_id', companyId)
           .single();
+        if (vehicleError) throw vehicleError;
         vehicle = veh;
       }
-      
-      dispatch({ 
-        type: 'SET_CONTRACT_DATA', 
-        payload: { contract, customer, vehicle } 
-      });
       
       return { contract, customer, vehicle };
     },
     enabled: !!contractId && !!companyId,
   });
+
+  useEffect(() => {
+    if (contractData) dispatch({ type: 'SET_CONTRACT_DATA', payload: contractData });
+  }, [contractData]);
   
   // Fetch the canonical legal claim: invoices first, then legacy due schedules
-  const { isLoading: invoicesLoading } = useQuery({
+  const { data: claimProjection, isLoading: invoicesLoading } = useQuery({
     queryKey: ['legal-claim-projection', contractId, companyId],
+    staleTime: 0,
+    refetchOnWindowFocus: true,
+    refetchInterval: 30_000,
     queryFn: async () => {
-      if (!companyId) return [];
-      const projection = await loadLegalClaimProjection(contractId, companyId);
-      dispatch({ type: 'SET_INVOICES', payload: projection.rows });
-      dispatch({ type: 'SET_FINANCIAL_CLAIM_SOURCE', payload: projection.summary });
-      return projection.rows;
+      if (!companyId) throw new Error('معرف الشركة غير موجود');
+      return loadLegalClaimProjection(contractId, companyId);
     },
     enabled: !!contractId && !!companyId,
   });
+
+  useEffect(() => {
+    if (!claimProjection) return;
+    dispatch({ type: 'SET_INVOICES', payload: claimProjection.rows });
+    dispatch({ type: 'SET_FINANCIAL_CLAIM_SOURCE', payload: claimProjection.summary });
+  }, [claimProjection]);
   
   // Fetch reminder history (سجل الإعذار القانوني) for this contract
   useQuery({
@@ -619,7 +628,7 @@ export function LawsuitPreparationProvider({
   }, [state.contract?.end_date, state.damageCosts, state.formalNotices, state.litigationProfile, trafficOnlyClaim]);
 
   useEffect(() => {
-    if (state.overdueInvoices.length > 0 || state.trafficViolations.length > 0 || claimExtras.verifiedDamages > 0 || claimExtras.retentionCompensation > 0) {
+    if (claimProjection) {
       const contractualCompensation = !trafficOnlyClaim
         && state.litigationProfile?.contractual_compensation_enabled
         && state.litigationProfile.contractual_compensation_method
@@ -681,6 +690,7 @@ export function LawsuitPreparationProvider({
       });
     }
   }, [
+    claimProjection,
     claimExtras.retentionCompensation,
     claimExtras.securityDepositDeduction,
     claimExtras.verifiedDamages,

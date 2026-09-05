@@ -5,6 +5,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   AlertCircle,
   AlertTriangle,
+  ArrowUpDown,
   Brain,
   CheckCircle2,
   ChevronDown,
@@ -91,6 +92,10 @@ import { formatCustomerName } from '@/utils/formatCustomerName';
 import { escapeHtml } from '@/utils/htmlSanitizer';
 import { fetchAllRangePages } from '@/utils/fetchAllRangePages';
 import { selectLegalContractDocument } from './LawsuitPreparation/utils/contractDocumentSelection';
+import {
+  sortLegalQueueByAmount,
+  type LegalQueueAmountSort,
+} from './utils/legalQueueSorting';
 import '@/styles/legal-system.css';
 
 type QueueItem = {
@@ -1069,7 +1074,14 @@ const getQueueReadiness = (item: QueueItem) => {
       label: preparationStageLabel(item.workflowStage),
       description: filedDescription,
       progress: 100,
-      tone: 'slate' as const,
+      // Filing and court-acceptance are operationally different states.  Keep
+      // each one visually distinct instead of rendering every post-preparation
+      // case with the same neutral colour.
+      tone: item.workflowStage === 'filed'
+        ? 'filed' as const
+        : item.workflowStage === 'awaiting_acceptance'
+          ? 'awaitingAcceptance' as const
+          : 'slate' as const,
       nextAction: 'عرض المتابعة',
     };
   }
@@ -1088,7 +1100,7 @@ const getQueueReadiness = (item: QueueItem) => {
     label: item.legalCaseStatus === 'active' ? 'ملف تجهيز نشط' : 'جاهز للمراجعة',
     description: 'الملف موجود في لوبي التجهيز ولم يتم اعتباره قضية مفتوحة رسميًا بعد.',
     progress: hasClaim ? 90 : 75,
-    tone: 'emerald' as const,
+    tone: 'ready' as const,
     nextAction: 'متابعة التجهيز',
   };
 };
@@ -1105,6 +1117,24 @@ const readinessToneClassName = {
     rail: 'bg-emerald-500',
     card: 'border-emerald-200 bg-emerald-50/70',
     icon: 'bg-emerald-100 text-emerald-700',
+  },
+  ready: {
+    badge: 'border-emerald-600 bg-emerald-600 text-white hover:bg-emerald-600',
+    rail: 'bg-emerald-600',
+    card: 'border-emerald-300 bg-gradient-to-l from-emerald-50 to-white shadow-emerald-100/60',
+    icon: 'bg-emerald-600 text-white',
+  },
+  filed: {
+    badge: 'border-blue-300 bg-blue-100 text-blue-800',
+    rail: 'bg-blue-600',
+    card: 'border-blue-200 bg-blue-50/70',
+    icon: 'bg-blue-100 text-blue-700',
+  },
+  awaitingAcceptance: {
+    badge: 'border-violet-300 bg-violet-100 text-violet-800',
+    rail: 'bg-violet-600',
+    card: 'border-violet-200 bg-violet-50/70',
+    icon: 'bg-violet-100 text-violet-700',
   },
   slate: {
     badge: 'border-slate-200 bg-slate-50 text-slate-700',
@@ -1277,6 +1307,7 @@ const FinancialDelinquencyPage: React.FC = () => {
   const { companyId, isInitializing, isAuthenticating } = useUnifiedCompanyAccess();
   const [activeTab, setActiveTab] = useState<'queue' | 'search'>('queue');
   const [queueSearch, setQueueSearch] = useState('');
+  const [queueSort, setQueueSort] = useState<LegalQueueAmountSort>('amount_desc');
   const [candidateSearch, setCandidateSearch] = useState('');
   const [candidateType, setCandidateType] = useState<'all' | CandidateSource>('all');
   const [candidateSort, setCandidateSort] = useState<CandidateSort>('amount_desc');
@@ -1358,15 +1389,15 @@ const FinancialDelinquencyPage: React.FC = () => {
 
   const filteredQueue = useMemo(() => {
     const needle = queueSearch.trim().toLowerCase();
-    if (!needle) return legalQueue;
-    return legalQueue.filter((item) =>
+    const matchingItems = !needle ? legalQueue : legalQueue.filter((item) =>
       item.customerName.toLowerCase().includes(needle) ||
       item.contract.contract_number.toLowerCase().includes(needle) ||
       item.phone?.toLowerCase().includes(needle) ||
       item.vehicleLabel.toLowerCase().includes(needle) ||
       item.legalCaseNumber?.toLowerCase().includes(needle)
     );
-  }, [legalQueue, queueSearch]);
+    return sortLegalQueueByAmount(matchingItems, queueSort);
+  }, [legalQueue, queueSearch, queueSort]);
 
   const candidates = useMemo(() => {
     const needle = candidateSearch.trim().toLowerCase();
@@ -1942,7 +1973,8 @@ const FinancialDelinquencyPage: React.FC = () => {
 
           <TabsContent value="queue" className="space-y-4">
             <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
-              <div className="relative">
+              <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_220px]">
+                <div className="relative">
                 <Search className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#94A3B8]" />
                 <Input
                   value={queueSearch}
@@ -1950,6 +1982,23 @@ const FinancialDelinquencyPage: React.FC = () => {
                   placeholder="ابحث في الملفات المحولة: اسم العميل، رقم العقد، رقم القضية، اللوحة..."
                   className="h-12 rounded-xl border-slate-200 bg-[#F6F8FB] pr-10"
                 />
+                </div>
+                <Select
+                  value={queueSort}
+                  onValueChange={(value) => setQueueSort(value as LegalQueueAmountSort)}
+                >
+                  <SelectTrigger
+                    aria-label="ترتيب ملفات القضايا حسب المبلغ"
+                    className="h-12 w-full rounded-xl border-slate-200 bg-[#F6F8FB]"
+                  >
+                    <ArrowUpDown className="ml-2 h-4 w-4 text-emerald-600" />
+                    <SelectValue placeholder="ترتيب حسب المبلغ" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="amount_desc">المبلغ: الأعلى إلى الأقل</SelectItem>
+                    <SelectItem value="amount_asc">المبلغ: الأقل إلى الأعلى</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
             </div>
 

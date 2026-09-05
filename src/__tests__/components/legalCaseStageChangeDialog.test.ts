@@ -44,6 +44,24 @@ describe('delinquency legal case stage change', () => {
     expect(dialog).not.toContain('<SelectTrigger');
   });
 
+  it('gives filed and awaiting-acceptance cards distinct semantic colours', () => {
+    expect(delinquencyPage).toContain("item.workflowStage === 'filed'");
+    expect(delinquencyPage).toContain("? 'filed' as const");
+    expect(delinquencyPage).toContain("item.workflowStage === 'awaiting_acceptance'");
+    expect(delinquencyPage).toContain("? 'awaitingAcceptance' as const");
+    expect(delinquencyPage).toContain("rail: 'bg-blue-600'");
+    expect(delinquencyPage).toContain("rail: 'bg-violet-600'");
+  });
+
+  it('highlights filing-ready cards and exposes amount ordering in the legal queue', () => {
+    expect(delinquencyPage).toContain("tone: 'ready' as const");
+    expect(delinquencyPage).toContain("badge: 'border-emerald-600 bg-emerald-600 text-white");
+    expect(delinquencyPage).toContain("useState<LegalQueueAmountSort>('amount_desc')");
+    expect(delinquencyPage).toContain('المبلغ: الأعلى إلى الأقل');
+    expect(delinquencyPage).toContain('المبلغ: الأقل إلى الأعلى');
+    expect(delinquencyPage).toContain('sortLegalQueueByAmount(matchingItems, queueSort)');
+  });
+
   it('prefills an auditable reason for operational transitions so approval is immediately available', () => {
     expect(dialog).toContain('DEFAULT_TRANSITION_REASONS');
     expect(dialog).toContain("awaiting_acceptance: 'تم تأكيد إيداع الدعوى وبدء انتظار قبول المحكمة'");

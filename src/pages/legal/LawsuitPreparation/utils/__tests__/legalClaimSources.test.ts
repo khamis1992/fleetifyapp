@@ -7,6 +7,36 @@ import {
 } from '../legalClaimSources';
 
 describe('resolveLegalClaimProjection', () => {
+  const serviceInvoice = { id: 'service-rent', invoice_number: 'INV-202610-1', due_date: '2026-10-01', invoice_month: '2026-10-01', total_amount: 1500, paid_amount: 1000, balance_due: 500, invoice_type: 'service', penalty_id: null };
+  const linkedSchedule = { id: 'linked', installment_number: 1, due_date: '2026-10-01', amount: 1500, paid_amount: 1000, invoice_id: 'service-rent', status: 'partial' };
+
+  it('includes billed service rent once and preserves partial payments', () => {
+    const result = resolveLegalClaimProjection([serviceInvoice], [linkedSchedule], '2026-10-05');
+    expect(result.rows).toHaveLength(1);
+    expect(result.summary).toMatchObject({ mode: 'invoices', invoiceCount: 1, scheduleCount: 0, outstandingTotal: 500 });
+  });
+
+  it.each([
+    [],
+    [{ ...linkedSchedule, amount: 2000 }],
+    [{ ...linkedSchedule, due_date: '2026-09-01' }],
+    [{ ...linkedSchedule, status: 'cancelled' }],
+    [linkedSchedule, { ...linkedSchedule, id: 'duplicate' }],
+  ])('does not classify service invoices without an unambiguous matching rental schedule: %j', (...schedules) => {
+    expect(resolveLegalClaimProjection([serviceInvoice], schedules, '2026-10-05').rows).toEqual([]);
+  });
+
+  it('does not include paid, future, or traffic service invoices even with a schedule link', () => {
+    for (const invoice of [
+      { ...serviceInvoice, paid_amount: 1500, balance_due: 0 },
+      { ...serviceInvoice, due_date: '2026-11-01' },
+      { ...serviceInvoice, invoice_number: 'TV-123' },
+      { ...serviceInvoice, penalty_id: 'penalty-1' },
+    ]) {
+      expect(resolveLegalClaimProjection([invoice], [linkedSchedule], '2026-10-05').rows).toEqual([]);
+    }
+  });
+
   it('uses the Qatar calendar date at the UTC day boundary', () => {
     expect(getQatarBusinessDate(new Date('2026-08-25T22:30:00.000Z'))).toBe('2026-08-26');
   });

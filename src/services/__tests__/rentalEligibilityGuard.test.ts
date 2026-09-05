@@ -1,9 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import {
-  evaluateRentalEligibility,
-  UNPAID_PENALTY_BLOCK_AMOUNT_QAR,
-  UNPAID_PENALTY_BLOCK_COUNT,
-} from '../rentalEligibilityGuard';
+import { evaluateRentalEligibility } from '../rentalEligibilityGuard';
 
 const vehicle = (status = 'available') => ({ id: 'vehicle-1', status });
 const penalty = (amount: number, payment_status: string | null = 'unpaid') => ({ amount, payment_status });
@@ -27,7 +23,7 @@ describe('evaluateRentalEligibility', () => {
     expect(result.canOverrideUnpaidViolations).toBe(false);
   });
 
-  it('warns for unpaid vehicle penalties below both thresholds', () => {
+  it('warns for unpaid vehicle penalties', () => {
     const result = evaluateRentalEligibility({ vehicle: vehicle(), vehiclePenalties: [penalty(100)] });
     expect(result.level).toBe('warn');
     expect(result.vehiclePenalties).toEqual({ count: 1, total: 100 });
@@ -35,20 +31,26 @@ describe('evaluateRentalEligibility', () => {
     expect(result.violationMessages[0]).toContain('على المركبة');
   });
 
-  it('blocks when unpaid vehicle amount reaches the threshold', () => {
+  it.each([
+    [1, 500],
+    [3, 25],
+    [17, 300],
+  ])('permits rental with a warning for %i vehicle penalties of %i QAR', (count, amount) => {
     const result = evaluateRentalEligibility({
       vehicle: vehicle(),
-      vehiclePenalties: [penalty(UNPAID_PENALTY_BLOCK_AMOUNT_QAR)],
+      vehiclePenalties: Array.from({ length: count }, () => penalty(amount)),
     });
-    expect(result.level).toBe('block');
+    expect(result.level).toBe('warn');
+    expect(result.vehiclePenalties).toEqual({ count, total: count * amount });
+    expect(result.message).not.toContain('لا يمكن');
     expect(result.canOverrideUnpaidViolations).toBe(true);
     expect(result.hardBlockMessages).toEqual([]);
   });
 
-  it('blocks when unpaid customer count reaches the threshold and reports count and total', () => {
+  it('blocks unpaid customer penalties and reports count and total', () => {
     const result = evaluateRentalEligibility({
       vehicle: vehicle(),
-      customerPenalties: Array.from({ length: UNPAID_PENALTY_BLOCK_COUNT }, () => penalty(25)),
+      customerPenalties: Array.from({ length: 3 }, () => penalty(25)),
     });
     expect(result.level).toBe('block');
     expect(result.message).toContain('3 مخالفة');
