@@ -1,3 +1,4 @@
+import { legalCaseTypeLabel, legalCaseStatusLabel } from './workspace/legalLabels';
 /**
  * Legal Case Creation Wizard
  * 
@@ -136,6 +137,7 @@ const LegalCaseCreationWizard: React.FC<LegalCaseWizardProps> = ({
   const { saveDraft, lastSaved } = useCaseDraft(formData, currentStep);
 
   const stepOrder: WizardStep[] = ['details', 'customer', 'court', 'invoices', 'evidence', 'review'];
+  const stepLabels: Record<WizardStep, string> = { details: 'القضية', customer: 'العميل', court: 'المحكمة', invoices: 'المطالبات', evidence: 'المستندات', review: 'المراجعة' };
   const currentStepIndex = stepOrder.indexOf(currentStep);
   const progress = ((currentStepIndex + 1) / stepOrder.length) * 100;
 
@@ -245,16 +247,17 @@ const LegalCaseCreationWizard: React.FC<LegalCaseWizardProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>إنشاء قضية قانونية</DialogTitle>
-            <CardDescription>
-            Step {currentStepIndex + 1} of {stepOrder.length}
-            </CardDescription>
-          <Progress value={progress} className="mt-4" />
+      <DialogContent className="lw-case-wizard max-w-4xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader className="lw-form-heading">
+          <span className="lw-eyebrow"><FileText size={16} />ملف قانوني جديد</span>
+          <DialogTitle className="text-2xl">إنشاء قضية قانونية</DialogTitle>
+          <DialogDescription>أكمل بيانات الملف على ست خطوات، ثم راجع التفاصيل قبل إنشاء القضية.</DialogDescription>
+          <div className="lw-step-caption">الخطوة {currentStepIndex + 1} من {stepOrder.length} · {stepLabels[currentStep]}</div>
+          <Progress value={progress} aria-label="تقدم إنشاء القضية" className="mt-3 h-1.5" />
+          <ol className="lw-step-rail" aria-label="مراحل إنشاء القضية">{stepOrder.map((step, index) => <li key={step} aria-current={step === currentStep ? 'step' : undefined} data-completed={index < currentStepIndex}><span>{index < currentStepIndex ? <CheckCircle size={16} /> : index + 1}</span><strong>{stepLabels[step]}</strong></li>)}</ol>
         </DialogHeader>
 
-        <div className="space-y-6 py-4">
+        <div className="lw-form-body space-y-6 py-4">
           {/* Step 1: تفاصيل القضية */}
           {currentStep === 'details' && (
             <CaseDetailsStep formData={formData} setFormData={setFormData} />
@@ -311,14 +314,14 @@ const LegalCaseCreationWizard: React.FC<LegalCaseWizardProps> = ({
           )}
         </div>
 
-        <DialogFooter className="flex items-center justify-between">
+        <DialogFooter className="lw-form-footer flex items-center justify-between">
           <div className="flex gap-2">
             <Button
               variant="outline"
               onClick={handlePrevStep}
               disabled={currentStepIndex === 0}
             >
-              <ChevronLeft className="h-4 w-4 mr-2" />
+              <ChevronRight className="h-4 w-4 ml-2" />
               السابق
             </Button>
             <Button
@@ -340,7 +343,7 @@ const LegalCaseCreationWizard: React.FC<LegalCaseWizardProps> = ({
           ) : (
             <Button onClick={handleNextStep}>
               التالي
-              <ChevronRight className="h-4 w-4 ml-2" />
+              <ChevronLeft className="h-4 w-4 ml-2" />
             </Button>
           )}
         </DialogFooter>
@@ -1140,7 +1143,7 @@ const CustomerInfoStep: React.FC<CustomerInfoStepProps> = ({ formData, setFormDa
                     <div className="font-medium">{caseItem.case_title}</div>
                     <div className="text-xs text-muted-foreground flex justify-between items-center mt-1">
                       <span>
-                        {caseItem.case_type.replace(/_/g, ' ').toUpperCase()} • {caseItem.case_status}
+                        {legalCaseTypeLabel(caseItem.case_type)} • {legalCaseStatusLabel(caseItem.case_status)}
                       </span>
                       {caseItem.case_value && (
                         <span className="font-semibold text-primary">
@@ -1323,7 +1326,7 @@ const EvidenceUploadStep: React.FC<EvidenceUploadStepProps> = ({
                   variant="ghost"
                   size="sm"
                   onClick={() => removeFile(file.id)}
-                >
+                 aria-label="إزالة الملف المختار" title="إزالة الملف المختار">
                   <X className="h-4 w-4" />
                 </Button>
               </div>
@@ -1406,12 +1409,12 @@ const ReviewStep: React.FC<ReviewStepProps> = ({ formData }) => {
         </CardHeader>
         <CardContent className="space-y-3">
           <div className="flex justify-between items-start">
-            <span className="text-muted-foreground">Title:</span>
+            <span className="text-muted-foreground">العنوان:</span>
             <span className="font-medium">{formData.case_title}</span>
           </div>
           <div className="flex justify-between items-start">
-            <span className="text-muted-foreground">Type:</span>
-            <Badge>{formData.case_type}</Badge>
+            <span className="text-muted-foreground">النوع:</span>
+            <Badge>{legalCaseTypeLabel(formData.case_type)}</Badge>
           </div>
           <div className="flex justify-between items-start">
             <span className="text-muted-foreground">الأولوية:</span>
@@ -1430,7 +1433,7 @@ const ReviewStep: React.FC<ReviewStepProps> = ({ formData }) => {
         </CardHeader>
         <CardContent className="space-y-3">
           <div className="flex justify-between items-start">
-            <span className="text-muted-foreground">Name:</span>
+            <span className="text-muted-foreground">الاسم:</span>
             <span className="font-medium">{formData.customer_name}</span>
           </div>
           <div className="flex justify-between items-start">

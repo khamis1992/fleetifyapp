@@ -486,7 +486,7 @@ export const useEnhancedFinancialReports = (
           return {
             accountCode: acc.account_code,
             accountName: acc.account_name,
-            accountNameAr: acc.account_name,
+            accountNameAr: acc.account_name_ar || acc.account_name,
             accountLevel: acc.account_level,
             isHeader: acc.is_header,
             balance: balance?.balance || 0,
@@ -520,7 +520,7 @@ export const useEnhancedFinancialReports = (
           return {
             accountCode: acc.account_code,
             accountName: acc.account_name,
-            accountNameAr: acc.account_name,
+            accountNameAr: acc.account_name_ar || acc.account_name,
             accountLevel: acc.account_level,
             isHeader: acc.is_header,
             balance: Math.abs(balance?.balance || 0)
@@ -534,7 +534,7 @@ export const useEnhancedFinancialReports = (
           return {
             accountCode: acc.account_code,
             accountName: acc.account_name,
-            accountNameAr: acc.account_name,
+            accountNameAr: acc.account_name_ar || acc.account_name,
             accountLevel: acc.account_level,
             isHeader: acc.is_header,
             balance: Math.abs(balance?.balance || 0)
@@ -587,7 +587,7 @@ export const useEnhancedFinancialReports = (
           return {
             accountCode: acc.account_code,
             accountName: acc.account_name,
-            accountNameAr: acc.account_name,
+            accountNameAr: acc.account_name_ar || acc.account_name,
             accountLevel: acc.account_level,
             isHeader: acc.is_header,
             balance: Math.abs(balance?.balance || 0)
@@ -601,7 +601,7 @@ export const useEnhancedFinancialReports = (
           return {
             accountCode: acc.account_code,
             accountName: acc.account_name,
-            accountNameAr: acc.account_name,
+            accountNameAr: acc.account_name_ar || acc.account_name,
             accountLevel: acc.account_level,
             isHeader: acc.is_header,
             balance: Math.abs(balance?.balance || 0)
@@ -615,7 +615,7 @@ export const useEnhancedFinancialReports = (
           return {
             accountCode: acc.account_code,
             accountName: acc.account_name,
-            accountNameAr: acc.account_name,
+            accountNameAr: acc.account_name_ar || acc.account_name,
             accountLevel: acc.account_level,
             isHeader: acc.is_header,
             balance: Math.abs(balance?.balance || 0)

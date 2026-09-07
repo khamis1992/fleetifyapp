@@ -78,7 +78,7 @@ export const ContractPrintDialog: React.FC<ContractPrintDialogProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-[95vw] max-h-[95vh] overflow-auto">
+      <DialogContent className="contract-operation-dialog max-w-[95vw] max-h-[95vh] overflow-auto">
         <DialogHeader className="no-print">
           <DialogTitle className="flex items-center justify-between">
             <span>معاينة الطباعة - عقد رقم {contract.contract_number}</span>

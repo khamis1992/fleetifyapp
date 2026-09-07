@@ -123,6 +123,7 @@ export interface LegalCaseFormData {
 }
 
 interface UseLegalCasesFilters {
+  contract_id?: string;
   case_status?: string;
   exclude_cancelled?: boolean;
   case_type?: string;
@@ -215,6 +216,9 @@ export const useLegalCases = (filters?: UseLegalCasesFilters, enabled: boolean =
       }
 
       // Apply filters
+      if (filters?.contract_id) {
+        query = query.eq('contract_id', filters.contract_id);
+      }
       if (filters?.case_status) {
         query = query.eq('case_status', filters.case_status);
       }

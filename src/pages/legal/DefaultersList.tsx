@@ -1,3 +1,5 @@
+import { LegalPageState } from '@/components/legal/workspace/LegalPageState';
+import { LegalPageHeader } from '@/components/legal/workspace/LegalPageHeader';
 import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -32,7 +34,7 @@ import { HelpIcon } from '@/components/help/HelpIcon';
 import '@/styles/legal-system.css';
 
 export const DefaultersList: React.FC = () => {
-  const { data, isLoading, error, scopeKey } = useLatePaymentCustomers();
+  const { data, isLoading, error, refetch, scopeKey } = useLatePaymentCustomers();
   const lateCustomers=data?.verified;
   const reviews=data?.review||[];
   const autoCreateCases = useAutoCreateLegalCases();
@@ -93,24 +95,7 @@ export const DefaultersList: React.FC = () => {
     }
   };
 
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center h-96">
-        <LoadingSpinner size="lg" />
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <Alert variant="destructive">
-        <AlertTriangle className="h-4 w-4" />
-        <AlertDescription>
-          {error.message}
-        </AlertDescription>
-      </Alert>
-    );
-  }
+  if (isLoading || error) return <LegalPageState title="المتأخرون عن الدفع" loading={isLoading} message={(error as Error | null)?.message} onRetry={() => { void refetch(); }} />;
 
   const totalOutstanding = (lateCustomers?.reduce((sum, c) => sum + Math.round(c.total_outstanding*100), 0) || 0)/100;
   const eligibleForLegalAction = lateCustomers?.filter(c => c.days_overdue >= 30).length || 0;
@@ -118,40 +103,7 @@ export const DefaultersList: React.FC = () => {
   return (
     <div className="legal-system min-h-screen">
       <div className="container mx-auto py-6 space-y-6">
-        {/* Page Header */}
-        <Card className="bg-white border border-slate-200 rounded-xl hover:border-teal-500/50 hover:shadow-sm transition-all duration-300">
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="p-3 rounded-xl bg-teal-500 shadow-sm">
-                  <AlertTriangle className="h-8 w-8 text-white" />
-                </div>
-                <div>
-                  <div className="flex items-center gap-2">
-                    <CardTitle className="text-2xl text-slate-900">قائمة المتأخرين عن الدفع</CardTitle>
-                    <HelpIcon
-                      topic="defaultersList"
-                      size="md"
-                    />
-                  </div>
-                  <CardDescription className="text-base mt-1 text-slate-600">
-                    العملاء المتأخرون عن سداد الإيجار الشهري
-                  </CardDescription>
-                </div>
-              </div>
-              {selectedEligible.length > 0 && (
-                <Button
-                  onClick={handleCreateLegalCases}
-                  disabled={autoCreateCases.isPending}
-                  className="bg-teal-500 hover:bg-teal-600 rounded-xl shadow-sm"
-                >
-                  <Scale className="h-4 w-4 mr-2" />
-                  إنشاء قضايا قانونية ({selectedEligible.length})
-                </Button>
-              )}
-            </div>
-          </CardHeader>
-        </Card>
+        <LegalPageHeader title="المتأخرون عن الدفع" icon={Scale} description="راجع مستحقات الإيجار، وحدّد العقود المؤهلة للتحويل إلى الشؤون القانونية." actions={<><HelpIcon topic="defaultersList" size="md" />{selectedEligible.length > 0 && <Button onClick={handleCreateLegalCases} disabled={autoCreateCases.isPending}><Scale className="h-4 w-4 ml-2" />إنشاء قضايا قانونية ({selectedEligible.length})</Button>}</>} />
 
       {conversionErrors.length > 0 && <Alert variant="destructive">
         <AlertDescription>

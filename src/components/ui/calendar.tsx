@@ -20,6 +20,21 @@ function Calendar({
     <DayPicker
       showOutsideDays={showOutsideDays}
       locale={arSA}
+      dir="rtl"
+      labels={{
+        labelNav: () => 'التنقل بين الأشهر',
+        labelPrevious: () => 'الشهر السابق',
+        labelNext: () => 'الشهر التالي',
+        labelMonthDropdown: () => 'اختر الشهر',
+        labelYearDropdown: () => 'اختر السنة',
+        labelWeekNumber: (week) => `الأسبوع ${week}`,
+        labelWeekNumberHeader: () => 'رقم الأسبوع',
+        labelDayButton: (date, modifiers) => [
+          date.toLocaleDateString('ar-QA', { dateStyle: 'full' }),
+          modifiers.today ? 'اليوم' : '',
+          modifiers.selected ? 'محدد' : '',
+        ].filter(Boolean).join('، '),
+      }}
       weekStartsOn={6} // Saturday
       captionLayout="dropdown"
       startMonth={new Date(currentYear - 10, 0)}

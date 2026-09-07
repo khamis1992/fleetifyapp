@@ -1,5 +1,168 @@
 # Fleetify Database Reference
 
+## Cancelled schedule closure preserving claims — deployed (2026-09-06)
+
+Migration `20260906202626` adds `preview_contract_schedule_closure_v1` and
+`close_contract_schedule_closure_v1`. These authenticated invoker facades use
+authorized private gateways, the shared financial eligibility checks and a
+`preserve_claims` decision distinct from the existing `no_claim` workflow.
+Open invoices and known customer penalties remain payable; pending receipts,
+unknown liability, invalid cancellation evidence and other integrity issues
+still block approval. Decision mode and penalty facts are included in the
+preview revision; cross-mode request replay is rejected.
+
+Only held schedules with verified cancelled invoices become `cancelled` with
+`financial_hold_reason='resolved_cancelled_schedule'`. Audit snapshots carry
+`decision='cancelled_schedules_preserving_claims'` and protected billing months.
+Invoices, payments, allocations, journals, penalties and collection records are
+not changed. Postconditions require unchanged canonical settlement, invoice
+outstanding and penalty amount, zero remaining schedule review and matched
+integrity. Rollback retains approved decisions and regeneration guards.
+
+C-ALF-0041 was approved through the UI: 9 schedules / 14,400 QAR closed, 3,050
+QAR settlement retained, 150 QAR invoice balance plus a 500 QAR customer penalty
+preserved. Before/after financial documents and remaining schedules matched
+exactly. The UI is available locally; no Vercel deployment was performed.
+See [design and usage](plans/2026-09-06-cancelled-schedules-preserve-claims-design.md)
+and [verified result](reviews/contract-financial-root-cause-2026-09-06/c-alf-0041-preserved-claims-result.json).
+
+## Self-service no-claim closure — deployed (2026-09-06)
+
+Migrations `20260906192023` and `20260906192448` add the authorized preview and
+approval workflow for cancelled contracts with held, already-cancelled rental
+invoices. `preview_contract_no_claim_closure_v1(company,contract)` returns a
+validated scope, blockers, retained settlement and revision.
+`close_contract_no_claim_closure_v1(company,contract,revision,request_id,reason)`
+requires an unchanged preview, a reason, active company membership and
+`finance.invoice.cancel` authorization (including explicit-deny precedence).
+Both public facades are security invoker, authenticated-only. Private definer
+gateways check authorization before reading or mutating data; raw helpers have
+no browser execution grants.
+
+`contract_finance_private.no_claim_closures` stores actor, reason, request,
+preview and result. It has RLS, an explicit deny-all browser policy, no direct
+browser grants, and unique `(company_id,request_id)` for replay-safe decisions.
+The command locks invoices then contract then schedules, preserves receipts,
+allocations and journals, closes only previewed schedules, records before/after
+snapshots using `contract_no_claim:<closure UUID>` markers, and refreshes the
+verified reconciliation and stale delinquency cache. Existing resolved-month
+guards prevent reactivation and recreation.
+
+Open invoices, independent customer penalties, unresolved penalty responsibility,
+pending receipts, other integrity defects, missing reversals and ambiguous source
+invoices block approval. A legacy missing cancellation pointer can be resolved
+only when exactly one cancelled rental invoice matches company, contract, month
+and amount; the accepted pointer is retained on the closed schedule.
+
+Browser verification confirmed the Arabic action and server preview. LTO2024233
+correctly remains blocked by independent customer penalties after its 36 legacy
+invoice sources were resolved in the preview. No other contract was approved by
+the agent while testing. The new UI is available on the local Vite app; no Vercel
+deployment was performed. Full type check and build passed, as did six frontend
+tests and ten isolated PostgreSQL tests. No security advisor findings concern
+the new workflow after deployment.
+
+Rollback disables the feature but retains completed decisions, audit records
+and guards; it never reopens claims as a deployment side effect. The broader
+effective cancellation date and open-invoice settlement workflow remains separate.
+See [design and usage](plans/2026-09-06-contract-no-claim-closure-action-design.md).
+
+## C-ALF-0053 no-current-claim decision — deployed (2026-09-06)
+
+`20260906185707` implements the owner's explicit no-current-claim decision for
+cancelled C-ALF-0053. It closes 17 schedules totaling 28,050 QAR, linked to
+already-cancelled invoices, and records protected billing months in the existing
+resolution guard. Seven paid schedules and 11,550 QAR of completed receipts are
+preserved. The transaction verifies unchanged invoice, receipt and allocation
+snapshots; it creates no invoice, reversal, or payment.
+
+Production verification at 18:57 UTC: matched, zero outstanding, zero review
+amount, 17 resolution guards, no active delinquency record. Historical contract
+remainder remains 28,050 QAR; it is not the current claim. Snapshot audit marker
+is `20260906185414`. Matching rollback is conditional on unchanged closed rows.
+The isolated PostgreSQL test verifies atomic rejection of changed evidence,
+preservation of paid facts, refusal to reactivate or recreate a closed schedule,
+and rollback. This is a case-specific maintenance resolution; no new UI closure
+button or general settlement RPC was added.
+See [verified result](reviews/contract-financial-root-cause-2026-09-06/c-alf-0053-no-current-claim-result.json).
+
+## Owner-confirmed cancellation and rent decisions — deployed (2026-09-06)
+
+`20260906175942` closes the 30 held schedules of cancelled LTO202410 after the
+owner explicitly confirmed no current claim. Open invoice debt and review amount
+are both zero; 9,000 QAR of completed receipts remain intact. The historical
+contract remainder is still 45,000 QAR and must not be used as a current claim.
+The existing schedule-resolution guard prevents reactivation/rebilling of the
+closed months. Its immutable repair-snapshot marker is `20260906175706`.
+
+`20260906180953` cancels the incorrect unpaid June/September 2025 invoices of
+MR202467 through exact posted journal reversals and issues replacements at
+1,700 QAR each. Original posted lines and all receipts remain unchanged.
+Original journals remain posted alongside their linked posted reversals, as
+required by the ledger's reversal semantics. Current invoice debt is 18,400 QAR;
+the other ten invoices and the contract's recorded 1,500 rent are unchanged
+pending confirmation of the scope of the 1,700 rate. The immutable audit marker
+is `20260906180050`; rollback creates compensating documents rather than deleting
+posted history. The correction helper exists only in the migration session's
+temporary schema, with no public RPC added.
+
+Original cohort at 18:13 UTC: 19 matched, LTO2024233 still requiring a business
+decision. Full company queue at 18:11 UTC: 350 matched, 4 review, including three
+cases outside the original cohort. These are technical reconciliation outcomes,
+not blanket validation of all historic charges.
+See [owner decision evidence](reviews/contract-financial-root-cause-2026-09-06/owner-decisions-final-state.json)
+and the [proposed cancellation/settlement workflow](plans/2026-09-06-contract-cancellation-financial-settlement-design.md).
+The general workflow remains a design, not a deployed feature.
+
+## Reviewed schedule projections — deployed (2026-09-06)
+
+Migrations `20260906172916` and `20260906173630` repair 39 schedule projection
+defects in 18 contracts and retain a newly discovered invoice-origin review on
+MR202467. Initial original-cohort result: 17 matched, 3 needing business facts;
+subsequent owner-confirmed decisions are documented above.
+`guard_resolved_contract_schedule_v1` consults private repair snapshots to prevent
+reactivating explicitly closed projections; approved billing cutoff months also
+block replacement schedules. No invoice face amount, receipt or journal was changed.
+Repair-snapshot markers retain `20260906172212` / `20260906173435` for audit identity.
+See [case decisions and deployment evidence](reviews/contract-financial-root-cause-2026-09-06/TWENTY-CONTRACTS-RESULT.md).
+
+## Contract financial integrity — deployed (2026-09-06)
+
+After explicit user approval, runtime `20260906165231`, activation `20260906165254`,
+and monthly conflict fix `20260906165304` were applied and verified in production.
+Local migration and rollback filenames match these database-assigned versions.
+The earlier rejected proposal versions were `20260906161957`, `20260906163157`,
+and `20260906164116`; the activation's repair-snapshot marker retains its original
+value `20260906163157` as immutable audit evidence.
+
+Runtime adds `contract_payment_schedules.financial_hold_reason text` and
+`cancelled_invoice_id uuid REFERENCES invoices(id)`, plus company-scoped
+`contract_financial_reconciliation_controls`, `contract_financial_reconciliation_queue`,
+and `contract_financial_reconciliation_runs` (RLS, authenticated SELECT only).
+Authenticated gateways: `get_contract_financial_integrity_v1(company,contract)`
+and `request_contract_financial_reconciliation_v1(company,contract)`; helpers have
+no public execution grants. The request uses `finance.payment.reconcile` authorization.
+The scheduled worker repairs derived balances and unambiguous schedule links only.
+Held cancelled obligations remain review items and cannot be automatically rebilled.
+
+At initial deployment, LTO202410 stored settlement was corrected from 10,476 to
+9,000 QAR and 30 cancelled-document obligations totaling 45,000 QAR remained on
+review hold, with zero open-invoice balance. The owner later confirmed closure
+of these obligations; see the newer decision above. The independent worker runs
+each minute; company-wide initial reconciliation was still processing at that
+initial verification.
+See [implementation and deployment scope](reviews/contract-financial-root-cause-2026-09-06/IMPLEMENTATION.md).
+
+## Taqadi receipt completion deployed (2026-09-06)
+
+Migrations `20260906064806` and `20260906064817` are deployed. The service-only
+`complete_taqadi_filing_job_v1` atomically records a proven receipt, marks the
+matching preparation registered, and advances the case through `filed` to
+`awaiting_acceptance`. Receipt replay checks worker ownership, company/case/contract,
+memo snapshot and reference, and preserves later court stages. No table columns
+changed. Matching rollbacks are in `supabase/rollbacks`; apply in reverse order.
+See [implementation and verification](plans/2026-09-06-taqadi-reliability-design.md).
+
 ## Pending current-source automatic legal review (2026-09-04)
 
 `20260904040649_revalidate_canonical_legal_system_review.sql` is local, **not deployed**.

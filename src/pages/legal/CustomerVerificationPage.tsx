@@ -1,3 +1,4 @@
+import { LegalPageHeader } from '@/components/legal/workspace/LegalPageHeader';
 /**
  * صفحة تدقيق بيانات العميل
  * يستخدمها الموظف للتحقق من بيانات العميل وتسجيل الدفعات قبل رفع الدعوى
@@ -701,41 +702,7 @@ export default function CustomerVerificationPage() {
         رجوع
       </Button>
 
-      {/* Header */}
-      <motion.div
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="mb-6"
-      >
-        <Card className="legal-panel">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <div className="p-3 bg-white/10 rounded-xl">
-                  <BadgeCheck className="h-8 w-8" />
-                </div>
-                <div>
-                  <h1 className="text-2xl font-bold">تدقيق بيانات العميل</h1>
-                  <p className="text-sm text-white/70 mt-1">
-                    مهمة من: {(task.assigned_by_user as any)?.first_name_ar} {(task.assigned_by_user as any)?.last_name_ar || 'غير معروف'}
-                  </p>
-                </div>
-              </div>
-              {isVerified ? (
-                <Badge className="bg-green-500 text-white text-sm px-4 py-2">
-                  <CheckCircle2 className="h-4 w-4 ml-1" />
-                  تم التدقيق
-                </Badge>
-              ) : (
-                <Badge className="bg-amber-500 text-white text-sm px-4 py-2">
-                  <AlertCircle className="h-4 w-4 ml-1" />
-                  قيد التدقيق
-                </Badge>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-      </motion.div>
+      <LegalPageHeader title="تدقيق بيانات العميل" icon={BadgeCheck} description={<>مهمة من: {(task.assigned_by_user as any)?.first_name_ar} {(task.assigned_by_user as any)?.last_name_ar || 'غير معروف'}</>} aside={<Badge className={isVerified ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-900'}>{isVerified ? <CheckCircle2 className="h-4 w-4 ml-1" /> : <AlertCircle className="h-4 w-4 ml-1" />}{isVerified ? 'تم التدقيق' : 'قيد التدقيق'}</Badge>} />
 
       {/* بطاقة بيانات العميل */}
       <motion.div
@@ -990,7 +957,7 @@ export default function CustomerVerificationPage() {
                         variant="ghost"
                         className="text-red-500 hover:text-red-700 hover:bg-red-50"
                         onClick={() => setContractFile(null)}
-                      >
+                       aria-label="إزالة الملف المختار" title="إزالة الملف المختار">
                         <X className="h-4 w-4" />
                       </Button>
                     </div>

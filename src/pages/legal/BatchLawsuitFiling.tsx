@@ -1,3 +1,4 @@
+import { LegalPageHeader } from '@/components/legal/workspace/LegalPageHeader';
 /**
  * Batch Lawsuit Filing — صفحة الرفع الجماعي للدعاوى
  *
@@ -216,25 +217,7 @@ export default function BatchLawsuitFiling() {
 
   return (
     <main dir="rtl" className="mx-auto max-w-6xl space-y-6 p-6">
-      <header className="flex flex-wrap items-center justify-between gap-4">
-        <div>
-          <h1 className="flex items-center gap-2 text-2xl font-black text-[#142033]">
-            <Gavel className="h-6 w-6 text-[#173A63]" />
-            الرفع الجماعي للدعاوى
-          </h1>
-          <p className="mt-1 text-sm text-slate-500">
-            تجهيز وإدخال طابور تقاضي لعدة عقود — تُرفع واحدة تلو الأخرى تلقائيًا عبر وكيل الأتمتة.
-          </p>
-        </div>
-        <Badge
-          variant="outline"
-          className={workerOnline
-            ? 'border-emerald-200 bg-emerald-50 text-emerald-800'
-            : 'border-red-200 bg-red-50 text-red-800'}
-        >
-          {workerOnline ? 'الوكيل متصل' : 'الوكيل غير متصل — ستنتظر المهام في الطابور'}
-        </Badge>
-      </header>
+      <LegalPageHeader title="الرفع الجماعي للدعاوى" icon={Gavel} description="جهّز عدة عقود في قائمة واحدة. يتولى وكيل تقاضي معالجتها بالتتابع مع متابعة حالة كل ملف." aside={<Badge variant="outline" className={workerOnline ? 'border-emerald-200 bg-emerald-50 text-emerald-800' : 'border-red-200 bg-red-50 text-red-800'}>{workerOnline ? 'الوكيل متصل' : 'الوكيل غير متصل — المهام في الانتظار'}</Badge>} />
 
       {!workerOnline && (
         <Alert className="border-amber-200 bg-amber-50">

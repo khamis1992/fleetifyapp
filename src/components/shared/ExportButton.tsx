@@ -4,7 +4,7 @@
  */
 
 import React, { useState } from 'react';
-import { Button } from '@/components/ui/button';
+import { WorkspaceButton as Button } from '@/components/employee-workspace/WorkspacePresentation';
 import {
   DropdownMenu,
   DropdownMenuContent,

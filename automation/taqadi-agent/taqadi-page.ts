@@ -8,9 +8,13 @@ import type {
   Response,
 } from 'playwright';
 import { agentConfig } from './config';
+import { parseTaqadiReceipt } from './receipt-parser';
 import {
+  confirmSmartCardAuthenticationSucceeded,
   reserveSmartCardPinSubmission,
+  SMART_CARD_PIN_LIMIT_MESSAGE,
   startWindowsSmartCardPinHelper,
+  type SmartCardPinHelper,
 } from './smart-card-pin';
 import { expandFieldLookup } from './selector-overrides';
 import { stageOrderIndex, stageReached } from './adaptive-flow';
@@ -399,9 +403,26 @@ const taqadiPartyOrder = 1;
 const taqadiCompanyPartyOrder = 1;
 
 export class TaqadiPortal {
+  private verifiedPosition: { revision: string; position: TaqadiPortalPosition } | null = null;
+
+  private async observationRevision(): Promise<string> {
+    return this.page.evaluate(() => {
+      const host = window as unknown as { __fleetifyObservation?: { revision: number } };
+      if (!host.__fleetifyObservation) {
+        const state = { revision: 0 };
+        host.__fleetifyObservation = state;
+        new MutationObserver(() => { state.revision += 1; }).observe(document.documentElement, {
+          subtree: true, childList: true, attributes: true, characterData: true,
+        });
+      }
+      return `${performance.timeOrigin}:${location.href}:${host.__fleetifyObservation.revision}`;
+    });
+  }
   private lastPriorityDiagnostics: Record<string, unknown> | null = null;
   private tawtheeqSmartCardSelected = false;
   private tawtheeqSmartCardPinSubmitted = false;
+  private smartCardPinHelper: SmartCardPinHelper | null = null;
+  private smartCardAuthenticationConfirmed = false;
   private tawtheeqCredentialsFilled = false;
   private tawtheeqLoginSubmitted = false;
   private tawtheeqCompanyPageLogged = false;
@@ -768,20 +789,20 @@ export class TaqadiPortal {
 
     this.tawtheeqSmartCardSelected = true;
     await smartCardAction.click();
-    const pinHelper = startWindowsSmartCardPinHelper(agentConfig.tawtheeq.smartCardPin);
-    if (pinHelper === 'limit-reached') {
-      throw new HumanInterventionError(
-        'أوقف الوكيل إدخال رقم البطاقة الذكية قبل المحاولة الثالثة لحماية البطاقة من القفل. تحقق من الرقم السري ثم أعد تشغيل الوكيل.',
-        'SMART_CARD_PIN_RETRY_LIMIT',
-        { maximumAutomaticSubmissions: 2 },
-      );
-    }
+    this.smartCardPinHelper = startWindowsSmartCardPinHelper(agentConfig.tawtheeq.smartCardPin);
     await this.page.waitForTimeout(1_000);
     console.log('[TaqadiAgent] Tawtheeq smart-card login selected');
     return true;
   }
 
   private async submitTawtheeqSmartCardPinIfReady() {
+    if (this.smartCardPinHelper?.status === 'limit-reached') {
+      throw new HumanInterventionError(SMART_CARD_PIN_LIMIT_MESSAGE,
+        'SMART_CARD_PIN_RETRY_LIMIT', { maximumAutomaticSubmissions: 2, resumeSupported: true });
+    }
+    if (this.smartCardPinHelper?.status === 'submitted') {
+      this.tawtheeqSmartCardPinSubmitted = true;
+    }
     const pin = agentConfig.tawtheeq.smartCardPin;
     if (
       this.tawtheeqSmartCardPinSubmitted
@@ -827,11 +848,17 @@ export class TaqadiPortal {
     ]);
     if (!pinInput) return false;
 
+    // Cancel the native watcher before becoming the web writer. If it already
+    // authorized entry, never submit the same challenge through a second path.
+    if (this.smartCardPinHelper?.cancel()) {
+      this.tawtheeqSmartCardPinSubmitted = true;
+      return false;
+    }
     if (!reserveSmartCardPinSubmission()) {
       throw new HumanInterventionError(
-        'أوقف الوكيل إدخال رقم البطاقة الذكية قبل المحاولة الثالثة لحماية البطاقة من القفل. تحقق من الرقم السري ثم أعد تشغيل الوكيل.',
+        SMART_CARD_PIN_LIMIT_MESSAGE,
         'SMART_CARD_PIN_RETRY_LIMIT',
-        { maximumAutomaticSubmissions: 2 },
+        { maximumAutomaticSubmissions: 2, resumeSupported: true },
       );
     }
 
@@ -1029,6 +1056,21 @@ export class TaqadiPortal {
   }
 
   private async tawtheeqAuthenticationError() {
+    const url = new URL(this.page.url());
+    const smartCardPage = (url.hostname === 'tawtheeq.gov.qa'
+      || url.hostname.endsWith('.tawtheeq.gov.qa'))
+      && url.pathname.replace(/\/+$/, '') === '/idp/public/authn/smart-card';
+    if (smartCardPage) {
+      const pinError = await this.firstVisible([
+        this.page.getByText(/(?:الرقم السري|الرمز السري|رمز البطاقة).*(?:غير صحيح|خاطئ)|(?:incorrect|invalid|wrong)\s+pin|(?:pin|card).*(?:blocked|locked)|البطاقة.*(?:محظورة|مقفلة)/i),
+      ]);
+      if (pinError) {
+        return {
+          code: 'SMART_CARD_PIN_REJECTED',
+          message: 'أظهرت بوابة توثيق رفضًا للرقم السري أو قفلًا للبطاقة. أُوقف الإدخال التلقائي؛ راجع حالة البطاقة والرقم محليًا قبل متابعة الدخول.',
+        };
+      }
+    }
     if (!this.tawtheeqLoginSubmitted) return null;
 
     const candidate = await this.firstVisible([
@@ -1047,7 +1089,7 @@ export class TaqadiPortal {
     const message = normalizeText(
       await candidate.innerText().catch(() => ''),
     );
-    return message || 'رفض نظام التوثيق الوطني بيانات الدخول';
+    return { code: 'TAWTHEEQ_CREDENTIALS_REJECTED', message: message || 'رفض نظام التوثيق الوطني بيانات الدخول' };
   }
 
   private async tawtheeqSConnectSetupPage() {
@@ -1089,7 +1131,8 @@ export class TaqadiPortal {
 
   private async continueTawtheeqLoginIfReady() {
     const { username, password } = agentConfig.tawtheeq;
-    if (!username || !password || this.tawtheeqLoginSubmitted) return false;
+    if (!username || !password || this.tawtheeqLoginSubmitted
+      || this.tawtheeqSmartCardSelected) return false;
 
     const url = this.page.url().toLowerCase();
     const nationalLoginUrl = url.includes('nas.gov.qa')
@@ -3498,8 +3541,9 @@ export class TaqadiPortal {
 
   private async isAuthenticatedPortalPage(page: Page) {
     if (page.isClosed()) return false;
-    const url = page.url().toLowerCase();
-    if (!url.includes('/itc/home')) return false;
+    const url = new URL(page.url());
+    if (url.protocol !== 'https:' || url.hostname !== 'taqadi.sjc.gov.qa'
+      || url.pathname.replace(/\/+$/, '').toLowerCase() !== '/itc/home') return false;
     if (await this.looksLoggedOut(page) || await this.captchaVisible(page)) {
       return false;
     }
@@ -3521,7 +3565,7 @@ export class TaqadiPortal {
       + '.header:visible, [class*="user-info"]:visible, '
       + '[class*="profile"]:visible, #left-panel:visible',
     );
-    const texts = await identityRoots.allInnerTexts().catch(() => []);
+    const texts: string[] = await identityRoots.allInnerTexts().catch((): string[] => []);
     // On Taqadi's home dashboard the active account is rendered in the right
     // navigation panel rather than #header. Reading the whole body is safe
     // only on the exact home route, before any case text can mention Alaraf.
@@ -3594,6 +3638,17 @@ export class TaqadiPortal {
     // successful login: Taqadi may still bounce back to /itc/login. Always
     // re-check the resulting page before allowing the filing workflow to run.
     await this.selectTaqadiCompanyAccountIfNeeded();
+    // Authentication and authorization are separate: reaching the live shell
+    // on this flow's page proves the PIN handshake finished, even when the
+    // active company is wrong. A different persisted tab is not that proof.
+    if (!this.smartCardAuthenticationConfirmed
+      && (this.tawtheeqSmartCardPinSubmitted || this.smartCardPinHelper?.status === 'submitted')
+      && await this.isAuthenticatedPortalPage(this.page)) {
+      this.smartCardPinHelper?.cancel();
+      confirmSmartCardAuthenticationSucceeded();
+      this.smartCardAuthenticationConfirmed = true;
+      console.log('[TaqadiAgent] Smart-card authentication confirmed; PIN attempt budget reset');
+    }
     const adopted = await this.adoptAuthenticatedPortalPage();
     let companyIdentity = verifiedCompanyContexts.has(this.page.context())
       ? { verified: true, observedIdentity: 'previously_verified_context' }
@@ -3623,7 +3678,7 @@ export class TaqadiPortal {
       && !companyContextVerified
     ) {
       throw new HumanInterventionError(
-        'عاد تقاضي بجلسة لم يثبت الوكيل أنها تخص شركة العراف؛ تم إيقاف إنشاء الدعوى لمنع الدخول كسياق فردي',
+        'نجح الدخول إلى تقاضي، لكن الحساب الظاهر لم يُثبت أنه شركة العراف. اختر حساب الشركة برقم المنشأة 17201586 في نافذة الوكيل ثم اضغط «متابعة من تقاضي». لم يبدأ إنشاء الدعوى.',
         'TAWTHEEQ_COMPANY_CONTEXT_NOT_VERIFIED',
         {
           establishmentNumber: agentConfig.company.establishmentNumber,
@@ -3631,10 +3686,17 @@ export class TaqadiPortal {
           taqadiCompanyAccountSelected: this.taqadiCompanyAccountSelected,
           observedIdentity: companyIdentity.observedIdentity,
           url: this.page.url(),
+          resumeSupported: true,
+          requiredActions: [
+            'افتح نافذة تقاضي التي شغّلها الوكيل وتحقق من الحساب النشط.',
+            `اختر حساب شركة العراف برقم المنشأة ${agentConfig.company.establishmentNumber}، وإذا كان الدخول باسم فرد فأعد الدخول باختيار الشركة.`,
+            'بعد ظهور حساب الشركة اضغط «متابعة من تقاضي» للحزمة الحالية.',
+          ],
         },
       );
     }
     if (companyContextVerified) {
+      this.smartCardPinHelper?.cancel();
       verifiedCompanyContexts.add(this.page.context());
       console.log(
         `[TaqadiAgent] Authenticated portal adopted after verified company selection: ${agentConfig.company.establishmentNumber}`,
@@ -3645,14 +3707,47 @@ export class TaqadiPortal {
 
   async ensureAuthenticated(
     onWaitingForLogin: () => Promise<void>,
+    options: { resume?: boolean } = {},
   ): Promise<void> {
+    try {
+      await this.ensureAuthenticatedSession(onWaitingForLogin, options);
+    } finally {
+      // Never leave an orphan watcher able to type after a job was stopped.
+      this.smartCardPinHelper?.cancel();
+    }
+  }
+
+  private async ensureAuthenticatedSession(
+    onWaitingForLogin: () => Promise<void>,
+    options: { resume?: boolean },
+  ): Promise<void> {
+    // On explicit resume preserve the user's in-progress authentication page
+    // and company choice. Navigating to /itc/login starts a new handshake.
+    const currentUrl = new URL(this.page.url());
+    const continuingLogin = options.resume && (
+      ((currentUrl.hostname === 'tawtheeq.gov.qa'
+        || currentUrl.hostname.endsWith('.tawtheeq.gov.qa'))
+        && currentUrl.pathname.startsWith('/idp/'))
+      || (currentUrl.hostname === 'taqadi.sjc.gov.qa'
+        && currentUrl.pathname.startsWith('/itc/nas/'))
+    );
+    if (options.resume) this.unverifiedPortalSessionReset = true;
+    // Reuse only a live shell whose visible company identity still matches.
+    // A remembered context by itself never authorizes a different account.
+    if (await this.isAuthenticatedPortalPage(this.page)
+      && (await this.authenticatedPortalCompanyIdentity(this.page)).verified) {
+      verifiedCompanyContexts.add(this.page.context());
+      return;
+    }
     if (await this.confirmAccountPromptAndAdoptPortalPage()) return;
 
-    await this.page.goto(agentConfig.portalUrl, {
-      waitUntil: 'domcontentloaded',
-      timeout: 60_000,
-    });
-    await this.page.waitForTimeout(2_000);
+    if (!continuingLogin) {
+      await this.page.goto(agentConfig.portalUrl, {
+        waitUntil: 'domcontentloaded',
+        timeout: 60_000,
+      });
+    }
+    await this.page.locator('body').waitFor({ state: 'visible', timeout: 10_000 });
 
     if (await this.confirmAccountPromptAndAdoptPortalPage()) return;
 
@@ -3662,6 +3757,13 @@ export class TaqadiPortal {
     const deadline = Date.now() + agentConfig.loginTimeoutMs;
     let automaticLoginRestarts = 0;
     while (Date.now() < deadline) {
+      const authenticationError = await this.tawtheeqAuthenticationError();
+      if (authenticationError) {
+        throw new HumanInterventionError(
+          authenticationError.message, authenticationError.code,
+          { url: this.page.url(), resumeSupported: true },
+        );
+      }
       // The smart-card callback has its own authentication state machine.
       // Handle its company-mode/account pages before the generic Taqadi/NAS
       // prompt checks, which can match stale hidden controls kept in the DOM.
@@ -3720,14 +3822,6 @@ export class TaqadiPortal {
           },
         );
       }
-      const authenticationError = await this.tawtheeqAuthenticationError();
-      if (authenticationError) {
-        throw new HumanInterventionError(
-          authenticationError,
-          'TAWTHEEQ_CREDENTIALS_REJECTED',
-          { url: this.page.url() },
-        );
-      }
       if (await this.confirmAccountPromptAndAdoptPortalPage()) return;
       await this.page.waitForTimeout(500);
     }
@@ -3745,6 +3839,9 @@ export class TaqadiPortal {
   async detectCurrentPosition(
     payload: FilingPayload,
   ): Promise<TaqadiPortalPosition> {
+    const cached = this.verifiedPosition;
+    this.verifiedPosition = null;
+    if (cached && cached.revision === await this.observationRevision()) return cached.position;
     let previous: TaqadiPortalPosition | null = null;
     let best: TaqadiPortalPosition | null = null;
 
@@ -3821,15 +3918,22 @@ export class TaqadiPortal {
     // case_details وحيدة ثم عادت classification بعد ثانيتين في مهمة
     // حقيقية) — النجاح يتطلب قراءتين مؤكدتين متتاليتين لا قراءة واحدة.
     let consecutiveConfirmations = 0;
+    let revision = await this.observationRevision();
     let latest = await this.detectCurrentPosition(payload);
     while (Date.now() < deadline) {
       if (stageConfirmed(latest)) {
         consecutiveConfirmations += 1;
-        if (consecutiveConfirmations >= 2) return latest;
+        if (consecutiveConfirmations >= 2) {
+          if (revision === await this.observationRevision()) {
+            this.verifiedPosition = { revision, position: latest };
+          }
+          return latest;
+        }
       } else {
         consecutiveConfirmations = 0;
       }
       await this.page.waitForTimeout(350);
+      revision = await this.observationRevision();
       latest = await this.detectCurrentPosition(payload);
     }
 
@@ -5727,8 +5831,8 @@ export class TaqadiPortal {
     const stableDefendantFields = {
         firstName: payload.defendant.firstName
           || payload.defendant.fullName,
-        lastName: payload.defendant.lastName,
-        identityNumber: payload.defendant.idNumber,
+        lastName: payload.defendant.lastName || '',
+        identityNumber: payload.defendant.idNumber || '',
         identityNumberLabels,
         identityNumberControlIds,
         address: payload.defendant.address || '',
@@ -5761,7 +5865,7 @@ export class TaqadiPortal {
       {
         labels: identityTypeLabels,
         controlIds: identityTypeControlIds,
-        expected: defendantIdentityType || payload.defendant.idType,
+        expected: defendantIdentityType || payload.defendant.idType || '',
       },
     ];
     await this.reconcileStableSelections(
@@ -6531,119 +6635,93 @@ export class TaqadiPortal {
 
   async continueAfterFees() {
     await this.clickAny(['التالي'], 'متابعة بعد تفاصيل الرسوم');
-    await this.page.waitForTimeout(1_500);
+    // The caller verifies the next stage; no extra fixed delay is necessary.
   }
 
   async submitFinal(
     onBeforeApprovalClick?: () => Promise<void>,
+    expected?: FilingPayload,
+    timeoutMs = 60_000,
   ): Promise<FilingResult> {
     if (await this.captchaVisible()) {
-      throw new HumanInterventionError(
-        'ظهر تحقق بشري قبل الاعتماد النهائي',
-        'CAPTCHA_REQUIRED',
-        { url: this.page.url() },
-      );
+      throw new HumanInterventionError('ظهر تحقق بشري قبل الاعتماد النهائي', 'CAPTCHA_REQUIRED', { url: this.page.url() });
     }
-
     const approval = await this.firstVisible([
-      this.page.getByRole('button', { name: /اعتماد|إرسال الدعوى|تقديم/i }),
-      this.page.getByText(/اعتماد نهائي|إرسال الدعوى|تقديم الدعوى/i),
+      this.page.getByRole('button', { name: /^\s*(?:[اإأ]عتماد(?:\s+نهائي)?|إرسال الدعوى|تقديم(?: الدعوى)?)\s*$/i }),
+      this.page.getByRole('link', { name: /^\s*(?:[اإأ]عتماد(?:\s+نهائي)?|إرسال الدعوى|تقديم(?: الدعوى)?)\s*$/i }),
     ]);
     if (!approval) {
-      throw new HumanInterventionError(
-        'لم يجد الوكيل زر الاعتماد النهائي',
-        'FINAL_APPROVAL_NOT_FOUND',
-        { url: this.page.url() },
-      );
+      throw new HumanInterventionError('لم يجد الوكيل زر الاعتماد النهائي', 'FINAL_APPROVAL_NOT_FOUND', { url: this.page.url() });
     }
-
+    const previousReceipt = await this.visibleReceipt(expected);
     await onBeforeApprovalClick?.();
     await approval.click();
+    let confirmed = false;
+    const deadline = Date.now() + timeoutMs;
     try {
-      await this.page.waitForTimeout(500);
-      const confirmationDialog = await this.firstVisible([
-        this.page.locator(
-          '.modal.in:visible, .modal.show:visible, '
-          + '[role="dialog"]:visible, .k-window:visible',
-        ),
-      ]);
-      if (confirmationDialog) {
-        const confirm = await this.firstVisible([
-          confirmationDialog.getByRole('button', {
-            name: /نعم|تأكيد|اعتماد/i,
-          }),
-          confirmationDialog.getByRole('link', {
-            name: /نعم|تأكيد|اعتماد/i,
-          }),
-          confirmationDialog.getByText(/تأكيد الاعتماد|نعم، اعتماد/i),
+      while (Date.now() < deadline) {
+        const receipt = await this.visibleReceipt(expected);
+        if (receipt && receipt.referenceNumber !== previousReceipt?.referenceNumber) return receipt;
+        const dialog = await this.firstVisible([
+          this.page.locator('.modal.in:visible, .modal.show:visible, [role="dialog"]:visible, .k-window:visible'),
         ]);
-        if (confirm) await confirm.click();
+        if (dialog && !confirmed) {
+          const confirm = await this.firstVisible([
+            dialog.getByRole('button', { name: /^\s*(?:نعم(?:[،,]?\s*[اإأ]عتماد)?|تأكيد(?:\s+ال[اإأ]عتماد)?|[اإأ]عتماد)\s*$/i }),
+            dialog.getByRole('link', { name: /^\s*(?:نعم(?:[،,]?\s*[اإأ]عتماد)?|تأكيد(?:\s+ال[اإأ]عتماد)?|[اإأ]عتماد)\s*$/i }),
+          ]);
+          if (confirm && await confirm.isEnabled()) {
+            // Mark before clicking: a delayed dialog or lost response must
+            // never cause a second confirmation click.
+            confirmed = true;
+            await confirm.click({ timeout: Math.max(1, deadline - Date.now()) });
+            continue;
+          }
+        }
+        const errors = await this.page.locator('.alert-danger:visible, .validation-summary-errors:visible')
+          .allTextContents().catch(() => []);
+        if (errors.some(text => /فشل|تعذر|مرفوض|خطأ/.test(text))) {
+          throw new Error(normalizeText(errors.join(' ')));
+        }
+        await this.page.waitForTimeout(Math.min(200, Math.max(1, deadline - Date.now())));
       }
-
-      await this.page.waitForFunction(
-        () => /تم بنجاح|رقم الطلب|رقم الدعوى|الرقم المرجعي|رقم المرجع|إيصال طلب قيد دعوى/.test(
-          document.body.innerText,
-        ),
-        undefined,
-        { timeout: 60_000 },
-      );
     } catch (error) {
       throw new SubmissionUncertainError(
         'تم الضغط على الاعتماد لكن تعذر التحقق من النتيجة. يجب مراجعة طلبات تقاضي قبل إعادة المحاولة.',
         { url: this.page.url(), cause: String(error) },
       );
     }
-
-    return this.readReceipt();
-  }
-
-  async readReceipt(): Promise<FilingResult> {
-    const confirmationText = normalizeText(
-      await this.page.locator('body').innerText(),
+    throw new SubmissionUncertainError(
+      'لم يظهر إيصال مكتمل برقم مرجعي صالح بعد الاعتماد؛ راجع الطلب الموجود في تقاضي قبل إعادة المحاولة.',
+      { url: this.page.url() },
     );
-    const caseNumber = this.extractValue(confirmationText, [
-      /رقم الدعوى\s*[:：]?\s*([A-Z0-9\u0660-\u0669/-]+)/i,
-      /Case\s*No\.?\s*[:：]?\s*([A-Z0-9/-]+)/i,
-    ]);
-    const referenceNumber = this.extractValue(confirmationText, [
-      /الرقم المرجعي\s*[:：]?\s*([A-Z0-9\u0660-\u0669/-]+)/i,
-      /رقم المرجع\s*[:：]?\s*([A-Z0-9\u0660-\u0669/-]+)/i,
-      /رقم الطلب\s*[:：]?\s*([A-Z0-9\u0660-\u0669/-]+)/i,
-      /Reference\s*[:：]?\s*([A-Z0-9/-]+)/i,
-    ]) || caseNumber;
-    const feesText = this.extractValue(confirmationText, [
-      /(?:الرسوم|قيمة الرسوم)\s*[:：]?\s*([0-9\u0660-\u0669,.]+)/i,
-      /رسوم تسليم طلب رفع دعوى\s*([0-9\u0660-\u0669,.]+)/i,
-      /المجموع\s*:?\s*\[?ريال قطري\]?\s*([0-9\u0660-\u0669,.]+)/i,
-    ]);
-    const courtFees = feesText
-      ? Number(
-          feesText
-            .replace(/[٠-٩]/g, (digit) => String('٠١٢٣٤٥٦٧٨٩'.indexOf(digit)))
-            .replace(/,/g, ''),
-        )
-      : null;
-
-    if (!caseNumber && !referenceNumber) {
-      throw new SubmissionUncertainError(
-        'نجح الاعتماد ظاهريًا لكن لم يمكن استخراج رقم الدعوى أو الرقم المرجعي.',
-        { confirmationText: confirmationText.slice(0, 2_000) },
-      );
-    }
-
-    return {
-      caseNumber,
-      referenceNumber,
-      courtFees: Number.isFinite(courtFees) ? courtFees : null,
-      confirmationText: confirmationText.slice(0, 10_000),
-    };
   }
 
-  private extractValue(text: string, patterns: RegExp[]) {
-    for (const pattern of patterns) {
-      const match = text.match(pattern);
-      if (match?.[1]) return match[1].trim();
+  private async visibleReceipt(expected?: FilingPayload, requireIdentity = false): Promise<FilingResult | null> {
+    const roots = this.page.locator(
+      '[role="dialog"]:visible, main:visible, #main:visible, .receipt:visible, [id*="receipt" i]:visible',
+    );
+    const texts = await roots.allInnerTexts();
+    // Prefer the smallest visible receipt container over unrelated page chrome.
+    const candidates = texts.length ? texts.sort((a, b) => a.length - b.length)
+      : [await this.page.locator('body').innerText()];
+    for (const text of candidates) {
+      const receipt = parseTaqadiReceipt(text, expected, requireIdentity);
+      if (receipt) return receipt;
     }
     return null;
   }
+
+  async readReceipt(expected?: FilingPayload, timeoutMs = 15_000, requireIdentity = false): Promise<FilingResult> {
+    const deadline = Date.now() + timeoutMs;
+    do {
+      const receipt = await this.visibleReceipt(expected, requireIdentity);
+      if (receipt) return receipt;
+      await this.page.waitForTimeout(Math.min(200, Math.max(1, deadline - Date.now())));
+    } while (Date.now() < deadline);
+    throw new SubmissionUncertainError(
+      'لم يمكن استخراج إيصال مطابق برقم دعوى أو رقم مرجعي صالح.', { url: this.page.url() },
+    );
+  }
+
 }

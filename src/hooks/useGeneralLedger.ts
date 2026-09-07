@@ -1,93 +1,103 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
-import { supabase } from "@/integrations/supabase/client"
-import { useAuth } from "@/contexts/AuthContext"
-import { useUnifiedCompanyAccess } from "@/hooks/useUnifiedCompanyAccess"
-import { toast } from "sonner"
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
+import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
+import { toast } from 'sonner';
+import {
+  financeToday,
+  readFinancialJournals,
+  readAccountBalances,
+  readTrialBalance,
+  readFinancialSummary,
+  readFinancialPages,
+} from '@/services/financialReporting';
 
 export interface LedgerFilters {
-  dateFrom?: string
-  dateTo?: string
-  accountId?: string
-  costCenterId?: string
-  referenceType?: string
-  status?: string
-  searchTerm?: string
+  dateFrom?: string;
+  dateTo?: string;
+  accountId?: string;
+  costCenterId?: string;
+  referenceType?: string;
+  status?: string;
+  searchTerm?: string;
 }
 
 export interface AccountBalance {
-  account_id: string
-  account_code: string
-  account_name: string
-  account_name_ar?: string
-  account_type: string
-  balance_type: 'debit' | 'credit'
-  opening_balance: number
-  total_debits: number
-  total_credits: number
-  closing_balance: number
+  account_id: string;
+  account_code: string;
+  account_name: string;
+  account_name_ar?: string;
+  account_type: string;
+  balance_type: 'debit' | 'credit';
+  opening_balance: number;
+  total_debits: number;
+  total_credits: number;
+  closing_balance: number;
 }
 
 export interface AccountMovement {
-  id: string
-  entry_number: string
-  entry_date: string
-  description: string
-  line_description?: string
-  debit_amount: number
-  credit_amount: number
-  running_balance: number
-  reference_type?: string
-  reference_id?: string
-  journal_entry_id: string
-  status: string
+  id: string;
+  entry_number: string;
+  entry_date: string;
+  description: string;
+  line_description?: string;
+  debit_amount: number;
+  credit_amount: number;
+  running_balance: number;
+  reference_type?: string;
+  reference_id?: string;
+  journal_entry_id: string;
+  status: string;
   cost_center?: {
-    id: string
-    center_code: string
-    center_name: string
-    center_name_ar?: string
-  }
+    id: string;
+    center_code: string;
+    center_name: string;
+    center_name_ar?: string;
+  };
 }
 
 export interface TrialBalanceItem {
-  account_id: string
-  account_code: string
-  account_name: string
-  account_name_ar?: string
-  account_type: string
-  account_level: number
-  debit_balance: number
-  credit_balance: number
+  account_id: string;
+  account_code: string;
+  account_name: string;
+  account_name_ar?: string;
+  account_type: string;
+  account_level: number;
+  debit_balance: number;
+  credit_balance: number;
 }
 
 export interface FinancialSummary {
-  total_assets: number
-  total_liabilities: number
-  total_equity: number
-  total_revenue: number
-  total_expenses: number
-  net_income: number
-  unbalanced_entries_count: number
+  total_assets: number;
+  total_liabilities: number;
+  total_equity: number;
+  total_revenue: number;
+  total_expenses: number;
+  net_income: number;
+  unbalanced_entries_count: number;
 }
 
 const normalizeJournalEntryStatus = (status: string): 'posted' | 'draft' | 'reversed' | 'cancelled' => {
-  if (status === 'posted' || status === 'reversed' || status === 'cancelled') return status
-  return 'draft'
-}
+  if (status === 'posted' || status === 'reversed' || status === 'cancelled') return status;
+  return 'draft';
+};
 
 // Journal Entry Lines Hook
 export const useJournalEntryLines = (entryId: string) => {
-  const { user } = useAuth()
-  
+  const { companyId } = useUnifiedCompanyAccess();
+
   return useQuery({
-    queryKey: ["journalEntryLines", entryId],
+    queryKey: ['journalEntryLines', companyId, entryId],
     queryFn: async () => {
-      if (!entryId) return []
-      
+      if (!entryId || !companyId) throw new Error('Company and entry required');
+
       try {
-          const { data, error } = await supabase
-            .from("journal_entry_lines")
-            .select(`
-              *,
+        return readFinancialPages((from, to) =>
+          supabase
+            .from('journal_entry_lines')
+            .select(
+              `
+              *, journal_entries!inner(company_id),
               chart_of_accounts!fk_journal_entry_lines_account(
                 id,
                 account_code,
@@ -113,937 +123,401 @@ export const useJournalEntryLines = (entryId: string) => {
                 first_name,
                 last_name
               )
-            `)
-          .eq("journal_entry_id", entryId)
-          .order("line_number")
-        
-        if (error) {
-          console.error("Error fetching journal entry lines:", error)
-          throw error
-        }
-        
-        return data || []
+            `,
+              { count: 'exact' }
+            )
+            .eq('journal_entry_id', entryId)
+            .eq('journal_entries.company_id', companyId)
+            .order('line_number')
+            .order('id')
+            .range(from, to)
+        );
       } catch (error) {
-        console.error("Error in useJournalEntryLines:", error)
-        return []
+        console.error('Error in useJournalEntryLines:', error);
+        throw error;
       }
     },
-    enabled: !!entryId
-  })
-}
+    enabled: !!entryId && !!companyId,
+  });
+};
 
 // Enhanced Journal Entries with relations
 export const useEnhancedJournalEntries = (filters?: LedgerFilters) => {
-  const { companyId, filter, isAuthenticating, authError } = useUnifiedCompanyAccess()
-  
+  const { companyId, isAuthenticating, authError } = useUnifiedCompanyAccess();
   return useQuery({
-    queryKey: ["enhancedJournalEntries", companyId, filters],
+    queryKey: ['enhancedJournalEntries', companyId, filters],
+    enabled: Boolean(companyId) && !isAuthenticating && !authError,
     queryFn: async () => {
-      console.log("🔍 [ENHANCED_JOURNAL_ENTRIES] Fetching for company:", companyId)
-      
-      if (authError) {
-        console.log("❌ [ENHANCED_JOURNAL_ENTRIES] Authentication error:", authError)
-        throw new Error('يجب تسجيل الدخول للوصول إلى القيود المحاسبية')
-      }
-      
-      if (!companyId) {
-        console.log("❌ [ENHANCED_JOURNAL_ENTRIES] No company ID available")
-        throw new Error('معرف الشركة مطلوب')
-      }
-      
-      try {
-        // Query with journal entry lines relation using the correct foreign key
-        let query = supabase
-          .from("journal_entries")
-          .select(`
-            id,
-            company_id,
-            entry_number,
-            entry_date,
-            description,
-            total_debit,
-            total_credit,
-            status,
-            reversal_entry_id,
-            reversed_at,
-            reversed_by,
-            reference_type,
-            reference_id,
-            created_at,
-            updated_at,
-            journal_entry_lines(
-              id,
-              account_id,
-              line_description,
-              debit_amount,
-              credit_amount,
-              line_number,
-              chart_of_accounts!fk_journal_entry_lines_account(
-                id,
-                account_code,
-                account_name,
-                account_name_ar
-              )
-            )
-          `)
-        
-        // Apply company filter
-        if (filter.company_id) {
-          query = query.eq("company_id", filter.company_id)
-        }
-        
-        query = query
-          .order("entry_date", { ascending: false })
-          .order("entry_number", { ascending: false })
-      
-        if (filters?.status && filters.status !== 'all') {
-          query = filters.status === 'reversed'
-            ? query.not("reversed_at", "is", null)
-            : query.eq("status", filters.status)
-        }
-        if (filters?.dateFrom) {
-          query = query.gte("entry_date", filters.dateFrom)
-        }
-        if (filters?.dateTo) {
-          query = query.lte("entry_date", filters.dateTo)
-        }
-        if (filters?.referenceType) {
-          query = query.eq("reference_type", filters.referenceType)
-        }
-        
-        console.log("Executing query...")
-        const { data, error } = await query
-        
-        if (error) {
-          console.error("❌ [ENHANCED_JOURNAL_ENTRIES] Query error:", error)
-          
-          // Check if it's an authentication related error
-          if (error.message?.includes('JWT') || error.message?.includes('auth') || error.code === 'PGRST301') {
-            throw new Error('انتهت جلسة العمل. يرجى تسجيل الدخول مرة أخرى')
-          }
-          
-          throw new Error(`خطأ في تحميل القيود المحاسبية: ${error.message}`)
-        }
-        
-        console.log("✅ [ENHANCED_JOURNAL_ENTRIES] Query result:", data?.length || 0, "entries found")
-        
-        // Filter by search term if provided
-        let filteredData = data || []
-        if (filters?.searchTerm && filteredData.length > 0) {
-          const searchLower = filters.searchTerm.toLowerCase()
-          filteredData = filteredData.filter(entry =>
-            entry.description?.toLowerCase().includes(searchLower) ||
-            entry.entry_number?.toLowerCase().includes(searchLower)
-          )
-        }
-        
-        return filteredData.map(entry => ({
-          ...entry,
-          status: normalizeJournalEntryStatus(entry.status),
-        }))
-        
-      } catch (error) {
-        console.error("❌ [ENHANCED_JOURNAL_ENTRIES] Error:", error)
-        throw error
-      }
+      const entries = await readFinancialJournals(companyId!, filters);
+      return entries.map((entry) => ({ ...entry, status: normalizeJournalEntryStatus(entry.status) }));
     },
-    enabled: !!companyId && !isAuthenticating && !authError,
-    retry: (failureCount, error) => {
-      // Don't retry authentication errors
-      if (error?.message?.includes('تسجيل الدخول') || error?.message?.includes('انتهت جلسة العمل')) {
-        return false
-      }
-      return failureCount < 3
-    },
-    retryDelay: attemptIndex => Math.min(1000 * 2 ** attemptIndex, 30000)
-  })
-}
+  });
+};
 
-// Account Balances
+// Account Balances: database aggregation includes the entire posted ledger.
 export const useAccountBalances = (filters?: { accountType?: string; asOfDate?: string }) => {
-  const { companyId, filter } = useUnifiedCompanyAccess()
-  
+  const { companyId } = useUnifiedCompanyAccess();
   return useQuery({
-    queryKey: ["accountBalances", companyId, filters],
-    queryFn: async () => {
-      if (!companyId) throw new Error('معرف الشركة مطلوب')
-      
-      try {
-        console.log(`🔍 [ACCOUNT_BALANCES] Fetching for company: ${companyId}, filter.company_id: ${filter.company_id}`)
-        
-        let query = supabase
-          .from("chart_of_accounts")
-          .select(`
-            id,
-            account_code,
-            account_name,
-            account_name_ar,
-            account_type,
-            balance_type,
-            current_balance
-          `)
-        
-        // Apply company filter
-        if (filter.company_id) {
-          query = query.eq("company_id", filter.company_id)
-        }
-        
-        query = query
-          .eq("is_active", true)
-          .order("account_code")
-        
-        if (filters?.accountType) {
-          query = query.eq("account_type", filters.accountType)
-        }
-        
-        const { data: accounts, error } = await query
-        
-        if (error) {
-          console.error("Account balances query error:", error)
-          throw error
-        }
-        
-        console.log(`📋 [ACCOUNT_BALANCES] Found ${accounts?.length || 0} accounts`)
-        
-        // Get journal entry lines to calculate actual balances
-        let journalQuery = supabase
-          .from("journal_entry_lines")
-          .select(`
-            account_id,
-            debit_amount,
-            credit_amount,
-            journal_entry:journal_entries!inner(
-              status,
-              company_id,
-              entry_date
-            )
-          `)
-          .eq("journal_entry.status", "posted")
-        
-        // Apply company filter in the query itself
-        if (filter.company_id) {
-          journalQuery = journalQuery.eq("journal_entry.company_id", filter.company_id)
-          console.log(`🔍 [ACCOUNT_BALANCES] Filtering journal entries by company_id: ${filter.company_id}`)
-        }
-        
-        if (filters?.asOfDate) {
-          journalQuery = journalQuery.lte("journal_entry.entry_date", filters.asOfDate)
-        }
+    queryKey: ['accountBalances', companyId, filters],
+    enabled: !!companyId,
+    queryFn: () => readAccountBalances(companyId!, filters?.asOfDate, filters?.accountType),
+  });
+};
 
-        const { data: journalLines, error: linesError } = await journalQuery
-        
-        if (linesError) {
-          console.error("Journal lines query error:", linesError)
-          // Continue with empty array if query fails
-        } else {
-          console.log(`📊 [ACCOUNT_BALANCES] Found ${journalLines?.length || 0} journal entry lines`)
-        }
-        
-        // Calculate totals per account
-        const accountTotals = new Map<string, { debits: number; credits: number }>()
-        
-        // Process journal lines to calculate totals
-        journalLines?.forEach((line: any) => {
-          // Ensure journal_entry exists and account_id is valid
-          if (!line.journal_entry || !line.account_id) {
-            console.warn("⚠️ [ACCOUNT_BALANCES] Skipping line with missing data:", line)
-            return
-          }
-          
-          const debitAmount = Number(line.debit_amount) || 0
-          const creditAmount = Number(line.credit_amount) || 0
-          
-          const current = accountTotals.get(line.account_id) || { debits: 0, credits: 0 }
-          accountTotals.set(line.account_id, {
-            debits: current.debits + debitAmount,
-            credits: current.credits + creditAmount
-          })
-        })
-        
-        console.log(`📊 [ACCOUNT_BALANCES] Processed ${journalLines?.length || 0} journal lines for ${accountTotals.size} accounts`)
-        
-        // Build account balances with calculated totals
-        const accountBalances: AccountBalance[] = (accounts || []).map(account => {
-          const totals = accountTotals.get(account.id) || { debits: 0, credits: 0 }
-          const opening = accountTotals.has(account.id) ? 0 : Number(account.current_balance) || 0
-          
-          // Calculate closing balance based on account type
-          let closing = opening
-          if (account.balance_type === 'debit') {
-            closing = opening + totals.debits - totals.credits
-          } else {
-            closing = opening + totals.credits - totals.debits
-          }
-          
-          // Debug log for accounts with activity
-          if (totals.debits > 0 || totals.credits > 0) {
-            console.log(`💰 [ACCOUNT_BALANCE] ${account.account_code} (${account.account_name}):`, {
-              opening,
-              debits: totals.debits,
-              credits: totals.credits,
-              closing,
-              balance_type: account.balance_type
-            })
-          }
-          
-          return {
-            account_id: account.id,
-            account_code: account.account_code,
-            account_name: account.account_name,
-            account_name_ar: account.account_name_ar ?? undefined,
-            account_type: account.account_type,
-            balance_type: account.balance_type as 'debit' | 'credit',
-            opening_balance: opening,
-            total_debits: totals.debits,
-            total_credits: totals.credits,
-            closing_balance: closing
-          }
-        })
-        
-        console.log(`✅ [ACCOUNT_BALANCES] Calculated balances for ${accountBalances.length} accounts`)
-        
-        return accountBalances
-        
-      } catch (error) {
-        console.error("Error in useAccountBalances:", error)
-        toast.error("خطأ في جلب أرصدة الحسابات")
-        return []
-      }
-    },
-    enabled: !!companyId
-  })
-}
-
-// Account Movements (Detailed)  
+// Account Movements: include prior posted movements in the opening balance.
 export const useAccountMovements = (accountId: string, filters?: LedgerFilters) => {
-  const { companyId } = useUnifiedCompanyAccess()
-
+  const { companyId } = useUnifiedCompanyAccess();
   return useQuery({
-    queryKey: ["accountMovements", companyId, accountId, filters],
-    queryFn: async () => {
-      if (!companyId) throw new Error("Company ID is required")
-
-      // Get journal entry lines for the account
-      const { data: lines, error: linesError } = await supabase
-        .from("journal_entry_lines")
-        .select(`
-          *,
-          journal_entry:journal_entries!inner(*)
-        `)
-        .eq("account_id", accountId)
-        .eq("journal_entry.company_id", companyId)
-      
-      if (linesError) throw linesError
-      
-      // Get cost centers separately to avoid relation issues
-      const costCenterIds = lines
-        .map(line => line.cost_center_id)
-        .filter(id => id !== null)
-      
-      let costCenters: any[] = []
-      if (costCenterIds.length > 0) {
-        const { data: centers, error: centersError } = await supabase
-          .from("cost_centers")
-          .select("id, center_code, center_name, center_name_ar")
-          .in("id", costCenterIds)
-        
-        if (!centersError) {
-          costCenters = centers || []
-        }
-      }
-      
-      // Filter by date if needed
-      let filteredData = lines
-      if (filters?.dateFrom || filters?.dateTo) {
-        filteredData = lines.filter(line => {
-          const entryDate = new Date(line.journal_entry.entry_date)
-          if (filters.dateFrom && entryDate < new Date(filters.dateFrom)) return false
-          if (filters.dateTo && entryDate > new Date(filters.dateTo)) return false
-          return true
-        })
-      }
-      
-      // Sort by date and entry number
-      filteredData.sort((a, b) => {
-        const dateCompare = new Date(a.journal_entry.entry_date).getTime() - new Date(b.journal_entry.entry_date).getTime()
-        if (dateCompare !== 0) return dateCompare
-        return a.journal_entry.entry_number.localeCompare(b.journal_entry.entry_number)
-      })
-      
-      // Calculate running balances
-      let runningBalance = 0
-      const movements: AccountMovement[] = filteredData.map(line => {
-        const debitAmount = Number(line.debit_amount || 0)
-        const creditAmount = Number(line.credit_amount || 0)
-        const movement = debitAmount - creditAmount
-        runningBalance += movement
-        
-        const costCenter = line.cost_center_id 
-          ? costCenters.find(cc => cc.id === line.cost_center_id)
-          : undefined
-        
-        return {
+    queryKey: ['accountMovements', companyId, accountId, filters],
+    enabled: !!companyId && !!accountId,
+    queryFn: async (): Promise<AccountMovement[]> => {
+      if (!companyId) throw new Error('Company ID is required');
+      const { data: account, error: accountError } = await supabase
+        .from('chart_of_accounts')
+        .select('balance_type')
+        .eq('id', accountId)
+        .eq('company_id', companyId)
+        .single();
+      if (accountError) throw accountError;
+      const lines = await readFinancialPages((from, to) => {
+        let query = supabase
+          .from('journal_entry_lines')
+          .select('*,journal_entry:journal_entries!inner(*)', { count: 'exact' })
+          .eq('account_id', accountId)
+          .eq('journal_entry.company_id', companyId)
+          .eq('journal_entry.status', 'posted')
+          .lte('journal_entry.entry_date', filters?.dateTo || financeToday())
+          .order('id')
+          .range(from, to);
+        if (filters?.costCenterId) query = query.eq('cost_center_id', filters.costCenterId);
+        if (filters?.referenceType) query = query.eq('journal_entry.reference_type', filters.referenceType);
+        return query;
+      });
+      const centers = await readFinancialPages((from, to) =>
+        supabase
+          .from('cost_centers')
+          .select('id,center_code,center_name,center_name_ar', { count: 'exact' })
+          .eq('company_id', companyId)
+          .order('id')
+          .range(from, to)
+      );
+      lines.sort(
+        (a, b) =>
+          a.journal_entry.entry_date.localeCompare(b.journal_entry.entry_date) ||
+          a.journal_entry.entry_number.localeCompare(b.journal_entry.entry_number) ||
+          a.line_number - b.line_number ||
+          a.id.localeCompare(b.id)
+      );
+      let runningBalance = 0;
+      const result: AccountMovement[] = [];
+      for (const line of lines) {
+        const debit = Number(line.debit_amount || 0),
+          credit = Number(line.credit_amount || 0);
+        runningBalance += account.balance_type === 'credit' ? credit - debit : debit - credit;
+        if (filters?.dateFrom && line.journal_entry.entry_date < filters.dateFrom) continue;
+        const entry = line.journal_entry;
+        const search = filters?.searchTerm?.trim().toLocaleLowerCase();
+        if (search && ![entry.entry_number, entry.description, line.line_description, entry.reference_type]
+          .some(value => value?.toLocaleLowerCase().includes(search))) continue;
+        const center = centers.find((item) => item.id === line.cost_center_id);
+        result.push({
           id: line.id,
-          entry_number: line.journal_entry.entry_number,
-          entry_date: line.journal_entry.entry_date,
-          description: line.journal_entry.description,
+          entry_number: entry.entry_number,
+          entry_date: entry.entry_date,
+          description: entry.description,
           line_description: line.line_description || '',
-          debit_amount: debitAmount,
-          credit_amount: creditAmount,
+          debit_amount: debit,
+          credit_amount: credit,
           running_balance: runningBalance,
-          reference_type: line.journal_entry.reference_type || '',
-          reference_id: line.journal_entry.reference_id || '',
+          reference_type: entry.reference_type || '',
+          reference_id: entry.reference_id || '',
           journal_entry_id: line.journal_entry_id,
-          status: line.journal_entry.status,
-          cost_center: costCenter
-        }
-      })
-      
-      return movements
+          status: entry.status,
+          cost_center: center ? { ...center, center_name_ar: center.center_name_ar ?? undefined } : undefined,
+        });
+      }
+      return result;
     },
-    enabled: !!companyId && !!accountId
-  })
-}
+  });
+};
 
 // Trial Balance
 export const useTrialBalance = (asOfDate?: string) => {
-  const { companyId, filter } = useUnifiedCompanyAccess()
-  
+  const { companyId } = useUnifiedCompanyAccess();
   return useQuery({
-    queryKey: ["trialBalance", companyId, asOfDate],
-    queryFn: async () => {
-      if (!companyId) throw new Error('معرف الشركة مطلوب')
-      
-      console.log("🔍 [TRIAL_BALANCE] Fetching for company:", companyId)
-      
-      try {
-        // Use the get_trial_balance database function for accurate calculations
-        const { data, error } = await supabase.rpc('get_trial_balance', {
-          company_id_param: companyId,
-          as_of_date: asOfDate || new Date().toISOString().split('T')[0]
-        })
-        
-        if (error) {
-          console.error("❌ [TRIAL_BALANCE] RPC error:", error)
-          throw error
-        }
-        
-        console.log("✅ [TRIAL_BALANCE] Found", data?.length || 0, "accounts for company", companyId)
-        
-        // Filter out system accounts for better display
-        const filteredData = (data || []).filter((item) => {
-          // Only show non-zero balances or active accounts
-          return (item.debit_balance > 0 || item.credit_balance > 0) || 
-                 item.account_level <= 4 // Show summary accounts regardless
-        })
-        
-        return filteredData as TrialBalanceItem[]
-        
-      } catch (error) {
-        console.error("❌ [TRIAL_BALANCE] Error:", error)
-        toast.error("خطأ في جلب ميزان المراجعة")
-        return []
-      }
-    },
-    enabled: !!companyId
-  })
-}
+    queryKey: ['trialBalance', companyId, asOfDate],
+    enabled: !!companyId,
+    queryFn: () => readTrialBalance(companyId!, asOfDate),
+  });
+};
 
-// Financial Summary
+// Balance sheet is cumulative through dateTo; P&L uses the selected period.
 export const useFinancialSummary = (filters?: { dateFrom?: string; dateTo?: string }) => {
-  const { companyId, filter } = useUnifiedCompanyAccess()
-  
+  const { companyId } = useUnifiedCompanyAccess();
   return useQuery({
-    queryKey: ["financialSummary", companyId, filters],
-    queryFn: async () => {
-      if (!companyId) {
-        console.log("❌ [FINANCIAL_SUMMARY] No company ID available")
-        return null
-      }
-      
-      console.log("🔍 [FINANCIAL_SUMMARY] Fetching for company:", companyId)
-      
-      try {
-        // Get all accounts first with company filter
-        let accountsQuery = supabase
-          .from("chart_of_accounts")
-          .select("*")
-          .eq("is_active", true)
-        
-        // Apply company filter
-        if (filter.company_id) {
-          accountsQuery = accountsQuery.eq("company_id", filter.company_id)
-        }
-        
-        const { data: accounts, error: accountsError } = await accountsQuery
-        
-        if (accountsError) throw accountsError
-        
-        // Get journal entry lines to calculate actual balances
-        let journalQuery = supabase
-          .from("journal_entry_lines")
-          .select(`
-            account_id,
-            debit_amount,
-            credit_amount,
-            journal_entry:journal_entries!inner(
-              company_id,
-              status,
-              entry_date
-            )
-          `)
-          .eq("journal_entry.status", "posted")
-        
-        // Apply company filter via journal entries
-        if (filter.company_id) {
-          journalQuery = journalQuery.eq("journal_entry.company_id", filter.company_id)
-        }
-        
-        // Apply date filters if provided
-        if (filters?.dateFrom) {
-          journalQuery = journalQuery.gte("journal_entry.entry_date", filters.dateFrom)
-        }
-        if (filters?.dateTo) {
-          journalQuery = journalQuery.lte("journal_entry.entry_date", filters.dateTo)
-        }
-        
-        const { data: journalLines, error: linesError } = await journalQuery
-        
-        if (linesError) {
-          console.error("Error fetching journal lines:", linesError)
-          // Fall back to current balances if journal lines fail
-          const summary = calculateSummaryFromCurrentBalances(accounts)
-          return summary
-        }
-        
-        // Calculate actual balances from journal entries
-        const accountBalances = new Map<string, number>()
-        
-        console.log(`📄 [FINANCIAL_SUMMARY] Processing ${journalLines?.length || 0} journal lines`)
-        
-        journalLines?.forEach((line: any) => {
-          // Skip if journal_entry is null or undefined
-          if (!line.journal_entry) {
-            console.warn('⚠️ [FINANCIAL_SUMMARY] Line has no journal_entry:', line.id)
-            return
-          }
-          
-          const accountId = line.account_id
-          if (!accountId) {
-            console.warn('⚠️ [FINANCIAL_SUMMARY] Line has no account_id:', line.id)
-            return
-          }
-          
-          const currentBalance = accountBalances.get(accountId) || 0
-          const debitAmount = Number(line.debit_amount) || 0
-          const creditAmount = Number(line.credit_amount) || 0
-          const movement = debitAmount - creditAmount
-          accountBalances.set(accountId, currentBalance + movement)
-        })
-        
-        console.log(`📄 [FINANCIAL_SUMMARY] Calculated balances for ${accountBalances.size} accounts`)
-        
-        // Calculate summary by account type
-        let totalAssets = 0
-        let totalLiabilities = 0
-        let totalEquity = 0
-        let totalRevenue = 0
-        let totalExpenses = 0
-        
-        accounts?.forEach(account => {
-          const calculatedBalance = accountBalances.get(account.id) || 0
-          
-          switch (account.account_type) {
-            case 'assets':
-              totalAssets += Math.abs(calculatedBalance)
-              break
-            case 'liabilities':
-              totalLiabilities += Math.abs(calculatedBalance)
-              break
-            case 'equity':
-              totalEquity += Math.abs(calculatedBalance)
-              break
-            case 'revenue':
-              totalRevenue += Math.abs(calculatedBalance)
-              break
-            case 'expenses':
-              totalExpenses += Math.abs(calculatedBalance)
-              break
-          }
-        })
-        
-        // Count unbalanced entries by checking if total_debit != total_credit
-        const { data: allEntries, error: entriesError } = await supabase
-          .from("journal_entries")
-          .select("id, total_debit, total_credit")
-          .eq("company_id", companyId)
-        
-        const unbalancedEntriesCount = allEntries?.filter(entry => 
-          Number(entry.total_debit) !== Number(entry.total_credit)
-        ).length || 0
-        
-        const summary: FinancialSummary = {
-          total_assets: totalAssets,
-          total_liabilities: totalLiabilities,
-          total_equity: totalEquity,
-          total_revenue: totalRevenue,
-          total_expenses: totalExpenses,
-          net_income: totalRevenue - totalExpenses,
-          unbalanced_entries_count: unbalancedEntriesCount
-        }
-        
-        return summary
-        
-      } catch (error) {
-        console.error("Error in useFinancialSummary:", error)
-        return {
-          total_assets: 0,
-          total_liabilities: 0,
-          total_equity: 0,
-          total_revenue: 0,
-          total_expenses: 0,
-          net_income: 0,
-          unbalanced_entries_count: 0
-        }
-      }
-    },
-    enabled: !!companyId
-  })
-}
-
-// Helper function to calculate from current balances as fallback
-const calculateSummaryFromCurrentBalances = (
-  accounts: Array<{ account_type: string; current_balance: number | null }>,
-): FinancialSummary => {
-  let totalAssets = 0
-  let totalLiabilities = 0
-  let totalEquity = 0
-  let totalRevenue = 0
-  let totalExpenses = 0
-  
-  accounts?.forEach(account => {
-    const balance = Number(account.current_balance || 0)
-    switch (account.account_type) {
-      case 'assets':
-        totalAssets += Math.abs(balance)
-        break
-      case 'liabilities':
-        totalLiabilities += Math.abs(balance)
-        break
-      case 'equity':
-        totalEquity += Math.abs(balance)
-        break
-      case 'revenue':
-        totalRevenue += Math.abs(balance)
-        break
-      case 'expenses':
-        totalExpenses += Math.abs(balance)
-        break
-    }
-  })
-  
-  return {
-    total_assets: totalAssets,
-    total_liabilities: totalLiabilities,
-    total_equity: totalEquity,
-    total_revenue: totalRevenue,
-    total_expenses: totalExpenses,
-    net_income: totalRevenue - totalExpenses,
-    unbalanced_entries_count: 0
-  }
-}
+    queryKey: ['financialSummary', companyId, filters],
+    enabled: !!companyId,
+    queryFn: () => readFinancialSummary(companyId!, filters?.dateFrom, filters?.dateTo),
+  });
+};
 
 // Cost Center Analysis
 export const useCostCenterAnalysis = (filters?: LedgerFilters) => {
-  const { user } = useAuth()
-  
+  const { companyId } = useUnifiedCompanyAccess();
   return useQuery({
-    queryKey: ["costCenterAnalysis", user?.profile?.company_id, filters],
+    queryKey: ['costCenterAnalysis', companyId, filters],
+    enabled: Boolean(companyId),
     queryFn: async () => {
-      // Get cost centers
-      const { data: costCenters, error: centersError } = await supabase
-        .from("cost_centers")
-        .select("*")
-        .eq("is_active", true)
-        .order("center_code")
-      
-      if (centersError) throw centersError
-      
-      // Get journal entry lines for cost centers
-      const { data: lines, error: linesError } = await supabase
-        .from("journal_entry_lines")
-        .select(`
-          cost_center_id,
-          debit_amount,
-          credit_amount,
-          journal_entry:journal_entries(entry_date, status)
-        `)
-        .not("cost_center_id", "is", null)
-      
-      if (linesError) throw linesError
-      
-      const analysis = costCenters.map(center => {
-        const centerLines = lines.filter(line => line.cost_center_id === center.id)
-        let totalDebits = 0
-        let totalCredits = 0
-        let entryCount = 0
-        
-        centerLines.forEach((line: any) => {
-          if (line.journal_entry?.status === 'posted') {
-            const entryDate = new Date(line.journal_entry.entry_date)
-            const includeEntry = (!filters?.dateFrom || entryDate >= new Date(filters.dateFrom)) &&
-                               (!filters?.dateTo || entryDate <= new Date(filters.dateTo))
-            
-            if (includeEntry) {
-              totalDebits += line.debit_amount || 0
-              totalCredits += line.credit_amount || 0
-              entryCount++
-            }
-          }
-        })
-        
-        return {
-          cost_center_id: center.id,
-          center_code: center.center_code,
-          center_name: center.center_name,
-          center_name_ar: center.center_name_ar,
-          total_debits: totalDebits,
-          total_credits: totalCredits,
-          net_amount: totalDebits - totalCredits,
-          entry_count: entryCount
-        }
-      })
-      
-      return analysis
+      if (!companyId) throw new Error('Company ID required');
+      const [centers, lines] = await Promise.all([
+        readFinancialPages((from, to) =>
+          supabase
+            .from('cost_centers')
+            .select('*', { count: 'exact' })
+            .eq('company_id', companyId)
+            .order('id')
+            .range(from, to)
+        ),
+        readFinancialPages((from, to) => {
+          let query = supabase
+            .from('journal_entry_lines')
+            .select(
+              'cost_center_id,debit_amount,credit_amount,journal_entry_id,journal_entries!inner(entry_date,status,company_id)',
+              { count: 'exact' }
+            )
+            .not('cost_center_id', 'is', null)
+            .eq('journal_entries.company_id', companyId)
+            .eq('journal_entries.status', 'posted')
+            .lte('journal_entries.entry_date', filters?.dateTo || financeToday())
+            .order('id')
+            .range(from, to);
+          if (filters?.dateFrom) query = query.gte('journal_entries.entry_date', filters.dateFrom);
+          if (filters?.costCenterId) query = query.eq('cost_center_id', filters.costCenterId);
+          return query;
+        }),
+      ]);
+      return centers
+        .filter((center) => !filters?.costCenterId || center.id === filters.costCenterId)
+        .map((center) => {
+          const rows = lines.filter((line) => line.cost_center_id === center.id);
+          const debits = rows.reduce((sum, row) => sum + (row.debit_amount || 0), 0);
+          const credits = rows.reduce((sum, row) => sum + (row.credit_amount || 0), 0);
+          return {
+            cost_center_id: center.id,
+            center_code: center.center_code,
+            center_name: center.center_name,
+            center_name_ar: center.center_name_ar,
+            total_debits: debits,
+            total_credits: credits,
+            net_amount: debits - credits,
+            entry_count: new Set(rows.map((row) => row.journal_entry_id)).size,
+          };
+        });
     },
-    enabled: !!user?.profile?.company_id
-  })
-}
+  });
+};
 
 // Post Journal Entry
 export const usePostJournalEntry = () => {
-  const queryClient = useQueryClient()
-  const { user } = useAuth()
-  
+  const queryClient = useQueryClient();
+  const { user } = useAuth();
+  const { companyId } = useUnifiedCompanyAccess();
+
   return useMutation({
     mutationFn: async (entryId: string) => {
+      if (!companyId || !user?.id) throw new Error('Authenticated company required');
       const { data, error } = await supabase
-        .from("journal_entries")
+        .from('journal_entries')
         .update({
           status: 'posted',
           posted_by: user?.id,
-          posted_at: new Date().toISOString()
+          posted_at: new Date().toISOString(),
         })
-        .eq("id", entryId)
+        .eq('id', entryId)
+        .eq('company_id', companyId)
+        .eq('status', 'draft')
         .select()
-        .single()
-      
-      if (error) throw error
-      return data
+        .single();
+
+      if (error) throw error;
+      return data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["enhancedJournalEntries"] })
-      queryClient.invalidateQueries({ queryKey: ["accountBalances"] })
-      queryClient.invalidateQueries({ queryKey: ["trialBalance"] })
-      queryClient.invalidateQueries({ queryKey: ["financialSummary"] })
-      toast.success("تم ترحيل القيد بنجاح")
+      queryClient.invalidateQueries({ queryKey: ['enhancedJournalEntries'] });
+      queryClient.invalidateQueries({ queryKey: ['accountBalances'] });
+      queryClient.invalidateQueries({ queryKey: ['trialBalance'] });
+      queryClient.invalidateQueries({ queryKey: ['financialSummary'] });
+      toast.success('تم ترحيل القيد بنجاح');
     },
     onError: (error) => {
-      toast.error("خطأ في ترحيل القيد: " + error.message)
-    }
-  })
-}
+      toast.error('خطأ في ترحيل القيد: ' + error.message);
+    },
+  });
+};
 
 // Reverse Journal Entry
 export const useReverseJournalEntry = () => {
-  const queryClient = useQueryClient()
-  const { user } = useAuth()
-  
+  const queryClient = useQueryClient();
+  const { user } = useAuth();
+  const { companyId } = useUnifiedCompanyAccess();
+
   return useMutation({
     mutationFn: async ({ entryId, reason }: { entryId: string; reason: string }) => {
-      const reversalReason = reason.trim()
-      if (!reversalReason) throw new Error("Reversal reason is required")
-      if (!user?.id) throw new Error("Authenticated user is required")
+      const reversalReason = reason.trim();
+      if (!reversalReason) throw new Error('Reversal reason is required');
+      if (!user?.id) throw new Error('Authenticated user is required');
 
-      const { data, error } = await supabase.rpc("reverse_journal_entry", {
+      if (!companyId) throw new Error('Company ID required');
+      const scope = await supabase
+        .from('journal_entries')
+        .select('id')
+        .eq('id', entryId)
+        .eq('company_id', companyId)
+        .single();
+      if (scope.error) throw scope.error;
+      const { data, error } = await supabase.rpc('reverse_journal_entry', {
         entry_id: entryId,
         reversal_reason: reversalReason,
         reversed_by_user: user.id,
-      })
+      });
 
-      if (error) throw error
-      return data
+      if (error) throw error;
+      return data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["enhancedJournalEntries"] })
-      queryClient.invalidateQueries({ queryKey: ["accountBalances"] })
-      queryClient.invalidateQueries({ queryKey: ["trialBalance"] })
-      queryClient.invalidateQueries({ queryKey: ["financialSummary"] })
-      toast.success("تم عكس القيد بنجاح")
+      queryClient.invalidateQueries({ queryKey: ['enhancedJournalEntries'] });
+      queryClient.invalidateQueries({ queryKey: ['accountBalances'] });
+      queryClient.invalidateQueries({ queryKey: ['trialBalance'] });
+      queryClient.invalidateQueries({ queryKey: ['financialSummary'] });
+      toast.success('تم عكس القيد بنجاح');
     },
     onError: (error) => {
-      toast.error("خطأ في عكس القيد: " + error.message)
-    }
-  })
-}
+      toast.error('خطأ في عكس القيد: ' + error.message);
+    },
+  });
+};
 
 // Delete Journal Entry
 export const useDeleteJournalEntry = () => {
-  const queryClient = useQueryClient()
-  const { companyId } = useUnifiedCompanyAccess()
-  
+  const queryClient = useQueryClient();
+  const { companyId } = useUnifiedCompanyAccess();
+
   return useMutation({
     mutationFn: async (entryId: string) => {
-      if (!companyId) throw new Error("Company ID is required")
+      if (!companyId) throw new Error('Company ID is required');
       const { data: entry, error: entryFetchError } = await supabase
-        .from("journal_entries")
+        .from('journal_entries')
         .select("id,status")
-        .eq("id", entryId)
-        .eq("company_id", companyId)
-        .single()
+        .eq('id', entryId)
+        .eq('company_id', companyId)
+        .single();
 
-      if (entryFetchError) throw entryFetchError
+      if (entryFetchError) throw entryFetchError;
       if (entry?.status !== "draft") {
-        throw new Error("Only draft journal entries can be deleted. Posted entries must be reversed.")
+        throw new Error('Only draft journal entries can be deleted. Posted entries must be reversed.');
       }
 
       const { data, error } = await supabase
-        .from("journal_entries")
+        .from('journal_entries')
         .delete()
-        .eq("id", entryId)
-        .eq("company_id", companyId)
-        .eq("status", "draft")
+        .eq('id', entryId)
+        .eq('company_id', companyId)
+        .eq('status', 'draft')
         .select()
-        .single()
-      
-      if (error) throw error
-      return data
+        .single();
+
+      if (error) throw error;
+      return data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["enhancedJournalEntries"] })
-      queryClient.invalidateQueries({ queryKey: ["accountBalances"] })
-      queryClient.invalidateQueries({ queryKey: ["trialBalance"] })
-      queryClient.invalidateQueries({ queryKey: ["financialSummary"] })
-      toast.success("تم حذف القيد بنجاح")
+      queryClient.invalidateQueries({ queryKey: ['enhancedJournalEntries'] });
+      queryClient.invalidateQueries({ queryKey: ['accountBalances'] });
+      queryClient.invalidateQueries({ queryKey: ['trialBalance'] });
+      queryClient.invalidateQueries({ queryKey: ['financialSummary'] });
+      toast.success('تم حذف القيد بنجاح');
     },
     onError: (error) => {
-      toast.error("خطأ في حذف القيد: " + error.message)
-    }
-  })
-}
+      toast.error('خطأ في حذف القيد: ' + error.message);
+    },
+  });
+};
 
 // Export data functionality
 export const useExportLedgerData = () => {
-  const { user } = useAuth()
-  
+  const { companyId } = useUnifiedCompanyAccess();
+
   return useMutation({
-    mutationFn: async ({ 
-      format, 
-      filters 
-    }: { 
-      format: 'excel' | 'pdf' | 'csv'
-      filters?: LedgerFilters 
-    }) => {
-      if (!user?.profile?.company_id) {
-        throw new Error("Company is not selected")
+    mutationFn: async ({ format, filters }: { format: 'excel' | 'pdf' | 'csv'; filters?: LedgerFilters }) => {
+      if (!companyId) {
+        throw new Error('Company is not selected');
       }
 
-      if (format === "pdf") {
-        throw new Error("PDF export is not implemented yet. Please use Excel or CSV.")
+      if (format === 'pdf') {
+        throw new Error('PDF export is not implemented yet. Please use Excel or CSV.');
       }
 
-      let query = supabase
-        .from("journal_entries")
-        .select(`
-          entry_number,
-          entry_date,
-          description,
-          status,
-          reference_type,
-          total_debit,
-          total_credit,
-          journal_entry_lines(
-            line_number,
-            line_description,
-            debit_amount,
-            credit_amount,
-            chart_of_accounts!fk_journal_entry_lines_account(
-              account_code,
-              account_name,
-              account_name_ar
-            )
-          )
-        `)
-        .eq("company_id", user.profile.company_id)
-        .order("entry_date", { ascending: false })
-
-      if (filters?.dateFrom) query = query.gte("entry_date", filters.dateFrom)
-      if (filters?.dateTo) query = query.lte("entry_date", filters.dateTo)
-      if (filters?.referenceType) query = query.eq("reference_type", filters.referenceType)
-      if (filters?.status) query = query.eq("status", filters.status)
-
-      const { data, error } = await query
-      if (error) throw error
+      const data = await readFinancialJournals(companyId, filters);
 
       const rows = (data || []).flatMap((entry: any) => {
-        const lines = entry.journal_entry_lines?.length ? entry.journal_entry_lines : [null]
+        const lines = entry.journal_entry_lines?.length ? entry.journal_entry_lines : [null];
         return lines.map((line: any) => ({
           entry_number: entry.entry_number,
           entry_date: entry.entry_date,
           status: entry.status,
-          reference_type: entry.reference_type || "",
-          description: entry.description || "",
-          line_number: line?.line_number || "",
-          account_code: line?.chart_of_accounts?.account_code || "",
-          account_name: line?.chart_of_accounts?.account_name_ar || line?.chart_of_accounts?.account_name || "",
-          line_description: line?.line_description || "",
+          reference_type: entry.reference_type || '',
+          description: entry.description || '',
+          line_number: line?.line_number || '',
+          account_code: line?.chart_of_accounts?.account_code || '',
+          account_name:
+            line?.chart_of_accounts?.account_name_ar || line?.chart_of_accounts?.account_name || '',
+          line_description: line?.line_description || '',
           debit_amount: Number(line?.debit_amount || 0),
           credit_amount: Number(line?.credit_amount || 0),
           total_debit: Number(entry.total_debit || 0),
           total_credit: Number(entry.total_credit || 0),
-        }))
-      })
+        }));
+      });
 
       const headers = [
-        "entry_number",
-        "entry_date",
-        "status",
-        "reference_type",
-        "description",
-        "line_number",
-        "account_code",
-        "account_name",
-        "line_description",
-        "debit_amount",
-        "credit_amount",
-        "total_debit",
-        "total_credit",
-      ]
-      const escapeCell = (value: unknown) => `"${String(value ?? "").replace(/"/g, '""')}"`
+        'entry_number',
+        'entry_date',
+        'status',
+        'reference_type',
+        'description',
+        'line_number',
+        'account_code',
+        'account_name',
+        'line_description',
+        'debit_amount',
+        'credit_amount',
+        'total_debit',
+        'total_credit',
+      ];
+      const escapeCell = (value: unknown) => `"${String(value ?? '').replace(/"/g, '""')}"`;
       const csv = [
-        headers.join(","),
-        ...rows.map((row) => headers.map((header) => escapeCell(row[header as keyof typeof row])).join(",")),
-      ].join("\n")
+        headers.join(','),
+        ...rows.map((row) => headers.map((header) => escapeCell(row[header as keyof typeof row])).join(',')),
+      ].join('\n');
 
-      const extension = format === "excel" ? "csv" : "csv"
-      const fileName = `general-ledger-${new Date().toISOString().slice(0, 10)}.${extension}`
-      const blob = new Blob([`\uFEFF${csv}`], { type: "text/csv;charset=utf-8" })
-      const url = URL.createObjectURL(blob)
-      const link = document.createElement("a")
-      link.href = url
-      link.download = fileName
-      document.body.appendChild(link)
-      link.click()
-      document.body.removeChild(link)
-      URL.revokeObjectURL(url)
+      const extension = format === 'excel' ? 'csv' : 'csv';
+      const fileName = `general-ledger-${new Date().toISOString().slice(0, 10)}.${extension}`;
+      const blob = new Blob([`\uFEFF${csv}`], { type: 'text/csv;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
 
-      return `Exported ${rows.length} ledger rows to ${fileName}.`
+      return `Exported ${rows.length} ledger rows to ${fileName}.`;
     },
     onSuccess: () => {
-      toast.success("تم تصدير البيانات بنجاح")
+      toast.success('تم تصدير البيانات بنجاح');
     },
     onError: (error) => {
-      toast.error("خطأ في تصدير البيانات: " + error.message)
-    }
-  })
-}
+      toast.error('خطأ في تصدير البيانات: ' + error.message);
+    },
+  });
+};

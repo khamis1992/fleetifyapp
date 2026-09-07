@@ -53,7 +53,8 @@ describe('atomic manual contract traffic violation creation', () => {
   it('routes the page through the RPC and reuses one request UUID across retries', () => {
     expect(detailsPage).toContain(".rpc('create_manual_contract_traffic_violation_v1'");
     expect(detailsPage).not.toContain(".from('traffic_violations').insert");
-    expect(detailsPage).toContain('customerPhone && result.created');
+    expect(detailsPage).toContain('violation.notify_customer && result.created');
+    expect(detailsPage).toContain("import('@/utils/whatsappWebSender')");
     expect(violationsTab).toContain('const requestIdRef = useRef(crypto.randomUUID())');
     expect(violationsTab).toContain('manual_request_id: requestIdRef.current');
   });

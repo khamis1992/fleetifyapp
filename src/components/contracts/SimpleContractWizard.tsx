@@ -1,3 +1,4 @@
+import { WorkspaceDialogContent as DialogContent, WorkspaceDialogHeader as DialogHeader, WorkspaceButton as Button } from '@/components/employee-workspace/WorkspacePresentation';
 /**
  * Simple Contract Wizard - 3 Steps Version
  * Redesigned to match Dashboard color scheme (teal-500 theme)
@@ -11,9 +12,11 @@
 import React, { CSSProperties, useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { z } from 'zod';
+import { VehicleContractHandoffPanel, type HandoffReview } from './VehicleContractHandoffPanel';
+import { createContractWithHandoff } from '@/services/contractVehicleHandoff';
 import { toast } from 'sonner';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
+import { Dialog, DialogTitle } from '@/components/ui/dialog';
+
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -51,10 +54,12 @@ import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
 import { systemColorPattern } from '@/lib/design-system/systemColorPattern';
 import { calculateCanonicalBillingMonths } from '@/utils/contractCalculations';
 import { assertRentalEligible } from '@/services/rentalEligibilityGuard';
-import { saveContractNotes } from '@/services/contractQuickEditService';
+import { saveContractNotes, saveContractVehicleAndExtension } from '@/services/contractQuickEditService';
+import { contractExtensionAmount } from '@/utils/contractExtension';
 import { useRentalViolationOverride } from '@/contexts/RentalViolationOverrideContext';
 import { RentalEligibilityConfirmationCancelledError } from '@/contexts/rentalViolationOverrideErrors';
 import { RentalEligibilityBanner, RentalEligibilityNotice } from './RentalEligibilityBanner';
+import { ContractEditWorkspace } from './contract-edit/ContractEditWorkspace';
 
 // Import our new components
 import { EnhancedCustomerDialog } from '@/components/customers/EnhancedCustomerForm';
@@ -80,7 +85,8 @@ const wizardSystemStyle = {
 const contractSchema = z.object({
   customer_id: z.string().min(1, 'يجب اختيار العميل'),
   vehicle_id: z.string().optional(),
-  contract_type: z.enum(['daily', 'weekly', 'monthly', 'yearly', 'corporate']),
+  vehicle_handoff: z.object({ contractId: z.string().uuid(), updatedAt: z.string(), reason: z.string().min(5) }).optional(),
+  contract_type: z.enum(['daily', 'weekly', 'monthly', 'yearly', 'corporate', 'rental']),
   start_date: z.string().min(1, 'تاريخ البدء مطلوب'),
   end_date: z.string().min(1, 'تاريخ الانتهاء مطلوب'),
   rental_days: z.number().min(1, 'مدة الإيجار مطلوبة'),
@@ -93,7 +99,7 @@ const contractSchema = z.object({
   late_fine_grace_period: z.number().optional(),
 });
 
-type ContractFormData = z.infer<typeof contractSchema>;
+export type ContractFormData = z.infer<typeof contractSchema>;
 
 // === Types ===
 interface SimpleContractWizardProps {
@@ -206,7 +212,7 @@ const Step1CustomerVehicle: React.FC<{
   const filteredCustomers = customers;
 
   const availableVehicles = vehicles.filter(v => 
-    v.status === 'available' &&
+    ['available', 'rented'].includes(v.status || '') &&
     (v.plate_number.includes(vehicleSearch) ||
      `${v.make} ${v.model}`.toLowerCase().includes(vehicleSearch.toLowerCase()))
   );
@@ -426,6 +432,7 @@ const Step1CustomerVehicle: React.FC<{
                             {vehicle.make} {vehicle.model}
                           </p>
                           <p className="text-xs text-neutral-500">{vehicle.plate_number}</p>
+                          {vehicle.status === 'rented' && <span className="text-xs text-amber-700">مرتبطة بعقد — تتطلب مراجعة النقل</span>}
                         </div>
                       </div>
                       {vehicle.daily_rate && (
@@ -477,10 +484,11 @@ const Step2DetailsPricing: React.FC<{
   formData: Partial<ContractFormData>;
   onUpdate: (data: Partial<ContractFormData>) => void;
   preserveStoredContractAmount?: boolean;
-}> = ({ formData, onUpdate, preserveStoredContractAmount = false }) => {
+  expectedContractAmount?: number;
+}> = ({ formData, onUpdate, preserveStoredContractAmount = false, expectedContractAmount }) => {
   const { formatCurrency } = useCurrencyFormatter();
   const canonicalBillingMonths = calculateCanonicalBillingMonths(formData.start_date, formData.end_date);
-  const canonicalContractAmount = Number(formData.monthly_amount || 0) * canonicalBillingMonths;
+  const canonicalContractAmount = expectedContractAmount ?? Number(formData.monthly_amount || 0) * canonicalBillingMonths;
   const hasContractAmountConflict =
     canonicalBillingMonths > 0
     && Number(formData.monthly_amount || 0) > 0
@@ -498,7 +506,7 @@ const Step2DetailsPricing: React.FC<{
           formData.start_date,
           formData.end_date,
         );
-        const totalAmount = formData.monthly_amount ? formData.monthly_amount * months : formData.contract_amount;
+        const totalAmount = expectedContractAmount ?? (formData.monthly_amount ? formData.monthly_amount * months : formData.contract_amount);
         onUpdate(
           preserveStoredContractAmount
             ? { rental_days: days }
@@ -514,9 +522,11 @@ const Step2DetailsPricing: React.FC<{
     formData.start_date,
     onUpdate,
     preserveStoredContractAmount,
+    expectedContractAmount,
   ]);
 
   const contractTypes = [
+    ...(formData.contract_type === 'rental' ? [{ value: 'rental', label: 'تأجير', icon: '🚗' }] : []),
     { value: 'daily', label: 'يومي', icon: '📅' },
     { value: 'weekly', label: 'أسبوعي', icon: '📆' },
     { value: 'monthly', label: 'شهري', icon: '🗓️' },
@@ -697,7 +707,7 @@ const Step2DetailsPricing: React.FC<{
                   <div>
                     <p className="text-sm text-neutral-600">إجمالي قيمة العقد</p>
                     <p className="text-xs text-neutral-500">
-                      {formData.monthly_amount} × {calculateCanonicalBillingMonths(formData.start_date, formData.end_date)} شهر
+                      {formData.monthly_amount} × {Number((Number(formData.contract_amount || 0) / formData.monthly_amount).toFixed(2))} شهر
                     </p>
                   </div>
                 </div>
@@ -799,6 +809,7 @@ const Step3Review: React.FC<{
     daily: 'يومي',
     weekly: 'أسبوعي',
     monthly: 'شهري',
+    rental: 'تأجير',
     yearly: 'سنوي',
     corporate: 'شركات',
   };
@@ -926,7 +937,7 @@ const Step3Review: React.FC<{
               <span className="font-medium">المبلغ الإجمالي</span>
               {formData.monthly_amount && formData.rental_days && (
                 <p className="text-xs text-white/70">
-                  {formData.monthly_amount} × {calculateCanonicalBillingMonths(formData.start_date, formData.end_date)} شهر
+                  {formData.monthly_amount} × {Number((Number(formData.contract_amount || 0) / formData.monthly_amount).toFixed(2))} شهر
                 </p>
               )}
             </div>
@@ -961,7 +972,7 @@ const Step3Review: React.FC<{
 };
 
 // === Main Component ===
-export const SimpleContractWizard: React.FC<SimpleContractWizardProps> = ({ open,
+const ContractCreationWizard: React.FC<SimpleContractWizardProps> = ({ open,
   onOpenChange,
   onSubmit,
   preselectedCustomerId,
@@ -975,6 +986,7 @@ export const SimpleContractWizard: React.FC<SimpleContractWizardProps> = ({ open
   const companyId = useCurrentCompanyId();
   const [currentStep, setCurrentStep] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [isLoadingCustomers, setIsLoadingCustomers] = useState(true);
@@ -1139,7 +1151,7 @@ export const SimpleContractWizard: React.FC<SimpleContractWizardProps> = ({ open
         .from('vehicles')
         .select('id, plate_number, make, model, year, status, daily_rate')
         .eq('company_id', companyId)
-        .in('status', isEditMode ? ['available', 'rented'] : ['available'])
+        .in('status', ['available', 'rented'])
         .order('make')
         .limit(200); // Increased limit to show more vehicles
 
@@ -1166,8 +1178,20 @@ export const SimpleContractWizard: React.FC<SimpleContractWizardProps> = ({ open
   }, [companyId, open, editContract?.vehicle_id]);
 
   const updateFormData = useCallback((updates: Partial<ContractFormData>) => {
-    setFormData((prev) => ({ ...prev, ...updates }));
-  }, []);
+    setFormData((prev) => {
+      const next = { ...prev, ...updates };
+      if (editContract && next.end_date && next.start_date === editContract.start_date?.slice(0, 10)
+        && Number(next.monthly_amount) === Number(editContract.monthly_amount)) {
+        next.contract_amount = contractExtensionAmount(editContract, next.end_date);
+      }
+      return next;
+    });
+  }, [editContract]);
+
+  const expectedEditAmount = isEditMode && formData.end_date
+    && formData.start_date === editContract.start_date?.slice(0, 10)
+    && Number(formData.monthly_amount) === Number(editContract.monthly_amount)
+    ? contractExtensionAmount(editContract, formData.end_date) : undefined;
 
   const billingMonths = calculateCanonicalBillingMonths(formData.start_date, formData.end_date);
   const hasBillingAmountConflict =
@@ -1176,10 +1200,15 @@ export const SimpleContractWizard: React.FC<SimpleContractWizardProps> = ({ open
     && Number(formData.contract_amount || 0) > 0
     && Math.abs(
       Number(formData.contract_amount || 0)
-      - Number(formData.monthly_amount || 0) * billingMonths
+      - (expectedEditAmount ?? Number(formData.monthly_amount || 0) * billingMonths)
     ) > 1;
 
+  const [handoffReview, setHandoffReview] = useState<HandoffReview>();
+  const handoffScope = [companyId, formData.vehicle_id, formData.start_date, formData.end_date, open].join(':');
+  const handoffReady = isEditMode || !formData.vehicle_id || (handoffReview?.scope === handoffScope && handoffReview.ready);
+
   const canProceed = (): boolean => {
+    if (currentStep > 0 && !handoffReady) return false;
     switch (currentStep) {
       case 0:
         return !!formData.customer_id;
@@ -1212,6 +1241,7 @@ export const SimpleContractWizard: React.FC<SimpleContractWizardProps> = ({ open
   };
 
   const handleSubmit = async () => {
+    setSubmitError(null);
     if (!canProceed()) return;
 
     const validation = contractSchema.safeParse(formData);
@@ -1219,7 +1249,7 @@ export const SimpleContractWizard: React.FC<SimpleContractWizardProps> = ({ open
       toast.error(validation.error.issues[0]?.message || 'يرجى إكمال بيانات العقد');
       return;
     }
-    const validatedData = validation.data;
+    const validatedData = { ...validation.data, vehicle_handoff: !isEditMode && formData.vehicle_id && handoffReview?.scope === handoffScope ? handoffReview.consent : undefined };
 
     setIsSubmitting(true);
     try {
@@ -1267,13 +1297,24 @@ export const SimpleContractWizard: React.FC<SimpleContractWizardProps> = ({ open
           || Math.abs(newMonthlyAmount - Number(editContract.monthly_amount || 0)) > 0.001
           || Math.abs(validatedData.contract_amount - Number(editContract.contract_amount || 0)) > 0.001;
 
-        if (billingDefinitionChanged) {
+        if (billingDefinitionChanged && (
+          validatedData.customer_id !== String(editContract.customer_id || '')
+          || validatedData.contract_type !== String(editContract.contract_type || '')
+          || validatedData.start_date !== String(editContract.start_date || '').slice(0, 10)
+          || newMonthlyAmount !== Number(editContract.monthly_amount || 0)
+        )) {
           throw new Error(
             'تعديل العميل أو المركبة أو شروط الفوترة متوقف من هذه الشاشة لحماية الفواتير والقيود. يلزم تعديل عقد موثق يحدّث السجلات المرتبطة.',
           );
         }
 
-        await saveContractNotes({
+        if (billingDefinitionChanged) {
+          await saveContractVehicleAndExtension({
+            companyId, contractId: editContract.id, expectedUpdatedAt: openedVersion.updatedAt,
+            vehicleId: validatedData.vehicle_id || '', endDate: validatedData.end_date,
+            notes: validatedData.notes || null,
+          });
+        } else await saveContractNotes({
           companyId,
           contractId: editContract.id,
           expectedUpdatedAt: openedVersion.updatedAt,
@@ -1283,8 +1324,7 @@ export const SimpleContractWizard: React.FC<SimpleContractWizardProps> = ({ open
       } else {
         if (!user?.id) throw new Error('تعذر تحديد المستخدم');
 
-        const { data: creationResult, error } = await supabase.rpc(
-          'create_contract_with_violation_override_atomic',
+        const { data: creationResult, error } = await createContractWithHandoff(
           {
             p_company_id: companyId,
             p_customer_id: validatedData.customer_id,
@@ -1302,7 +1342,7 @@ export const SimpleContractWizard: React.FC<SimpleContractWizardProps> = ({ open
             p_idempotency_key: contractCreationKeyRef.current
               ?? (contractCreationKeyRef.current = `contract:${crypto.randomUUID()}`),
             p_accept_unpaid_violations: acceptedUnpaidViolations,
-          },
+          }, validatedData.vehicle_handoff,
         );
 
         if (error) throw error;
@@ -1321,6 +1361,7 @@ export const SimpleContractWizard: React.FC<SimpleContractWizardProps> = ({ open
     } catch (error: any) {
       if (error instanceof RentalEligibilityConfirmationCancelledError) return;
       console.error('Error saving contract:', error);
+      setSubmitError(error?.message || 'فشل في حفظ العقد');
       toast.error(error?.message || (isEditMode ? 'فشل في تحديث العقد' : 'فشل في إنشاء العقد'));
     } finally {
       setIsSubmitting(false);
@@ -1355,6 +1396,7 @@ export const SimpleContractWizard: React.FC<SimpleContractWizardProps> = ({ open
           <Step2DetailsPricing
             formData={formData}
             onUpdate={updateFormData}
+            expectedContractAmount={expectedEditAmount}
             preserveStoredContractAmount={Boolean(
               isEditMode
               && formData.start_date === editContract.start_date?.slice(0, 10)
@@ -1445,6 +1487,11 @@ export const SimpleContractWizard: React.FC<SimpleContractWizardProps> = ({ open
             isAssistantOpen ? "w-1/2" : "w-full"
           )}>
             {currentStep === 0 && <RentalEligibilityNotice className="mb-4" />}
+            {!isEditMode && open && companyId && formData.vehicle_id && <VehicleContractHandoffPanel
+              key={handoffScope} companyId={companyId} vehicleId={formData.vehicle_id}
+              startDate={formData.start_date} endDate={formData.end_date} scope={handoffScope}
+              onReview={setHandoffReview} disabled={isSubmitting} />}
+            {submitError && <div role="alert" className="mb-4 rounded-xl border border-red-300 bg-red-50 p-3 text-red-900">{submitError}</div>}
             {(
               !isEditMode
               || formData.vehicle_id !== editContract.vehicle_id
@@ -1711,5 +1758,11 @@ export const SimpleContractWizard: React.FC<SimpleContractWizardProps> = ({ open
     </Dialog>
   );
 };
+
+// Existing entry points keep the creation API, while editing gets its own
+// snapshot, change review and persistence flow without mounting creation hooks.
+export const SimpleContractWizard: React.FC<SimpleContractWizardProps> = (props) => props.editContract
+  ? <ContractEditWorkspace open={props.open} onOpenChange={props.onOpenChange} contract={props.editContract} onSubmit={props.onSubmit} />
+  : <ContractCreationWizard {...props} />;
 
 export default SimpleContractWizard;

@@ -1,3 +1,4 @@
+import { LegalPageHeader } from '@/components/legal/workspace/LegalPageHeader';
 /**
  * صفحة عرض مستندات الدعوى القانونية
  * يمكن مشاركة رابط هذه الصفحة مع الموظفين لتحميل المستندات
@@ -253,7 +254,7 @@ export default function LawsuitDocumentsView() {
 
   if (loading) {
     return (
-      <div className="legal-system flex items-center justify-center min-h-screen">
+      <div className="legal-workspace legal-system flex items-center justify-center min-h-screen" dir="rtl">
         <LoadingSpinner className="h-8 w-8" />
       </div>
     );
@@ -261,7 +262,7 @@ export default function LawsuitDocumentsView() {
 
   if (!contract) {
     return (
-      <div className="legal-system flex items-center justify-center min-h-screen">
+      <div className="legal-workspace legal-system flex items-center justify-center min-h-screen" dir="rtl">
         <Card className="w-full max-w-md">
           <CardContent className="pt-6 text-center">
             <p className="text-muted-foreground">لم يتم العثور على العقد</p>
@@ -284,27 +285,10 @@ export default function LawsuitDocumentsView() {
   const availableDocuments = documents.filter(d => d.available);
 
   return (
-    <div className="legal-system min-h-screen p-4 md:p-8">
+    <div className="legal-workspace legal-system min-h-screen p-4 md:p-8" dir="rtl">
       <div className="max-w-5xl mx-auto space-y-6">
         
-        {/* Header */}
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="text-center space-y-2"
-        >
-          <div className="flex items-center justify-center gap-3">
-            <div className="legal-icon h-14 w-14">
-              <FileCheck className="h-8 w-8" />
-            </div>
-            <h1 className="text-3xl font-bold text-slate-900 dark:text-white">
-              مستندات الدعوى القانونية
-            </h1>
-          </div>
-          <p className="text-muted-foreground">
-            جميع المستندات المطلوبة لرفع الدعوى
-          </p>
-        </motion.div>
+        <LegalPageHeader title="حافظة مستندات الدعوى" icon={FileCheck} description="راجع المستندات المتاحة والناقصة، ثم جهّز الحافظة المطلوبة للتقديم." />
 
         {/* Contract Info Card */}
         <motion.div
@@ -394,7 +378,7 @@ export default function LawsuitDocumentsView() {
                       initial={{ opacity: 0, x: -20 }}
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ delay: 0.3 + index * 0.1 }}
-                      className="flex items-center justify-between rounded-lg border border-[#E5EAF1] bg-[#F6F8FB] p-4 transition-all hover:border-[#38BDF8]"
+                      className="flex flex-wrap items-center justify-between gap-4 rounded-xl border border-border bg-white p-4 transition-all hover:border-primary"
                     >
                       <div className="flex items-center gap-3 flex-1">
                         <div className="p-2 bg-teal-100 dark:bg-teal-900 rounded-lg text-teal-600 dark:text-teal-400">
@@ -441,8 +425,8 @@ export default function LawsuitDocumentsView() {
           className="text-center space-y-4"
         >
           <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
-            <CheckCircle2 className="h-4 w-4 text-green-600" />
-            <span>جميع المستندات جاهزة للتحميل والطباعة</span>
+            <FileCheck className="h-4 w-4" />
+            <span>{availableDocuments.length > 0 ? `${availableDocuments.length} من ${documents.length} مستندات متاحة للمراجعة والتحميل` : 'لم تُجهّز مستندات هذا العقد بعد'}</span>
           </div>
           
           <Button

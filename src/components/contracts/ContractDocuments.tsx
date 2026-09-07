@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
+import { ContractIdentityBadge } from './ContractIdentityBadge';
 import { Plus, Download, Trash2, FileText, Upload, Eye, Car, CheckCircle, AlertCircle, AlertTriangle, FileImage, RefreshCw, PlayCircle, ScanLine, IdCard, FileSpreadsheet, ShieldCheck, CreditCard, Receipt, FileSignature } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
@@ -672,17 +673,17 @@ export function ContractDocuments({ contractId, customerId, vehicleId }: Contrac
       {/* Documents Panel */}
       <motion.div
         variants={fadeInUp}
-        className="rounded-2xl border border-[#E5EAF1] bg-white shadow-[0_10px_30px_-22px_rgba(15,23,42,0.25)]"
+        className="contract-document-library"
       >
         {/* Panel header */}
-        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#E5EAF1] bg-[#F6F8FB] px-4 py-3">
+        <div className="flex flex-wrap items-start justify-between gap-5 border-b border-[#dce5e1] bg-white p-6">
           <div className="flex items-center gap-3">
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#ECFDF9] text-[#0E9E7E]">
               <FileText className="h-4 w-4" />
             </div>
             <div>
-              <p className="text-[10px] font-black uppercase tracking-wide text-slate-400">Documents</p>
-              <h3 className="text-sm font-black text-[#0F172A]">مستندات العقد</h3>
+              <p className="text-[10px] font-black uppercase tracking-wide text-slate-400">مكتبة الملفات</p>
+              <h3 className="text-xl font-semibold text-[#193731]">مستندات العقد</h3>
             </div>
             <Badge variant="secondary" className="mr-1 rounded-full bg-white text-[10px] font-bold text-slate-500">
               {documents.length} مستند
@@ -777,7 +778,7 @@ export function ContractDocuments({ contractId, customerId, vehicleId }: Contrac
                       <span className="text-xs font-black text-[#0F172A]">{meta.label}</span>
                       <span className="text-[10px] font-bold text-slate-400">{items.length}</span>
                     </div>
-                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                    <div className="grid grid-cols-1 gap-4 2xl:grid-cols-2">
                       {items.map((document) => {
                         const fileMeta = getFileTypeMeta(document);
                         return (
@@ -792,17 +793,18 @@ export function ContractDocuments({ contractId, customerId, vehicleId }: Contrac
                                 handlePreviewDocument(document);
                               }
                             }}
-                            className="group relative cursor-pointer rounded-2xl border border-[#E5EAF1] bg-white p-3 transition-colors hover:border-[#22C7A1]/50 hover:shadow-[0_10px_30px_-22px_rgba(15,23,42,0.25)]"
+                            className="group relative cursor-pointer rounded-xl border border-[#dce5e1] bg-[#fbfdfb] p-5 transition-colors hover:border-teal-400"
                           >
                             <div className="flex items-start gap-3">
                               <div className={cn('flex h-10 w-10 shrink-0 items-center justify-center rounded-xl', fileMeta.tint)}>
                                 {fileMeta.icon}
                               </div>
                               <div className="min-w-0 flex-1">
-                                <div className="flex items-start justify-between gap-2">
-                                  <p className="truncate text-xs font-black text-[#0F172A]" title={document.document_name}>
+                                <div className="flex flex-wrap items-start justify-between gap-2">
+                                  <p className="break-all text-sm font-semibold text-[#193731]" title={document.document_name}>
                                     {document.document_name}
                                   </p>
+<ContractIdentityBadge type={document.document_type} status={document.legal_identity_match_status} reason={document.legal_identity_match_reason} />
                                   {document.is_required && (
                                     <Badge variant="destructive" className="h-5 shrink-0 px-1.5 text-[10px]">
                                       مطلوب
@@ -937,6 +939,7 @@ export function ContractDocuments({ contractId, customerId, vehicleId }: Contrac
                   <p className="truncate text-xs font-black text-[#0F172A]" title={document.document_name}>
                     {document.document_name}
                   </p>
+<ContractIdentityBadge type={document.document_type} status={document.legal_identity_match_status} reason={document.legal_identity_match_reason} />
                   <div className="mt-1 flex items-center gap-2 text-[10px] text-slate-400">
                     <span className="flex items-center gap-1">
                       <span className="h-1.5 w-1.5 rounded-full bg-[#22C7A1]" />

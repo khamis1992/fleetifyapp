@@ -24,6 +24,11 @@ describe('Windows smart-card PIN helper', () => {
     expect(script).toContain('if ($isPassword -ne $true) { continue }');
   });
 
+  it('waits for the worker authorization before typing into a native dialog', () => {
+    expect(script.indexOf("WriteLine('pin-ready')")).toBeGreaterThan(script.indexOf('if ($isPassword -ne $true)'));
+    expect(script.indexOf("ReadLine() -ne 'submit'")).toBeLessThan(script.indexOf('SendWait($pin)'));
+  });
+
   it('stops before the government-card third-attempt lockout threshold', () => {
     expect(MAX_SMART_CARD_PIN_SUBMISSIONS_PER_PROCESS).toBe(2);
   });

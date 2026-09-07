@@ -99,6 +99,11 @@ export const useLegalCaseWorkflow = (caseId?: string) => {
         queryClient.invalidateQueries({ queryKey: ['legal-cases'] }),
         queryClient.invalidateQueries({ queryKey: ['legal-case', caseId] }),
         queryClient.invalidateQueries({ queryKey: ['legal-case-stats'] }),
+        queryClient.invalidateQueries({ queryKey: ['lawsuit-legal-case', companyId] }),
+        queryClient.invalidateQueries({ queryKey: ['manual-legal-delinquency-queue', companyId] }),
+        queryClient.invalidateQueries({ queryKey: ['opened-legal-cases-count', companyId] }),
+        queryClient.invalidateQueries({ queryKey: ['contracts'] }),
+        queryClient.invalidateQueries({ queryKey: ['contract-details'] }),
         queryClient.invalidateQueries({ queryKey: ['manual-legal-collections'] }),
         queryClient.invalidateQueries({ queryKey: ['tasks'] }),
       ]);
@@ -110,6 +115,7 @@ export const useLegalCaseWorkflow = (caseId?: string) => {
   return {
     ...query,
     isSaving: mutation.isPending,
+    recordExternalFiling: (reference: string, date: string) => run('record_external_legal_filing_v1', { p_reference: reference, p_filing_date: date }),
     transition: (target: LegalWorkflowStage, reason?: string) => run('transition_legal_case_workflow_v1', { p_target_stage: target, p_reason: reason || null }),
     correctUnfiled: (reason: string) => {
       const normalizedReason = reason.trim();

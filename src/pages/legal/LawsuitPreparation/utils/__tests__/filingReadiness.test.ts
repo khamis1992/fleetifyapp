@@ -73,12 +73,20 @@ function createReadyState(violationsCount = 0): LawsuitPreparationState {
       caseTitle: 'مطالبة مالية',
       facts: 'وقائع مثبتة',
       claims: 'طلبات الدعوى',
-      defendant: { fullName: 'مدعى عليه' },
+      defendant: { fullName: 'مدعى عليه', nationality: 'السودان' },
     },
   } as unknown as LawsuitPreparationState;
 }
 
 describe('getFilingReadiness', () => {
+  it.each(['غير محدد', 'unknown', '', null])('rejects missing nationality %j even with complete documents', (nationality) => {
+    const state = createReadyState();
+    state.taqadiData!.defendant.nationality = nationality;
+    const readiness = getFilingReadiness(state);
+    expect(readiness.canStartFiling).toBe(false);
+    expect(readiness.percentage).toBeLessThan(100);
+    expect(readiness.missingReasons.join(' ')).toContain('جنسية المدعى عليه');
+  });
   it('does not require violation evidence for amounts excluded from the claim', () => {
     const state = createReadyState(0);
     state.documents.violations.status = 'missing';

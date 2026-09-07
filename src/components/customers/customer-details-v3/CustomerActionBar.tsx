@@ -239,6 +239,7 @@ export function CustomerActionBar({
               <Button
                 variant="outline"
                 size="sm"
+                aria-label="المزيد من إجراءات العميل"
                 className="h-9 w-9 gap-0 rounded-xl border-[#E5EAF1] p-0 text-slate-600 hover:bg-[#F6F8FB]"
               >
                 <MoreHorizontal className="h-4 w-4" />

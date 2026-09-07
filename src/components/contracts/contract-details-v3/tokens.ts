@@ -621,6 +621,7 @@ export const CONTRACT_TAB_ICONS: Record<string, typeof Receipt> = {
 
 export const CONTRACT_DETAIL_TAB_VALUES_V3 = new Set([
   'health',
+  'followup',
   'financial',
   'vehicle',
   'violations',

@@ -1,3 +1,4 @@
+import { WorkspaceButton as Button, WorkspaceDialogContent as DialogContent, WorkspaceDialogFooter as DialogFooter, WorkspaceDialogHeader as DialogHeader } from '@/components/employee-workspace/WorkspacePresentation';
 import * as React from 'react';
 import {
   AlertTriangle,
@@ -17,15 +18,8 @@ import {
 import { jsPDF } from 'jspdf';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
+
+import { Dialog, DialogDescription, DialogTitle } from '@/components/ui/dialog';
 import { Progress } from '@/components/ui/progress';
 import {
   rotateScannedPage,
@@ -33,6 +27,7 @@ import {
   type ScannedDocumentPage,
 } from '@/utils/documentScanner';
 import { toast } from 'sonner';
+import { MAX_SIGNED_CONTRACT_PAGES } from '@/utils/signedContractReview';
 
 interface ScannerPage extends ScannedDocumentPage {
   id: string;
@@ -50,7 +45,7 @@ interface SignedContractScannerDialogProps {
   isSubmitting?: boolean;
 }
 
-const MAX_PAGES = 30;
+const MAX_PAGES = MAX_SIGNED_CONTRACT_PAGES;
 
 async function dataUrlToImageFile(dataUrl: string, fileName: string): Promise<File> {
   const response = await fetch(dataUrl);
@@ -173,15 +168,19 @@ export function SignedContractScannerDialog({
   };
 
   const rotatePage = async (pageId: string) => {
+    if (isBusy) return;
     const page = pages.find((item) => item.id === pageId);
     if (!page) return;
+    setProcessingCount(1);
     try {
       const rotated = await rotateScannedPage(page.dataUrl);
       setPages((current) =>
-        current.map((item) => (item.id === pageId ? { ...item, dataUrl: rotated } : item))
+        current.map((item) => (item.id === pageId ? { ...item, dataUrl: rotated, width: item.height, height: item.width } : item))
       );
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'تعذر تدوير الصفحة');
+    } finally {
+      setProcessingCount(0);
     }
   };
 
@@ -194,15 +193,16 @@ export function SignedContractScannerDialog({
     setIsBuildingPdf(true);
     try {
       const pdf = new jsPDF({
-        orientation: 'portrait',
+        orientation: pages[0].width > pages[0].height ? 'landscape' : 'portrait',
         unit: 'mm',
         format: 'a4',
         compress: true,
       });
 
       pages.forEach((page, index) => {
-        if (index > 0) pdf.addPage('a4', 'portrait');
-        pdf.addImage(page.dataUrl, 'JPEG', 0, 0, 210, 297, undefined, 'FAST');
+        const landscape = page.width > page.height;
+        if (index > 0) pdf.addPage('a4', landscape ? 'landscape' : 'portrait');
+        pdf.addImage(page.dataUrl, 'JPEG', 0, 0, landscape ? 297 : 210, landscape ? 210 : 297, undefined, 'FAST');
       });
 
       pdf.setProperties({
@@ -417,7 +417,7 @@ export function SignedContractScannerDialog({
                           variant="outline"
                           size="icon"
                           title="تقديم الصفحة"
-                          disabled={index === 0}
+                          disabled={isBusy || index === 0}
                           onClick={() => movePage(index, -1)}
                         >
                           <ArrowUp className="h-4 w-4" />
@@ -426,7 +426,7 @@ export function SignedContractScannerDialog({
                           variant="outline"
                           size="icon"
                           title="تأخير الصفحة"
-                          disabled={index === pages.length - 1}
+                          disabled={isBusy || index === pages.length - 1}
                           onClick={() => movePage(index, 1)}
                         >
                           <ArrowDown className="h-4 w-4" />
@@ -435,6 +435,7 @@ export function SignedContractScannerDialog({
                           variant="outline"
                           size="icon"
                           title="تدوير الصفحة"
+                          disabled={isBusy}
                           onClick={() => rotatePage(page.id)}
                         >
                           <RotateCw className="h-4 w-4" />
@@ -443,6 +444,7 @@ export function SignedContractScannerDialog({
                           variant="outline"
                           size="icon"
                           title="حذف الصفحة"
+                          disabled={isBusy}
                           className="border-[#F8CBD0] text-[#BE123C] hover:bg-[#FFF1F2]"
                           onClick={() =>
                             setPages((current) => current.filter((item) => item.id !== page.id))

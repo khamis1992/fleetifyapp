@@ -24,10 +24,10 @@ export function evaluateContractClosePenalties(
   const total = new Intl.NumberFormat('ar-QA', { maximumFractionDigits: 2 }).format(summary.total);
   return {
     ...summary,
-    allowed: summary.count === 0,
+    allowed: true,
     message: summary.count === 0
       ? ''
-      : `لا يمكن إغلاق العقد: توجد ${summary.count} مخالفة غير مسددة بإجمالي ${total} ر.ق. يجب سدادها أو معالجتها صراحةً أولاً`,
+      : `تبقى ${summary.count} مخالفة غير مسددة بإجمالي ${total} ر.ق. على مسؤولية العميل بعد إغلاق العقد`,
   };
 }
 

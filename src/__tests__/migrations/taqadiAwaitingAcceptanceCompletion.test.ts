@@ -3,8 +3,8 @@ import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 const read = (path: string) => readFileSync(resolve(process.cwd(), path), 'utf8');
-const migration = read('supabase/migrations/20260903062009_advance_completed_taqadi_filing_to_awaiting_acceptance.sql');
-const rollback = read('supabase/rollbacks/20260903062009_advance_completed_taqadi_filing_to_awaiting_acceptance.rollback.sql');
+const migration = read('supabase/migrations/20260906064806_advance_completed_taqadi_filing_to_awaiting_acceptance.sql');
+const rollback = read('supabase/rollbacks/20260906064806_advance_completed_taqadi_filing_to_awaiting_acceptance.rollback.sql');
 
 describe('completed Taqadi filing court-acceptance state', () => {
   it('records filing first and then advances to awaiting court acceptance', () => {

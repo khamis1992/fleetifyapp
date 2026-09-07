@@ -192,7 +192,7 @@ export const CSVDragDropUpload: React.FC<CSVDragDropUploadProps> = ({
               <Alert variant="destructive" className="mt-4">
                 <AlertTriangle className="h-4 w-4" />
                 <AlertDescription>
-                  نوع الملف غير مدعوم. يرجى اختيار ملف CSV أو Excel.
+                  نوع الملف غير مدعوم. يرجى اختيار ملف CSV أو إكسل.
                 </AlertDescription>
               </Alert>
             )}

@@ -63,9 +63,9 @@ const DocumentCard = ({ doc, index }: { doc: CustomerDocument; index: number }) 
       initial={{ opacity: 0, scale: 0.9 }}
       animate={{ opacity: 1, scale: 1 }}
       transition={{ delay: index * 0.05 }}
-      className="group relative bg-gradient-to-br from-slate-50 to-slate-100 rounded-xl border border-slate-200 overflow-hidden hover:border-teal-300 hover:shadow-lg hover:shadow-teal-500/10 transition-all"
+      className="group relative rounded-xl border border-[#dfe5dc] bg-white overflow-hidden hover:border-[#9ab58c] transition-colors"
     >
-      <div className="aspect-square bg-gradient-to-br from-teal-50 to-cyan-50 flex items-center justify-center overflow-hidden">
+      <div className="aspect-[16/10] bg-[#f1f5eb] flex items-center justify-center overflow-hidden">
         {isImage && fileUrl ? (
           <img
             src={fileUrl}
@@ -111,6 +111,7 @@ const DocumentCard = ({ doc, index }: { doc: CustomerDocument; index: number }) 
             size="sm" 
             variant="outline" 
             className="h-8 w-8 p-0 disabled:opacity-50"
+            aria-label={`تنزيل ${doc.document_name}`}
             onClick={handleDownload}
             disabled={isLoading || !fileUrl}
           >

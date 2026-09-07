@@ -439,7 +439,7 @@ const IntelligentInvoiceScanner: React.FC<InvoiceScannerProps> = ({
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="gemini">Gemini 2.5 Flash (الأفضل للخط اليدوي)</SelectItem>
+                  <SelectItem value="gemini">جيميني فلاش 2.5 (للقراءة اليدوية)</SelectItem>
                   <SelectItem value="google-vision">{t("googleVisionApi")}</SelectItem>
                   <SelectItem value="hybrid">هجين (أعلى دقة)</SelectItem>
                 </SelectContent>

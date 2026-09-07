@@ -1,3 +1,4 @@
+import { LegalPageHeader } from '@/components/legal/workspace/LegalPageHeader';
 import { useMemo, useState, type ElementType } from 'react';
 import { useParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -777,21 +778,7 @@ function LawsuitPreparationContent() {
 
   return (
     <main className="legal-system lawsuit-redesign-page" dir="rtl">
-      <section className="lawsuit-redesign-hero">
-        <div className="lawsuit-hero-title">
-          <Badge className="bg-[#EAF2F9] text-[#173A63] hover:bg-[#EAF2F9]">
-            <Scale className="ml-1 h-3.5 w-3.5" />
-            مركز تجهيز الدعوى
-          </Badge>
-          <h1>تجهيز الدعوى القانونية</h1>
-          <p>مسار خطوة-بخطوة: مراجعة القضية، تجهيز الحافظة، نقل بيانات التقاضي، ثم الإغلاق والمتابعة.</p>
-        </div>
-
-        <div className="lawsuit-hero-status">
-          <span>{readiness.percentage}% جاهزية</span>
-          <strong>{readiness.isComplete ? 'جاهز للتقديم' : 'قيد التجهيز'}</strong>
-        </div>
-      </section>
+      <LegalPageHeader title="تجهيز الدعوى القانونية" icon={Scale} eyebrow="ملف الدعوى / مسار التجهيز" description="راجع القضية، أكمل الأدلة والمستندات، ثم انتقل إلى التقديم والمتابعة." aside={<div className="lw-readiness"><span>{readiness.percentage}%</span><strong>{readiness.isComplete ? 'جاهز للتقديم' : 'قيد التجهيز'}</strong></div>} />
 
       <LegalHeader />
 

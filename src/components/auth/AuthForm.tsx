@@ -513,7 +513,7 @@ export const AuthForm: FC = () => {
             transition={{ delay: 0.8 }}
             className="mt-8 text-center text-sm text-slate-400"
           >
-            © {new Date().getFullYear()} Fleetify - جميع الحقوق محفوظة
+            © {new Date().getFullYear()} فليتيفاي - جميع الحقوق محفوظة
           </motion.p>
         </motion.div>
       </div>

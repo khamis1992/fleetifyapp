@@ -1,0 +1,212 @@
+{
+  "columns": [
+    {
+      "type": "uuid",
+      "table": "contract_operations_log",
+      "column": "id"
+    },
+    {
+      "type": "uuid",
+      "table": "contract_operations_log",
+      "column": "contract_id"
+    },
+    {
+      "type": "uuid",
+      "table": "contract_operations_log",
+      "column": "company_id"
+    },
+    {
+      "type": "text",
+      "table": "contract_operations_log",
+      "column": "operation_type"
+    },
+    {
+      "type": "jsonb",
+      "table": "contract_operations_log",
+      "column": "operation_details"
+    },
+    {
+      "type": "uuid",
+      "table": "contract_operations_log",
+      "column": "performed_by"
+    },
+    {
+      "type": "timestamp with time zone",
+      "table": "contract_operations_log",
+      "column": "performed_at"
+    },
+    {
+      "type": "jsonb",
+      "table": "contract_operations_log",
+      "column": "old_values"
+    },
+    {
+      "type": "jsonb",
+      "table": "contract_operations_log",
+      "column": "new_values"
+    },
+    {
+      "type": "text",
+      "table": "contract_operations_log",
+      "column": "notes"
+    },
+    {
+      "type": "uuid",
+      "table": "contract_operations_log",
+      "column": "idempotency_key"
+    },
+    {
+      "type": "uuid",
+      "table": "profiles",
+      "column": "id"
+    },
+    {
+      "type": "uuid",
+      "table": "profiles",
+      "column": "user_id"
+    },
+    {
+      "type": "uuid",
+      "table": "profiles",
+      "column": "company_id"
+    },
+    {
+      "type": "text",
+      "table": "profiles",
+      "column": "first_name"
+    },
+    {
+      "type": "text",
+      "table": "profiles",
+      "column": "last_name"
+    },
+    {
+      "type": "text",
+      "table": "profiles",
+      "column": "first_name_ar"
+    },
+    {
+      "type": "text",
+      "table": "profiles",
+      "column": "last_name_ar"
+    },
+    {
+      "type": "text",
+      "table": "profiles",
+      "column": "email"
+    },
+    {
+      "type": "text",
+      "table": "profiles",
+      "column": "phone"
+    },
+    {
+      "type": "text",
+      "table": "profiles",
+      "column": "avatar_url"
+    },
+    {
+      "type": "text",
+      "table": "profiles",
+      "column": "national_id"
+    },
+    {
+      "type": "text",
+      "table": "profiles",
+      "column": "position"
+    },
+    {
+      "type": "text",
+      "table": "profiles",
+      "column": "position_ar"
+    },
+    {
+      "type": "boolean",
+      "table": "profiles",
+      "column": "is_active"
+    },
+    {
+      "type": "text",
+      "table": "profiles",
+      "column": "language_preference"
+    },
+    {
+      "type": "text",
+      "table": "profiles",
+      "column": "timezone"
+    },
+    {
+      "type": "timestamp with time zone",
+      "table": "profiles",
+      "column": "created_at"
+    },
+    {
+      "type": "timestamp with time zone",
+      "table": "profiles",
+      "column": "updated_at"
+    },
+    {
+      "type": "boolean",
+      "table": "profiles",
+      "column": "is_demo_user"
+    },
+    {
+      "type": "text",
+      "table": "profiles",
+      "column": "role"
+    }
+  ],
+  "functions": [
+    {
+      "hash": "90984ae9d90e663ed1e355dd3f17e44b",
+      "name": "canonical_invoice_paid_amount",
+      "definition": "CREATE OR REPLACE FUNCTION public.canonical_invoice_paid_amount(p_invoice_id uuid, p_exclude_payment_id uuid DEFAULT NULL::uuid)\n RETURNS numeric\n LANGUAGE sql\n STABLE SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\n  SELECT COALESCE(SUM(source.amount), 0)::numeric\n  FROM (\n    SELECT allocation.amount\n    FROM public.payment_allocations allocation\n    JOIN public.payments payment ON payment.id = allocation.payment_id\n    WHERE allocation.allocation_type = 'invoice'\n      AND allocation.target_id = p_invoice_id\n      AND allocation.is_active = true\n      AND payment.id IS DISTINCT FROM p_exclude_payment_id\n      AND lower(COALESCE(payment.payment_status, '')) IN ('completed', 'paid', 'success', 'succeeded')\n      AND lower(COALESCE(payment.transaction_type::text, 'receipt')) = 'receipt'\n\n    UNION ALL\n\n    SELECT payment.amount\n    FROM public.payments payment\n    WHERE payment.invoice_id = p_invoice_id\n      AND payment.id IS DISTINCT FROM p_exclude_payment_id\n      AND lower(COALESCE(payment.payment_status, '')) IN ('completed', 'paid', 'success', 'succeeded')\n      AND lower(COALESCE(payment.transaction_type::text, 'receipt')) = 'receipt'\n      AND NOT EXISTS (\n        SELECT 1\n        FROM public.payment_allocations allocation\n        WHERE allocation.payment_id = payment.id\n          AND allocation.is_active = true\n      )\n  ) source;\n$function$\n"
+    },
+    {
+      "hash": "f64472ec9fa40e1d8a7b79b9e1e3e937",
+      "name": "generate_due_contract_invoices_v1",
+      "definition": "CREATE OR REPLACE FUNCTION public.generate_due_contract_invoices_v1(p_options jsonb DEFAULT '{}'::jsonb)\n RETURNS jsonb\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\nDECLARE\n  v_dry_run boolean := COALESCE((p_options ->> 'dry_run')::boolean, false);\n  v_contract_filter uuid := NULLIF(p_options ->> 'contract_id', '')::uuid;\n  v_contract_id uuid;\n  v_schedule record;\n  v_invoice_id uuid;\n  v_created integer := 0;\n  v_linked integer := 0;\n  v_skipped jsonb := '[]'::jsonb;\n  v_errors jsonb := '[]'::jsonb;\n  v_processed_contracts integer := 0;\nBEGIN\n  FOR v_contract_id IN\n    SELECT DISTINCT contract.id\n    FROM public.contracts AS contract\n    JOIN public.contract_payment_schedules AS schedule\n      ON schedule.contract_id = contract.id\n     AND schedule.company_id = contract.company_id\n     AND lower(COALESCE(schedule.status, '')) NOT IN (\n       'cancelled', 'canceled', 'void', 'voided', 'deleted', 'inactive'\n     )\n     AND schedule.invoice_id IS NULL\n     AND schedule.due_date IS NOT NULL\n     AND schedule.due_date <= CURRENT_DATE\n     AND round(COALESCE(schedule.amount, 0)::numeric, 2) > 0.01\n    WHERE lower(COALESCE(contract.status, '')) IN ('active', 'under_legal_procedure')\n      AND (v_contract_filter IS NULL OR contract.id = v_contract_filter)\n    ORDER BY contract.id\n  LOOP\n    v_processed_contracts := v_processed_contracts + 1;\n\n    FOR v_schedule IN\n      SELECT schedule.id, schedule.due_date, schedule.amount, schedule.company_id\n      FROM public.contract_payment_schedules AS schedule\n      WHERE schedule.contract_id = v_contract_id\n        AND lower(COALESCE(schedule.status, '')) NOT IN (\n          'cancelled', 'canceled', 'void', 'voided', 'deleted', 'inactive'\n        )\n        AND schedule.invoice_id IS NULL\n        AND schedule.due_date IS NOT NULL\n        AND schedule.due_date <= CURRENT_DATE\n        AND round(COALESCE(schedule.amount, 0)::numeric, 2) > 0.01\n      ORDER BY schedule.due_date\n    LOOP\n      IF EXISTS (\n        SELECT 1\n        FROM public.contract_payment_schedules AS other\n        WHERE other.contract_id = v_contract_id\n          AND other.id <> v_schedule.id\n          AND date_trunc('month', other.due_date) = date_trunc('month', v_schedule.due_date)\n          AND lower(COALESCE(other.status, '')) NOT IN (\n            'cancelled', 'canceled', 'void', 'voided', 'deleted', 'inactive'\n          )\n      ) THEN\n        v_skipped := v_skipped || jsonb_build_object(\n          'contract_id', v_contract_id,\n          'schedule_id', v_schedule.id,\n          'reason', 'duplicate_month_requires_review'\n        );\n        CONTINUE;\n      END IF;\n\n      IF public.system_agent_date_in_closed_period(\n           v_schedule.company_id, v_schedule.due_date\n         )\n      THEN\n        v_skipped := v_skipped || jsonb_build_object(\n          'contract_id', v_contract_id,\n          'schedule_id', v_schedule.id,\n          'reason', 'closed_accounting_period'\n        );\n        CONTINUE;\n      END IF;\n\n      IF v_dry_run THEN\n        v_created := v_created + 1;\n        CONTINUE;\n      END IF;\n\n      BEGIN\n        v_invoice_id := public.system_generate_invoice_for_contract_month_core(\n          v_contract_id,\n          date_trunc('month', v_schedule.due_date)::date\n        );\n\n        IF v_invoice_id IS NULL THEN\n          v_skipped := v_skipped || jsonb_build_object(\n            'contract_id', v_contract_id,\n            'schedule_id', v_schedule.id,\n            'reason', 'core_returned_no_invoice'\n          );\n        ELSE\n          IF NOT EXISTS (\n            SELECT 1\n            FROM public.invoices AS invoice\n            WHERE invoice.id = v_invoice_id\n              AND invoice.contract_id = v_contract_id\n              AND invoice.penalty_id IS NULL\n              AND upper(btrim(COALESCE(invoice.invoice_number, ''))) NOT LIKE 'TV-%'\n              AND date_trunc(\n                    'month',\n                    COALESCE(invoice.invoice_month, invoice.invoice_date)::timestamp without time zone\n                  )::date = date_trunc('month', v_schedule.due_date)::date\n              AND abs(invoice.total_amount - v_schedule.amount) <= 0.01\n              AND lower(COALESCE(invoice.status, '')) NOT IN (\n                'cancelled', 'canceled', 'void', 'voided', 'deleted', 'inactive'\n              )\n          ) THEN\n            RAISE EXCEPTION 'generated invoice identity or amount mismatch';\n          END IF;\n\n          IF NOT public.system_invoice_has_single_balanced_posted_journal(\n               v_schedule.company_id, v_invoice_id, v_schedule.amount\n             )\n          THEN\n            RAISE EXCEPTION 'generated invoice lacks a balanced posted journal';\n          END IF;\n\n          UPDATE public.contract_payment_schedules AS schedule\n          SET invoice_id = v_invoice_id,\n              updated_at = now()\n          WHERE schedule.id = v_schedule.id\n            AND schedule.invoice_id IS NULL;\n\n          IF FOUND THEN\n            v_linked := v_linked + 1;\n          END IF;\n\n          v_created := v_created + 1;\n        END IF;\n      EXCEPTION WHEN OTHERS THEN\n        v_errors := v_errors || jsonb_build_object(\n          'contract_id', v_contract_id,\n          'schedule_id', v_schedule.id,\n          'error', SQLERRM\n        );\n      END;\n    END LOOP;\n  END LOOP;\n\n  RETURN jsonb_build_object(\n    'contracts_processed', v_processed_contracts,\n    'invoices_created', v_created,\n    'schedules_linked', v_linked,\n    'skipped', v_skipped,\n    'errors', v_errors\n  );\nEND;\n$function$\n"
+    },
+    {
+      "hash": "cf20c8153ee61b17c66a888e8727a282",
+      "name": "is_finance_action_authorized",
+      "definition": "CREATE OR REPLACE FUNCTION public.is_finance_action_authorized(p_actor_id uuid, p_company_id uuid, p_permission_ids text[], p_allowed_roles text[])\n RETURNS boolean\n LANGUAGE plpgsql\n STABLE SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\nDECLARE\n  v_is_super_admin boolean := false;\nBEGIN\n  IF p_actor_id IS NULL OR p_company_id IS NULL THEN\n    RETURN false;\n  END IF;\n\n  SELECT EXISTS (\n    SELECT 1\n    FROM public.user_roles role\n    WHERE role.user_id = p_actor_id\n      AND role.role::text = 'super_admin'\n  ) INTO v_is_super_admin;\n\n  IF NOT v_is_super_admin\n     AND public.get_user_company_id() IS DISTINCT FROM p_company_id\n  THEN\n    RETURN false;\n  END IF;\n\n  IF EXISTS (\n    SELECT 1\n    FROM public.user_permissions permission\n    WHERE permission.user_id = p_actor_id\n      AND permission.permission_id = ANY(COALESCE(p_permission_ids, ARRAY[]::text[]))\n      AND permission.granted = false\n  ) THEN\n    RETURN false;\n  END IF;\n\n  IF EXISTS (\n    SELECT 1\n    FROM public.user_permissions permission\n    WHERE permission.user_id = p_actor_id\n      AND permission.permission_id = ANY(COALESCE(p_permission_ids, ARRAY[]::text[]))\n      AND permission.granted = true\n  ) THEN\n    RETURN true;\n  END IF;\n\n  RETURN EXISTS (\n    SELECT 1\n    FROM public.user_roles role\n    WHERE role.user_id = p_actor_id\n      AND role.role::text = ANY(COALESCE(p_allowed_roles, ARRAY[]::text[]))\n      AND (\n        role.role::text = 'super_admin'\n        OR role.company_id IS NULL\n        OR role.company_id = p_company_id\n      )\n  );\nEND;\n$function$\n"
+    },
+    {
+      "hash": "677fdc53608e235fc72218ba71ff1a45",
+      "name": "reconcile_contract_schedules_v1",
+      "definition": "CREATE OR REPLACE FUNCTION public.reconcile_contract_schedules_v1(p_contract_id uuid, p_options jsonb DEFAULT '{}'::jsonb)\n RETURNS jsonb\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\nDECLARE\n  v_company_id uuid;\n  v_contract_status text;\n  v_rows_linked integer := 0;\n  v_rows_detached_dead integer := 0;\n  v_rows_cancelled_orphans integer := 0;\n  v_rows_settlement_synced integer := 0;\n  v_report jsonb;\n  v_do_link_repair boolean := COALESCE((p_options ->> 'link_repair')::boolean, true);\n  v_do_settlement_sync boolean := COALESCE((p_options ->> 'settlement_sync')::boolean, true);\nBEGIN\n  IF p_contract_id IS NULL THEN\n    RAISE EXCEPTION 'contract id is required' USING ERRCODE = '22023';\n  END IF;\n\n  SELECT contract.company_id,\n         lower(COALESCE(contract.status, ''))\n    INTO v_company_id, v_contract_status\n  FROM public.contracts AS contract\n  WHERE contract.id = p_contract_id\n  FOR UPDATE;\n\n  IF NOT FOUND THEN\n    RAISE EXCEPTION 'contract not found' USING ERRCODE = 'P0002';\n  END IF;\n\n  -- STEP 1a: re-link unlinked schedules that have a canonical invoice.\n  IF v_do_link_repair THEN\n    WITH candidates AS (\n      SELECT\n        schedule.id AS schedule_id,\n        (\n          SELECT invoice.id\n          FROM public.invoices AS invoice\n          WHERE invoice.company_id = v_company_id\n            AND invoice.contract_id = p_contract_id\n            AND invoice.penalty_id IS NULL\n            AND upper(btrim(COALESCE(invoice.invoice_number, ''))) NOT LIKE 'TV-%'\n            AND lower(COALESCE(invoice.status, '')) NOT IN (\n              'cancelled', 'canceled', 'void', 'voided', 'deleted', 'inactive'\n            )\n            AND lower(COALESCE(invoice.payment_status, '')) NOT IN (\n              'cancelled', 'canceled', 'void', 'voided', 'deleted', 'inactive'\n            )\n            AND date_trunc('month', COALESCE(invoice.invoice_month, invoice.invoice_date)::timestamp without time zone)::date\n                = date_trunc('month', schedule.due_date)::date\n            AND NOT EXISTS (\n              SELECT 1 FROM public.contract_payment_schedules AS other\n              WHERE other.invoice_id = invoice.id\n                AND other.id <> schedule.id\n                AND lower(COALESCE(other.status, '')) NOT IN (\n                  'cancelled', 'canceled', 'void', 'voided', 'deleted', 'inactive'\n                )\n            )\n          LIMIT 1\n        ) AS invoice_id\n      FROM public.contract_payment_schedules AS schedule\n      WHERE schedule.contract_id = p_contract_id\n        AND schedule.company_id = v_company_id\n        AND schedule.invoice_id IS NULL\n        AND lower(COALESCE(schedule.status, '')) NOT IN (\n          'cancelled', 'canceled', 'void', 'voided', 'deleted', 'inactive'\n        )\n    ),\n    relinked AS (\n      UPDATE public.contract_payment_schedules AS schedule\n      SET invoice_id = candidates.invoice_id,\n          updated_at = now()\n      FROM candidates\n      WHERE schedule.id = candidates.schedule_id\n        AND candidates.invoice_id IS NOT NULL\n      RETURNING 1\n    )\n    SELECT count(*) INTO v_rows_linked FROM relinked;\n\n    -- STEP 1b: detach links to dead invoices.\n    WITH dead_links AS (\n      SELECT schedule.id AS schedule_id\n      FROM public.contract_payment_schedules AS schedule\n      WHERE schedule.contract_id = p_contract_id\n        AND schedule.company_id = v_company_id\n        AND schedule.invoice_id IS NOT NULL\n        AND lower(COALESCE(schedule.status, '')) NOT IN (\n          'cancelled', 'canceled', 'void', 'voided', 'deleted', 'inactive'\n        )\n        AND EXISTS (\n          SELECT 1 FROM public.invoices AS invoice\n          WHERE invoice.id = schedule.invoice_id\n            AND (\n              lower(COALESCE(invoice.status, '')) IN (\n                'cancelled', 'canceled', 'void', 'voided', 'deleted', 'inactive'\n              )\n              OR lower(COALESCE(invoice.payment_status, '')) IN (\n                'cancelled', 'canceled', 'void', 'voided', 'deleted', 'inactive'\n              )\n            )\n        )\n    ),\n    detached AS (\n      UPDATE public.contract_payment_schedules AS schedule\n      SET invoice_id = NULL,\n          updated_at = now()\n      FROM dead_links\n      WHERE schedule.id = dead_links.schedule_id\n      RETURNING 1\n    )\n    SELECT count(*) INTO v_rows_detached_dead FROM detached;\n\n    -- STEP 1c: cancelled contracts — sweep orphan future unpaid unlinked rows.\n    IF v_contract_status IN ('cancelled', 'canceled') THEN\n      WITH orphan_rows AS (\n        UPDATE public.contract_payment_schedules AS schedule\n        SET status = 'cancelled',\n            invoice_id = NULL,\n            updated_at = now()\n        WHERE schedule.contract_id = p_contract_id\n          AND schedule.company_id = v_company_id\n          AND lower(COALESCE(schedule.status, '')) NOT IN (\n            'cancelled', 'canceled', 'void', 'voided', 'deleted', 'inactive'\n          )\n          AND schedule.invoice_id IS NULL\n          AND round(COALESCE(schedule.paid_amount, 0)::numeric, 2) <= 0.01\n        RETURNING 1\n      )\n      SELECT count(*) INTO v_rows_cancelled_orphans FROM orphan_rows;\n    END IF;\n  END IF;\n\n  -- STEP 2: settlement sync from the linked invoice (the authority).\n  IF v_do_settlement_sync THEN\n    WITH computed AS (\n      SELECT\n        schedule.id AS schedule_id,\n        COALESCE(invoice.total_amount, 0) AS invoice_total,\n        LEAST(\n          GREATEST(public.canonical_invoice_paid_amount(invoice.id, NULL), 0),\n          COALESCE(invoice.total_amount, 0)\n        ) AS computed_paid,\n        CASE\n          WHEN COALESCE(invoice.total_amount, 0)\n               - LEAST(\n                   GREATEST(public.canonical_invoice_paid_amount(invoice.id, NULL), 0),\n                   COALESCE(invoice.total_amount, 0)\n                 ) <= 0.01\n            THEN 'paid'\n          WHEN LEAST(\n                 GREATEST(public.canonical_invoice_paid_amount(invoice.id, NULL), 0),\n                 COALESCE(invoice.total_amount, 0)\n               ) > 0.01\n            THEN 'partially_paid'\n          WHEN schedule.due_date < CURRENT_DATE\n            THEN 'overdue'\n          ELSE 'pending'\n        END AS computed_status,\n        (\n          SELECT max(source.payment_date)\n          FROM (\n            SELECT payment.payment_date\n            FROM public.payment_allocations AS allocation\n            JOIN public.payments AS payment ON payment.id = allocation.payment_id\n            WHERE allocation.allocation_type = 'invoice'\n              AND allocation.target_id = invoice.id\n              AND allocation.is_active\n              AND lower(COALESCE(payment.payment_status, '')) IN (\n                'completed', 'paid', 'success', 'succeeded', 'cleared'\n              )\n              AND lower(COALESCE(payment.transaction_type::text, 'receipt')) = 'receipt'\n            UNION ALL\n            SELECT payment.payment_date\n            FROM public.payments AS payment\n            WHERE payment.invoice_id = invoice.id\n              AND lower(COALESCE(payment.payment_status, '')) IN (\n                'completed', 'paid', 'success', 'succeeded', 'cleared'\n              )\n              AND lower(COALESCE(payment.transaction_type::text, 'receipt')) = 'receipt'\n              AND NOT EXISTS (\n                SELECT 1 FROM public.payment_allocations AS allocation\n                WHERE allocation.payment_id = payment.id\n                  AND allocation.is_active\n              )\n          ) AS source\n        ) AS computed_paid_date\n      FROM public.contract_payment_schedules AS schedule\n      JOIN public.invoices AS invoice\n        ON invoice.id = schedule.invoice_id\n       AND invoice.contract_id = schedule.contract_id\n       AND invoice.company_id = schedule.company_id\n       AND lower(COALESCE(invoice.status, '')) NOT IN (\n         'cancelled', 'canceled', 'void', 'voided', 'deleted', 'inactive'\n       )\n      WHERE schedule.contract_id = p_contract_id\n        AND schedule.company_id = v_company_id\n        AND lower(COALESCE(schedule.status, '')) NOT IN (\n          'cancelled', 'canceled', 'void', 'voided', 'deleted', 'inactive'\n        )\n        AND schedule.invoice_id IS NOT NULL\n    ),\n    updates AS (\n      UPDATE public.contract_payment_schedules AS schedule\n      SET\n        amount = round(computed.invoice_total::numeric, 2),\n        paid_amount = round(computed.computed_paid::numeric, 2),\n        status = computed.computed_status,\n        paid_date = CASE\n          WHEN computed.computed_status = 'paid' THEN computed.computed_paid_date\n          ELSE NULL\n        END,\n        updated_at = now()\n      FROM computed\n      WHERE schedule.id = computed.schedule_id\n        AND (\n          round(COALESCE(schedule.amount, 0)::numeric, 2)\n            IS DISTINCT FROM round(computed.invoice_total::numeric, 2)\n          OR round(COALESCE(schedule.paid_amount, 0)::numeric, 2)\n            IS DISTINCT FROM round(computed.computed_paid::numeric, 2)\n          OR lower(COALESCE(schedule.status, '')) IS DISTINCT FROM computed.computed_status\n          OR COALESCE(schedule.paid_date, NULL) IS DISTINCT FROM\n               CASE WHEN computed.computed_status = 'paid'\n                    THEN computed.computed_paid_date ELSE NULL END\n        )\n      RETURNING 1\n    )\n    SELECT count(*) INTO v_rows_settlement_synced FROM updates;\n  END IF;\n\n  v_report := jsonb_build_object(\n    'contract_id', p_contract_id,\n    'rows_linked', v_rows_linked,\n    'rows_detached_dead', v_rows_detached_dead,\n    'rows_cancelled_orphans', v_rows_cancelled_orphans,\n    'rows_settlement_synced', v_rows_settlement_synced,\n    'changed',\n      v_rows_linked > 0 OR v_rows_detached_dead > 0\n      OR v_rows_cancelled_orphans > 0 OR v_rows_settlement_synced > 0\n  );\n\n  RETURN v_report;\nEND;\n$function$\n"
+    },
+    {
+      "hash": "330e1ba91be25f6b05f7c265d4e59484",
+      "name": "sync_receipt_on_invoice_update",
+      "definition": "CREATE OR REPLACE FUNCTION public.sync_receipt_on_invoice_update()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\nBEGIN\n  IF NEW.payment_status IN ('paid', 'partial') AND\n     (OLD.payment_status != NEW.payment_status OR OLD.paid_amount != NEW.paid_amount) THEN\n\n    UPDATE public.rental_payment_receipts\n    SET total_paid = NEW.paid_amount,\n        pending_balance = GREATEST(0, NEW.total_amount - NEW.paid_amount),\n        payment_status = CASE\n          WHEN NEW.payment_status = 'paid' THEN 'paid'\n          WHEN NEW.payment_status = 'partial' THEN 'partial'\n          ELSE 'pending'\n        END,\n        updated_at = NOW()\n    WHERE invoice_id = NEW.id;\n\n    IF NOT FOUND THEN\n      INSERT INTO public.rental_payment_receipts (\n        company_id, customer_id, customer_name, month, rent_amount,\n        payment_date, fine, total_paid, amount_due, pending_balance,\n        payment_status, contract_id, vehicle_id, invoice_id, created_at, updated_at\n      )\n      SELECT\n        i.company_id, c.customer_id,\n        TRIM(CONCAT(\n          COALESCE(cust.first_name_ar, cust.first_name, ''),\n          ' ',\n          COALESCE(cust.last_name_ar, cust.last_name, '')\n        )),\n        TO_CHAR(i.due_date, 'TMMonth YYYY'),\n        i.total_amount, i.due_date, 0,\n        NEW.paid_amount, i.total_amount,\n        GREATEST(0, i.total_amount - NEW.paid_amount),\n        CASE WHEN NEW.payment_status = 'paid' THEN 'paid' ELSE 'partial' END,\n        c.id, c.vehicle_id, i.id, NOW(), NOW()\n      FROM public.invoices i\n      JOIN public.contracts c ON i.contract_id = c.id\n      JOIN public.customers cust ON c.customer_id = cust.id\n      WHERE i.id = NEW.id;\n    END IF;\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
+    }
+  ],
+  "cancelled_rental": [
+    {
+      "notes": "Generated for contract billing month 2023-08\nCancelled through approved reversal: إلغاء جماعي لفواتير غير صحيحة من صفحة العقد LTO202410\nReversal entry: d7464b1b-5d17-4357-811e-ccdba8341a38",
+      "status": "cancelled",
+      "total_amount": 1500,
+      "invoice_month": "2023-08-01",
+      "invoice_number": "INV-202308-00001",
+      "payment_status": "cancelled"
+    },
+    {
+      "notes": "Generated for contract billing month 2023-09\nCancelled through approved reversal: إلغاء جماعي لفواتير غير صحيحة من صفحة العقد LTO202410\nReversal entry: 37e3ab83-ce16-4f9b-9029-484aec68b9cc",
+      "status": "cancelled",
+      "total_amount": 1500,
+      "invoice_month": "2023-09-01",
+      "invoice_number": "INV-202309-00001",
+      "payment_status": "cancelled"
+    },
+    {
+      "notes": "Generated for contract billing month 2023-10\nCancelled through approved reversal: إلغاء جماعي لفواتير غير صحيحة من صفحة العقد LTO202410\nReversal entry: e14a3963-2251-47f7-8bd5-b63d879d439d",
+      "status": "cancelled",
+      "total_amount": 1500,
+      "invoice_month": "2023-10-01",
+      "invoice_number": "INV-202310-00002",
+      "payment_status": "cancelled"
+    }
+  ]
+}

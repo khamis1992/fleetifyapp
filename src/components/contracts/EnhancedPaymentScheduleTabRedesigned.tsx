@@ -1,3 +1,4 @@
+import { ContractSectionHeading, ContractMetricStrip } from './contract-details-v3/ContractSection';
 /**
  * مكون جدول الدفعات المحسّن - تصميم محسّن V2
  * Professional SaaS design with improved visual hierarchy
@@ -187,39 +188,7 @@ const ScheduleMetrics = ({
     },
   ];
 
-  return (
-    <motion.div
-      variants={fadeInUp}
-      className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4"
-    >
-      {metricCards.map((metric, idx) => (
-        <motion.div
-          key={idx}
-          variants={scaleIn}
-          className="rounded-2xl border border-[#E5EAF1] bg-white p-4 shadow-[0_10px_30px_-22px_rgba(15,23,42,0.25)]"
-        >
-          <div className="flex items-start justify-between mb-3">
-            <div className={cn("flex h-8 w-8 items-center justify-center rounded-lg", metric.tintBg, metric.iconColor)}>
-              <metric.icon className="h-4 w-4" />
-            </div>
-            <div className={cn("px-2 py-1 rounded-lg text-[11px] font-bold", metric.badgeBg, metric.badgeText)}>
-              {metric.badge ?? metric.subtext.split(' • ')[0]}
-            </div>
-          </div>
-          <p className="text-base font-black text-[#0F172A] mb-1">{metric.value}</p>
-          <p className="text-[11px] font-bold text-slate-500">
-            {metric.title}
-            {metric.subtext.includes(' • ') ? ` — ${metric.subtext.split(' • ')[1]}` : ''}
-          </p>
-          {metric.progress !== undefined && (
-            <div className="mt-3">
-              <Progress value={metric.progress} className="h-2" />
-            </div>
-          )}
-        </motion.div>
-      ))}
-    </motion.div>
-  );
+  return <ContractMetricStrip items={metricCards} />;
 };
 
 const ScheduleFocusPanel = ({
@@ -275,7 +244,7 @@ const ScheduleFocusPanel = ({
             </div>
           </div>
 
-          <div className="min-w-[240px] rounded-xl border border-[#E5EAF1] bg-white p-4">
+          <div className="min-w-0 w-full sm:w-auto rounded-xl border border-[#E5EAF1] bg-white p-4">
             <div className="flex items-center justify-between text-sm">
               <span className="font-bold text-[#0F172A]">المتبقي للتحصيل</span>
               <span className="font-black text-[#4F46E5]">{formatCurrency(stats.balanceDue || 0)}</span>
@@ -752,6 +721,7 @@ export const EnhancedPaymentScheduleTabRedesigned = ({
           حالات التحصيل محسوبة من الدفعات المثبتة. توجد أرصدة أو روابط تحتاج مطابقة؛ الأقساط غير محددة السداد لا تدخل في إجمالي المتأخر المثبت، ولا يعني ذلك أنها مسددة.
         </div>
       )}
+<ContractSectionHeading number="02.3" title="خطة الأقساط" description="تابع تواريخ الاستحقاق وحالة كل قسط من بداية العقد إلى نهايته." />
       {/* Metrics Overview */}
       <ScheduleMetrics stats={stats} formatCurrency={formatCurrency} />
 
@@ -773,7 +743,7 @@ export const EnhancedPaymentScheduleTabRedesigned = ({
       )}
 
       {/* Header */}
-      <div className="flex flex-col gap-3 rounded-2xl border border-[#E5EAF1] bg-white p-4 shadow-[0_10px_30px_-22px_rgba(15,23,42,0.25)] sm:flex-row sm:items-center sm:justify-between">
+      <div className="contract-workbench">
         <div>
           <h2 className="mb-1 text-xl font-black text-[#0F172A]">جدول الدفعات</h2>
           <p className="text-slate-500 text-sm">{visiblePayments.length} قسط للمتابعة والمطابقة</p>
@@ -873,7 +843,7 @@ export const EnhancedPaymentScheduleTabRedesigned = ({
               variants={fadeInUp}
               initial="hidden"
               animate="visible"
-              className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"
+              className="grid grid-cols-1 md:grid-cols-2 2xl:grid-cols-3 gap-4"
             >
               {filteredPayments.map((payment, index) => (
                 <ScheduleCard
@@ -889,7 +859,7 @@ export const EnhancedPaymentScheduleTabRedesigned = ({
         </>
       )}
       <Dialog open={Boolean(selectedSchedule)} onOpenChange={(open) => { if (!open) setSelectedSchedule(null); }}>
-        <DialogContent dir="rtl">
+        <DialogContent dir="rtl" className="contract-operation-dialog">
           <DialogHeader>
             <DialogTitle>تفاصيل القسط {selectedSchedule?.installment_number || ''}</DialogTitle>
             <DialogDescription>حساب للعرض من الفاتورة ودفعاتها المثبتة، دون تعديل بيانات العقد الأصلية.</DialogDescription>

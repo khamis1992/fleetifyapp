@@ -37,6 +37,9 @@ const LanguageSwitcher: React.FC<LanguageSwitcherProps> = ({
 
   // Current language info
   const currentLangInfo = availableLanguages.find(lang => lang.isCurrent);
+  const arabicLanguageNames = new Intl.DisplayNames(['ar'], { type: 'language' });
+  const languageName = (code: SupportedLanguage, nativeName?: string) =>
+    currentLanguage === 'ar' ? arabicLanguageNames.of(code) : nativeName;
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -105,10 +108,10 @@ const LanguageSwitcher: React.FC<LanguageSwitcherProps> = ({
           ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
           ${className}
         `}
-        title={`Current language: ${currentLangInfo?.nativeName} (${currentLangInfo?.name})`}
+        title={`اللغة الحالية: ${languageName(currentLanguage, currentLangInfo?.nativeName)}`}
       >
         <Globe className="w-4 h-4" />
-        <span>{currentLangInfo?.nativeName || currentLanguage}</span>
+        <span>{languageName(currentLanguage, currentLangInfo?.nativeName) || currentLanguage}</span>
         {isChanging && (
           <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
         )}
@@ -134,7 +137,7 @@ const LanguageSwitcher: React.FC<LanguageSwitcherProps> = ({
               }
               ${disabled || isChanging ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
             `}
-            title={`${lang.nativeName} (${lang.name})`}
+            title={languageName(lang.code, lang.nativeName)}
           >
             <span className="text-xl">{lang.flag}</span>
             {lang.isCurrent && (
@@ -166,7 +169,7 @@ const LanguageSwitcher: React.FC<LanguageSwitcherProps> = ({
           <span className="text-lg">{currentLangInfo.flag}</span>
         )}
         <Globe className="w-4 h-4" />
-        <span>{showNativeName ? currentLangInfo?.nativeName : currentLangInfo?.name}</span>
+        <span>{languageName(currentLanguage, showNativeName ? currentLangInfo?.nativeName : currentLangInfo?.name)}</span>
         <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
         {isChanging && (
           <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
@@ -209,8 +212,8 @@ const LanguageSwitcher: React.FC<LanguageSwitcherProps> = ({
 
                     {/* Language names */}
                     <div className="flex-1 min-w-0">
-                      <div className="font-medium">{lang.nativeName}</div>
-                      {showNativeName && (
+                      <div className="font-medium">{languageName(lang.code, lang.nativeName)}</div>
+                      {showNativeName && currentLanguage !== 'ar' && (
                         <div className="text-xs text-slate-500">{lang.name}</div>
                       )}
                     </div>
@@ -223,7 +226,7 @@ const LanguageSwitcher: React.FC<LanguageSwitcherProps> = ({
                     {/* Direction indicator */}
                     {!lang.isCurrent && (
                       <div className={`text-xs text-slate-400 ${isRTL ? 'ml-auto' : 'mr-auto'}`}>
-                        {isRTL ? 'RTL' : 'LTR'}
+                        {isRTL ? 'من اليمين' : 'من اليسار'}
                       </div>
                     )}
                   </button>
@@ -234,7 +237,7 @@ const LanguageSwitcher: React.FC<LanguageSwitcherProps> = ({
             {/* Footer */}
             <div className="px-4 py-2 border-t border-slate-200 bg-slate-50">
               <div className="text-xs text-slate-500 text-center">
-                {isChanging ? 'Changing language...' : 'Select your preferred language'}
+                {isChanging ? 'جارٍ تغيير اللغة…' : 'اختر لغة العرض'}
               </div>
             </div>
           </div>

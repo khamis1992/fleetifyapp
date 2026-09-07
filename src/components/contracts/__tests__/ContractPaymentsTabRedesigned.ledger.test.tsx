@@ -53,7 +53,7 @@ describe('contract installment view read integrity', () => {
     state.direction = direction; state.cachedPaid = 0;
     mount();
     await screen.findByText('فاتورة شهر 1/2026');
-    const metric = screen.getByText(/^المسدد لهذا العقد/).closest('[class*="rounded"]');
+    const metric = screen.getByText(/^المسدد لهذا العقد/).closest("div");
     expect(metric).not.toBeNull();
     expect(within(metric as HTMLElement).getByText('QAR 0.00')).toBeInTheDocument();
     expect(screen.getAllByText('QAR 1500.00').length).toBeGreaterThan(0);
@@ -77,7 +77,7 @@ describe('contract installment view read integrity', () => {
     state.allocated = 300; state.cachedPaid = 300;
     mount();
     await screen.findByText('فاتورة شهر 1/2026');
-    const metric = screen.getByText(/^المسدد لهذا العقد/).closest('[class*="rounded"]');
+    const metric = screen.getByText(/^المسدد لهذا العقد/).closest("div");
     expect(within(metric as HTMLElement).getByText('QAR 300.00')).toBeInTheDocument();
     expect(screen.getByText('QAR 1200.00')).toBeInTheDocument();
     expect(screen.getAllByText('QAR 500.00').length).toBeGreaterThan(0);
@@ -93,7 +93,7 @@ describe('contract installment view read integrity', () => {
     await waitFor(() => expect(screen.queryByText('TEST-RECEIPT')).not.toBeInTheDocument());
     expect(state.calls).toHaveLength(calls);
     expect(client.getQueryCache().getAll().filter((q) => q.queryKey[0] === 'contract-payments')).toHaveLength(1);
-    const metric = screen.getByText(/^المسدد لهذا العقد/).closest('[class*="rounded"]');
+    const metric = screen.getByText(/^المسدد لهذا العقد/).closest("div");
     expect(within(metric as HTMLElement).getByText('QAR 500.00')).toBeInTheDocument();
   });
   it('preserves financial evidence if optional creator names fail', async () => {

@@ -147,13 +147,13 @@ export const CashReceiptVoucher: React.FC<CashReceiptVoucherProps> = ({ payment,
           <h1 className="text-4xl font-black tracking-tighter">{t("alArraf")}</h1>
           <h2 className="text-2xl font-bold">العراف لتأجير السيارات ذ.م.م</h2>
           <p className="text-sm font-light">{t("carRentalLlc")}</p>
-          <div className="text-xs font-mono mt-2 pt-1 border-t border-white/30">C.R: 146832 | DOHA-QATAR</div>
+          <div className="text-xs font-mono mt-2 pt-1 border-t border-white/30">السجل التجاري: 146832 | الدوحة - قطر</div>
         </div>
         <div className="text-left rtl:text-right pt-4 sm:pt-0 flex flex-col items-start rtl:items-end">
           <h1 className="text-3xl font-extrabold tracking-tight">سند قبض</h1>
           <h2 className="text-xl font-light">{t("receiptVoucher")}</h2>
           <div className="mt-4 p-2 bg-white text-[#004d40] rounded-lg text-center">
-            <span className="text-sm font-medium block">رقم | NO.</span>
+            <span className="text-sm font-medium block">رقم</span>
             <span className="text-2xl font-extrabold block">
               {payment?.payment_number || "00000"}
             </span>
@@ -165,7 +165,7 @@ export const CashReceiptVoucher: React.FC<CashReceiptVoucherProps> = ({ payment,
         {/* Date Input */}
         <div className="flex justify-end mb-6">
           <div className="w-full sm:w-1/3">
-            <Label htmlFor="receipt-date" className="block text-sm font-medium text-slate-600 mb-1">التاريخ | Date</Label>
+            <Label htmlFor="receipt-date" className="block text-sm font-medium text-slate-600 mb-1">التاريخ</Label>
             <div className="relative">
               <Input
                 id="receipt-date"
@@ -184,7 +184,7 @@ export const CashReceiptVoucher: React.FC<CashReceiptVoucherProps> = ({ payment,
           <div className="grid grid-cols-1 md:grid-cols-5 gap-4 items-center">
             <Label className="md:col-span-2 text-base font-medium text-slate-700 flex items-center gap-2">
               <User className="h-5 w-5" />
-              استلمنا من السيد / السادة | Received From Mr. / M/s.
+              استلمنا من السيد / السادة
             </Label>
             <Input
               type="text"
@@ -196,7 +196,7 @@ export const CashReceiptVoucher: React.FC<CashReceiptVoucherProps> = ({ payment,
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-5 gap-4 items-center">
-            <Label htmlFor="receipt-amount-words" className="md:col-span-2 text-base font-medium text-slate-700">مبلغ وقدره ( ريال قطري ) | The Sum of (Q.Rls.)</Label>
+            <Label htmlFor="receipt-amount-words" className="md:col-span-2 text-base font-medium text-slate-700">مبلغ وقدره ( ريال قطري )</Label>
             <Input
               id="receipt-amount-words"
               type="text"
@@ -211,7 +211,7 @@ export const CashReceiptVoucher: React.FC<CashReceiptVoucherProps> = ({ payment,
         {/* Payment Details (Cash/Cheque) */}
         <div className="p-4 bg-slate-50 rounded-lg border border-slate-200 grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
-            <Label className="block text-sm font-medium text-slate-600 mb-2">طريقة الدفع | Payment Method</Label>
+            <Label className="block text-sm font-medium text-slate-600 mb-2">طريقة الدفع</Label>
             <RadioGroup 
               defaultValue={payment?.payment_method || "cash"} 
               onValueChange={togglePaymentMethod}
@@ -221,14 +221,14 @@ export const CashReceiptVoucher: React.FC<CashReceiptVoucherProps> = ({ payment,
                 <RadioGroupItem value="cash" id="cash" className="text-[#004d40]" />
                 <Label htmlFor="cash" className="flex items-center space-x-2 space-x-reverse text-base font-medium cursor-pointer">
                   <Banknote className="h-5 w-5" />
-                  <span>نقداً | By Cash</span>
+                  <span>نقداً</span>
                 </Label>
               </div>
               <div className="flex items-center space-x-2 space-x-reverse">
                 <RadioGroupItem value="check" id="check" className="text-[#004d40]" />
                 <Label htmlFor="check" className="flex items-center space-x-2 space-x-reverse text-base font-medium cursor-pointer">
                   <CreditCard className="h-5 w-5" />
-                  <span>شيك | By Cheque</span>
+                  <span>شيك</span>
                 </Label>
               </div>
             </RadioGroup>
@@ -237,7 +237,7 @@ export const CashReceiptVoucher: React.FC<CashReceiptVoucherProps> = ({ payment,
           {/* Cheque Details (Hidden by default) */}
           <div className={"space-y-3 transition duration-300 " + (isCheque ? 'opacity-100' : 'opacity-50 pointer-events-none')}>
             <div>
-              <Label htmlFor="receipt-cheque-number" className="block text-xs font-medium text-slate-500 mb-1">شيك رقم | Cheque No.</Label>
+              <Label htmlFor="receipt-cheque-number" className="block text-xs font-medium text-slate-500 mb-1">شيك رقم</Label>
               <Input
                 id="receipt-cheque-number"
                 type="text"
@@ -248,7 +248,7 @@ export const CashReceiptVoucher: React.FC<CashReceiptVoucherProps> = ({ payment,
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="receipt-bank-account" className="block text-xs font-medium text-slate-500 mb-1">على بنك | On Bank</Label>
+                <Label htmlFor="receipt-bank-account" className="block text-xs font-medium text-slate-500 mb-1">على بنك</Label>
                 <div className="relative">
                   <Input
                     id="receipt-bank-account"
@@ -261,7 +261,7 @@ export const CashReceiptVoucher: React.FC<CashReceiptVoucherProps> = ({ payment,
                 </div>
               </div>
               <div>
-                <Label className="block text-xs font-medium text-slate-500 mb-1">تاريخ الاستحقاق | Due Date</Label>
+                <Label className="block text-xs font-medium text-slate-500 mb-1">تاريخ الاستحقاق</Label>
                 <Input
                   type="date"
                   value={""}
@@ -276,7 +276,7 @@ export const CashReceiptVoucher: React.FC<CashReceiptVoucherProps> = ({ payment,
         {/* Amount and Being For */}
         <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-6">
           <div className="md:col-span-2">
-            <Label className="block text-sm font-medium text-slate-600 mb-1">وذلك عن | Being for</Label>
+            <Label className="block text-sm font-medium text-slate-600 mb-1">وذلك عن</Label>
             <Textarea
               value={payment?.notes || "إيجار شهر"}
               rows={3}
@@ -287,16 +287,16 @@ export const CashReceiptVoucher: React.FC<CashReceiptVoucherProps> = ({ payment,
           </div>
 
           <div className="md:col-span-1 space-y-3">
-            <Label className="block text-sm font-medium text-slate-600 mb-1 text-center">المبلغ | Amount</Label>
+            <Label className="block text-sm font-medium text-slate-600 mb-1 text-center">المبلغ</Label>
             <div className="flex justify-between items-center text-xl p-3 rounded-lg border-2 border-[#004d40] bg-[#004d40]/5">
               <span className="font-extrabold text-[#004d40]">
                 {payment?.amount ? formatCurrency(payment.amount) : "0.00"}
               </span>
-              <Badge className="font-bold text-[#004d40] text-2xl bg-white">QR</Badge>
+              <Badge className="font-bold text-[#004d40] text-2xl bg-white">ر.ق</Badge>
             </div>
             <div className="flex justify-around text-xs font-medium text-slate-500">
-              <Badge variant="default" className="px-2 py-1 rounded-lg bg-[#004d40] text-white">ريال QR</Badge>
-              <Badge variant="outline" className="px-2 py-1 rounded-lg border border-slate-300 text-slate-500">درهم Dh</Badge>
+              <Badge variant="default" className="px-2 py-1 rounded-lg bg-[#004d40] text-white">ريال</Badge>
+              <Badge variant="outline" className="px-2 py-1 rounded-lg border border-slate-300 text-slate-500">درهم</Badge>
             </div>
           </div>
         </div>
@@ -304,13 +304,13 @@ export const CashReceiptVoucher: React.FC<CashReceiptVoucherProps> = ({ payment,
         {/* Signature Lines */}
         <div className="mt-10 grid grid-cols-3 gap-10">
           <div className="text-center">
-            <div className="border-t border-slate-400 pt-2 text-sm text-slate-500">توقيع المستلم | Receiver Sign.</div>
+            <div className="border-t border-slate-400 pt-2 text-sm text-slate-500">توقيع المستلم</div>
           </div>
           <div className="text-center">
-            <div className="border-t border-slate-400 pt-2 text-sm text-slate-500">توقيع المحاسب | Accountant's Sign.</div>
+            <div className="border-t border-slate-400 pt-2 text-sm text-slate-500">توقيع المحاسب</div>
           </div>
           <div className="text-center">
-            <div className="border-t border-slate-400 pt-2 text-sm text-slate-500">توقيع المدير | Manager's Sign.</div>
+            <div className="border-t border-slate-400 pt-2 text-sm text-slate-500">توقيع المدير</div>
           </div>
         </div>
       </CardContent>
@@ -318,7 +318,7 @@ export const CashReceiptVoucher: React.FC<CashReceiptVoucherProps> = ({ payment,
       {/* Footer Contact Info */}
       <CardFooter className="bg-slate-800 text-white p-4 text-xs text-center">
         <div className="max-w-xl mx-auto space-y-1">
-          <p>P. O. Box: 9022 - Lusail City, Doha, Qatar | Marina twin Tower Block A-31th Floor</p>
+          <p>ص.ب: 9022 - مدينة لوسيل، الدوحة، قطر | برجا المارينا، المبنى أ، الطابق 31</p>
           <div className="flex justify-center space-x-4 space-x-reverse">
             <span>alaraf.online</span>
             <span>|</span>

@@ -135,8 +135,11 @@ export interface CreateTaskInput {
   checklists?: { title: string }[];
 }
 
-export interface UpdateTaskInput extends Partial<CreateTaskInput> {
+export interface UpdateTaskInput extends Omit<Partial<CreateTaskInput>, 'assigned_to' | 'due_date' | 'start_date'> {
   id: string;
+  assigned_to?: string | null;
+  due_date?: string | null;
+  start_date?: string | null;
 }
 
 export interface TaskFilters {
@@ -157,9 +160,11 @@ export function useTasks(filters?: TaskFilters) {
 
   return useQuery({
     queryKey: ['tasks', companyId, filters],
-    queryFn: async () => {
+    queryFn: async ({ signal }) => {
       if (!companyId) return [];
-
+      const tasks: Task[] = [];
+      const pageSize = 500;
+      for (let offset = 0; ; offset += pageSize) {
       let query = supabase
         .from('tasks')
         .select(`
@@ -169,7 +174,8 @@ export function useTasks(filters?: TaskFilters) {
           checklists:task_checklists(*)
         `)
         .eq('company_id', companyId)
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .order('id', { ascending: false });
 
       // Apply filters
       if (filters?.status) {
@@ -212,10 +218,12 @@ export function useTasks(filters?: TaskFilters) {
         query = query.lte('due_date', filters.due_date_to);
       }
 
-      const { data, error } = await query;
+      const { data, error } = await query.range(offset, offset + pageSize - 1).abortSignal(signal);
 
       if (error) throw error;
-      return data as Task[];
+      tasks.push(...(data as Task[]));
+      if (data.length < pageSize) return tasks;
+      }
     },
     enabled: !!companyId,
   });
@@ -224,11 +232,12 @@ export function useTasks(filters?: TaskFilters) {
 // Hook: Fetch Single Task
 export function useTask(taskId: string | undefined) {
   const { user } = useAuth();
+  const companyId = user?.profile?.company_id;
 
   return useQuery({
-    queryKey: ['task', taskId],
+    queryKey: ['task', taskId, companyId],
     queryFn: async () => {
-      if (!taskId) return null;
+      if (!taskId || !companyId) return null;
 
       const { data, error } = await supabase
         .from('tasks')
@@ -239,12 +248,13 @@ export function useTask(taskId: string | undefined) {
           checklists:task_checklists(*)
         `)
         .eq('id', taskId)
+        .eq('company_id', companyId)
         .single();
 
       if (error) throw error;
       return data as Task;
     },
-    enabled: !!taskId && !!user,
+    enabled: !!taskId && !!companyId,
   });
 }
 

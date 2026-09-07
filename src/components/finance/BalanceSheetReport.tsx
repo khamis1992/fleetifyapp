@@ -345,7 +345,7 @@ export function BalanceSheetReport() {
             <div>
               <CardTitle className="flex items-center gap-2">
                 <Building className="h-5 w-5" />
-                قائمة المركز المالي (Balance Sheet)
+                قائمة المركز المالي
               </CardTitle>
               <CardDescription>
                 عرض الأصول والخصوم وحقوق الملكية كما في تاريخ محدد
@@ -476,7 +476,7 @@ export function BalanceSheetReport() {
                         <CardHeader className="bg-green-50 border-b">
                           <CardTitle className="flex items-center gap-2 text-green-700">
                             <TrendingUp className="h-5 w-5" />
-                            الأصول (Assets)
+                            الأصول
                           </CardTitle>
                         </CardHeader>
                         <CardContent className="p-0">
@@ -516,7 +516,7 @@ export function BalanceSheetReport() {
                           <CardHeader className="bg-red-50 border-b">
                             <CardTitle className="flex items-center gap-2 text-red-700">
                               <TrendingDown className="h-5 w-5" />
-                              الخصوم (Liabilities)
+                              الخصوم
                             </CardTitle>
                           </CardHeader>
                           <CardContent className="p-0">
@@ -554,7 +554,7 @@ export function BalanceSheetReport() {
                           <CardHeader className="bg-blue-50 border-b">
                             <CardTitle className="flex items-center gap-2 text-blue-700">
                               <Building className="h-5 w-5" />
-                              حقوق الملكية (Equity)
+                              حقوق الملكية
                             </CardTitle>
                           </CardHeader>
                           <CardContent className="p-0">
@@ -633,11 +633,11 @@ export function BalanceSheetReport() {
                   {/* Liquidity Ratios */}
                   <Card>
                     <CardHeader>
-                      <CardTitle>نسب السيولة (Liquidity Ratios)</CardTitle>
+                      <CardTitle>نسب السيولة</CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-4">
                       <div className="flex justify-between items-center p-3 bg-accent rounded-lg">
-                        <span className="font-medium">نسبة التداول (Current Ratio)</span>
+                        <span className="font-medium">نسبة التداول</span>
                         <Badge variant={currentRatio >= 2 ? "default" : currentRatio >= 1 ? "secondary" : "destructive"}>
                           {currentRatio.toFixed(2)}
                         </Badge>
@@ -653,7 +653,7 @@ export function BalanceSheetReport() {
                   {/* Leverage Ratios */}
                   <Card>
                     <CardHeader>
-                      <CardTitle>نسب الرفع المالي (Leverage Ratios)</CardTitle>
+                      <CardTitle>نسب الرفع المالي</CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-4">
                       <div className="flex justify-between items-center p-3 bg-accent rounded-lg">
@@ -673,11 +673,11 @@ export function BalanceSheetReport() {
                   {/* Solvency Ratios */}
                   <Card>
                     <CardHeader>
-                      <CardTitle>نسب الملاءة (Solvency Ratios)</CardTitle>
+                      <CardTitle>نسب الملاءة</CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-4">
                       <div className="flex justify-between items-center p-3 bg-accent rounded-lg">
-                        <span className="font-medium">نسبة الدين (Debt Ratio)</span>
+                        <span className="font-medium">نسبة الدين</span>
                         <Badge variant={debtRatio <= 0.5 ? "default" : debtRatio <= 0.7 ? "secondary" : "destructive"}>
                           {(debtRatio * 100).toFixed(2)}%
                         </Badge>
@@ -693,7 +693,7 @@ export function BalanceSheetReport() {
                   {/* Equity Ratio */}
                   <Card>
                     <CardHeader>
-                      <CardTitle>نسبة حقوق الملكية (Equity Ratio)</CardTitle>
+                      <CardTitle>نسبة حقوق الملكية</CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-4">
                       <div className="flex justify-between items-center p-3 bg-accent rounded-lg">

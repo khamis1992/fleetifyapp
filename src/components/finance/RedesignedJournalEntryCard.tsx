@@ -100,7 +100,7 @@ export function RedesignedJournalEntryCard({ entry }: RedesignedJournalEntryCard
           </Badge>
           <p className="text-sm text-slate-600 flex items-center">
             <Calendar className="ml-1 w-4 h-4 text-slate-400" />
-            التاريخ: {new Date(entry.entry_date).toLocaleDateString('en-GB')}
+            التاريخ: {new Date(entry.entry_date).toLocaleDateString('ar-QA')}
           </p>
         </div>
         

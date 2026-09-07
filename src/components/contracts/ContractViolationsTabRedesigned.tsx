@@ -1,3 +1,4 @@
+import { ContractSectionHeading } from './contract-details-v3/ContractSection';
 /**
  * Contract Violations Tab - Redesigned
  * Professional SaaS design matching the Fleetify light design language
@@ -32,6 +33,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   Select,
   SelectContent,
@@ -101,6 +103,7 @@ export interface TrafficViolation {
   liability_amount?: number | null;
   liability_journal_entry_id?: string | null;
   manual_request_id?: string | null;
+  notify_customer?: boolean;
   created_at: string;
 }
 
@@ -108,7 +111,10 @@ interface ContractViolationsTabRedesignedProps {
   violations: TrafficViolation[];
   formatCurrency: (amount: number) => string;
   contractNumber?: string;
+  contractStartDate?: string;
+  contractEndDate?: string;
   onAddViolation?: (violation: Partial<TrafficViolation>) => Promise<void>;
+  hasAdditionalPenalties?: boolean;
 }
 
 // ===== Helper Functions =====
@@ -334,7 +340,7 @@ const ViolationCard = ({
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-48">
-            <DropdownMenuItem onClick={onView} className="gap-2">
+            <DropdownMenuItem onClick={onView} aria-label={`معاينة المخالفة ${violation.violation_number || ""}`} className="gap-2">
               <Eye className="h-4 w-4" />
               <span>عرض التفاصيل</span>
             </DropdownMenuItem>
@@ -360,7 +366,7 @@ const ViolationCard = ({
             {violation.status === 'pending' && onCancel && (
               <>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={onCancel} className="gap-2 text-[#BE123C] focus:text-[#BE123C]">
+                <DropdownMenuItem onClick={onCancel} aria-label={`إلغاء المخالفة ${violation.violation_number || ""}`} className="gap-2 text-[#BE123C] focus:text-[#BE123C]">
                   <XCircle className="h-4 w-4" />
                   <span>إلغاء المخالفة</span>
                 </DropdownMenuItem>
@@ -421,7 +427,7 @@ const ViolationCard = ({
         <Button
           variant="outline"
           size="sm"
-          onClick={onView}
+          onClick={onView} aria-label={`معاينة المخالفة ${violation.violation_number || ""}`}
           className="flex-1 gap-2 rounded-xl"
         >
           <Eye className="h-4 w-4" />
@@ -527,7 +533,7 @@ const ViolationTableRow = ({
           <Button
             size="sm"
             variant="outline"
-            onClick={onView}
+            onClick={onView} aria-label={`معاينة المخالفة ${violation.violation_number || ""}`}
             className="h-8 rounded-lg px-3"
           >
             <Eye className="h-4 w-4" />
@@ -546,7 +552,7 @@ const ViolationTableRow = ({
             <Button
               size="sm"
               variant="outline"
-              onClick={onCancel}
+              onClick={onCancel} aria-label={`إلغاء المخالفة ${violation.violation_number || ""}`}
               className="h-8 rounded-lg border-[#FB6B7A]/30 px-3 text-[#BE123C] hover:bg-[#FB6B7A]/10"
             >
               <XCircle className="h-4 w-4" />
@@ -975,35 +981,51 @@ const ViolationPaymentDialog = ({
 interface AddViolationDialogProps {
   open: boolean;
   onClose: () => void;
-  onAdd: (violation: Partial<TrafficViolation>) => void;
+  onAdd: (violation: Partial<TrafficViolation>) => Promise<void>;
+  contractStartDate?: string;
+  contractEndDate?: string;
 }
 
-const AddViolationDialog = ({ open, onClose, onAdd }: AddViolationDialogProps) => {
-  const { toast } = useToast();
+export const AddViolationDialog = ({ open, onClose, onAdd, contractStartDate, contractEndDate }: AddViolationDialogProps) => {
+  const today = format(new Date(), 'yyyy-MM-dd');
+  const lastAllowedDate = contractEndDate && contractEndDate < today ? contractEndDate : today;
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const submittingRef = useRef(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [notifyCustomer, setNotifyCustomer] = useState(false);
   const requestIdRef = useRef(crypto.randomUUID());
   const [formData, setFormData] = useState({
     violation_number: '',
     violation_type: 'speeding',
-    violation_date: new Date().toISOString().split('T')[0],
+    violation_date: lastAllowedDate,
     fine_amount: '',
     location: '',
     description: '',
   });
 
   const handleSubmit = async () => {
-    if (!formData.fine_amount || parseFloat(formData.fine_amount) <= 0) {
+    if (submittingRef.current) return;
+    const fineAmount = Number(formData.fine_amount);
+    if (!formData.violation_date || !Number.isFinite(fineAmount) || fineAmount <= 0) {
+      setSubmitError('أدخل تاريخ المخالفة ومبلغًا أكبر من صفر.');
+      return;
+    }
+    if ((contractStartDate && formData.violation_date < contractStartDate) || formData.violation_date > lastAllowedDate) {
+      setSubmitError('يجب أن يكون تاريخ المخالفة ضمن مدة العقد وألا يكون في المستقبل.');
       return;
     }
 
+    submittingRef.current = true;
+    setSubmitError(null);
     setIsSubmitting(true);
     try {
       await onAdd({
         manual_request_id: requestIdRef.current,
+        notify_customer: notifyCustomer,
         violation_number: formData.violation_number || undefined,
         violation_type: formData.violation_type,
         violation_date: formData.violation_date,
-        fine_amount: parseFloat(formData.fine_amount),
+        fine_amount: fineAmount,
         location: formData.location || undefined,
         description: formData.description || undefined,
         status: 'pending',
@@ -1013,30 +1035,30 @@ const AddViolationDialog = ({ open, onClose, onAdd }: AddViolationDialogProps) =
       setFormData({
         violation_number: '',
         violation_type: 'speeding',
-        violation_date: new Date().toISOString().split('T')[0],
+        violation_date: lastAllowedDate,
         fine_amount: '',
         location: '',
         description: '',
       });
       requestIdRef.current = crypto.randomUUID();
+      setNotifyCustomer(false);
 
       onClose();
     } catch (error) {
       console.error('Error adding traffic violation:', error);
-      toast({
-        title: 'خطأ في الإضافة',
-        description: error instanceof Error ? error.message : 'تعذر إضافة المخالفة المرورية',
-        variant: 'destructive',
-      });
+      setSubmitError(error instanceof Error ? error.message
+        : typeof error === 'object' && error !== null && 'message' in error
+          ? String(error.message) : 'تعذر إضافة المخالفة المرورية');
     } finally {
+      submittingRef.current = false;
       setIsSubmitting(false);
     }
   };
 
   return (
-    <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-lg">
-        <DialogHeader>
+    <Dialog open={open} onOpenChange={(nextOpen) => { if (!nextOpen && !submittingRef.current) onClose(); }}>
+      <DialogContent className="max-h-[90dvh] w-[calc(100vw-2rem)] max-w-lg overflow-y-auto bg-white" dir="rtl">
+        <DialogHeader className="pr-8 text-right">
           <DialogTitle className="flex items-center gap-2 text-xl">
             <Plus className="h-5 w-5 text-[#22C7A1]" />
             إضافة مخالفة مرورية
@@ -1046,11 +1068,12 @@ const AddViolationDialog = ({ open, onClose, onAdd }: AddViolationDialogProps) =
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4">
+        <fieldset disabled={isSubmitting} className="space-y-4">
           {/* Violation Number */}
           <div className="space-y-2">
-            <Label>رقم المخالفة (اختياري)</Label>
+            <Label htmlFor="new-violation-number">رقم المخالفة (اختياري)</Label>
             <Input
+              id="new-violation-number"
               placeholder="مثال: TR-2024-12345"
               value={formData.violation_number}
               onChange={(e) => setFormData({ ...formData, violation_number: e.target.value })}
@@ -1081,17 +1104,21 @@ const AddViolationDialog = ({ open, onClose, onAdd }: AddViolationDialogProps) =
           {/* Date and Amount */}
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label>تاريخ المخالفة</Label>
+              <Label htmlFor="new-violation-date">تاريخ المخالفة</Label>
               <Input
+                id="new-violation-date"
                 type="date"
+                min={contractStartDate}
+                max={lastAllowedDate}
                 value={formData.violation_date}
                 onChange={(e) => setFormData({ ...formData, violation_date: e.target.value })}
                 className="rounded-xl"
               />
             </div>
             <div className="space-y-2">
-              <Label>قيمة الغرامة (ر.ق) *</Label>
+              <Label htmlFor="new-violation-amount">قيمة الغرامة (ر.ق) *</Label>
               <Input
+                id="new-violation-amount"
                 type="number"
                 placeholder="0.00"
                 value={formData.fine_amount}
@@ -1124,7 +1151,13 @@ const AddViolationDialog = ({ open, onClose, onAdd }: AddViolationDialogProps) =
               className="rounded-xl"
             />
           </div>
-        </div>
+          <div className="flex items-center gap-2">
+            <Checkbox id="new-violation-notify" checked={notifyCustomer} disabled={isSubmitting}
+              onCheckedChange={(checked) => setNotifyCustomer(checked === true)} />
+            <Label htmlFor="new-violation-notify">إرسال إشعار واتساب للعميل بعد الحفظ</Label>
+          </div>
+        </fieldset>
+        {submitError && <p role="alert" className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">{submitError}</p>}
 
         <DialogFooter className="gap-2">
           <Button variant="outline" onClick={onClose} disabled={isSubmitting}>
@@ -1132,7 +1165,7 @@ const AddViolationDialog = ({ open, onClose, onAdd }: AddViolationDialogProps) =
           </Button>
           <Button
             onClick={handleSubmit}
-            disabled={isSubmitting || !formData.fine_amount || parseFloat(formData.fine_amount) <= 0}
+            disabled={isSubmitting}
             className="gap-2 rounded-xl bg-[#22C7A1] hover:bg-[#1fb391]"
           >
             {isSubmitting ? (
@@ -1158,7 +1191,10 @@ export const ContractViolationsTabRedesigned = ({
   violations,
   formatCurrency,
   contractNumber,
+  contractStartDate,
+  contractEndDate,
   onAddViolation,
+  hasAdditionalPenalties = false,
 }: ContractViolationsTabRedesignedProps) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
@@ -1170,6 +1206,8 @@ export const ContractViolationsTabRedesigned = ({
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
   const [isPaymentDialogOpen, setIsPaymentDialogOpen] = useState(false);
   const [isAddViolationDialogOpen, setIsAddViolationDialogOpen] = useState(false);
+  const [cancelError, setCancelError] = useState<string | null>(null);
+  const cancellingRef = useRef(false);
   const [isCancelDialogOpen, setIsCancelDialogOpen] = useState(false);
   const [isCancelling, setIsCancelling] = useState(false);
 
@@ -1251,12 +1289,7 @@ export const ContractViolationsTabRedesigned = ({
 
   const handleAddViolation = async (violation: Partial<TrafficViolation>) => {
     if (!onAddViolation) {
-      toast({
-        title: 'خطأ',
-        description: 'وظيفة إضافة المخالفة غير متاحة',
-        variant: 'destructive',
-      });
-      return;
+      throw new Error('وظيفة إضافة المخالفة غير متاحة');
     }
 
     try {
@@ -1276,13 +1309,16 @@ export const ContractViolationsTabRedesigned = ({
   };
 
   const handleCancelViolation = (violation: TrafficViolation) => {
+    setCancelError(null);
     setSelectedViolation(violation);
     setIsCancelDialogOpen(true);
   };
 
   const confirmCancelViolation = async () => {
-    if (!selectedViolation) return;
+    if (!selectedViolation || cancellingRef.current) return;
 
+    cancellingRef.current = true;
+    setCancelError(null);
     setIsCancelling(true);
     try {
       const { data, error } = await supabase.rpc('cancel_traffic_violation_atomic_v1', {
@@ -1291,8 +1327,8 @@ export const ContractViolationsTabRedesigned = ({
       });
 
       if (error) throw error;
-      const result = data as { ok?: boolean; status?: string } | null;
-      if (!result?.ok || !['cancelled', 'canceled', 'void', 'voided', 'deleted'].includes(String(result.status || '').toLowerCase())) {
+      const result = data as { ok?: boolean; status?: string; violation_id?: string } | null;
+      if (!result?.ok || result.violation_id !== selectedViolation.id || !['cancelled', 'canceled', 'void', 'voided', 'deleted'].includes(String(result.status || '').toLowerCase())) {
         throw new Error('لم يكتمل إلغاء المخالفة');
       }
 
@@ -1313,30 +1349,30 @@ export const ContractViolationsTabRedesigned = ({
         : typeof error === 'object' && error !== null && 'message' in error
           ? String((error as { message?: unknown }).message || '')
           : '';
-      toast({
-        title: 'خطأ',
-        description: message.includes('TRAFFIC_VIOLATION_HAS_ACTIVE_PAYMENTS')
+      setCancelError(message.includes('TRAFFIC_VIOLATION_HAS_ACTIVE_PAYMENTS')
           ? 'لا يمكن إلغاء مخالفة مرتبطة بدفعة نشطة. يجب عكس الدفعة أو إلغاؤها أولاً.'
-          : message || 'فشل إلغاء المخالفة',
-        variant: 'destructive',
-      });
+          : message.includes('TRAFFIC_VIOLATION_HAS_RECOGNIZED_LIABILITY')
+            ? 'للمخالفة التزام محاسبي مسجل. يجب عكسه من المسار المالي قبل الإلغاء.'
+            : message || 'فشل إلغاء المخالفة');
     } finally {
+      cancellingRef.current = false;
       setIsCancelling(false);
     }
   };
 
   return (
     <div className="space-y-6">
+      {!hasAdditionalPenalties && <ContractSectionHeading number="04" title="المخالفات والمسؤوليات" description="مراجعة المخالفات المرتبطة بالعقد وحالة سدادها وإجراءات معالجتها." />}
       {/* Summary Strip */}
-      <ViolationsSummary violations={violations} formatCurrency={formatCurrency} />
+      {(!hasAdditionalPenalties || violations.length > 0) && <ViolationsSummary violations={violations} formatCurrency={formatCurrency} />}
 
       {/* Header & Actions */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h2 className="mb-1 text-2xl font-black text-[#0F172A]">المخالفات المرورية</h2>
+          <h2 className="mb-1 text-2xl font-black text-[#0F172A]">{hasAdditionalPenalties ? 'مخالفات إضافية' : 'المخالفات المرورية'}</h2>
           <p className="text-sm text-slate-500">
             {contractNumber ? `العقد #${contractNumber} • ` : ''}
-            {violations.length} مخالفة
+            {violations.length > 0 || !hasAdditionalPenalties ? `${violations.length} مخالفة` : 'يمكنك تسجيل مخالفة جديدة من هنا'}
           </p>
         </div>
         <Button
@@ -1349,13 +1385,13 @@ export const ContractViolationsTabRedesigned = ({
       </div>
 
       {/* Empty State */}
-      {violations.length === 0 ? (
+      {violations.length === 0 ? (hasAdditionalPenalties ? null : (
         <Card className="rounded-2xl border-[#E5EAF1] shadow-[0_10px_30px_-22px_rgba(15,23,42,0.25)]">
           <CardContent className="p-6">
             <ViolationsEmptyState />
           </CardContent>
         </Card>
-      ) : (
+      )) : (
         <>
           {/* Filters */}
           <ViolationsFilters
@@ -1376,7 +1412,7 @@ export const ContractViolationsTabRedesigned = ({
               <Button
                 size="sm"
                 variant={viewMode === 'grid' ? 'default' : 'ghost'}
-                onClick={() => setViewMode('grid')}
+                onClick={() => setViewMode('grid')} aria-label="عرض البطاقات" aria-pressed={viewMode === 'grid'}
                 className={cn(
                   "rounded-lg",
                   viewMode === 'grid' ? "bg-white shadow-sm" : ""
@@ -1387,7 +1423,7 @@ export const ContractViolationsTabRedesigned = ({
               <Button
                 size="sm"
                 variant={viewMode === 'table' ? 'default' : 'ghost'}
-                onClick={() => setViewMode('table')}
+                onClick={() => setViewMode('table')} aria-label="عرض الجدول" aria-pressed={viewMode === 'table'}
                 className={cn(
                   "rounded-lg",
                   viewMode === 'table' ? "bg-white shadow-sm" : ""
@@ -1477,14 +1513,16 @@ export const ContractViolationsTabRedesigned = ({
       />
 
       <AddViolationDialog
+        contractStartDate={contractStartDate}
+        contractEndDate={contractEndDate}
         open={isAddViolationDialogOpen}
         onClose={() => setIsAddViolationDialogOpen(false)}
         onAdd={handleAddViolation}
       />
 
       {/* Cancel Violation Confirmation Dialog */}
-      <Dialog open={isCancelDialogOpen} onOpenChange={setIsCancelDialogOpen}>
-        <DialogContent className="sm:max-w-md">
+      <Dialog open={isCancelDialogOpen} onOpenChange={(nextOpen) => { if (!cancellingRef.current) setIsCancelDialogOpen(nextOpen); }}>
+        <DialogContent className="max-h-[90dvh] w-[calc(100vw-2rem)] overflow-y-auto bg-white sm:max-w-md" dir="rtl">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-[#BE123C]">
               <XCircle className="h-5 w-5" />
@@ -1512,6 +1550,7 @@ export const ContractViolationsTabRedesigned = ({
             </div>
           )}
 
+          {cancelError && <p role="alert" className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">{cancelError}</p>}
           <DialogFooter className="gap-2">
             <Button
               type="button"

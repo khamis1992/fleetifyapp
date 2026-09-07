@@ -15,6 +15,8 @@ const riskStyle = {
   critical: "border-rose-200 bg-rose-50 text-rose-700",
 };
 
+const riskLabel = { low: 'منخفض', medium: 'متوسط', high: 'مرتفع', critical: 'حرج' };
+
 const entityLabel: Record<string, string> = {
   invoice: "الفواتير",
   payment: "الدفعات",
@@ -81,15 +83,12 @@ export function FinancePermissionsMatrixPanel() {
                       <p className="mt-1 line-clamp-2 text-xs leading-5 text-[#64748B]">{permission.description}</p>
                     </div>
                     <Badge variant="outline" className={riskStyle[permission.risk]}>
-                      {permission.risk}
+                      {riskLabel[permission.risk]}
                     </Badge>
                   </div>
                   <div className="mt-3 flex flex-wrap items-center gap-2">
                     <span className="rounded-full bg-white px-2.5 py-1 text-[11px] font-black text-[#64748B]">
                       {entityLabel[permission.entity]}
-                    </span>
-                    <span className="rounded-full bg-white px-2.5 py-1 text-[11px] font-mono text-[#94A3B8]">
-                      {permission.id}
                     </span>
                   </div>
                 </div>
@@ -108,10 +107,10 @@ export function FinancePermissionsMatrixPanel() {
                     <div className="flex items-center justify-between gap-2">
                       <p className="text-sm font-black text-[#020617]">{field.label}</p>
                       <Badge variant="outline" className={riskStyle[field.risk]}>
-                        {field.risk}
+                        {riskLabel[field.risk]}
                       </Badge>
                     </div>
-                    <p className="mt-1 text-[11px] font-mono text-[#94A3B8]">{field.entity}.{field.field}</p>
+                    <p className="mt-1 text-[11px] text-[#94A3B8]">{entityLabel[field.entity]}</p>
                   </div>
                 ))}
               </div>

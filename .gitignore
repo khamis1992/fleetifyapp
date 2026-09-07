@@ -102,3 +102,10 @@ deliverables/
 tools/
 deno.lock
 .env*
+
+# Machine-specific agent permissions
+.claude/settings.local.json
+
+# Local audit exports can contain customer identities and financial records
+docs/reviews/**/*.json
+docs/audits/2026-09-07-traffic-violation-duplicates.md

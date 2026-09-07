@@ -1,116 +1,55 @@
-import { useState } from "react";
-import { BarChart3, Clock, Download, FileText, Users, WalletCards } from "lucide-react";
-import { AttendanceReportModal } from "@/components/hr/reports/AttendanceReportModal";
-import { EmployeeReportModal } from "@/components/hr/reports/EmployeeReportModal";
-import { LeaveReportModal } from "@/components/hr/reports/LeaveReportModal";
-import { PayrollReportModal } from "@/components/hr/reports/PayrollReportModal";
-import { HRMetricCard, HRPageHeader, HRPageShell, HRSectionCard } from "@/components/hr/HRDesignSystem";
-import { Button } from "@/components/ui/button";
-import { CardContent } from "@/components/ui/card";
-import { LoadingSpinner } from "@/components/ui/loading-spinner";
-import { useCurrencyFormatter } from "@/hooks/useCurrencyFormatter";
-import { useHRStatistics } from "@/hooks/useHRReports";
+import { useState } from 'react';
+import { ArrowUpLeft, CalendarDays, Clock, FileText, RefreshCw, Users, WalletCards } from 'lucide-react';
+import { AttendanceReportModal } from '@/components/hr/reports/AttendanceReportModal';
+import { EmployeeReportModal } from '@/components/hr/reports/EmployeeReportModal';
+import { LeaveReportModal } from '@/components/hr/reports/LeaveReportModal';
+import { PayrollReportModal } from '@/components/hr/reports/PayrollReportModal';
+import { OperationsMetric, OperationsPanel, OperationsWorkspace } from '@/components/operations/OperationsWorkspace';
+import { Button } from '@/components/ui/button';
+import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
+import { useHRStatistics } from '@/hooks/useHRReports';
 
 export default function HRReports() {
   const [attendanceModalOpen, setAttendanceModalOpen] = useState(false);
   const [employeeModalOpen, setEmployeeModalOpen] = useState(false);
   const [payrollModalOpen, setPayrollModalOpen] = useState(false);
   const [leaveModalOpen, setLeaveModalOpen] = useState(false);
-
-  const { data: statistics, isLoading: statsLoading } = useHRStatistics();
+  const { data: statistics, isLoading, isFetching, error, refetch } = useHRStatistics();
   const { formatCurrency } = useCurrencyFormatter();
-
+  const unavailable = isLoading || !!error || !statistics;
+  const month = new Intl.DateTimeFormat('ar-QA', { month: 'long', year: 'numeric' }).format(new Date());
   const reports = [
-    {
-      title: "تقرير الحضور الشهري",
-      description: "مراجعة الحضور، التأخير، وساعات العمل خلال فترة محددة.",
-      icon: Clock,
-      tone: "info" as const,
-      onClick: () => setAttendanceModalOpen(true),
-    },
-    {
-      title: "تقرير الرواتب",
-      description: "تفاصيل الرواتب، الخصومات، وصافي المبالغ للموظفين.",
-      icon: WalletCards,
-      tone: "success" as const,
-      onClick: () => setPayrollModalOpen(true),
-    },
-    {
-      title: "تقرير الموظفين",
-      description: "قائمة الموظفين ومعلوماتهم الوظيفية والمالية الأساسية.",
-      icon: Users,
-      tone: "focus" as const,
-      onClick: () => setEmployeeModalOpen(true),
-    },
-    {
-      title: "تقرير الإجازات",
-      description: "تفاصيل الإجازات المستخدمة والمتبقية وحالات الطلبات.",
-      icon: FileText,
-      tone: "danger" as const,
-      onClick: () => setLeaveModalOpen(true),
-    },
+    { title: 'تقرير الحضور', description: 'راجع حضور الفريق والتأخير وساعات العمل خلال الفترة التي تختارها.', icon: Clock, tags: ['الحضور', 'التأخير', 'ساعات العمل'], onClick: () => setAttendanceModalOpen(true) },
+    { title: 'تقرير الرواتب', description: 'اطّلع على تفاصيل الرواتب والخصومات وصافي المستحقات لكل موظف.', icon: WalletCards, tags: ['الرواتب', 'الخصومات', 'صافي المستحق'], onClick: () => setPayrollModalOpen(true) },
+    { title: 'تقرير الموظفين', description: 'استعرض بيانات الموظفين وحالتهم الوظيفية في تقرير واحد.', icon: Users, tags: ['البيانات الوظيفية', 'حالة الموظف'], onClick: () => setEmployeeModalOpen(true) },
+    { title: 'تقرير الإجازات', description: 'اطّلع على نافذة تقرير الإجازات وحالة توفر بياناته.', icon: FileText, tags: ['بانتظار ربط البيانات'], onClick: () => setLeaveModalOpen(true) },
   ];
 
-  return (
-    <HRPageShell>
-      <HRPageHeader
-        title="تقارير الموارد البشرية"
-        description="مركز تقارير تشغيلي للحضور، الرواتب، الموظفين، والإجازات مع مؤشرات سريعة قبل التصدير."
-        icon={BarChart3}
-        badge="التقارير"
-      />
-
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
-        {statsLoading ? (
-          <HRSectionCard className="col-span-full p-8">
-            <LoadingSpinner />
-          </HRSectionCard>
-        ) : (
-          <>
-            <HRMetricCard title="إجمالي الموظفين" value={statistics?.total_employees || 0} icon={Users} tone="info" />
-            <HRMetricCard title="معدل الحضور" value={`${statistics?.attendance_rate || 0}%`} icon={Clock} tone="success" />
-            <HRMetricCard title="إجمالي الرواتب" value={formatCurrency(statistics?.total_payroll || 0)} icon={WalletCards} tone="focus" />
-            <HRMetricCard title="الرواتب المعلقة" value={statistics?.pending_payrolls || 0} icon={FileText} tone="danger" />
-          </>
-        )}
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {reports.map((report) => {
-          const Icon = report.icon;
-          return (
-            <HRSectionCard key={report.title} className="transition hover:border-[#22C7A1]/40">
-              <CardContent className="p-5">
-                <div className="flex items-start justify-between gap-4">
-                  <div className="flex items-start gap-3">
-                    <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#F6F8FB] text-[#22C7A1]">
-                      <Icon className="h-6 w-6" />
-                    </div>
-                    <div>
-                      <h3 className="text-lg font-black text-[#020617]">{report.title}</h3>
-                      <p className="mt-1 text-sm leading-6 text-[#94A3B8]">{report.description}</p>
-                    </div>
-                  </div>
-                </div>
-                <div className="mt-5 flex gap-2">
-                  <Button variant="outline" className="h-11 flex-1 rounded-xl border-slate-200" onClick={report.onClick}>
-                    <FileText className="h-4 w-4 ml-2" />
-                    عرض التقرير
-                  </Button>
-                  <Button variant="outline" className="h-11 rounded-xl border-slate-200" onClick={report.onClick}>
-                    <Download className="h-4 w-4" />
-                  </Button>
-                </div>
-              </CardContent>
-            </HRSectionCard>
-          );
-        })}
-      </div>
-
-      <AttendanceReportModal open={attendanceModalOpen} onOpenChange={setAttendanceModalOpen} />
-      <EmployeeReportModal open={employeeModalOpen} onOpenChange={setEmployeeModalOpen} />
-      <PayrollReportModal open={payrollModalOpen} onOpenChange={setPayrollModalOpen} />
-      <LeaveReportModal open={leaveModalOpen} onOpenChange={setLeaveModalOpen} />
-    </HRPageShell>
-  );
+  return <OperationsWorkspace section="hrReports" actions={<Button className="opw-secondary" variant="outline" onClick={() => refetch()} disabled={isFetching}><RefreshCw size={16} className={isFetching ? 'animate-spin' : ''} />تحديث المؤشرات</Button>}>
+    <div className="opw-metrics" aria-busy={isLoading}>
+      <OperationsMetric label="إجمالي الموظفين" value={unavailable ? '—' : statistics.total_employees} hint="الموظفون المسجلون في النظام" icon={Users} />
+      <OperationsMetric label="معدل الحضور" value={unavailable ? '—' : statistics.attendance_rate + '%'} hint={'من سجلات حضور ' + month} icon={Clock} />
+      <OperationsMetric label="إجمالي الرواتب" value={unavailable ? '—' : <bdi className="ad-money">{formatCurrency(statistics.total_payroll)}</bdi>} hint={'صافي الرواتب لشهر ' + month} icon={WalletCards} />
+      <OperationsMetric label="رواتب مسودة" value={unavailable ? '—' : statistics.pending_payrolls} hint="مسودات الشهر الحالي" icon={FileText} tone="warning" />
+    </div>
+    {error && <div role="alert" className="ad-notice">تعذر تحميل المؤشرات. يمكنك إعادة المحاولة من زر تحديث المؤشرات.</div>}
+    <div className="ad-report-layout">
+      <OperationsPanel title="مكتبة التقارير" description="اختر التقرير، ثم حدّد الفترة وراجع النتائج.">
+        <div className="ad-report-library">{reports.map((report, index) => <article key={report.title} className="ad-report-card">
+          <header><report.icon /><span className="ad-tag">تقرير / {String(index + 1).padStart(2, '0')}</span></header>
+          <h3>{report.title}</h3><p>{report.description}</p>
+          <ul>{report.tags.map(tag => <li key={tag}>{tag}</li>)}</ul>
+          <Button variant="outline" onClick={report.onClick}>فتح {report.title}<ArrowUpLeft size={16} /></Button>
+        </article>)}</div>
+      </OperationsPanel>
+      <aside className="ad-report-guide">
+        <OperationsPanel title="من البيانات إلى التقرير" description="ثلاث خطوات للمراجعة والتصدير."><ol><li>اختر التقرير المناسب للبيانات المطلوبة.</li><li>حدّد الفترة والموظفين من داخل نافذة التقرير.</li><li>راجع النتائج، ثم استخدم خيارات التصدير المتاحة.</li></ol></OperationsPanel>
+        <div className="ad-notice"><CalendarDays size={21} /><div><strong>{month}</strong>المؤشرات في أعلى الصفحة تلخّص الشهر الحالي. فترة التقرير تُحدّد بشكل مستقل داخل نافذته.</div></div>
+      </aside>
+    </div>
+    <AttendanceReportModal open={attendanceModalOpen} onOpenChange={setAttendanceModalOpen} />
+    <EmployeeReportModal open={employeeModalOpen} onOpenChange={setEmployeeModalOpen} />
+    <PayrollReportModal open={payrollModalOpen} onOpenChange={setPayrollModalOpen} />
+    <LeaveReportModal open={leaveModalOpen} onOpenChange={setLeaveModalOpen} />
+  </OperationsWorkspace>;
 }

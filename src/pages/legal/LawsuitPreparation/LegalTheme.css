@@ -827,93 +827,6 @@
   min-width: 0;
 }
 
-.lawsuit-workbench .legal-card,
-.lawsuit-workbench [class*="bg-slate-50"],
-.lawsuit-workbench [class*="bg-white"] {
-  background: #ffffff !important;
-}
-
-.lawsuit-workbench [class*="border-slate-200"],
-.lawsuit-workbench [class*="border-slate-300"],
-.lawsuit-workbench [class*="border-teal"] {
-  border-color: #d9e3ee !important;
-}
-
-.lawsuit-workbench [class*="shadow-xl"],
-.lawsuit-workbench [class*="shadow-lg"],
-.lawsuit-workbench [class*="shadow-md"] {
-  box-shadow: 0 14px 34px rgba(15, 23, 42, 0.07) !important;
-}
-
-.lawsuit-workbench [class*="rounded-3xl"],
-.lawsuit-workbench [class*="rounded-2xl"],
-.lawsuit-workbench [class*="rounded-xl"],
-.lawsuit-workbench [class*="rounded-lg"],
-.lawsuit-workbench [class*="rounded-md"] {
-  border-radius: 8px !important;
-}
-
-.lawsuit-workbench [class*="text-teal"],
-.lawsuit-workbench [class*="text-purple"],
-.lawsuit-workbench [class*="text-blue"] {
-  color: #173a63 !important;
-}
-
-.lawsuit-workbench [class*="bg-teal"],
-.lawsuit-workbench [class*="bg-purple"],
-.lawsuit-workbench [class*="bg-blue"] {
-  background-color: #eaf2f9 !important;
-}
-
-.lawsuit-workbench [class*="from-teal"],
-.lawsuit-workbench [class*="to-teal"],
-.lawsuit-workbench [class*="bg-gradient"] {
-  background-image: none !important;
-}
-
-.lawsuit-workbench [class*="text-slate-900"],
-.lawsuit-workbench [class*="text-slate-800"] {
-  color: #142033 !important;
-}
-
-.lawsuit-workbench [class*="text-slate-600"],
-.lawsuit-workbench [class*="text-slate-500"],
-.lawsuit-workbench [class*="text-slate-400"] {
-  color: #66758a !important;
-}
-
-.lawsuit-workbench button,
-.lawsuit-workbench input,
-.lawsuit-workbench textarea,
-.lawsuit-workbench select {
-  border-radius: 8px !important;
-}
-
-.lawsuit-workbench button[class*="bg-teal"],
-.lawsuit-workbench button[class*="bg-primary"],
-.lawsuit-workbench button:not([class*="outline"]):not([class*="ghost"]) {
-  background-color: #173a63 !important;
-  color: #ffffff !important;
-}
-
-.lawsuit-workbench .legal-document-item,
-.lawsuit-workbench [class*="backdrop-blur"] {
-  border: 1px solid #d9e3ee !important;
-  background: #ffffff !important;
-  box-shadow: 0 10px 26px rgba(15, 23, 42, 0.05) !important;
-}
-
-.lawsuit-workbench .legal-document-item:hover,
-.lawsuit-workbench [class*="hover:scale"]:hover {
-  transform: translateY(-1px) !important;
-}
-
-.lawsuit-workbench .legal-data-field,
-.lawsuit-workbench [class*="bg-slate-100"] {
-  border-color: #dce6f0 !important;
-  background: #f8fbfd !important;
-}
-
 .lawsuit-redesign-loading,
 .lawsuit-redesign-error {
   display: flex;
@@ -929,13 +842,6 @@
 .lawsuit-redesign-page .legal-header {
   max-width: 1500px;
   margin: 0 auto 1rem;
-}
-
-.lawsuit-redesign-page .legal-card,
-.lawsuit-redesign-page .bg-white,
-.lawsuit-redesign-page [class*="rounded-2xl"],
-.lawsuit-redesign-page [class*="rounded-xl"] {
-  border-radius: 8px !important;
 }
 
 @media (max-width: 1180px) {

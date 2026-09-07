@@ -28,6 +28,8 @@ export interface ContractDocument {
   /** customer_id or vehicle_id for documents inherited from those records. */
   sourceOwnerId?: string;
   preview_url?: string | null;
+  legal_identity_match_status?: string | null;
+  legal_identity_match_reason?: string | null;
 }
 
 export type ContractViewDocumentDeleteTarget = Pick<
@@ -61,7 +63,7 @@ export function useContractDocuments(contractId?: string, customerId?: string, v
         // Fetch contract documents
         supabase
           .from('contract_documents')
-          .select('id, company_id, contract_id, document_type, document_name, file_path, file_size, mime_type, uploaded_by, uploaded_at, notes, is_required, condition_report_id, created_at, updated_at')
+          .select('id, company_id, contract_id, document_type, document_name, file_path, file_size, mime_type, uploaded_by, uploaded_at, notes, is_required, condition_report_id, created_at, updated_at, legal_identity_match_status, legal_identity_match_reason')
           .eq('contract_id', contractId)
           .eq('company_id', companyId)
           .order('created_at', { ascending: false }),
@@ -259,6 +261,23 @@ export function useCreateContractDocument() {
     mutationFn: async (data: CreateDocumentData) => {
       if (!user || !companyId) throw new Error('User or company is not available');
 
+      const signed = ['signed_contract', 'signed_contract_image'].includes(data.document_type);
+      if (signed) {
+        if (!data.file) throw new Error('أرفق نسخة العقد الموقعة للمراجعة');
+        const { data: contract, error: contractError } = await supabase.from('contracts')
+          .select('contract_number, customer:customers!customer_id(first_name, last_name, first_name_ar, last_name_ar, national_id), vehicle:vehicles!vehicle_id(plate_number)')
+          .eq('id', data.contract_id).eq('company_id', companyId).single();
+        if (contractError || !contract) throw contractError || new Error('تعذر قراءة العقد للمطابقة');
+        const { reviewSignedContract } = await import('@/components/contracts/SignedContractReview');
+        const file = await reviewSignedContract(data.file, {
+          contractNumber: contract.contract_number,
+          customerName: [contract.customer?.first_name_ar || contract.customer?.first_name, contract.customer?.last_name_ar || contract.customer?.last_name].filter(Boolean).join(' '),
+          nationalId: contract.customer?.national_id || undefined,
+          vehiclePlate: contract.vehicle?.plate_number || undefined,
+        });
+        data = { ...data, file, notes: [data.notes, `مراجعة الصفحات والاتجاه قبل الرفع: ${new Date().toISOString()}`].filter(Boolean).join('\n') };
+      }
+
       let filePath: string | undefined;
 
       // Upload file if provided
@@ -293,11 +312,29 @@ export function useCreateContractDocument() {
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        if (filePath) await supabase.storage.from('contract-documents').remove([filePath]);
+        throw error;
+      }
+      if (signed) {
+        try {
+          const { verifyLegalContractDocumentIdentity, normalizeLegalContractDocumentIdentityRow } = await import('@/services/legalContractIdentityVerifier');
+          const result = await verifyLegalContractDocumentIdentity(companyId, normalizeLegalContractDocumentIdentityRow(document));
+          return { ...document, ...result, legal_identity_match_status: result.legal_identity_match_status };
+        } catch {
+          // The upload succeeded. Keep the pending copy for review; do not retry the upload or claim a match.
+        }
+      }
       return document;
     },
     onSuccess: async (document, variables) => {
       await invalidateContractDocumentDependents(queryClient, document.company_id, document.contract_id);
+      if (['signed_contract', 'signed_contract_image'].includes(variables.document_type)) {
+        if (document.legal_identity_match_status === 'matched') toast.success('حُفظت النسخة واجتازت فحص هوية العميل');
+        else if (document.legal_identity_match_status === 'mismatch') toast.error('النسخة لا تطابق هوية العميل؛ حُفظت للمراجعة ولم تُعتمد. ارفع النسخة الصحيحة.');
+        else toast.warning('حُفظت النسخة بانتظار التحقق من الهوية؛ تحتاج مراجعة قبل الاعتماد.');
+        return;
+      }
       if (!variables.suppressSuccessToast) {
         toast.success('تم إضافة المستند بنجاح');
       }

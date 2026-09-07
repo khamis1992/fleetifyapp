@@ -24,6 +24,7 @@ export async function refreshContractFinancialQueries(
     ['legal-claim-projection', contractId, companyId],
     ['contract-invoices', contractId],
     ['contract-payments', contractId],
+    ['contract-financial-integrity', contractId, companyId],
     ['payment-schedules', contractId],
     ['contract-audit-logs', contractId, companyId],
     ['canonical-rental-month-summary', companyId],

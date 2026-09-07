@@ -1,54 +1,18 @@
 import { render, screen } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
-import { describe, expect, it, vi } from 'vitest';
-
+import { describe, expect, it } from 'vitest';
 import { ContractCancellationImpactPanel } from '../ContractCancellationImpactPanel';
 
-const transferableImpact = {
-  contractId: 'contract-1',
-  openPenaltyCount: 2,
-  openPenaltyAmount: 750,
-  requiresCompanyTransfer: true,
-  blockedPenaltyCount: 0,
-  authorizedToTransfer: true,
-  canTransfer: true,
-};
-
-describe('ContractCancellationImpactPanel', () => {
-  it('requires an explicit choice before transferring open penalties to the company', async () => {
-    const onChange = vi.fn();
-    const user = userEvent.setup();
-
-    render(
-      <ContractCancellationImpactPanel
-        impact={transferableImpact}
-        isLoading={false}
-        transferToCompany={false}
-        onTransferToCompanyChange={onChange}
-      />,
-    );
-
-    expect(screen.getByText('يوجد 2 مخالفة مرورية مفتوحة')).toBeInTheDocument();
-    const checkbox = screen.getByRole('checkbox', {
-      name: /تحويل المخالفات غير المسددة إلى مسؤولية الشركة/,
+describe('cancellation preserves customer penalties', () => {
+  for (const blockedPenaltyCount of [0, 1]) {
+    it(`preserves liability with ${blockedPenaltyCount} paid invoice blockers`, () => {
+      render(<ContractCancellationImpactPanel isLoading={false} impact={{
+        contractId: 'contract-1', openPenaltyCount: 2, openPenaltyAmount: 750,
+        requiresCompanyTransfer: true, blockedPenaltyCount,
+        authorizedToTransfer: false, canTransfer: false,
+      }} />);
+      expect(screen.getByText('يوجد 2 مخالفة مرورية مفتوحة')).toBeInTheDocument();
+      expect(screen.getByText(/تبقى المخالفات المرورية على مسؤولية العميل/)).toBeInTheDocument();
+      expect(screen.queryByRole('checkbox')).not.toBeInTheDocument();
     });
-    expect(checkbox).not.toBeChecked();
-
-    await user.click(checkbox);
-    expect(onChange).toHaveBeenCalledWith(true);
-  });
-
-  it('blocks automatic transfer when a customer payment is linked to a penalty invoice', () => {
-    render(
-      <ContractCancellationImpactPanel
-        impact={{ ...transferableImpact, blockedPenaltyCount: 1, canTransfer: false }}
-        isLoading={false}
-        transferToCompany={false}
-        onTransferToCompanyChange={vi.fn()}
-      />,
-    );
-
-    expect(screen.getByText('لا يمكن تحويل كل المخالفات إلى الشركة الآن.')).toBeInTheDocument();
-    expect(screen.queryByRole('checkbox')).not.toBeInTheDocument();
-  });
+  }
 });

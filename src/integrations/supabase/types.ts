@@ -19857,6 +19857,7 @@ export type Database = {
           payment_status: string | null
           penalty_date: string
           penalty_number: string
+          responsibility_party: string | null
           reason: string | null
           status: string | null
           updated_at: string | null
@@ -19883,6 +19884,7 @@ export type Database = {
           payment_status?: string | null
           penalty_date: string
           penalty_number: string
+          responsibility_party?: string | null
           reason?: string | null
           status?: string | null
           updated_at?: string | null
@@ -19909,6 +19911,7 @@ export type Database = {
           payment_status?: string | null
           penalty_date?: string
           penalty_number?: string
+          responsibility_party?: string | null
           reason?: string | null
           status?: string | null
           updated_at?: string | null
@@ -29824,6 +29827,17 @@ export type Database = {
       }
     }
     Functions: {
+      amend_contract_vehicle_and_extension_atomic: {
+        Args: {
+          p_company_id: string
+          p_contract_id: string
+          p_expected_updated_at: string
+          p_vehicle_id: string
+          p_end_date: string
+          p_description: string | null
+        }
+        Returns: Json
+      }
       freeze_legal_case_memo_snapshot: {
         Args: {
           p_approve?: boolean
@@ -32443,6 +32457,14 @@ export type Database = {
       }
       get_financial_integrity_report: {
         Args: { p_company_id: string }
+        Returns: Json
+      }
+      get_financial_workspace_v1: {
+        Args: { p_company_id: string; p_as_of?: string }
+        Returns: Json
+      }
+      get_income_statement_accounts_v1: {
+        Args: { p_company_id: string; p_date_from: string; p_date_to?: string }
         Returns: Json
       }
       get_financial_summary: {

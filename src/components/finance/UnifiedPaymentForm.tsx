@@ -74,6 +74,7 @@ const getContractSearchValue = (contract: Contract) => [
 
 interface UnifiedPaymentFormProps {
   open: boolean;
+  presentation?: "dialog" | "page";
   onOpenChange: (open: boolean) => void;
   // Payment context
   type: 'customer_payment' | 'vendor_payment' | 'invoice_payment';
@@ -99,6 +100,7 @@ interface UnifiedPaymentFormProps {
 
 export const UnifiedPaymentForm: React.FC<UnifiedPaymentFormProps> = ({
   open,
+  presentation = "dialog",
   onOpenChange,
   type,
   mode = 'create',
@@ -454,19 +456,22 @@ export const UnifiedPaymentForm: React.FC<UnifiedPaymentFormProps> = ({
     }
   };
 
+  const Content = presentation === "page" ? "section" : DialogContent;
+  const Title = presentation === "page" ? "h1" : DialogTitle;
+  const Description = presentation === "page" ? "p" : DialogDescription;
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="voucher-dialog max-h-[88dvh] max-w-5xl overflow-hidden rounded-lg border-0 p-0" dir="rtl" style={voucherStyle}>
+      <Content className={presentation === "page" ? "voucher-dialog voucher-page w-full min-w-0 rounded-xl border p-0" : "voucher-dialog max-h-[88dvh] max-w-5xl overflow-hidden rounded-lg border-0 p-0"} dir="rtl" style={voucherStyle}>
         <DialogHeader className="voucher-dialog-header">
           <div className="flex min-w-0 items-start gap-3">
             <span className="voucher-dialog-icon">
               <ReceiptText className="h-5 w-5" />
             </span>
             <div className="min-w-0">
-              <DialogTitle className="text-xl font-black text-[#020617]">{getDialogTitle()}</DialogTitle>
-              <DialogDescription className="mt-1 font-bold text-[#94A3B8]">
+              <Title className="text-xl font-black text-[#020617]">{getDialogTitle()}</Title>
+              <Description className="mt-1 font-bold text-[#94A3B8]">
             {getDialogDescription()}
-              </DialogDescription>
+              </Description>
             </div>
           </div>
           <div className="voucher-dialog-status">
@@ -1362,6 +1367,8 @@ export const UnifiedPaymentForm: React.FC<UnifiedPaymentFormProps> = ({
         </Form>
         </div>
         <style>{`
+          .voucher-page .voucher-dialog-body { overflow: visible; }
+          .voucher-page { max-height: none; }
           .voucher-dialog {
             display: grid;
             grid-template-rows: auto minmax(0, 1fr);
@@ -1662,7 +1669,7 @@ export const UnifiedPaymentForm: React.FC<UnifiedPaymentFormProps> = ({
             }
           }
         `}</style>
-      </DialogContent>
+      </Content>
       
       {/* Journal Preview Dialog */}
       {showJournalPreviewDialog && journalPreview && (

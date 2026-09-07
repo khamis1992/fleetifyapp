@@ -111,8 +111,11 @@ export default function ContractPdfUploadPage() {
     setStatus('uploading');
     setError('');
     try {
+      const { reviewSignedContract } = await import('@/components/contracts/SignedContractReview');
+      const reviewedFile = await reviewSignedContract(file, { contractNumber: tokenInfo?.contractNumber });
+      if (reviewedFile.size > (tokenInfo?.maxFileBytes || MAX_FILE_BYTES)) throw new Error('حجم الملف بعد التدوير يتجاوز الحد المسموح');
       const form = new FormData();
-      form.append('file', file, file.name);
+      form.append('file', reviewedFile, reviewedFile.name);
       const response = await fetch(endpoint, {
         method: 'POST',
         headers: { Accept: 'application/json' },

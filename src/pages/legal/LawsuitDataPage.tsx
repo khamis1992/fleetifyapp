@@ -1,3 +1,4 @@
+import { LegalPageHeader } from '@/components/legal/workspace/LegalPageHeader';
 /**
  * صفحة بيانات التقاضي - عرض وإدارة بيانات القضايا
  * @component LawsuitDataPage
@@ -425,63 +426,7 @@ export default function LawsuitDataPage() {
   return (
     <div className="legal-system min-h-screen p-4 md:p-6" dir="rtl">
       <div className="mx-auto max-w-7xl space-y-6">
-      {/* Header */}
-      <div className="legal-hero flex flex-col gap-4 p-4 md:flex-row md:items-center md:justify-between">
-        <div className="flex items-center gap-4">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => navigate('/legal/delinquency')}
-          >
-            <ArrowLeft className="h-5 w-5" />
-          </Button>
-          <div>
-            <h1 className="text-3xl font-bold text-teal-700">بيانات التقاضي</h1>
-            <p className="text-muted-foreground mt-1">
-              إدارة وعرض بيانات القضايا المُنشأة
-            </p>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleGenerateAllDocuments}
-            disabled={isGeneratingDocs}
-            className="legal-action-secondary"
-          >
-            {isGeneratingDocs ? (
-              <>
-                <LoadingSpinner className="h-4 w-4 ml-2" />
-                جاري التوليد...
-              </>
-            ) : (
-              <>
-                <FolderDown className="h-4 w-4 ml-2" />
-                توليد المستندات القانونية
-              </>
-            )}
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleExportToExcel}
-            className="legal-action-secondary"
-          >
-            <FileSpreadsheet className="h-4 w-4 ml-2" />
-            تصدير Excel
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => refetch()}
-          >
-            <RefreshCw className="h-4 w-4 ml-2" />
-            تحديث
-          </Button>
-        </div>
-      </div>
+      <LegalPageHeader title="بيانات التقاضي" description="تابع بيانات الدعاوى المنشأة، وراجع ملفاتها والمستندات المرتبطة بها." actions={<><Button variant="ghost" onClick={() => navigate('/legal/delinquency')}><ArrowLeft className="h-4 w-4 ml-2" />تجهيز الدعاوى</Button><Button onClick={handleGenerateAllDocuments} disabled={isGeneratingDocs}><FolderDown className="h-4 w-4 ml-2" />{isGeneratingDocs ? 'جارٍ توليد المستندات…' : 'توليد المستندات'}</Button><Button variant="outline" onClick={handleExportToExcel}><FileSpreadsheet className="h-4 w-4 ml-2" />تصدير الجدول</Button><Button variant="outline" onClick={() => refetch()}><RefreshCw className="h-4 w-4 ml-2" />تحديث</Button></>} />
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -728,7 +673,7 @@ export default function LawsuitDataPage() {
                           onClick={() => {
                             navigate(`/legal/lawsuits/${lawsuit.id}`);
                           }}
-                        >
+                         aria-label="عرض التفاصيل" title="عرض التفاصيل">
                           <Eye className="h-4 w-4" />
                         </Button>
                         <Button
@@ -736,7 +681,7 @@ export default function LawsuitDataPage() {
                           size="sm"
                           className="text-red-600 hover:text-red-700 hover:bg-red-50"
                           onClick={() => handleDelete(lawsuit.id)}
-                        >
+                         aria-label="حذف السجل" title="حذف السجل">
                           <Trash2 className="h-4 w-4" />
                         </Button>
                       </div>

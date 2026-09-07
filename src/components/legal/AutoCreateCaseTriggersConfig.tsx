@@ -121,7 +121,7 @@ const AutoCreateCaseTriggersConfig: React.FC<AutoCreateCaseTriggersConfigProps> 
   // محتوى المكون الرئيسي
   const content = (
     <>
-      <div className="space-y-6 py-4">
+      <div className="lw-trigger-grid space-y-6 py-4">
           <Alert>
             <AlertCircle className="h-4 w-4" />
             <AlertDescription>
@@ -136,6 +136,7 @@ const AutoCreateCaseTriggersConfig: React.FC<AutoCreateCaseTriggersConfigProps> 
                 <div className="space-y-1">
                   <CardTitle className="text-base flex items-center gap-2">
                     <Checkbox
+                      aria-label="تفعيل الإنشاء عند تأخر الفاتورة"
                       checked={config.enable_overdue_invoice_trigger}
                       onCheckedChange={(checked) =>
                         setConfig({
@@ -189,6 +190,7 @@ const AutoCreateCaseTriggersConfig: React.FC<AutoCreateCaseTriggersConfigProps> 
                 <div className="space-y-1">
                   <CardTitle className="text-base flex items-center gap-2">
                     <Checkbox
+                      aria-label="تفعيل الإنشاء عند تجاوز المبلغ المتأخر"
                       checked={config.enable_overdue_amount_trigger}
                       onCheckedChange={(checked) =>
                         setConfig({
@@ -242,6 +244,7 @@ const AutoCreateCaseTriggersConfig: React.FC<AutoCreateCaseTriggersConfigProps> 
                 <div className="space-y-1">
                   <CardTitle className="text-base flex items-center gap-2">
                     <Checkbox
+                      aria-label="تفعيل الإنشاء عند تكرار الوعود المكسورة"
                       checked={config.enable_broken_promises_trigger}
                       onCheckedChange={(checked) =>
                         setConfig({

@@ -107,7 +107,7 @@ export const ContractRenewalDialog: React.FC<ContractRenewalDialogProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto" data-tour="contract-renew-dialog">
+      <DialogContent className="contract-operation-dialog max-w-lg max-h-[90vh] overflow-y-auto" data-tour="contract-renew-dialog">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-xl">
             <RefreshCw className="h-5 w-5 text-primary" />

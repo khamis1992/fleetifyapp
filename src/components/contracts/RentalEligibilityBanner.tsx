@@ -24,7 +24,7 @@ export function RentalEligibilityBanner({ companyId, vehicleId, customerId, clas
 
 export function RentalEligibilityNotice({ className }: { className?: string }) {
   return <div dir="rtl" className={cn('rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm text-slate-700', className)}>
-    المركبات المحجوزة في شارع 52 أو مركز الشرطة أو المسروقة غير متاحة للتأجير. حجز البلدية والمخالفات دون الحد يظهران كتنبيه قبل الإرسال.
+    المركبات المحجوزة في شارع 52 أو مركز الشرطة أو المسروقة غير متاحة للتأجير. حجز البلدية ومخالفات المركبة يظهران كتنبيه قبل الإرسال.
     {' '}<Link className="font-semibold underline" to="/fleet/traffic-violations">عرض المخالفات المرورية</Link>
   </div>;
 }

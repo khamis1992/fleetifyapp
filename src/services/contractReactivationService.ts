@@ -29,10 +29,10 @@ export async function reactivateCancelledContract({
     },
   );
 
-  if (error) throw error;
+  if (error) throw new Error(error.message || 'تعذرت إعادة تفعيل العقد');
 
   const result = data as CancelledContractReactivationResult | null;
-  if (!result?.success || result.status !== 'active') {
+  if (!result?.success || result.status !== 'active' || result.contract_id !== contractId) {
     throw new Error('لم تكتمل إعادة تفعيل العقد');
   }
 

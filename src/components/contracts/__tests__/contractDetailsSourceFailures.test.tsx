@@ -1,6 +1,6 @@
 /**
  * Executes the actual mounted details component/effect with controlled query
- * snapshots. Sync queryFn runs against a mocked RPC, never the live database.
+ * snapshots. Loading and refreshing must never start a financial command.
  * Real query scheduling/races are tested separately with QueryClient/Observer.
  */
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
@@ -11,9 +11,7 @@ const fixture = vi.hoisted(() => ({
   invalidate: vi.fn().mockResolvedValue(undefined),
   invalidateQueries(options: unknown) { return this.invalidate(options); },
   cancelQueries: vi.fn().mockResolvedValue(undefined),
-  setQueryData: vi.fn(),
   rpc: vi.fn(),
-  executeSync: (async () => undefined) as () => Promise<unknown>,
   executeInvoices: (async () => undefined) as () => Promise<unknown>,
   executePayments: (async () => undefined) as () => Promise<unknown>,
   selectPayments: ((value: unknown) => value) as (value: unknown) => unknown,
@@ -22,7 +20,6 @@ const fixture = vi.hoisted(() => ({
   paymentBundle: null as null | { payments: unknown[]; allocations: unknown[]; integrityWarnings?: string[] },
   invoiceReader: vi.fn(),
   invoiceKey: [] as unknown[],
-  sync: { data: undefined as undefined | { changed: boolean; readError?: string }, dataUpdatedAt: 0, isFetching: false, error: null as Error | null },
   queryError: '' as string,
   scheduleError: false,
   loading: false,
@@ -37,8 +34,7 @@ vi.mock('@tanstack/react-query', () => ({
   useQueryClient: () => fixture,
   useQuery: ({ queryKey, queryFn, select }: { queryKey: unknown[]; queryFn: () => Promise<unknown>; select?: (value: unknown) => unknown }) => {
     if (queryKey[0] === 'contract-financial-refresh') {
-      fixture.executeSync = queryFn;
-      return fixture.sync;
+      throw new Error('The details page must not register an automatic financial command');
     }
     if (queryKey[0] === 'contract-invoices') {
       fixture.executeInvoices = queryFn;
@@ -115,12 +111,11 @@ vi.mock('@/components/contracts/ContractHealthAnalysis', () => ({ ContractHealth
 vi.mock('@/components/contracts/SeizedActiveContractBanner', () => ({ SeizedActiveContractBanner: () => null }));
 vi.mock('@/components/contracts/OfficialContractView', () => ({ OfficialContractView: () => null }));
 vi.mock('@/components/contracts/contract-details-v3/ContractHero', () => ({ ContractHero: () => null }));
-vi.mock('@/components/contracts/contract-details-v3/ContractActionBar', () => ({ ContractActionBar: () => null }));
+vi.mock('@/components/contracts/contract-details-v3/ContractActionBar', () => ({ ContractActionBar: ({onRefresh}: {onRefresh: () => void}) => <button onClick={onRefresh}>تحديث البيانات</button> }));
 vi.mock('@/components/contracts/contract-details-v3/ContractPulse', () => ({ ContractPulse: () => null }));
 
 beforeEach(() => {
   vi.clearAllMocks();
-  fixture.sync = { data: undefined, dataUpdatedAt: 0, isFetching: false, error: null };
   fixture.queryError = '';
   fixture.scheduleError = false;
   fixture.loading = false;
@@ -136,7 +131,7 @@ const invoiceInvalidations = () => fixture.invalidate.mock.calls.filter(
   ([options]) => options.queryKey[0] === 'contract-invoices',
 ).length;
 
-describe('contract details source failures and synchronization evidence', () => {
+describe('contract details source failures and read-only refresh', () => {
   it('calls the attributed payment reader from the real page query', async () => {
     const result = { payments: [{ id: 'p', financial_applications: [] }], allocations: [] };
     fixture.paymentReader.mockResolvedValue(result);
@@ -196,68 +191,30 @@ describe('contract details source failures and synchronization evidence', () => 
     expect(screen.queryByText('المالي')).not.toBeInTheDocument();
   });
 
-  it('invalidates invoice reads after the first changed synchronization', async () => {
-    fixture.loading = true;
-    render(<ContractDetailsPageRedesigned />);
+  it('never starts a financial command during mounting or unrelated renders', () => {
+    const view = render(<ContractDetailsPageRedesigned />);
+    view.rerender(<ContractDetailsPageRedesigned />);
+    expect(fixture.rpc).not.toHaveBeenCalled();
     expect(invoiceInvalidations()).toBe(0);
-    await fixture.executeSync();
-    expect(invoiceInvalidations()).toBe(1);
   });
 
-  it('does not invalidate reads again on an unrelated render', async () => {
-    fixture.loading = true;
-    fixture.sync = { ...fixture.sync, data: { changed: true }, dataUpdatedAt: 1 };
-    const view = render(<ContractDetailsPageRedesigned />);
-    await fixture.executeSync();
-    view.rerender(<ContractDetailsPageRedesigned />);
-    expect(invoiceInvalidations()).toBe(1);
-  });
-
-  it('invalidates after a second successful changed=true result', async () => {
-    fixture.loading = true;
-    fixture.sync = { ...fixture.sync, data: { changed: true }, dataUpdatedAt: 1 };
-    const view = render(<ContractDetailsPageRedesigned />);
-    await fixture.executeSync();
-    expect(invoiceInvalidations()).toBe(1);
-    fixture.sync = { ...fixture.sync, data: { changed: true }, dataUpdatedAt: 2 };
-    view.rerender(<ContractDetailsPageRedesigned />);
-    await fixture.executeSync();
-    expect(invoiceInvalidations()).toBe(2);
-  });
-
-  it('refreshes invoice reads even when contract aggregates did not change', async () => {
-    fixture.loading = true;
-    const view = render(<ContractDetailsPageRedesigned />);
-    fixture.sync = { ...fixture.sync, data: { changed: false }, dataUpdatedAt: 1 };
-    fixture.rpc.mockResolvedValue({ data: { contract_id: 'contract-1', changed: false }, error: null });
-    view.rerender(<ContractDetailsPageRedesigned />);
-    await fixture.executeSync();
-    expect(invoiceInvalidations()).toBe(1);
-  });
-
-  it('recovers a failed post-sync invoice read without rerunning the command', async () => {
+  it('reloads all financial readers on explicit refresh without repeating any command', async () => {
     fixture.queryError = 'contract-invoices';
-    fixture.sync = { ...fixture.sync, data: { changed: false, readError: 'read failed' } };
     render(<ContractDetailsPageRedesigned />);
     fireEvent.click(screen.getByRole('button', { name: 'إعادة تحميل جميع بيانات العقد' }));
-    await waitFor(() => expect(fixture.setQueryData).toHaveBeenCalled());
-    expect(invoiceInvalidations()).toBe(1);
+    await waitFor(() => expect(invoiceInvalidations()).toBe(1));
     expect(fixture.rpc).not.toHaveBeenCalled();
+    expect(fixture.invalidate.mock.calls.some(([options]) => options.queryKey[0] === 'contract-recorded-penalties')).toBe(true);
+    expect(fixture.invalidate.mock.calls.some(([options]) => options.queryKey[0] === 'contract-financial-refresh')).toBe(false);
   });
 
-  it('renders a failed synchronization message without hiding it as a no-op', () => {
-    fixture.sync.error = new Error('دالة مزامنة أرصدة العقد غير متاحة في قاعدة البيانات');
+  it('keeps an explicit refresh failure visible and supports read-only recovery', async () => {
+    fixture.invalidate.mockRejectedValueOnce(new Error('network unavailable'));
     render(<ContractDetailsPageRedesigned />);
-    expect(screen.getByText('دالة مزامنة أرصدة العقد غير متاحة في قاعدة البيانات')).toBeInTheDocument();
-    expect(fixture.rpc).not.toHaveBeenCalled();
-  });
-
-  it('offers read-only retry for secondary reader failure after synchronization', async () => {
-    fixture.sync.data = { changed: false, readError: 'اكتملت المزامنة وتعذر تحميل النتائج' };
-    render(<ContractDetailsPageRedesigned />);
-    expect(screen.getByText('اكتملت المزامنة وتعذر تحميل النتائج')).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: 'إعادة تحميل النتائج فقط' }));
-    await waitFor(() => expect(fixture.setQueryData).toHaveBeenCalled());
+    fireEvent.click(screen.getByRole('button', { name: 'تحديث البيانات' }));
+    expect(await screen.findByText(/تعذر تحميل بعض بيانات العقد/)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'إعادة تحميل البيانات' }));
+    await waitFor(() => expect(screen.queryByText(/تعذر تحميل بعض بيانات العقد/)).not.toBeInTheDocument());
     expect(fixture.rpc).not.toHaveBeenCalled();
   });
 });

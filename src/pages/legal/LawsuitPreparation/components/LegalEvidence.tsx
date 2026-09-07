@@ -698,8 +698,8 @@ export function LegalEvidence() {
             <div key={item.id} className="flex items-center justify-between rounded-lg border border-slate-200 bg-slate-50 p-3">
               <div><strong className="block text-sm">{item.notice_type} — {item.sent_on}</strong><span className="text-xs text-slate-500">{item.delivery_confirmed ? `وصول مؤكد ${item.delivered_on}` : 'وصول غير مؤكد'}</span></div>
               <div className="flex gap-1">
-                <Button type="button" size="icon" variant="ghost" onClick={() => setNotice({ ...item })}><Pencil className="h-4 w-4 text-[#173A63]" /></Button>
-                <Button type="button" size="icon" variant="ghost" onClick={() => actions.deleteFormalNotice(item.id)}><Trash2 className="h-4 w-4 text-red-600" /></Button>
+                <Button type="button" size="icon" variant="ghost" onClick={() => setNotice({ ...item })} aria-label="تعديل البيانات" title="تعديل البيانات"><Pencil className="h-4 w-4 text-[#173A63]" /></Button>
+                <Button type="button" size="icon" variant="ghost" onClick={() => actions.deleteFormalNotice(item.id)} aria-label="حذف السجل" title="حذف السجل"><Trash2 className="h-4 w-4 text-red-600" /></Button>
               </div>
             </div>
           ))}
@@ -725,8 +725,8 @@ export function LegalEvidence() {
             <div key={item.id} className="flex items-center justify-between rounded-lg border border-slate-200 bg-slate-50 p-3">
               <div><strong className="block text-sm">{item.description} — {Number(item.amount).toLocaleString('en-US')} ر.ق</strong><span className="text-xs text-slate-500">{item.verified ? 'معتمد بالمستند' : 'غير معتمد ولن يظهر في المطالبة'}</span></div>
               <div className="flex gap-1">
-                <Button type="button" size="icon" variant="ghost" onClick={() => setDamage({ ...item })}><Pencil className="h-4 w-4 text-[#173A63]" /></Button>
-                <Button type="button" size="icon" variant="ghost" onClick={() => actions.deleteDamageCost(item.id)}><Trash2 className="h-4 w-4 text-red-600" /></Button>
+                <Button type="button" size="icon" variant="ghost" onClick={() => setDamage({ ...item })} aria-label="تعديل البيانات" title="تعديل البيانات"><Pencil className="h-4 w-4 text-[#173A63]" /></Button>
+                <Button type="button" size="icon" variant="ghost" onClick={() => actions.deleteDamageCost(item.id)} aria-label="حذف السجل" title="حذف السجل"><Trash2 className="h-4 w-4 text-red-600" /></Button>
               </div>
             </div>
           ))}
@@ -749,7 +749,7 @@ export function LegalEvidence() {
                   <td className="p-2">{snapshot.legal_path}</td>
                   <td className="p-2"><Badge variant="outline">{snapshot.readiness_status}</Badge></td>
                   <td className="p-2">{new Date(snapshot.created_at).toLocaleDateString('en-GB')}</td>
-                  <td className="p-2"><Button type="button" size="icon" variant="ghost" onClick={() => viewSnapshot(snapshot.payload)}><Eye className="h-4 w-4" /></Button></td>
+                  <td className="p-2"><Button type="button" size="icon" variant="ghost" onClick={() => viewSnapshot(snapshot.payload)} aria-label="عرض التفاصيل" title="عرض التفاصيل"><Eye className="h-4 w-4" /></Button></td>
                 </tr>
               ))}</tbody>
             </table>

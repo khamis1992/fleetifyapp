@@ -45,6 +45,10 @@ export interface AdaptivePortalPlan {
   reason: string;
 }
 
+export function requiresExistingDraft(resumeRequested: boolean, progress: number, action: AdaptivePortalAction) {
+  return resumeRequested && progress >= 44 && action === 'open_new_case';
+}
+
 function isUncontested(position: TaqadiPortalPosition) {
   const runnerUp = position.candidates?.[1];
   if (!runnerUp) return true;

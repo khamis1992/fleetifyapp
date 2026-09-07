@@ -43,7 +43,10 @@ BEGIN
   ) INTO v_is_super_admin;
 
   IF NOT v_is_super_admin
-     AND public.get_user_company_id() IS DISTINCT FROM v_violation.company_id
+     AND (public.get_user_company_id() IS DISTINCT FROM v_violation.company_id
+       OR NOT EXISTS (SELECT 1 FROM public.profiles profile
+         WHERE profile.user_id = v_actor_id AND profile.company_id = v_violation.company_id
+           AND profile.is_active = true))
   THEN
     RAISE EXCEPTION 'COMPANY_ACCESS_DENIED' USING ERRCODE = '42501';
   END IF;
@@ -74,6 +77,12 @@ BEGIN
     RAISE EXCEPTION 'TRAFFIC_VIOLATION_HAS_ACTIVE_PAYMENTS'
       USING ERRCODE = '23514',
             DETAIL = 'Reverse or cancel the linked violation payments before cancelling the violation.';
+  END IF;
+
+  IF v_violation.liability_journal_entry_id IS NOT NULL OR COALESCE(v_violation.liability_amount, 0) > 0 THEN
+    RAISE EXCEPTION 'TRAFFIC_VIOLATION_HAS_RECOGNIZED_LIABILITY'
+      USING ERRCODE = '23514',
+            DETAIL = 'Reverse the recognized liability through the financial workflow before cancelling this violation.';
   END IF;
 
   v_note := format(

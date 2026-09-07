@@ -109,7 +109,7 @@ const [periodEnd, setPeriodEnd] = useState('');
               <td style="padding: 10px; border: 1px solid #dee2e6; text-align: right;">${payroll.payroll_number}</td>
               <td style="padding: 10px; border: 1px solid #dee2e6; text-align: right;">${payroll.first_name} ${payroll.last_name}</td>
               <td style="padding: 10px; border: 1px solid #dee2e6; text-align: right;">${payroll.department || 'غير محدد'}</td>
-              <td style="padding: 10px; border: 1px solid #dee2e6; text-align: right;">${new Date(payroll.payroll_date).toLocaleDateString('en-GB')}</td>
+              <td style="padding: 10px; border: 1px solid #dee2e6; text-align: right;">${new Date(payroll.payroll_date).toLocaleDateString('ar-QA')}</td>
               <td style="padding: 10px; border: 1px solid #dee2e6; text-align: right;">${formatCurrency(payroll.basic_salary)}</td>
               <td style="padding: 10px; border: 1px solid #dee2e6; text-align: right;">${formatCurrency(payroll.allowances)}</td>
               <td style="padding: 10px; border: 1px solid #dee2e6; text-align: right;">${formatCurrency(payroll.deductions)}</td>
@@ -313,7 +313,7 @@ const [periodEnd, setPeriodEnd] = useState('');
                         </TableCell>
                         <TableCell>{payroll.department || 'غير محدد'}</TableCell>
                         <TableCell>
-                          {new Date(payroll.payroll_date).toLocaleDateString('en-GB')}
+                          {new Date(payroll.payroll_date).toLocaleDateString('ar-QA')}
                         </TableCell>
                         <TableCell className="font-medium text-green-600">
                           {formatCurrency(payroll.net_amount)}

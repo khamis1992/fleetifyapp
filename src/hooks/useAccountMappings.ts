@@ -2,6 +2,44 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useUnifiedCompanyAccess } from "./useUnifiedCompanyAccess";
 import { useToast } from "./use-toast";
+import { isEligibleAccountMapping } from "@/utils/accountMappingValidation";
+import { readFinancialPages } from "@/services/financialReporting";
+
+async function validateMapping(
+  companyId: string,
+  accountId: string,
+  typeId: string
+) {
+  const [account, type] = await Promise.all([
+    supabase
+      .from("chart_of_accounts")
+      .select(
+        "company_id,account_type,balance_type,account_level,is_active,is_header"
+      )
+      .eq("id", accountId)
+      .eq("company_id", companyId)
+      .single(),
+    supabase
+      .from("default_account_types")
+      .select("account_category,type_code")
+      .eq("id", typeId)
+      .single(),
+  ]);
+  if (account.error) throw account.error;
+  if (type.error) throw type.error;
+  if (
+    !isEligibleAccountMapping(
+      account.data,
+      type.data.account_category,
+      companyId,
+      type.data.type_code
+    )
+  ) {
+    throw new Error(
+      "اختر حساب ترحيل نشطًا من المستوى الثالث أو أعلى، من الفئة وطبيعة الرصيد المطابقتين."
+    );
+  }
+}
 
 const getErrorMessage = (error: unknown): string =>
   error instanceof Error ? error.message : String(error);
@@ -58,20 +96,22 @@ export const useAccountMappings = () => {
     queryFn: async () => {
       if (!companyId) return [];
 
-      const { data, error } = await supabase
-        .from("account_mappings")
-        .select(`
+      const data = await readFinancialPages((from, to) =>
+        supabase
+          .from("account_mappings")
+          .select(
+            `
           *,
           default_account_type:default_account_types(*),
           chart_of_accounts:chart_of_accounts(id, account_name, account_name_ar, account_code)
-        `)
-        .eq("company_id", companyId)
-        .eq("is_active", true);
-
-      if (error) {
-        console.error("Error fetching account mappings:", error);
-        throw error;
-      }
+        `,
+            { count: "exact" }
+          )
+          .eq("company_id", companyId)
+          .eq("is_active", true)
+          .order("id")
+          .range(from, to)
+      );
 
       return data as AccountMapping[];
     },
@@ -90,6 +130,11 @@ export const useCreateAccountMapping = () => {
       chart_of_accounts_id: string;
     }) => {
       if (!companyId) throw new Error("Company ID is required");
+      await validateMapping(
+        companyId,
+        mapping.chart_of_accounts_id,
+        mapping.default_account_type_id
+      );
 
       const { data, error } = await supabase
         .from("account_mappings")
@@ -106,7 +151,9 @@ export const useCreateAccountMapping = () => {
       return data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["account-mappings", companyId] });
+      queryClient.invalidateQueries({
+        queryKey: ["account-mappings", companyId],
+      });
       toast({
         title: "تم إنشاء الربط بنجاح",
         description: "تم ربط نوع الحساب بحساب دليل الحسابات",
@@ -128,10 +175,21 @@ export const useUpdateAccountMapping = () => {
   const { toast } = useToast();
 
   return useMutation({
-    mutationFn: async (data: {
-      id: string;
-      chart_of_accounts_id: string;
-    }) => {
+    mutationFn: async (data: { id: string; chart_of_accounts_id: string }) => {
+      if (!companyId) throw new Error("Company ID is required");
+      const existing = await supabase
+        .from("account_mappings")
+        .select("default_account_type_id")
+        .eq("id", data.id)
+        .eq("company_id", companyId)
+        .eq("is_active", true)
+        .single();
+      if (existing.error) throw existing.error;
+      await validateMapping(
+        companyId,
+        data.chart_of_accounts_id,
+        existing.data.default_account_type_id
+      );
       const { data: result, error } = await supabase
         .from("account_mappings")
         .update({
@@ -139,6 +197,8 @@ export const useUpdateAccountMapping = () => {
           updated_at: new Date().toISOString(),
         })
         .eq("id", data.id)
+        .eq("company_id", companyId)
+        .eq("is_active", true)
         .select()
         .single();
 
@@ -146,7 +206,9 @@ export const useUpdateAccountMapping = () => {
       return result;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["account-mappings", companyId] });
+      queryClient.invalidateQueries({
+        queryKey: ["account-mappings", companyId],
+      });
       toast({
         title: "تم تحديث الربط بنجاح",
         description: "تم تحديث ربط الحساب",
@@ -169,15 +231,22 @@ export const useDeleteAccountMapping = () => {
 
   return useMutation({
     mutationFn: async (mappingId: string) => {
+      if (!companyId) throw new Error("Company ID is required");
       const { error } = await supabase
         .from("account_mappings")
         .update({ is_active: false })
-        .eq("id", mappingId);
+        .eq("id", mappingId)
+        .eq("company_id", companyId)
+        .eq("is_active", true)
+        .select("id")
+        .single();
 
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["account-mappings", companyId] });
+      queryClient.invalidateQueries({
+        queryKey: ["account-mappings", companyId],
+      });
       toast({
         title: "تم حذف الربط بنجاح",
         description: "تم إلغاء ربط نوع الحساب",

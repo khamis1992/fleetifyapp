@@ -57,6 +57,11 @@ while ((Get-Date) -lt $deadline) {
         $true
       )
       if ($isPassword -ne $true) { continue }
+      # Discovery does not consume an attempt. The worker authorizes exactly
+      # one writer (native or web) after reserving the shared PIN budget.
+      [Console]::Out.WriteLine('pin-ready')
+      [Console]::Out.Flush()
+      if ([Console]::In.ReadLine() -ne 'submit') { exit 2 }
       $pinField.SetFocus()
       Start-Sleep -Milliseconds 150
       [System.Windows.Forms.SendKeys]::SendWait($pin)

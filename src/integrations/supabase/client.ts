@@ -48,11 +48,14 @@ export const supabase = createClient<Database>(supabaseConfig.url, supabaseConfi
       const requestUrl = String(url);
       const isAuthRequest = requestUrl.includes('/auth/v1/');
       const isContractIdScanner = requestUrl.includes('/functions/v1/contract-id-scanner');
+      const isTaqadiQueueMutation = /\/rest\/v1\/rpc\/(?:resume|restart)_taqadi_filing_job_v2(?:\?|$)/.test(requestUrl);
       // Auth refresh tokens are single-use and rotated. Retrying the same auth
       // request after an interrupted response can invalidate session recovery.
       // Contract identity scans can transmit multiple document pages and write
       // an assessment, so an HTTP-level retry would duplicate the whole scan.
-      const maxRetries = isAuthRequest || isContractIdScanner ? 0 : retries;
+      // A queue mutation can commit before its response arrives. Replaying it
+      // after a timeout races the worker that has already claimed the job.
+      const maxRetries = isAuthRequest || isContractIdScanner || isTaqadiQueueMutation ? 0 : retries;
 
       // Add timeout to prevent hanging requests with retry logic
       for (let attempt = 0; attempt <= maxRetries; attempt++) {
@@ -60,7 +63,7 @@ export const supabase = createClient<Database>(supabaseConfig.url, supabaseConfi
         try {
           const timeoutMs = isAuthRequest
             ? 30000
-            : requestUrl.includes('/rest/v1/rpc/restart_taqadi_filing_job_v2')
+            : isTaqadiQueueMutation
               ? 60000
             : requestUrl.includes('/functions/v1/excel-import-ai-review')
               ? 90000

@@ -37,7 +37,7 @@ describe('mounted contract financial summary', () => {
   it('keeps the attributed excess in the grand total instead of reporting the capped principal', () => {
     render(<FinancialDashboard contract={contract} formatCurrency={money} snapshot={snapshot(1700)} />);
     expect(screen.getByText('مبالغ إضافية')).toBeInTheDocument();
-    const totalRow = screen.getByText('الإجمالي الكلي').closest('.flex.items-center.justify-between');
+    const totalRow = screen.getByText('الإجمالي الكلي').closest('div');
     expect(within(totalRow as HTMLElement).getByText('QAR 1700.00')).toBeInTheDocument();
   });
   it('the hero shows reconciliation instead of a stale paid-installment count and caps financial progress below 100', () => {
@@ -46,7 +46,7 @@ describe('mounted contract financial summary', () => {
       totalAmount={1500} monthlyAmount={1500} paidAmount={1499.99} paidPayments={1} totalPayments={1}
       daysRemaining={100} progressPercentage={50} snapshot={value} formatCurrency={money}
       onBack={vi.fn()} onEdit={vi.fn()} onStatusClick={vi.fn()} onCustomerClick={vi.fn()} onVehicleClick={vi.fn()} />);
-    expect(screen.getByText('بانتظار المطابقة')).toBeInTheDocument();
+    expect(screen.getByText('الأقساط بانتظار المطابقة')).toBeInTheDocument();
     expect(screen.queryByText('1 / 1')).not.toBeInTheDocument();
     expect(screen.getByText('99%')).toBeInTheDocument();
   });

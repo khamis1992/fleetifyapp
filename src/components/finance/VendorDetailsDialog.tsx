@@ -200,11 +200,11 @@ export const VendorDetailsDialog = ({ vendor, open, onOpenChange }: VendorDetail
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs text-muted-foreground">
                   <div>
                     <label>تاريخ الإنشاء</label>
-                    <p>{new Date(vendor.created_at).toLocaleDateString('en-GB')}</p>
+                    <p>{new Date(vendor.created_at).toLocaleDateString('ar-QA')}</p>
                   </div>
                   <div>
                     <label>آخر تحديث</label>
-                    <p>{new Date(vendor.updated_at).toLocaleDateString('en-GB')}</p>
+                    <p>{new Date(vendor.updated_at).toLocaleDateString('ar-QA')}</p>
                   </div>
                 </div>
               </CardContent>
@@ -305,7 +305,7 @@ export const VendorDetailsDialog = ({ vendor, open, onOpenChange }: VendorDetail
                           </TableCell>
                           <TableCell>
                             {doc.expiry_date
-                              ? new Date(doc.expiry_date).toLocaleDateString('en-GB')
+                              ? new Date(doc.expiry_date).toLocaleDateString('ar-QA')
                               : '-'}
                           </TableCell>
                           <TableCell>
@@ -405,7 +405,7 @@ export const VendorDetailsDialog = ({ vendor, open, onOpenChange }: VendorDetail
                       {performance.map((perf) => (
                         <TableRow key={perf.id}>
                           <TableCell>
-                            {new Date(perf.measured_at).toLocaleDateString('en-GB')}
+                            {new Date(perf.measured_at).toLocaleDateString('ar-QA')}
                           </TableCell>
                           <TableCell>
                             {perf.rating ? `${perf.rating.toFixed(2)}/5` : '-'}

@@ -78,7 +78,7 @@ const InvoiceScannerPage = lazy(() => import('@/pages/InvoiceScannerPage'));
 const FinancialTracking = lazy(() => import('@/pages/FinancialTracking'));
 const SyncPaymentsToLedger = lazy(() => import('@/pages/SyncPaymentsToLedger'));
 const PaymentRegistration = lazy(() => import('@/pages/PaymentRegistration'));
-const QuickPayment = lazy(() => import('@/pages/payments/QuickPayment'));
+const LegacyFinanceRedirect = lazy(() => import('@/pages/finance/LegacyFinanceRedirect'));
 const ExcelPaymentImport = lazy(() => import('@/pages/payments/ExcelPaymentImport'));
 
 // Super Admin pages
@@ -901,7 +901,7 @@ const routeConfigs: RouteConfig[] = [
   },
   {
     path: '/finance/payments/quick',
-    component: QuickPayment,
+    component: LegacyFinanceRedirect,
     lazy: true,
     exact: true,
     title: 'Quick Payment',

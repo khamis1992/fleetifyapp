@@ -1,5 +1,9 @@
 import { createClient } from '@supabase/supabase-js';
+import { hasKnownTaqadiNationality, DEFENDANT_NATIONALITY_REQUIRED_MESSAGE } from '../../src/utils/taqadiNationality';
 import { agentConfig } from './config';
+import type { SavedReceipt } from './receipt-outbox';
+import { workerErrorDetails } from './error-details';
+import { HumanInterventionError } from './types';
 import {
   decideRestartRecovery,
   type InterruptedJobSnapshot,
@@ -18,6 +22,9 @@ interface InterruptedJobRow extends InterruptedJobSnapshot {
 }
 
 export class TaqadiQueue {
+  private readonly progressByJob = new Map<string, number>();
+  private observationBuffer: Record<string, unknown>[] = [];
+  private observationFlush: Promise<void> | null = null;
   private readonly client = createClient(
     agentConfig.supabaseUrl,
     agentConfig.supabaseServiceRoleKey,
@@ -165,10 +172,38 @@ export class TaqadiQueue {
       },
     );
     if (error) throw error;
+    if (data) this.progressByJob.set(data.id, data.progress || 0);
     return data as FilingJob | null;
   }
 
+  observe(job: FilingJob, update: ProgressUpdate) {
+    this.observationBuffer.push({
+      company_id: job.company_id, job_id: job.id, event_type: 'observation',
+      step: update.step, status: update.status, message: update.message,
+      details: { ...update.details, observedAt: new Date().toISOString() },
+    });
+    void this.flushObservations();
+  }
+
+  async flushObservations(): Promise<void> {
+    if (this.observationFlush) return this.observationFlush;
+    this.observationFlush = (async () => {
+      while (this.observationBuffer.length) {
+        const batch = this.observationBuffer.splice(0);
+        try {
+          const { error } = await this.client.from('taqadi_filing_job_events')
+            .insert(batch).abortSignal(AbortSignal.timeout(5_000));
+          if (error) throw error;
+        } catch (error) {
+          console.warn('[TaqadiAgent] observation telemetry unavailable:', error);
+        }
+      }
+    })();
+    try { await this.observationFlush; } finally { this.observationFlush = null; }
+  }
+
   async update(jobId: string, update: ProgressUpdate) {
+    const progress = Math.max(this.progressByJob.get(jobId) || 0, update.progress);
     const { data, error } = await this.client.rpc(
       'update_taqadi_filing_job_v1',
       {
@@ -176,7 +211,7 @@ export class TaqadiQueue {
         p_worker_id: agentConfig.workerId,
         p_status: update.status,
         p_step: update.step,
-        p_progress: update.progress,
+        p_progress: progress,
         p_message: update.message,
         p_details: update.details || {},
         p_error_code: update.errorCode || null,
@@ -184,13 +219,59 @@ export class TaqadiQueue {
       },
     );
     if (error) throw error;
+    this.progressByJob.set(jobId, progress);
     return data as FilingJob;
+  }
+
+  async validateBeforePortal(job: FilingJob) {
+    if (!hasKnownTaqadiNationality(job.payload.defendant?.nationality)) {
+      throw new HumanInterventionError(DEFENDANT_NATIONALITY_REQUIRED_MESSAGE,
+        'DEFENDANT_NATIONALITY_REQUIRED', {
+          field: 'defendant.nationality', resumeSupported: true,
+          requiredActions: [DEFENDANT_NATIONALITY_REQUIRED_MESSAGE],
+        });
+    }
+    const args = { p_company_id: job.company_id, p_contract_id: job.contract_id };
+    const validation = await this.client.rpc('validate_taqadi_filing_payload_v1', {
+      ...args, p_payload: job.payload,
+    });
+    if (validation.error) {
+      throw new HumanInterventionError(
+        `تعذر فحص حزمة الدعوى قبل فتح تقاضي: ${workerErrorDetails(validation.error).message}`,
+        'FILING_PREFLIGHT_FAILED', { error: workerErrorDetails(validation.error), resumeSupported: true },
+      );
+    }
+    if (validation.data?.ready !== true) {
+      throw new HumanInterventionError(
+        'حزمة الدعوى المحفوظة تحتاج تحديثاً؛ راجع المستندات وأعد تجهيز الحزمة قبل متابعة تقاضي.',
+        'FILING_PACKAGE_INVALID', { missing: validation.data?.missing || [], resumeSupported: true },
+      );
+    }
+    // The server defaults to the current Qatar business date. Recheck at final
+    // approval as well: early validation cannot authorize a later stale claim.
+    const claim = await this.client.rpc('calculate_legal_claim_amount_v1', args);
+    if (claim.error) {
+      throw new HumanInterventionError(
+        `تعذر مطابقة مبلغ الدعوى قبل فتح تقاضي: ${workerErrorDetails(claim.error).message}`,
+        'FILING_PREFLIGHT_FAILED', { error: workerErrorDetails(claim.error), resumeSupported: true },
+      );
+    }
+    const currentAmount = typeof claim.data === 'number' ? claim.data : Number.NaN;
+    const packageAmount = job.payload.case.amount;
+    if (!Number.isFinite(currentAmount) || !Number.isFinite(packageAmount)
+      || currentAmount <= 0 || Math.abs(currentAmount - packageAmount) > 0.009) {
+      throw new HumanInterventionError(
+        'مبلغ الحزمة لا يطابق المطالبة الحالية في النظام؛ حدّث الحزمة قبل بدء إجراءات تقاضي.',
+        'FILING_CLAIM_CHANGED', { packageAmount, currentAmount: Number.isFinite(currentAmount) ? currentAmount : null, resumeSupported: true },
+      );
+    }
   }
 
   async approveReviewedLegalFile(
     job: FilingJob,
     reviewDetails: Record<string, unknown>,
   ) {
+    await this.flushObservations();
     const { data, error } = await this.client.rpc(
       'approve_taqadi_reviewed_legal_file_v1',
       {
@@ -199,7 +280,21 @@ export class TaqadiQueue {
         p_review_details: reviewDetails,
       },
     );
-    if (error) throw error;
+    if (error) {
+      throw new HumanInterventionError(
+        `تعذر اعتماد الملف القانوني داخل النظام قبل إرساله إلى تقاضي: ${workerErrorDetails(error).message}`,
+        'LEGAL_FILE_APPROVAL_FAILED',
+        { operation: 'approve_taqadi_reviewed_legal_file_v1', error: workerErrorDetails(error), resumeSupported: true },
+      );
+    }
+    if (data?.approved !== true || data.jobId !== job.id
+      || data.memoSnapshotId !== job.payload.memoSnapshotId) {
+      throw new HumanInterventionError(
+        'لم يؤكد النظام اعتماد نسخة المذكرة الخاصة بهذه الدعوى؛ توقف الإرسال قبل الضغط على اعتماد.',
+        'LEGAL_FILE_APPROVAL_NOT_CONFIRMED',
+        { operation: 'approve_taqadi_reviewed_legal_file_v1', resumeSupported: true },
+      );
+    }
     return data as Record<string, unknown>;
   }
 
@@ -283,7 +378,21 @@ export class TaqadiQueue {
     if (eventError) throw eventError;
   }
 
-  async complete(jobId: string, result: FilingResult) {
+  async markReceiptSyncPending(receipt: SavedReceipt) {
+    const { error } = await this.client.rpc('update_taqadi_filing_job_v1', {
+      p_job_id: receipt.jobId,
+      p_worker_id: agentConfig.workerId,
+      p_status: 'submitting',
+      p_step: 'receipt_sync_pending',
+      p_progress: 99,
+      p_message: 'تم الإيداع في تقاضي — تحديث النظام قيد الاستكمال',
+      p_details: { referenceNumber: receipt.result.referenceNumber, receiptCapturedAt: receipt.capturedAt },
+    }).abortSignal(AbortSignal.timeout(5_000));
+    if (error) throw error;
+  }
+
+  async complete(jobId: string, result: FilingResult, receipt?: SavedReceipt) {
+    await this.flushObservations();
     const { data, error } = await this.client.rpc(
       'complete_taqadi_filing_job_v1',
       {
@@ -292,10 +401,23 @@ export class TaqadiQueue {
         p_case_number: result.caseNumber,
         p_reference_number: result.referenceNumber,
         p_court_fees: result.courtFees,
-        p_result: result,
+        p_result: {
+          ...result,
+          ...(receipt ? {
+            receiptCapturedAt: receipt.capturedAt,
+            sourceContext: {
+              companyId: receipt.companyId,
+              legalCaseId: receipt.legalCaseId,
+              contractId: receipt.contractId,
+              memoSnapshotId: receipt.memoSnapshotId,
+              payloadHash: receipt.payloadHash,
+            },
+          } : {}),
+        },
       },
-    );
+    ).abortSignal(AbortSignal.timeout(15_000));
     if (error) throw error;
+    if (!data || data.status !== 'filed') throw new Error('Completion response did not confirm filing');
     return data as FilingJob;
   }
 

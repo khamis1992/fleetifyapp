@@ -1,309 +1,156 @@
-import { useQuery } from "@tanstack/react-query"
-import { supabase } from "@/integrations/supabase/client"
-import { useAuth } from "@/contexts/AuthContext"
-import { startOfYear, endOfYear, subYears, format } from "date-fns"
-import { getAccountNameTranslation } from "@/lib/accountNamesTranslation"
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
+import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
+import {
+  financeToday,
+  readAccountBalances,
+  readFinancialSummary,
+  readFinancialPages,
+  readIncomeStatementAccounts,
+} from '@/services/financialReporting';
+import { format, subYears } from 'date-fns';
+import { getAccountNameTranslation } from '@/lib/accountNamesTranslation';
 
 export interface FinancialRatio {
-  name: string
-  value: number
-  percentage?: boolean
-  description: string
+  name: string;
+  value: number | null;
+  percentage?: boolean;
+  description: string;
 }
 
 export interface FinancialMetric {
-  name: string
-  current: number
-  previous: number
-  change: number
-  trend: 'up' | 'down' | 'stable'
+  name: string;
+  current: number;
+  previous: number;
+  change: number;
+  trend: 'up' | 'down' | 'stable';
 }
 
 export interface BalanceSheetData {
   assets: {
-    current: number
-    fixed: number
-    total: number
-  }
+    current: number;
+    fixed: number;
+    total: number;
+  };
   liabilities: {
-    current: number
-    longTerm: number
-    total: number
-  }
-  equity: number
+    current: number;
+    longTerm: number;
+    total: number;
+  };
+  equity: number;
 }
 
 export interface IncomeStatementData {
-  revenue: number
-  expenses: number
-  grossProfit: number
-  netIncome: number
+  revenue: number;
+  expenses: number;
+  netIncome: number;
 }
 
 export interface BudgetComparison {
-  budgetedRevenue: number
-  actualRevenue: number
-  budgetedExpenses: number
-  actualExpenses: number
-  revenueVariance: number
-  expenseVariance: number
-  revenueVariancePercentage: number
-  expenseVariancePercentage: number
+  budgetedRevenue: number;
+  actualRevenue: number;
+  budgetedExpenses: number;
+  actualExpenses: number;
+  revenueVariance: number;
+  expenseVariance: number;
+  revenueVariancePercentage: number;
+  expenseVariancePercentage: number;
 }
 
 export interface ForecastData {
-  period: string
-  revenue: number
-  expenses: number
-  netIncome: number
-  confidence: number
+  period: string;
+  revenue: number;
+  expenses: number;
+  netIncome: number;
+  confidence: number;
 }
 
 export interface HistoricalComparison {
-  currentYear: number
-  previousYear: number
-  change: number
-  changePercentage: number
-  metric: string
+  currentYear: number;
+  previousYear: number;
+  change: number;
+  changePercentage: number;
+  metric: string;
 }
 
-export const useFinancialAnalysis = () => {
-  const { user } = useAuth()
-  const companyId = user?.profile?.company_id
-  
+export const useFinancialAnalysis = (period?: { dateFrom?: string; dateTo?: string }) => {
+  const { companyId } = useUnifiedCompanyAccess();
+
   return useQuery({
-    queryKey: ["financialAnalysis", companyId],
+    queryKey: ['financialAnalysis', companyId, period],
     queryFn: async () => {
-      if (!companyId) throw new Error("Company ID required")
+      if (!companyId) throw new Error('Company ID required');
 
-      const currentYear = new Date().getFullYear()
-      const previousYear = currentYear - 1
-      
-      // Get current year journal entries for historical comparison
-      const { data: currentJournalEntries } = await supabase
-        .from("journal_entries")
-        .select(`
-          *,
-          journal_entry_lines (
-            *,
-            account_id,
-            debit_amount,
-            credit_amount,
-            chart_of_accounts!account_id (
-              account_type,
-              account_subtype,
-              account_name
-            )
-          )
-        `)
-        .eq("company_id", companyId)
-        .gte("entry_date", `${currentYear}-01-01`)
-        .lte("entry_date", `${currentYear}-12-31`)
-        .eq("status", "posted")
-
-      // Get previous year journal entries for comparison
-      const { data: previousJournalEntries } = await supabase
-        .from("journal_entries")
-        .select(`
-          *,
-          journal_entry_lines (
-            *,
-            account_id,
-            debit_amount,
-            credit_amount,
-            chart_of_accounts!account_id (
-              account_type,
-              account_subtype,
-              account_name
-            )
-          )
-        `)
-        .eq("company_id", companyId)
-        .gte("entry_date", `${previousYear}-01-01`)
-        .lte("entry_date", `${previousYear}-12-31`)
-        .eq("status", "posted")
-
-      // Get budget data for comparison
-      const { data: budgets } = await supabase
-        .from("budgets")
-        .select(`
-          *,
-          budget_items (
-            *,
-            chart_of_accounts (
-              account_type,
-              account_name
-            )
-          )
-        `)
-        .eq("company_id", companyId)
-        .eq("budget_year", currentYear)
-        .eq("status", "approved")
-
-      // Get all accounts with current balances
-      const { data: accounts, error: accountsError } = await supabase
-        .from("chart_of_accounts")
-        .select("*")
-        .eq("company_id", companyId)
-        .eq("is_active", true)
-
-      if (accountsError) throw accountsError
-
-      // Calculate balance sheet data
-      const assets = accounts?.filter(acc => acc.account_type === 'assets') || []
-      const liabilities = accounts?.filter(acc => acc.account_type === 'liabilities') || []
-      const equity = accounts?.filter(acc => acc.account_type === 'equity') || []
-      const revenue = accounts?.filter(acc => acc.account_type === 'revenue') || []
-      const expenses = accounts?.filter(acc => acc.account_type === 'expenses') || []
-
-      const currentAssets = assets
-        .filter(acc => acc.account_subtype === 'current_assets')
-        .reduce((sum, acc) => sum + Number(acc.current_balance), 0)
-
-      const fixedAssets = assets
-        .filter(acc => acc.account_subtype === 'fixed_assets')
-        .reduce((sum, acc) => sum + Number(acc.current_balance), 0)
-
-      const totalAssets = assets.reduce((sum, acc) => sum + Number(acc.current_balance), 0)
-
-      const currentLiabilities = liabilities
-        .filter(acc => acc.account_subtype === 'current_liabilities')
-        .reduce((sum, acc) => sum + Number(acc.current_balance), 0)
-
-      const longTermLiabilities = liabilities
-        .filter(acc => acc.account_subtype === 'long_term_liabilities')
-        .reduce((sum, acc) => sum + Number(acc.current_balance), 0)
-
-      const totalLiabilities = liabilities.reduce((sum, acc) => sum + Number(acc.current_balance), 0)
-      const totalEquity = equity.reduce((sum, acc) => sum + Number(acc.current_balance), 0)
-
-      // Calculate current year totals from journal entries
-      const currentYearRevenue = currentJournalEntries?.reduce((total, entry) => {
-        return total + (entry.journal_entry_lines?.reduce((lineTotal, line) => {
-          if (line.chart_of_accounts?.account_type === 'revenue') {
-            return lineTotal + Number(line.credit_amount || 0) - Number(line.debit_amount || 0)
-          }
-          return lineTotal
-        }, 0) || 0)
-      }, 0) || 0
-
-      const currentYearExpenses = currentJournalEntries?.reduce((total, entry) => {
-        return total + (entry.journal_entry_lines?.reduce((lineTotal, line) => {
-          if (line.chart_of_accounts?.account_type === 'expenses') {
-            return lineTotal + Number(line.debit_amount || 0) - Number(line.credit_amount || 0)
-          }
-          return lineTotal
-        }, 0) || 0)
-      }, 0) || 0
-
-      // Calculate previous year totals for comparison
-      const previousYearRevenue = previousJournalEntries?.reduce((total, entry) => {
-        return total + (entry.journal_entry_lines?.reduce((lineTotal, line) => {
-          if (line.chart_of_accounts?.account_type === 'revenue') {
-            return lineTotal + Number(line.credit_amount || 0) - Number(line.debit_amount || 0)
-          }
-          return lineTotal
-        }, 0) || 0)
-      }, 0) || 0
-
-      const previousYearExpenses = previousJournalEntries?.reduce((total, entry) => {
-        return total + (entry.journal_entry_lines?.reduce((lineTotal, line) => {
-          if (line.chart_of_accounts?.account_type === 'expenses') {
-            return lineTotal + Number(line.debit_amount || 0) - Number(line.credit_amount || 0)
-          }
-          return lineTotal
-        }, 0) || 0)
-      }, 0) || 0
-
-      // If no journal entries, fall back to direct calculations from transactions
-      let totalRevenue = currentYearRevenue
-      let totalExpenses = currentYearExpenses
-      
-      // If revenue is zero, try to calculate from contracts and invoices
-      if (totalRevenue === 0) {
-        // Get revenue from paid invoices
-        const { data: paidInvoices } = await supabase
-          .from("invoices")
-          .select("total_amount")
-          .eq("company_id", companyId)
-          .eq("payment_status", "paid")
-          .gte("invoice_date", `${currentYear}-01-01`)
-          .lte("invoice_date", `${currentYear}-12-31`)
-        
-        const invoiceRevenue = paidInvoices?.reduce((sum, inv) => sum + Number(inv.total_amount || 0), 0) || 0
-        
-        // Get revenue from payments
-        const { data: payments } = await supabase
-          .from("payments")
-          .select("amount")
-          .eq("company_id", companyId)
-          .eq("payment_status", "completed")
-          .gte("payment_date", `${currentYear}-01-01`)
-          .lte("payment_date", `${currentYear}-12-31`)
-        
-        const paymentRevenue = payments?.reduce((sum, pmt) => sum + Number(pmt.amount || 0), 0) || 0
-        
-        // Use the higher value between invoices and payments to avoid double counting
-        totalRevenue = Math.max(invoiceRevenue, paymentRevenue)
-      }
-      
-      // If expenses are zero, try to calculate from actual expenses
-      if (totalExpenses === 0) {
-        // Get maintenance expenses
-        const { data: maintenanceExpenses } = await supabase
-          .from("vehicle_maintenance")
-          .select("actual_cost, total_cost_with_tax")
-          .eq("company_id", companyId)
-          .eq("status", "completed")
-          .gte("completed_date", `${currentYear}-01-01`)
-          .lte("completed_date", `${currentYear}-12-31`)
-        
-        const maintenanceCost = maintenanceExpenses?.reduce(
-          (sum, expense) => sum + Number(expense.total_cost_with_tax ?? expense.actual_cost ?? 0),
-          0,
-        ) || 0
-        
-        // Get vendor payments as expenses
-        const { data: vendorPayments } = await supabase
-          .from("vendor_payments")
-          .select("amount")
-          .eq("company_id", companyId)
-          .eq("status", "completed")
-          .gte("payment_date", `${currentYear}-01-01`)
-          .lte("payment_date", `${currentYear}-12-31`)
-        
-        const vendorCost = vendorPayments?.reduce((sum, vnd) => sum + Number(vnd.amount || 0), 0) || 0
-        
-        // Get payroll expenses
-        const { data: payrollExpenses } = await supabase
-          .from("payroll")
-          .select("basic_salary, allowances, overtime_amount")
-          .eq("company_id", companyId)
-          .in("status", ["approved", "paid", "processed", "completed"])
-          .gte("payroll_date", `${currentYear}-01-01`)
-          .lte("payroll_date", `${currentYear}-12-31`)
-        
-        const payrollCost = payrollExpenses?.reduce((sum, pay) => 
-          sum
-            + Number(pay.basic_salary || 0)
-            + Number(pay.allowances || 0)
-            + Number(pay.overtime_amount || 0),
-        0) || 0
-        
-        totalExpenses = maintenanceCost + vendorCost + payrollCost
-      }
-      
-      const netIncome = totalRevenue - totalExpenses
-      const previousNetIncome = previousYearRevenue - previousYearExpenses
+      const today = period?.dateTo || financeToday();
+      const periodFrom = period?.dateFrom || today.slice(0, 4) + '-01-01';
+      const currentYear = Number(today.slice(0, 4));
+      const [current, previous, balances, accounts, budgets] = await Promise.all([
+        readFinancialSummary(companyId, periodFrom, today),
+        readFinancialSummary(
+          companyId,
+          format(subYears(new Date(periodFrom + 'T12:00:00'), 1), 'yyyy-MM-dd'),
+          format(subYears(new Date(today + 'T12:00:00'), 1), 'yyyy-MM-dd')
+        ),
+        readAccountBalances(companyId, today),
+        readFinancialPages((from, to) =>
+          supabase
+            .from('chart_of_accounts')
+            .select('*', { count: 'exact' })
+            .eq('company_id', companyId)
+            .order('id')
+            .range(from, to)
+        ),
+        readFinancialPages((from, to) =>
+          supabase
+            .from('budgets')
+            .select('*,budget_items(*,chart_of_accounts(account_type,account_name))', { count: 'exact' })
+            .eq('company_id', companyId)
+            .eq('budget_year', currentYear)
+            .eq('status', 'approved')
+            .order('id')
+            .range(from, to)
+        ),
+      ]);
+      const balanceById = new Map(balances.map((row) => [row.account_id, row.closing_balance]));
+      const sumSubtype = (subtypes: string[]) =>
+        accounts
+          .filter((a) => subtypes.includes(a.account_subtype || ''))
+          .reduce((sum, a) => sum + (balanceById.get(a.id) || 0), 0);
+      const currentAssets = sumSubtype([
+          'current_assets',
+          'current_asset',
+          'cash',
+          'bank',
+          'cash_and_cash_equivalents',
+          'accounts_receivable',
+          'inventory',
+          'prepaid_expenses',
+        ]),
+        fixedAssets = sumSubtype(['fixed_assets', 'non_current_assets']);
+      const currentLiabilities = sumSubtype(['current_liabilities', 'current_liability', 'accounts_payable']),
+        longTermLiabilities = sumSubtype(['long_term_liabilities', 'non_current_liabilities']);
+      const totalAssets = current.total_assets,
+        totalLiabilities = current.total_liabilities,
+        totalEquity = current.total_equity;
+      const totalRevenue = current.total_revenue,
+        totalExpenses = current.total_expenses,
+        netIncome = current.net_income;
+      const previousYearRevenue = previous.total_revenue,
+        previousYearExpenses = previous.total_expenses,
+        previousNetIncome = previous.net_income;
 
       // Calculate budget comparison
-      const budgetedRevenue = budgets?.[0]?.budget_items?.filter(item => 
-        item.chart_of_accounts?.account_type === 'revenue'
-      ).reduce((sum, item) => sum + Number(item.budgeted_amount || 0), 0) || 0
+      const budgetedRevenue =
+        budgets
+          .flatMap((budget) => budget.budget_items || [])
+          .filter((item) => item.chart_of_accounts?.account_type === 'revenue')
+          .reduce((sum, item) => sum + Number(item.budgeted_amount || 0), 0) || 0;
 
-      const budgetedExpenses = budgets?.[0]?.budget_items?.filter(item => 
-        item.chart_of_accounts?.account_type === 'expenses'
-      ).reduce((sum, item) => sum + Number(item.budgeted_amount || 0), 0) || 0
+      const budgetedExpenses =
+        budgets
+          .flatMap((budget) => budget.budget_items || [])
+          .filter((item) => item.chart_of_accounts?.account_type === 'expenses')
+          .reduce((sum, item) => sum + Number(item.budgeted_amount || 0), 0) || 0;
 
       const budgetComparison: BudgetComparison = {
         budgetedRevenue,
@@ -312,97 +159,157 @@ export const useFinancialAnalysis = () => {
         actualExpenses: totalExpenses,
         revenueVariance: totalRevenue - budgetedRevenue,
         expenseVariance: totalExpenses - budgetedExpenses,
-        revenueVariancePercentage: budgetedRevenue ? ((totalRevenue - budgetedRevenue) / budgetedRevenue) * 100 : 0,
-        expenseVariancePercentage: budgetedExpenses ? ((totalExpenses - budgetedExpenses) / budgetedExpenses) * 100 : 0
-      }
+        revenueVariancePercentage: budgetedRevenue
+          ? ((totalRevenue - budgetedRevenue) / budgetedRevenue) * 100
+          : 0,
+        expenseVariancePercentage: budgetedExpenses
+          ? ((totalExpenses - budgetedExpenses) / budgetedExpenses) * 100
+          : 0,
+      };
 
+      const knownAssetTypes = [
+        'current_assets',
+        'current_asset',
+        'cash',
+        'bank',
+        'cash_and_cash_equivalents',
+        'accounts_receivable',
+        'inventory',
+        'prepaid_expenses',
+        'fixed_assets',
+        'non_current_assets',
+      ];
+      const knownLiabilityTypes = [
+        'current_liabilities',
+        'current_liability',
+        'accounts_payable',
+        'long_term_liabilities',
+        'non_current_liabilities',
+      ];
+      const classified = accounts
+        .filter((a) => Math.abs(balanceById.get(a.id) || 0) > 0.001)
+        .every(
+          (a) =>
+            !['asset', 'assets', 'liability', 'liabilities'].includes(a.account_type) ||
+            (['asset', 'assets'].includes(a.account_type) ? knownAssetTypes : knownLiabilityTypes).includes(
+              a.account_subtype || ''
+            )
+        );
+      const quickClassified =
+        classified &&
+        !accounts.some(
+          (a) =>
+            ['current_asset', 'current_assets'].includes(a.account_subtype || '') &&
+            Math.abs(balanceById.get(a.id) || 0) > 0.001
+        );
+      // Missing classifications and zero denominators are unavailable ratios, never zero.
       // Calculate financial ratios
       const ratios: FinancialRatio[] = [
         {
-          name: "نسبة التداول",
-          value: currentLiabilities !== 0 ? currentAssets / currentLiabilities : 0,
-          description: "الأصول المتداولة / الخصوم المتداولة"
+          name: 'نسبة التداول',
+          value: classified && currentLiabilities !== 0 ? currentAssets / currentLiabilities : null,
+          description: 'الأصول المتداولة / الخصوم المتداولة',
         },
         {
-          name: "النسبة السريعة",
-          value: currentLiabilities !== 0 ? (currentAssets - 0) / currentLiabilities : 0, // Assuming no inventory for now
-          description: "الأصول السريعة / الخصوم المتداولة"
+          name: 'النسبة السريعة',
+          value:
+            quickClassified && currentLiabilities !== 0
+              ? (currentAssets - sumSubtype(['inventory', 'prepaid_expenses'])) / currentLiabilities
+              : null,
+          description: 'الأصول السريعة / الخصوم المتداولة',
         },
         {
-          name: "هامش الربح الصافي",
-          value: totalRevenue !== 0 ? (netIncome / totalRevenue) * 100 : 0,
+          name: 'هامش الربح الصافي',
+          value: totalRevenue !== 0 ? (netIncome / totalRevenue) * 100 : null,
           percentage: true,
-          description: "الربح الصافي / إجمالي الإيرادات"
+          description: 'الربح الصافي / إجمالي الإيرادات',
         },
         {
-          name: "العائد على الأصول",
-          value: totalAssets !== 0 ? (netIncome / totalAssets) * 100 : 0,
+          name: 'العائد على الأصول',
+          value: totalAssets !== 0 ? (netIncome / totalAssets) * 100 : null,
           percentage: true,
-          description: "الربح الصافي / إجمالي الأصول"
+          description: 'الربح الصافي / إجمالي الأصول',
         },
         {
-          name: "العائد على حقوق الملكية",
-          value: totalEquity !== 0 ? (netIncome / totalEquity) * 100 : 0,
+          name: 'العائد على حقوق الملكية',
+          value: totalEquity !== 0 ? (netIncome / totalEquity) * 100 : null,
           percentage: true,
-          description: "الربح الصافي / حقوق الملكية"
+          description: 'الربح الصافي / حقوق الملكية',
         },
         {
-          name: "نسبة الدين إلى حقوق الملكية",
-          value: totalEquity !== 0 ? totalLiabilities / totalEquity : 0,
-          description: "إجمالي الالتزامات / حقوق الملكية"
-        }
-      ]
+          name: 'نسبة الدين إلى حقوق الملكية',
+          value: totalEquity !== 0 ? totalLiabilities / totalEquity : null,
+          description: 'إجمالي الالتزامات / حقوق الملكية',
+        },
+      ];
 
       const balanceSheet: BalanceSheetData = {
         assets: {
           current: currentAssets,
           fixed: fixedAssets,
-          total: totalAssets
+          total: totalAssets,
         },
         liabilities: {
           current: currentLiabilities,
           longTerm: longTermLiabilities,
-          total: totalLiabilities
+          total: totalLiabilities,
         },
-        equity: totalEquity
-      }
+        equity: totalEquity,
+      };
 
       const incomeStatement: IncomeStatementData = {
         revenue: totalRevenue,
         expenses: totalExpenses,
-        grossProfit: totalRevenue - 0, // Simplified - no COGS calculation for now
-        netIncome
-      }
+        netIncome,
+      };
 
       return {
         ratios,
+        classificationComplete: classified,
+        period: { from: periodFrom, to: today },
         balanceSheet,
         incomeStatement,
         trends: [
           {
-            name: "الإيرادات",
+            name: 'الإيرادات',
             current: totalRevenue,
             previous: previousYearRevenue,
-            change: previousYearRevenue ? ((totalRevenue - previousYearRevenue) / previousYearRevenue) * 100 : 0,
-            trend: totalRevenue > previousYearRevenue ? 'up' as const : 
-                   totalRevenue < previousYearRevenue ? 'down' as const : 'stable' as const
+            change: previousYearRevenue
+              ? ((totalRevenue - previousYearRevenue) / previousYearRevenue) * 100
+              : 0,
+            trend:
+              totalRevenue > previousYearRevenue
+                ? ('up' as const)
+                : totalRevenue < previousYearRevenue
+                ? ('down' as const)
+                : ('stable' as const),
           },
           {
-            name: "المصروفات", 
+            name: 'المصروفات',
             current: totalExpenses,
             previous: previousYearExpenses,
-            change: previousYearExpenses ? ((totalExpenses - previousYearExpenses) / previousYearExpenses) * 100 : 0,
-            trend: totalExpenses > previousYearExpenses ? 'up' as const : 
-                   totalExpenses < previousYearExpenses ? 'down' as const : 'stable' as const
+            change: previousYearExpenses
+              ? ((totalExpenses - previousYearExpenses) / previousYearExpenses) * 100
+              : 0,
+            trend:
+              totalExpenses > previousYearExpenses
+                ? ('up' as const)
+                : totalExpenses < previousYearExpenses
+                ? ('down' as const)
+                : ('stable' as const),
           },
           {
-            name: "الربح الصافي",
+            name: 'الربح الصافي',
             current: netIncome,
             previous: previousNetIncome,
             change: previousNetIncome ? ((netIncome - previousNetIncome) / previousNetIncome) * 100 : 0,
-            trend: netIncome > previousNetIncome ? 'up' as const : 
-                   netIncome < previousNetIncome ? 'down' as const : 'stable' as const
-          }
+            trend:
+              netIncome > previousNetIncome
+                ? ('up' as const)
+                : netIncome < previousNetIncome
+                ? ('down' as const)
+                : ('stable' as const),
+          },
         ],
         budgetComparison,
         historicalComparison: [
@@ -410,210 +317,102 @@ export const useFinancialAnalysis = () => {
             currentYear: totalRevenue,
             previousYear: previousYearRevenue,
             change: totalRevenue - previousYearRevenue,
-            changePercentage: previousYearRevenue ? ((totalRevenue - previousYearRevenue) / previousYearRevenue) * 100 : 0,
-            metric: "الإيرادات"
+            changePercentage: previousYearRevenue
+              ? ((totalRevenue - previousYearRevenue) / previousYearRevenue) * 100
+              : 0,
+            metric: 'الإيرادات',
           },
           {
             currentYear: totalExpenses,
             previousYear: previousYearExpenses,
             change: totalExpenses - previousYearExpenses,
-            changePercentage: previousYearExpenses ? ((totalExpenses - previousYearExpenses) / previousYearExpenses) * 100 : 0,
-            metric: "المصروفات"
+            changePercentage: previousYearExpenses
+              ? ((totalExpenses - previousYearExpenses) / previousYearExpenses) * 100
+              : 0,
+            metric: 'المصروفات',
           },
           {
             currentYear: netIncome,
             previousYear: previousNetIncome,
             change: netIncome - previousNetIncome,
-            changePercentage: previousNetIncome ? ((netIncome - previousNetIncome) / previousNetIncome) * 100 : 0,
-            metric: "الربح الصافي"
-          }
+            changePercentage: previousNetIncome
+              ? ((netIncome - previousNetIncome) / previousNetIncome) * 100
+              : 0,
+            metric: 'الربح الصافي',
+          },
         ],
-        forecast: generateForecast(totalRevenue, totalExpenses, netIncome, previousYearRevenue, previousYearExpenses)
-      }
-    },
-    enabled: !!companyId
-  })
-}
-
-// Generate simple forecast based on historical trends
-function generateForecast(
-  currentRevenue: number,
-  currentExpenses: number,
-  currentNetIncome: number,
-  previousRevenue: number,
-  previousExpenses: number
-): ForecastData[] {
-  const revenueGrowthRate = previousRevenue ? (currentRevenue - previousRevenue) / previousRevenue : 0.05
-  const expenseGrowthRate = previousExpenses ? (currentExpenses - previousExpenses) / previousExpenses : 0.03
-  
-  const quarters = ['Q1', 'Q2', 'Q3', 'Q4']
-  const nextYear = new Date().getFullYear() + 1
-  
-  return quarters.map((quarter, index) => {
-    const quarterRevenue = (currentRevenue * (1 + revenueGrowthRate)) / 4
-    const quarterExpenses = (currentExpenses * (1 + expenseGrowthRate)) / 4
-    const quarterNetIncome = quarterRevenue - quarterExpenses
-    
-    return {
-      period: `${nextYear} ${quarter}`,
-      revenue: quarterRevenue,
-      expenses: quarterExpenses,
-      netIncome: quarterNetIncome,
-      confidence: Math.max(0.6, 0.9 - (index * 0.1)) // Decreasing confidence over time
-    }
-  })
-}
-
-export const useBalanceSheet = () => {
-  const { user } = useAuth()
-  const companyId = user?.profile?.company_id
-  
-  return useQuery({
-    queryKey: ["balanceSheet", companyId],
-    queryFn: async () => {
-      if (!companyId) throw new Error("Company ID required")
-
-      const { data: accounts, error } = await supabase
-        .from("chart_of_accounts")
-        .select("*")
-        .eq("company_id", companyId)
-        .eq("is_active", true)
-        .in("account_type", ["assets", "liabilities", "equity"])
-        .order("account_type, account_code")
-
-      if (error) throw error
-
-      // Calculate balances from journal entry lines
-      const { data: entryLines, error: linesError } = await supabase
-        .from("journal_entry_lines")
-        .select(`
-          account_id,
-          debit_amount,
-          credit_amount,
-          journal_entries!inner(status, company_id)
-        `)
-        .eq("journal_entries.company_id", companyId)
-        .eq("journal_entries.status", "posted")
-
-      if (linesError) {
-        console.error("Error fetching journal entry lines:", linesError)
-      }
-
-      // Calculate balance for each account from journal entries
-      const accountBalances = new Map<string, number>()
-      
-      entryLines?.forEach(line => {
-        const currentBalance = accountBalances.get(line.account_id) || 0
-        const debit = Number(line.debit_amount) || 0
-        const credit = Number(line.credit_amount) || 0
-        accountBalances.set(line.account_id, currentBalance + debit - credit)
-      })
-
-      // Update account balances from journal entries
-      accounts?.forEach(account => {
-        const calculatedBalance = accountBalances.get(account.id) || 0
-        // For liabilities and equity, credit increases balance (so we negate)
-        if (account.account_type === 'liabilities' || account.account_type === 'equity') {
-          account.current_balance = -calculatedBalance
-        } else {
-          account.current_balance = calculatedBalance
-        }
-      })
-
-      return accounts?.reduce((acc, account) => {
-        if (!acc[account.account_type]) {
-          acc[account.account_type] = []
-        }
-        // Add translated account name to the account object
-        const translatedAccount = {
-          ...account,
-          account_name_translated: getAccountNameTranslation(account.account_name)
-        }
-        acc[account.account_type].push(translatedAccount)
-        return acc
-      }, {} as Record<string, any[]>)
+        forecast: [] as ForecastData[],
+      };
     },
     enabled: !!companyId,
-    staleTime: 5 * 60 * 1000, // 5 minutes
-  })
-}
+  });
+};
 
-export const useIncomeStatement = () => {
-  const { user } = useAuth()
-  
+export interface StatementAccount {
+  id: string;
+  account_code: string;
+  account_name: string;
+  account_name_ar?: string | null;
+  account_name_translated: string;
+  account_type: string;
+  current_balance: number;
+}
+export const useBalanceSheet = () => {
+  const { companyId } = useUnifiedCompanyAccess();
   return useQuery({
-    queryKey: ["incomeStatement", user?.profile?.company_id],
+    queryKey: ['balanceSheet', companyId],
+    enabled: Boolean(companyId),
     queryFn: async () => {
-      if (!user?.profile?.company_id) throw new Error("Company ID required")
-
-      const currentYear = new Date().getFullYear()
-
-      const { data: accounts, error } = await supabase
-        .from("chart_of_accounts")
-        .select("*")
-        .eq("company_id", user.profile.company_id)
-        .eq("is_active", true)
-        .in("account_type", ["revenue", "expenses"])
-        .order("account_type, account_code")
-
-      if (error) throw error
-
-      // Calculate balances from journal entry lines
-      const { data: entryLines, error: linesError } = await supabase
-        .from("journal_entry_lines")
-        .select(`
-          account_id,
-          debit_amount,
-          credit_amount,
-          journal_entries!inner(status, company_id, entry_date)
-        `)
-        .eq("journal_entries.company_id", user.profile.company_id)
-        .eq("journal_entries.status", "posted")
-        .gte("journal_entries.entry_date", `${currentYear}-01-01`)
-        .lte("journal_entries.entry_date", `${currentYear}-12-31`)
-
-      if (linesError) {
-        console.error("Error fetching journal entry lines:", linesError)
+      const balances = await readAccountBalances(companyId!);
+      const grouped: Record<string, StatementAccount[]> = { assets: [], liabilities: [], equity: [] };
+      let unclosed = 0;
+      for (const row of balances) {
+        const type =
+          { asset: 'assets', liability: 'liabilities', expense: 'expenses', income: 'revenue' }[
+            row.account_type
+          ] || row.account_type;
+        if (type === 'revenue') unclosed += row.total_credits - row.total_debits;
+        if (type === 'expenses') unclosed += row.total_credits - row.total_debits;
+        if (!grouped[type]) continue;
+        grouped[type].push({
+          id: row.account_id,
+          account_code: row.account_code,
+          account_type: type,
+          account_name: row.account_name,
+          account_name_ar: row.account_name_ar,
+          account_name_translated: getAccountNameTranslation(row.account_name),
+          current_balance: row.closing_balance,
+        });
       }
-
-      // Calculate balance for each account from journal entries
-      const accountBalances = new Map<string, number>()
-      
-      entryLines?.forEach(line => {
-        const currentBalance = accountBalances.get(line.account_id) || 0
-        const debit = Number(line.debit_amount) || 0
-        const credit = Number(line.credit_amount) || 0
-        // For revenue: credit increases, debit decreases
-        // For expenses: debit increases, credit decreases
-        accountBalances.set(line.account_id, currentBalance + credit - debit)
-      })
-
-      // Update account balances from journal entries
-      accounts?.forEach(account => {
-        const calculatedBalance = accountBalances.get(account.id) || 0
-        // For revenue, credit increases balance (positive)
-        // For expenses, debit increases balance (so we negate)
-        if (account.account_type === 'revenue') {
-          account.current_balance = calculatedBalance
-        } else if (account.account_type === 'expenses') {
-          account.current_balance = -calculatedBalance
-        }
-      })
-
-      return accounts?.reduce((acc, account) => {
-        if (!acc[account.account_type]) {
-          acc[account.account_type] = []
-        }
-        // Add translated account name to the account object
-        const translatedAccount = {
-          ...account,
-          account_name_translated: getAccountNameTranslation(account.account_name)
-        }
-        acc[account.account_type].push(translatedAccount)
-        return acc
-      }, {} as Record<string, any[]>)
+      if (Math.abs(unclosed) > 0.001)
+        grouped.equity.push({
+          id: 'unclosed-earnings',
+          account_code: 'RESULT',
+          account_type: 'equity',
+          account_name: 'Unclosed earnings',
+          account_name_translated: 'نتيجة الأعمال غير المقفلة',
+          current_balance: unclosed,
+        });
+      return grouped;
     },
-    enabled: !!user?.profile?.company_id,
-    staleTime: 5 * 60 * 1000, // 5 minutes
-  })
-}
+  });
+};
+export const useIncomeStatement = () => {
+  const { companyId } = useUnifiedCompanyAccess();
+  return useQuery({
+    queryKey: ['incomeStatement', companyId],
+    enabled: Boolean(companyId),
+    queryFn: async () => {
+      const accounts = await readIncomeStatementAccounts(companyId!, financeToday().slice(0, 4) + '-01-01');
+      const grouped: Record<string, StatementAccount[]> = { revenue: [], expenses: [] };
+      for (const account of accounts) {
+        const type = ['revenue', 'income'].includes(account.account_type) ? 'revenue' : 'expenses';
+        grouped[type].push({
+          ...account,
+          account_name_translated: getAccountNameTranslation(account.account_name),
+        });
+      }
+      return grouped;
+    },
+  });
+};

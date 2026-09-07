@@ -209,7 +209,7 @@ describe('contract billing period preflight', () => {
     expect(result.usesEstablishedSchedule).toBe(true);
   });
 
-  it('rejects full boundary installments for a contract that starts and ends mid-month', () => {
+  it('accepts a complete full-installment plan matching the contract total despite mid-month dates', () => {
     const result = analyzeContractBillingPeriod({
       startDate: '2024-08-15',
       endDate: '2027-08-15',
@@ -222,10 +222,44 @@ describe('contract billing period preflight', () => {
       })),
     });
 
-    expect(result.valid).toBe(false);
-    expect(result.blockingMessage).toContain('قسط شهر البداية غير مجزأ');
-    expect(result.blockingMessage).toContain('قسط شهر النهاية غير مجزأ');
+    expect(result.valid).toBe(true);
+    expect(result.blockingMessage).toBeNull();
+    expect(result.billingBasis).toBe('scheduled_monthly');
   });
+
+  it('accepts a matching established monthly schedule ending on the billing boundary', () => {
+    const result = analyzeContractBillingPeriod({
+      startDate: '2025-07-01', endDate: '2027-12-01', contractAmount: 45000, monthlyAmount: 1500,
+      schedules: Array.from({ length: 30 }, (_, index) => ({
+        due_date: new Date(Date.UTC(2025, 6 + index, 1)).toISOString().slice(0, 10),
+        amount: 1500, status: 'pending',
+      })),
+    });
+    expect(result.valid).toBe(true);
+    expect(result.availableBillingMonths).toBe(30);
+  });
+
+  it('validates the reported AGR-202504-400949 plan and explains the billing basis', () => {
+    const result = analyzeContractBillingPeriod({
+      startDate: '2025-01-03', endDate: '2028-01-04', contractAmount: 55500, monthlyAmount: 1500,
+      schedules: Array.from({length:37}, (_, i) => ({installment_number:i+1,
+        due_date:new Date(Date.UTC(2025,i,1)).toISOString().slice(0,10),amount:1500,status:'pending'})),
+    });
+    expect(result.valid).toBe(true);
+    expect(result.billingBasis).toBe('scheduled_monthly');
+    expect(result.basisMessage).toContain('37 قسطاً');
+  });
+
+  it.each([['2024-01-15','2024-03-15'],['2024-02-29','2024-04-30'],['2025-12-31','2026-02-28']])(
+    'uses persisted amounts across leap days and year boundaries: %s', (startDate,endDate) => {
+      for (const amounts of [[1500,1500,1500],[750,1500,750]]) {
+        const result=analyzeContractBillingPeriod({startDate,endDate,monthlyAmount:1500,
+          contractAmount:amounts.reduce((a,b)=>a+b,0),schedules:amounts.map((amount,i)=>({
+            due_date:new Date(Date.UTC(Number(startDate.slice(0,4)),Number(startDate.slice(5,7))-1+i,1)).toISOString().slice(0,10),amount,status:'pending'}))});
+        expect(result.valid).toBe(true);
+        expect(result.billingBasis).toBe(amounts[0]===1500?'scheduled_monthly':'scheduled_partial');
+      }
+    });
 
   it('rejects gaps, duplicate months and a schedule total that differs from the contract', () => {
     const result = analyzeContractBillingPeriod({

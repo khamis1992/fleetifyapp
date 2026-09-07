@@ -56,7 +56,7 @@ describe('legal reversal on isolated PostgreSQL 17', { concurrency: false }, () 
     const version = (await db.query('show server_version_num')).rows[0].server_version_num;
     assert.equal(Math.floor(Number(version) / 10000), 17);
     await db.exec(await read('./fixtures/legal-reversal-schema.sql'));
-    await db.exec(await read('../../supabase/migrations/20260903181343_atomic_retry_safe_legal_procedure_reversal.sql'));
+    await db.exec(await read('../../supabase/migrations/20260906044426_contract_details_legal_reversal_runtime.sql'));
     await db.exec(await read('../../supabase/migrations/20260804210826_preserve_taqadi_human_resume_attempt.sql'));
   });
   after(async () => { await db?.close(); });
@@ -80,7 +80,7 @@ describe('legal reversal on isolated PostgreSQL 17', { concurrency: false }, () 
   afterEach(async () => {
     await db.exec('ROLLBACK');
     await admin();
-    await db.exec(`TRUNCATE public.profiles, public.user_roles, public.vehicles,
+    await db.exec(`TRUNCATE public.legal_case_hearings, public.legal_case_appeals, public.legal_case_enforcements, public.taqadi_filing_artifacts, public.profiles, public.user_roles, public.vehicles,
       public.contracts, public.legal_cases, public.taqadi_filing_jobs,
       public.taqadi_automation_workers, public.taqadi_filing_job_events,
       public.lawsuit_preparations, public.delinquent_customers, public.contract_operations_log;`);
@@ -235,10 +235,43 @@ describe('legal reversal on isolated PostgreSQL 17', { concurrency: false }, () 
     }
   });
 
+  it('allows a legacy preparation date only with matching conversion provenance', async () => {
+    await db.exec("UPDATE public.legal_cases SET case_status='pending', filing_date=(now() AT TIME ZONE 'Asia/Qatar')::date");
+    await db.query("INSERT INTO public.contract_operations_log(company_id,contract_id,operation_type,operation_details) VALUES ($1,$2,'convert_to_legal',jsonb_build_object('legal_case_id',$3::text))", [COMPANY,CONTRACT,CASE]);
+    await asActor();
+    assert.equal((await reverse()).changed, true);
+  });
+
+  it('blocks an unexplained filing date without changing the contract', async () => {
+    await db.exec("UPDATE public.legal_cases SET case_status='pending', filing_date=current_date");
+    const original = await state();
+    await asActor();
+    await assert.rejects(reverse(), /filed legal case/);
+    assert.deepEqual(await state(), original);
+  });
+
+  for (const evidence of [
+    "UPDATE public.legal_cases SET complaint_number='COURT-1'",
+    `INSERT INTO public.legal_case_hearings VALUES ('${COMPANY}','${CASE}')`,
+    `INSERT INTO public.legal_case_appeals VALUES ('${COMPANY}','${CASE}')`,
+    `INSERT INTO public.legal_case_enforcements VALUES ('${COMPANY}','${CASE}')`,
+    `INSERT INTO public.taqadi_filing_artifacts VALUES ('${COMPANY}','${JOB}','receipt')`,
+  ]) {
+    it('preserves court evidence even with legacy conversion provenance: ' + evidence, async () => {
+      await db.exec("UPDATE public.legal_cases SET case_status='pending', filing_date=(now() AT TIME ZONE 'Asia/Qatar')::date");
+      await db.query("INSERT INTO public.contract_operations_log(company_id,contract_id,operation_type,operation_details) VALUES ($1,$2,'convert_to_legal',jsonb_build_object('legal_case_id',$3::text))", [COMPANY,CONTRACT,CASE]);
+      await db.exec(evidence);
+      const original = await state();
+      await asActor();
+      await assert.rejects(reverse(), { code: 'P0001' });
+      assert.deepEqual(await state(), original);
+    });
+  }
+
   it('supports the rollback migration without deleting business records', async () => {
-    await db.exec(await read('../../supabase/rollbacks/20260903181343_atomic_retry_safe_legal_procedure_reversal.rollback.sql'));
+    await db.exec(await read('../../supabase/rollbacks/20260906044426_contract_details_legal_reversal_runtime.rollback.sql'));
     assert.equal((await db.query("select to_regprocedure('public.revert_contract_from_legal_v2(uuid,uuid,text,uuid,uuid)') fn")).rows[0].fn, null);
     assert.equal((await state()).contract_status, 'under_legal_procedure');
-    await db.exec(await read('../../supabase/migrations/20260903181343_atomic_retry_safe_legal_procedure_reversal.sql'));
+    await db.exec(await read('../../supabase/migrations/20260906044426_contract_details_legal_reversal_runtime.sql'));
   });
 });

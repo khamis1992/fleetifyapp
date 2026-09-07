@@ -55,6 +55,13 @@ describe('contract reactivation service', () => {
     await expect(reactivateCancelledContract({
       contractId: 'contract-1',
       acceptUnpaidViolations: false,
-    })).rejects.toBe(error);
+    })).rejects.toThrow(error.message);
+  });
+
+  it('preserves plain PostgREST messages and rejects another contract response', async () => {
+    rpc.mockResolvedValueOnce({ data: null, error: { message: 'انتهت مدة العقد', code: 'P0001' } });
+    await expect(reactivateCancelledContract({ contractId: 'contract-1', acceptUnpaidViolations: false })).rejects.toThrow('انتهت مدة العقد');
+    rpc.mockResolvedValueOnce({ data: { success: true, status: 'active', contract_id: 'other' }, error: null });
+    await expect(reactivateCancelledContract({ contractId: 'contract-1', acceptUnpaidViolations: false })).rejects.toThrow('لم تكتمل');
   });
 });

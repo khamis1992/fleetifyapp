@@ -70,7 +70,7 @@ export default function QuickPayment({ className }: QuickPaymentProps) {
       <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
         <section className="mb-6 overflow-hidden rounded-2xl border border-[#DDE5EF] bg-white shadow-sm">
           <div className="border-b border-[#E6ECF3] bg-[#FCFDFE] px-5 py-5 sm:px-6">
-            <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
+            <div data-finance-heading="" className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
               <div className="flex items-start gap-4">
                 <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#173A63] text-white shadow-sm">
                   <Receipt className="h-6 w-6" />
@@ -97,7 +97,7 @@ export default function QuickPayment({ className }: QuickPaymentProps) {
                   onClick={() => navigate('/finance/payments/import-excel')}
                 >
                   <FileSpreadsheet className="h-4 w-4" />
-                  استيراد Excel
+                  استيراد إكسل
                 </Button>
                 <Button
                   variant="outline"

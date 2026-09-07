@@ -110,10 +110,10 @@ export function AuditTrailViewer({ compactHeader = false }: AuditTrailViewerProp
           <CardHeader className="pb-3">
             <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
               <div>
-                <CardTitle className="flex items-center gap-2 text-xl font-black text-[#020617]">
+                <h1 className="flex items-center gap-2 text-xl font-black text-[#020617]">
                   <Shield className="h-5 w-5 text-[#38BDF8]" />
-                  سجل التدقيق الشامل
-                </CardTitle>
+                  سجل التدقيق
+                </h1>
                 <p className="mt-1 text-sm leading-6 text-[#94A3B8]">
                   تتبع كامل للتعديلات المحاسبية: من قام بالتغيير، ماذا تغير، ومتى حدث.
                 </p>
@@ -297,7 +297,7 @@ export function AuditTrailViewer({ compactHeader = false }: AuditTrailViewerProp
             </Button>
             <Button variant="outline" className="h-10 gap-2 rounded-xl border-slate-200">
               <Download className="h-4 w-4" />
-              Excel
+              إكسل
             </Button>
           </div>
         </CardContent>

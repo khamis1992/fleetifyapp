@@ -1,0 +1,66 @@
+/* A light workspace, including Radix portals opened from this vehicle file. */
+.contracts-register,
+body:has(.contracts-register) :is([role="dialog"], [role="alertdialog"], [data-radix-popper-content-wrapper]) {
+  color-scheme: light;
+  --background: 0 0% 100%; --foreground: 156 25% 19%;
+  --card: 0 0% 100%; --card-foreground: 156 25% 19%;
+  --popover: 0 0% 100%; --popover-foreground: 156 25% 19%;
+  --primary: 175 77% 26%; --primary-foreground: 0 0% 100%;
+  --secondary: 140 16% 95%; --secondary-foreground: 156 25% 19%;
+  --muted: 140 16% 95%; --muted-foreground: 145 8% 43%;
+  --accent: 150 24% 94%; --accent-foreground: 175 77% 26%;
+  --border: 140 14% 87%; --input: 140 14% 87%; --ring: 175 77% 26%;
+  color: #213f38;
+}
+
+.contracts-register {background:#f5f7f4;min-height:100vh;color:#213f38;}
+.contracts-register-header {background:#fff;border-bottom:1px solid #dce5df;padding:20px 0;}
+.contracts-register-header h1 {font-size:30px;letter-spacing:-.8px;margin:12px 0 10px;color:#213f38;}
+.contracts-register-header p {font-weight:400;line-height:1.8;}
+.contracts-register-header [class*="bg-[#102B4E]"] {background:#eef5ee;color:#0f766e;border:1px solid #dce5df;width:60px;height:70px;border-radius:14px;box-shadow:none;}
+.contracts-register-header [class*="bg-[#22C7A1]"] {background:#0f766e;}
+.contracts-register-header button {border-radius:9px;font-weight:600;}
+.contracts-workspace {max-width:1600px;}
+.contracts-summary {display:grid;grid-template-columns:repeat(4,minmax(0,1fr));background:#fff;border:1px solid #dce5df;border-radius:14px;overflow:hidden;}
+.contracts-summary>button,.contracts-summary>div {padding:24px;text-align:start;display:flex;flex-direction:column;gap:12px;border-inline-end:1px solid #e6ebe6;min-width:0;}
+.contracts-summary>button:hover {background:#eef5ee;}
+.contracts-summary>button:last-child {border:0;}
+.contracts-summary span {font-size:13px;color:#60766b;}
+.contracts-summary strong {font-size:28px;font-weight:700;line-height:1.4;font-variant-numeric:tabular-nums;}
+.contracts-summary small {font-size:11px;color:#687c74;display:flex;gap:8px;align-items:center;}
+.contracts-followup {background:#fff9ec;border:1px solid #eadfc6;border-radius:10px;padding:14px;font-size:13px;}
+.contracts-followup summary {cursor:pointer;font-weight:600;}
+.contracts-followup[open] summary {margin-bottom:16px;}
+.contracts-register-intro {display:flex;align-items:center;justify-content:space-between;gap:16px;}
+.contracts-register-intro h2 {font-size:21px;font-weight:700;margin-bottom:6px;}
+.contracts-register-intro p,.contracts-register-intro>span {color:#687c74;font-size:13px;}
+.contracts-register .contracts-filter-panel {border:0;background:transparent;box-shadow:none;padding:0;}
+.contracts-filter-panel input {font-weight:400!important;background:#fff!important;border-radius:10px!important;font-size:14px!important;padding-left:44px;}
+.contracts-filter-panel select {font-weight:400!important;border-radius:10px!important;color:#425f52!important;}
+.contracts-results {background:#fff;border:1px solid #dce5df;border-radius:14px;overflow:hidden;}
+.contracts-tabs {background:#fff;border-bottom:1px solid #dce5df;}
+.contracts-tabs button {white-space:nowrap;flex-shrink:0;border-radius:7px;font-size:12px;border:0;box-shadow:none;min-height:44px;}
+.contracts-tabs button[aria-pressed=true] {background:#edf5ef;color:#0f766e;}
+.contracts-tabs button[aria-pressed=true] .bg-slate-900 {background:#0f766e;}
+.contracts-results-body {padding:0;}
+.contracts-record {padding:24px;border:0;border-bottom:1px solid #e4ebe5;background:#fff;transition:background .15s;}
+.contracts-record:hover {background:#fcfdfb;}
+.contracts-record-grid {display:grid;grid-template-columns:minmax(280px,1.7fr) minmax(180px,.85fr) minmax(170px,.8fr) auto;gap:22px;align-items:center;}
+.contracts-record .font-black {font-weight:600;}
+.contracts-record [class*="bg-[#F8FAFC]"] {background:transparent;padding:4px 0;}
+.contracts-record [class*="bg-[#F8FAFC]"] svg {display:none;}
+.contracts-customer-link {text-align:start;line-height:1.8;}
+.contracts-customer-link:hover {color:#0f766e;text-decoration:underline;text-underline-offset:4px;}
+.contracts-plate {display:inline-block;border:1px solid #d3ddd5;border-radius:5px;padding:2px 8px;color:#0f766e;font-variant-numeric:tabular-nums;background:#fff;}
+.contracts-occupancy {display:inline-flex;font-size:10px;color:#0f766e;margin-top:9px;border-inline-start:2px solid #0f766e;padding-inline-start:6px;}
+.contracts-results-body>div:not(.contracts-row-list) {margin:20px;}
+.contracts-loading {display:flex;align-items:center;justify-content:center;gap:12px;min-height:200px;color:#60766b;}
+.contracts-register :is(button,a,input,select):focus-visible {outline:2px solid #0f766e;outline-offset:3px;}
+@media(min-width:1280px) {.contracts-record-grid>div:nth-child(3) {border-inline-start:1px solid #e6ebe6;padding-inline-start:20px;}}
+@media(max-width:1279px) {.contracts-record-grid {grid-template-columns:1.5fr 1fr;}.contracts-record-grid>div:last-child {justify-content:flex-end;}.contracts-record-grid>div:nth-child(3) {grid-template-columns:1fr 1fr;}}
+@media(max-width:700px) {.contracts-summary {grid-template-columns:1fr 1fr;}.contracts-summary>button,.contracts-summary>div {padding:16px;border-bottom:1px solid #e6ebe6;}.contracts-summary strong {font-size:22px;}.contracts-record {padding:18px;}.contracts-record-grid {grid-template-columns:1fr;gap:16px;}.contracts-register-header h1 {font-size:25px;}.contracts-record-grid>div:last-child {justify-content:flex-start;}.contracts-record-grid>div:nth-child(3) {grid-template-columns:1fr 1fr;}.contracts-summary small {line-height:1.7;}.contracts-register-intro {align-items:flex-start;}.contracts-register-intro p {line-height:1.8;}}
+
+.contracts-clear-search {position:absolute;left:10px;top:0;bottom:0;margin:auto;width:32px;height:32px;display:grid;place-items:center;color:#687c74;border-radius:6px;}
+.contracts-clear-search:hover {background:#eef5ee;}
+.contracts-summary strong {overflow-wrap:anywhere;}
+@media(max-width:700px) {.contracts-summary>div strong {font-size:18px;}}

@@ -16,6 +16,7 @@ type RevertLegalProcedureResult = {
   cancelledPreparations: number;
   deactivatedDelinquentRecords: number;
   vehicleStatus: string | null;
+  contractStatus?: string;
 };
 
 const asRecord = (value: unknown): Record<string, unknown> | null => (
@@ -51,6 +52,9 @@ export async function revertContractLegalProcedure({
   });
 
   if (error) {
+    if (error.code === 'P0001' && /A filed legal case cannot be removed/i.test(error.message || '')) {
+      throw new Error('توجد قضية مسجلة أو بيانات تقديم دعوى مرتبطة بهذا العقد. لا يمكن إزالة الإجراء من نافذة الحالة؛ افتح سجل القضايا ووثّق نتيجة القضية وإغلاقها عبر مسارها القانوني، ثم راجع حالة العقد. لم يُنفّذ طلب الإزالة.');
+    }
     if (
       error.code === 'PGRST202'
       || /function .*revert_contract_from_legal_v2/i.test(error.message || '')
@@ -72,6 +76,7 @@ export async function revertContractLegalProcedure({
   }
 
   return {
+    contractStatus: typeof result.contract_status === 'string' ? result.contract_status : undefined,
     changed: result.changed === true,
     closedCases: asCount(result.closed_cases),
     cancelledJobs: asCount(result.cancelled_jobs),

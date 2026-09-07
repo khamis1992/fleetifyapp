@@ -74,9 +74,11 @@ import {
   type TaqadiFilingJobEvent,
   type TaqadiFilingStatus,
 } from '../utils/taqadiAutomation';
-import { decodeDisplayText } from '@/utils/arabicDisplayText';
+import { decodeDisplayText } from '@/utils/arabicDisplayText';
+import { taqadiErrorMessage } from '../utils/taqadiErrorMessage';
 import { TaqadiAgentStartButton } from '@/components/legal/TaqadiAgentStartButton';
 import { getFilingReadiness } from '../utils/filingReadiness';
+import { useTaqadiCompletionRefresh } from '../hooks/useTaqadiCompletionRefresh';
 
 const activeStatuses = new Set<TaqadiFilingStatus>([
   'queued',
@@ -299,14 +301,8 @@ export function TaqadiAutomationPanel({
     && worker.status !== 'offline',
   );
 
-  useEffect(() => {
-    if (job?.status !== 'filed') return;
-    void queryClient.invalidateQueries({
-      queryKey: ['lawsuit-legal-case', companyId, contractId],
-    });
-    void queryClient.invalidateQueries({ queryKey: ['legal-cases'] });
-  }, [companyId, contractId, job?.status, queryClient]);
-
+  useTaqadiCompletionRefresh(companyId, contractId, job);
+
   // Alert the operator the moment a filing stops for human input; the worker
   // may be waiting on a Chrome window nobody is watching.
   const previousStatusRef = useRef<TaqadiFilingStatus | null>(null);
@@ -324,7 +320,7 @@ export function TaqadiAutomationPanel({
     const wasActive = previous !== null && activeStatuses.has(previous);
     if (!wasActive) return;
     if (job.status === 'needs_human' || job.status === 'waiting_login') {
-      const body = decodeDisplayText(job.error_message)
+      const body = taqadiErrorMessage(job.error_message, job.error_code)
         || 'وكيل تقاضي متوقف بانتظار إجراء بشري.';
       toast.warning('دعوى تقاضي تحتاج تدخلك', { description: body });
       if ('Notification' in window && Notification.permission === 'granted') {
@@ -332,20 +328,9 @@ export function TaqadiAutomationPanel({
       }
     } else if (job.status === 'filed') {
       toast.success('تم إيداع الدعوى في تقاضي وبانتظار قبول المحكمة');
-      // complete_taqadi_filing_job_v1 records the portal reference and moves
-      // the case to `awaiting_acceptance` atomically. Refresh the UI only; do not
-      // ask the browser to perform a second, user-owned finalization.
-      void Promise.all([
-        queryClient.invalidateQueries({ queryKey: ['lawsuit-legal-case', companyId, contractId] }),
-        queryClient.invalidateQueries({ queryKey: ['legal-case-workflow', companyId, job.legal_case_id] }),
-        queryClient.invalidateQueries({ queryKey: ['legal-cases'] }),
-        queryClient.invalidateQueries({ queryKey: ['legal-case-stats'] }),
-        queryClient.invalidateQueries({ queryKey: ['legal-case-litigation-profile', contractId, companyId] }),
-        queryClient.invalidateQueries({ queryKey: ['legal-case-memo-snapshots', contractId, companyId] }),
-      ]);
     } else if (job.status === 'failed') {
       toast.error('فشل رفع الدعوى في تقاضي', {
-        description: decodeDisplayText(job.error_message) || undefined,
+        description: taqadiErrorMessage(job.error_message, job.error_code) || undefined,
       });
     }
   }, [companyId, contractId, job, queryClient]);
@@ -492,10 +477,11 @@ export function TaqadiAutomationPanel({
   );
   const canExplicitlyRestart = job?.status === 'cancelled';
   const canReopenLegalCase = isLegalCaseReopenable(legalCase);
+  const requiresExistingDraftResume = Boolean(job?.status === 'failed' && job.progress >= 44);
   const requiresFreshPackage = Boolean(
     job
     && (
-      freshRetryStatuses.has(job.status)
+      (freshRetryStatuses.has(job.status) && !requiresExistingDraftResume)
       || job.current_step === 'preflight'
       || canAutomaticallyRecoverStoppedJob
     ),
@@ -647,7 +633,7 @@ export function TaqadiAutomationPanel({
                   : <AlertCircle className="h-5 w-5 text-amber-600" />}
               <div>
                 <strong className="block text-sm text-slate-950">
-                  {TAQADI_STATUS_LABELS[job.status]}
+                  {job.current_step === 'receipt_sync_pending' ? 'تم الإيداع — تحديث النظام قيد الاستكمال' : TAQADI_STATUS_LABELS[job.status]}
                 </strong>
                 <span className="text-xs text-slate-500">{job.current_step}</span>
               </div>
@@ -660,7 +646,7 @@ export function TaqadiAutomationPanel({
           <div className="space-y-2">
             <Progress value={job.progress} className="h-2" />
             <div className="flex justify-between text-xs text-slate-500">
-              <span>{TAQADI_STATUS_LABELS[job.status]}</span>
+              <span>{job.current_step === 'receipt_sync_pending' ? 'تم الإيداع — تحديث النظام قيد الاستكمال' : TAQADI_STATUS_LABELS[job.status]}</span>
               <span>{job.progress}%</span>
             </div>
           </div>
@@ -669,7 +655,7 @@ export function TaqadiAutomationPanel({
             <Alert className="border-amber-200 bg-amber-50">
               <Clock3 className="h-4 w-4 text-amber-700" />
               <AlertDescription className="text-amber-950">
-                افتح نافذة Chrome التي شغّلها الوكيل وسجّل الدخول كمتقاضٍ فرد؛
+                افتح نافذة Chrome التي شغّلها الوكيل وسجّل الدخول بحساب الشركة؛
                 ستكمل العملية تلقائيًا بعد نجاح الدخول.
               </AlertDescription>
             </Alert>
@@ -679,7 +665,7 @@ export function TaqadiAutomationPanel({
             <Alert className="border-red-200 bg-red-50">
               <AlertCircle className="h-4 w-4 text-red-700" />
               <AlertDescription className="text-red-950">
-                {decodeDisplayText(job.error_message) || 'توقفت العملية لحاجتها إلى مراجعة بشرية.'}
+                {taqadiErrorMessage(job.error_message, job.error_code) || 'توقفت العملية لحاجتها إلى مراجعة بشرية.'}
               </AlertDescription>
             </Alert>
           )}
@@ -814,7 +800,7 @@ export function TaqadiAutomationPanel({
                             toast.error('تعذر توليد رابط التحميل');
                           }
                         }}
-                      >
+                       aria-label="تحميل المستند" title="تحميل المستند">
                         <Download className="h-4 w-4" />
                       </Button>
                     </div>
@@ -919,7 +905,7 @@ export function TaqadiAutomationPanel({
         {job && isActive && (
           <Button type="button" size="lg" disabled className="lawsuit-primary-command">
             <Loader2 className="h-4 w-4 animate-spin" />
-            {TAQADI_STATUS_LABELS[job.status]}…
+            {job.current_step === 'receipt_sync_pending' ? 'تم الإيداع — تحديث النظام قيد الاستكمال' : TAQADI_STATUS_LABELS[job.status]}…
           </Button>
         )}
 
@@ -950,7 +936,7 @@ export function TaqadiAutomationPanel({
             type="button"
             size="lg"
             onClick={() => resumeMutation.mutate()}
-            disabled={resumeMutation.isPending || !workerOnline || canReopenLegalCase}
+            disabled={resumeMutation.isPending || !workerOnline || canReopenLegalCase || !requiredReady || Boolean(contractIdentityBlockReason)}
             className="lawsuit-primary-command"
           >
             {resumeMutation.isPending
@@ -983,7 +969,7 @@ export function TaqadiAutomationPanel({
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="start" className="rounded-lg border-[#E5EAF1]">
-              {retryableStatuses.has(job.status) && !requiresFreshPackage && !requiresSubmissionVerification && (
+              {retryableStatuses.has(job.status) && !requiresExistingDraftResume && !requiresFreshPackage && !requiresSubmissionVerification && (
                 <DropdownMenuItem
                   disabled={
                     retryMutation.isPending

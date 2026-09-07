@@ -41,7 +41,7 @@ export const generateContractBillingGraph = async (
   if (error) {
     if (error.code === 'PGRST202') {
       throw new Error(
-        'تحديث قاعدة البيانات الخاص بالأقساط الجزئية غير منشور بعد؛ أُوقف التوليد لمنع إنشاء فواتير خاطئة.',
+        'تحديث خدمة الفوترة الموحدة غير منشور بعد؛ أُوقف التوليد لمنع إنشاء فواتير خاطئة.',
       );
     }
     throw new Error(error.message || error.code || 'فشل إنشاء الرسم المالي للعقد');

@@ -208,7 +208,7 @@ function FollowupCard({
 }
 
 // المكون الرئيسي
-export function ScheduledFollowupsPanel() {
+export function ScheduledFollowupsPanel({ showEmpty = false }: { showEmpty?: boolean }) {
   const [isExpanded, setIsExpanded] = useState(true);
   const [completeDialogOpen, setCompleteDialogOpen] = useState(false);
   const [rescheduleDialogOpen, setRescheduleDialogOpen] = useState(false);
@@ -217,7 +217,7 @@ export function ScheduledFollowupsPanel() {
   const [notes, setNotes] = useState('');
   const [newDate, setNewDate] = useState('');
 
-  const { data: followups = [], isLoading } = useUpcomingFollowups(8);
+  const { data: followups = [], isLoading, error, refetch } = useUpcomingFollowups(8);
   const { data: stats } = useFollowupStats();
   const completeFollowup = useCompleteFollowup();
   const rescheduleFollowup = useRescheduleFollowup();
@@ -263,6 +263,14 @@ export function ScheduledFollowupsPanel() {
     });
     setRescheduleDialogOpen(false);
   };
+
+  if (showEmpty && (isLoading || error || followups.length === 0)) {
+    return <section className="opw-panel"><header><div><h2>المتابعات المجدولة</h2><p>المواعيد المسجلة للفريق.</p></div><Calendar size={20}/></header><div className="opw-empty" role={error ? 'alert' : isLoading ? 'status' : undefined}>
+      <Clock size={26}/><h3>{isLoading ? 'جارٍ تحميل المواعيد…' : error ? 'تعذّر تحميل المتابعات' : 'لا توجد متابعات قادمة مسجلة'}</h3>
+      <p>{error ? 'أعد المحاولة لقراءة المواعيد.' : 'تظهر المتابعات هنا بعد جدولتها في سجل التواصل.'}</p>
+      {error && <Button variant="outline" onClick={() => { void refetch(); }}>إعادة المحاولة</Button>}
+    </div></section>;
+  }
 
   if (followups.length === 0 && !isLoading) {
     return null;

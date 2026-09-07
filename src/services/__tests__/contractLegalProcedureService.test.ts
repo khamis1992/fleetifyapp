@@ -14,6 +14,19 @@ const input = {
 describe('legal procedure reversal service', () => {
   beforeEach(() => rpc.mockReset());
 
+  it('returns the expired status selected by the server instead of assuming active', async () => {
+    rpc.mockResolvedValue({ error: null, data: {
+      success: true, contract_id: input.contractId, changed: true, contract_status: 'expired',
+    } });
+    expect((await revertContractLegalProcedure(input)).contractStatus).toBe('expired');
+  });
+
+  it('explains the filed-case guard in Arabic without retrying or bypassing it', async () => {
+    rpc.mockResolvedValue({ data: null, error: { code: 'P0001', message: 'A filed legal case cannot be removed; close it through the audited case-outcome workflow' } });
+    await expect(revertContractLegalProcedure(input)).rejects.toThrow('افتح سجل القضايا');
+    expect(rpc).toHaveBeenCalledTimes(1);
+  });
+
   it('uses the atomic endpoint with explicit company scope and a stable request key', async () => {
     rpc.mockResolvedValue({ error: null, data: {
       success: true, contract_id: input.contractId, changed: true,

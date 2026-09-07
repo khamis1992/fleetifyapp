@@ -10,7 +10,7 @@ const company = '22222222-2222-4222-8222-222222222222';
 const customer = '33333333-3333-4333-8333-333333333333';
 const contract = '55555555-5555-4555-8555-555555555555';
 const other = '77777777-7777-4777-8777-777777777777';
-const migration = '20260903161841_support_authoritative_partial_contract_schedules';
+const migration = '20260907001000_consistent_contract_billing_plans';
 let db;
 const read = (path) => readFile(new URL(path, import.meta.url), 'utf8');
 const rows = async (sql, args = []) => (await db.query(sql, args)).rows;
@@ -70,7 +70,7 @@ describe('contract billing graph with the actual rental core', () => {
       CREATE UNIQUE INDEX uq_invoices_penalty_id ON invoices(penalty_id) WHERE penalty_id IS NOT NULL;
       CREATE TABLE contract_payment_schedules(id uuid PRIMARY KEY DEFAULT gen_random_uuid(),company_id uuid,contract_id uuid,
         installment_number int,due_date date,amount numeric,status text DEFAULT 'pending',paid_amount numeric DEFAULT 0,
-        paid_date date,invoice_id uuid,updated_at timestamptz);
+        paid_date date,invoice_id uuid,updated_at timestamptz,financial_hold_reason text);
       CREATE TABLE audit_logs(company_id uuid,action text,resource_type text,resource_id uuid,entity_name text,
         changes_summary text,new_values jsonb,metadata jsonb,status text,severity text,user_id uuid,user_name text,notes text);
       CREATE TABLE fixture_calls(kind text,invoice_id uuid);
@@ -112,6 +112,46 @@ describe('contract billing graph with the actual rental core', () => {
     assert.deepEqual(await rows('SELECT invoice_type, count(*)::int AS count FROM invoices GROUP BY invoice_type'),
       [{ invoice_type:'service', count:2 }]);
     assert.equal((await rows('SELECT count(*)::int AS count FROM invoice_items'))[0].count,2);
+  });
+
+  async function setPlan(start, end, monthly, amounts) {
+    await rows('DELETE FROM contract_payment_schedules');
+    await rows('UPDATE contracts SET start_date=$1,end_date=$2,monthly_amount=$3,contract_amount=$4',
+      [start,end,monthly,amounts.reduce((a,b)=>a+b,0)]);
+    for (const [index,amount] of amounts.entries()) {
+      const month = new Date(Date.UTC(Number(start.slice(0,4)),Number(start.slice(5,7))-1+index,1)).toISOString().slice(0,10);
+      await rows('INSERT INTO contract_payment_schedules(company_id,contract_id,installment_number,due_date,amount) VALUES($1,$2,$3,$4,$5)',[company,contract,index+1,month,amount]);
+    }
+  }
+
+  it('handles AGR-202504-400949 full installments at both mid-month boundaries without adding or reducing rent', async () => {
+    await setPlan('2025-01-03','2028-01-04',1500,Array(37).fill(1500));
+    assert.equal((await invoke()).created_invoices,37);
+    assert.equal((await invoke()).created_invoices,0);
+    assert.equal(Number((await rows('SELECT sum(total_amount) total FROM invoices'))[0].total),55500);
+  });
+
+  it('preserves partial installments and prepaid billing months including leap February', async () => {
+    await setPlan('2024-01-15','2024-03-15',1800,[900,1800,900]);
+    assert.equal((await invoke()).created_invoices,3);
+    assert.deepEqual((await rows('SELECT total_amount::float amount FROM invoices ORDER BY invoice_month')).map(x=>x.amount),[900,1800,900]);
+    assert.equal((await rows("SELECT count(*)::int n FROM invoices WHERE invoice_month <> date_trunc('month',invoice_month)::date"))[0].n,0);
+  });
+
+  it('does not override financial holds even for an otherwise complete plan', async () => {
+    await rows("UPDATE contract_payment_schedules SET financial_hold_reason='requires_review'");
+    await assert.rejects(invoke(),/financial review hold/);
+  });
+
+  it('rejects an inconsistent total, duplicate month and installment sequence on the common path', async () => {
+    await rows('UPDATE contracts SET contract_amount=2100');
+    await assert.rejects(invoke(),/does not match contract total/);
+    await rows('UPDATE contracts SET contract_amount=2000');
+    await rows("UPDATE contract_payment_schedules SET due_date='2026-02-01'");
+    await assert.rejects(invoke(),/More than one active schedule/);
+    await rows("UPDATE contract_payment_schedules SET due_date='2026-03-01' WHERE installment_number=2");
+    await rows('UPDATE contract_payment_schedules SET installment_number=3 WHERE installment_number=2');
+    await assert.rejects(invoke(),/unique and consecutive/);
   });
 
   it('reports actual generated rent through partial payment and cancellation without trusting invoice caches', async () => {

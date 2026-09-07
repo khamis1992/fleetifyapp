@@ -1,3 +1,5 @@
+import { OperationsWorkspace, OperationsMetric, OperationsPanel, OperationsEmpty } from '@/components/operations/OperationsWorkspace';
+import { pageNumbers, downloadOperationsCsv } from '@/components/operations/operationsPresentation';
 /**
  * Fleet Maintenance Page - Modern Professional Design
  * Enhanced visual hierarchy with improved information architecture
@@ -5,97 +7,39 @@
  * @component MaintenanceRedesigned
  */
 
+/**
+ * Fleet Maintenance Page - Modern Professional Design
+ * Enhanced visual hierarchy with improved information architecture
+ *
+ * @component MaintenanceRedesigned
+ */
 import { useState, useMemo, lazy, Suspense, useEffect } from "react";
-import { useSearchParams } from "react-router-dom";
-import { useNavigate } from "react-router-dom";
-import { motion, AnimatePresence } from "framer-motion";
+import { useSearchParams, useNavigate } from "react-router-dom";
+import { motion } from "framer-motion";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue
-} from "@/components/ui/select";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import {
-  Plus,
-  Search,
-  RefreshCw,
-  Eye,
-  Edit,
-  Trash2,
-  Car,
-  Wrench,
-  AlertTriangle,
-  ShieldCheck,
-  Calendar,
-  List,
-  CheckCircle,
-  Clock,
-  MoreHorizontal,
-  Download,
-  Filter,
-  X,
-  ChevronRight,
-  ChevronLeft,
-  TrendingUp,
-  DollarSign,
-  AlertCircle,
-  Layers,
-  Calendar as CalendarIcon,
-  HelpCircle,
-  PlayCircle,
-} from "lucide-react";
-import { useVehicleMaintenance } from "@/hooks/useVehicles";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Plus, Search, RefreshCw, Eye, Trash2, Car, Wrench, AlertTriangle, ShieldCheck, Calendar, List, CheckCircle, Clock, MoreHorizontal, Download, X, ChevronRight, ChevronLeft, DollarSign, AlertCircle, HelpCircle, PlayCircle } from "lucide-react";
+
 import { useMaintenanceVehicles } from "@/hooks/useMaintenanceVehicles";
-import { useVehicleStatusUpdate, useCompleteMaintenanceStatus, useScheduleMaintenanceStatus } from "@/hooks/useVehicleStatusIntegration";
+import { useCompleteMaintenanceStatus } from "@/hooks/useVehicleStatusIntegration";
 import { useCurrencyFormatter } from "@/hooks/useCurrencyFormatter";
-import { useDeleteVehicleMaintenance, useUpdateVehicleMaintenance } from "@/hooks/useVehicles";
+import { useVehicleMaintenance, useDeleteVehicleMaintenance, useUpdateVehicleMaintenance } from "@/hooks/useVehicles";
 import { useMaintenanceStats } from "@/hooks/useMaintenanceStats";
-import { supabase } from "@/integrations/supabase/client";
-import { cn } from "@/lib/utils";
+
+
 import { toast } from "sonner";
 import { MaintenanceSidePanel } from "@/components/fleet/MaintenanceSidePanel";
 import { MaintenanceAlertsPanel } from "@/components/fleet/MaintenanceAlertsPanel";
-import { systemColorPattern } from "@/lib/design-system/systemColorPattern";
+
 
 const maintenanceTheme = {
-  text: systemColorPattern.colors.text,
-  surface: systemColorPattern.colors.surface,
-  inner: systemColorPattern.colors.innerSurface,
-  muted: systemColorPattern.colors.secondaryText,
-  border: systemColorPattern.colors.border,
-  water: systemColorPattern.colors.info,
-  alert: systemColorPattern.colors.alert,
-  focus: systemColorPattern.colors.focus,
-  success: systemColorPattern.colors.success,
+  text:'#203B43', surface:'#FFFFFF', inner:'#F5F5F0', muted:'#627780', border:'#DCE2D8',
+  water:'#315C68', alert:'#AC4E3D', focus:'#956E3D', success:'#2E755D',
 };
 
 // Lazy load components
@@ -124,6 +68,7 @@ const maintenanceTypeConfig = {
   emergency: { label: 'صيانة طارئة', icon: AlertTriangle, accent: maintenanceTheme.alert },
   preventive: { label: 'صيانة وقائية', icon: ShieldCheck, accent: maintenanceTheme.success },
   maintenance: { label: 'صيانة', icon: Wrench, accent: maintenanceTheme.muted },
+  historical_excel_import: { label: 'صيانة سابقة', icon: Wrench, accent: maintenanceTheme.muted },
 };
 
 type MaintenanceTourContent = {
@@ -187,7 +132,7 @@ const maintenanceTours = {
     steps: [
       'التصدير يجب أن يعتمد على الفلاتر الحالية في الصفحة.',
       'استخدم البحث والحالة والنوع والأولوية لتحديد البيانات المطلوبة.',
-      'بعدها اضغط تصدير الآن لإنشاء الملف عند تفعيل خدمة التصدير النهائية.',
+      'بعدها اضغط تصدير الآن لتنزيل ملف CSV مطابق للبحث والفلاتر.',
     ],
   },
   navigation: {
@@ -280,141 +225,6 @@ function FeatureTourDialog({
   );
 }
 
-function FeatureActionDialog({
-  action,
-  onClose,
-  onStartTour,
-}: {
-  action: MaintenanceFeatureAction | null;
-  onClose: () => void;
-  onStartTour: (tour: MaintenanceTourContent) => void;
-}) {
-  return (
-    <Dialog open={!!action} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-w-lg rounded-[8px]" dir="rtl">
-        <DialogHeader className="text-right">
-          <DialogTitle>{action?.title}</DialogTitle>
-          <DialogDescription>{action?.description}</DialogDescription>
-        </DialogHeader>
-        <DialogFooter className="gap-2 sm:justify-between">
-          {action && <FeatureTourButton tour={action.tour} onStart={onStartTour} />}
-          <div className="flex gap-2">
-            <Button variant="outline" onClick={onClose} className="rounded-[8px]">
-              إلغاء
-            </Button>
-            <Button
-              onClick={() => {
-                action?.onConfirm();
-                onClose();
-              }}
-              className="rounded-[8px] text-white"
-              style={{ backgroundColor: maintenanceTheme.success }}
-            >
-              {action?.confirmLabel}
-            </Button>
-          </div>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  );
-}
-// ===== Enhanced Stat Card =====
-interface EnhancedStatCardProps {
-  title: string;
-  value: string | number;
-  subtitle?: string;
-  icon: React.ElementType;
-  color: string;
-  delay: number;
-  onClick?: () => void;
-  trend?: {
-    value: number;
-    isPositive: boolean;
-  };
-}
-
-const EnhancedStatCard: React.FC<EnhancedStatCardProps> = ({
-  title,
-  value,
-  subtitle,
-  icon: Icon,
-  color,
-  delay,
-  onClick,
-  trend
-}) => (
-  <motion.button
-    type="button"
-    initial={{ opacity: 0, y: 12 }}
-    animate={{ opacity: 1, y: 0 }}
-    transition={{ delay, duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
-    onClick={onClick}
-    className="w-full rounded-[8px] border bg-white p-5 text-right shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
-    style={{ borderColor: maintenanceTheme.border }}
-  >
-    <div className="mb-4 flex items-center justify-between">
-      <div className="flex h-11 w-11 items-center justify-center rounded-[8px]" style={{ backgroundColor: `${color}14` }}>
-        <Icon className="h-5 w-5" style={{ color }} />
-      </div>
-      {trend && (
-        <span className="rounded-full px-2 py-1 text-xs font-semibold" style={{ backgroundColor: `${color}14`, color }}>
-          {Math.abs(trend.value)}%
-        </span>
-      )}
-    </div>
-    <p className="text-3xl font-bold" style={{ color }}>{value}</p>
-    <p className="mt-1 text-sm font-semibold" style={{ color: maintenanceTheme.text }}>{title}</p>
-    {subtitle && <p className="mt-1 text-xs" style={{ color: maintenanceTheme.muted }}>{subtitle}</p>}
-  </motion.button>
-);
-
-// ===== Type Summary Card =====
-interface TypeSummaryCardProps {
-  label: string;
-  count: number;
-  icon: React.ElementType;
-  color: string;
-}
-
-const TypeSummaryCard: React.FC<TypeSummaryCardProps> = ({ label, count, icon: Icon, color }) => (
-  <div className="rounded-[8px] border px-4 py-3" style={{ backgroundColor: maintenanceTheme.inner, borderColor: maintenanceTheme.border }}>
-    <div className="mb-3 flex items-center justify-between">
-      <div className="flex h-9 w-9 items-center justify-center rounded-[8px]" style={{ backgroundColor: `${color}14` }}>
-        <Icon className="h-4 w-4" style={{ color }} />
-      </div>
-      <p className="text-xs font-semibold" style={{ color: maintenanceTheme.muted }}>{label}</p>
-    </div>
-    <p className="text-2xl font-bold" style={{ color }}>{count}</p>
-  </div>
-);
-
-// ===== Alert Card =====
-interface AlertCardProps {
-  title: string;
-  count: number;
-  icon: React.ElementType;
-  color: string;
-  onClick?: () => void;
-}
-
-const AlertCard: React.FC<AlertCardProps> = ({ title, count, icon: Icon, color, onClick }) => (
-  <motion.button
-    type="button"
-    initial={{ opacity: 0, x: 10 }}
-    animate={{ opacity: 1, x: 0 }}
-    onClick={onClick}
-    className="flex w-full items-center gap-3 rounded-[8px] border bg-white p-3 text-right transition hover:-translate-y-0.5"
-    style={{ borderColor: `${color}55` }}
-  >
-    <div className="flex h-10 w-10 items-center justify-center rounded-[8px]" style={{ backgroundColor: `${color}14` }}>
-      <Icon className="h-5 w-5" style={{ color }} />
-    </div>
-    <div className="flex-1">
-      <p className="text-sm font-bold" style={{ color: maintenanceTheme.text }}>{title}</p>
-    </div>
-    <span className="rounded-full px-3 py-1 text-sm font-bold" style={{ backgroundColor: `${color}14`, color }}>{count}</span>
-  </motion.button>
-);
 // ===== Maintenance Record Card =====
 interface MaintenanceRecordCardProps {
   record: any;
@@ -443,7 +253,7 @@ const MaintenanceRecordCard: React.FC<MaintenanceRecordCardProps> = ({
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.02, duration: 0.28 }}
-      className="group overflow-hidden rounded-[8px] border bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
+      className="opw-maintenance-record group overflow-hidden rounded-[8px] border bg-white"
       style={{ borderColor: maintenanceTheme.border }}
     >
       <div className="h-1 w-full" style={{ backgroundColor: status.accent }} />
@@ -457,7 +267,7 @@ const MaintenanceRecordCard: React.FC<MaintenanceRecordCardProps> = ({
 
             <div className="min-w-0 flex-1">
               <div className="mb-2 flex flex-wrap items-center gap-2">
-                <h3 className="truncate text-base font-bold" style={{ color: maintenanceTheme.text }}>{record.maintenance_number || 'طلب صيانة'}</h3>
+                <h3 className="truncate text-base font-bold" style={{ color: maintenanceTheme.text }}><button onClick={onView} aria-label={'فتح طلب الصيانة ' + (record.maintenance_number || '')}>{record.maintenance_number || 'طلب صيانة'}</button></h3>
                 <Badge className="rounded-[8px] border px-2 py-1 text-xs font-semibold" style={{ backgroundColor: `${status.accent}14`, borderColor: `${status.accent}44`, color: status.accent }}>
                   {status.label}
                 </Badge>
@@ -473,7 +283,7 @@ const MaintenanceRecordCard: React.FC<MaintenanceRecordCardProps> = ({
 
               <div className="flex flex-wrap items-center gap-2 text-xs" style={{ color: maintenanceTheme.muted }}>
                 <span>{typeConfig.label}</span>
-                {record.estimated_cost && (
+                {record.estimated_cost != null && (
                   <>
                     <span>·</span>
                     <span className="font-bold" style={{ color: maintenanceTheme.alert }}>{record.estimated_cost.toLocaleString()} ر.ق</span>
@@ -496,7 +306,7 @@ const MaintenanceRecordCard: React.FC<MaintenanceRecordCardProps> = ({
 
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="sm" className="h-9 w-9 rounded-[8px] p-0">
+                <Button aria-label={'إجراءات الصيانة ' + (record.maintenance_number || '')} variant="ghost" size="sm" className="h-9 w-9 rounded-[8px] p-0">
                   <MoreHorizontal className="h-4 w-4" />
                 </Button>
               </DropdownMenuTrigger>
@@ -521,7 +331,7 @@ const MaintenanceRecordCard: React.FC<MaintenanceRecordCardProps> = ({
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={onDelete} className="gap-2 text-red-600">
                   <Trash2 className="h-4 w-4" />
-                  حذف
+                  إلغاء الطلب
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -545,7 +355,7 @@ const VehicleInMaintenanceCard: React.FC<VehicleInMaintenanceCardProps> = ({ veh
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.02, duration: 0.28 }}
-      className="overflow-hidden rounded-[8px] border bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
+      className="opw-vehicle overflow-hidden rounded-[8px] border bg-white"
       style={{ borderColor: `${maintenanceTheme.alert}44` }}
     >
       <div className="h-1 w-full" style={{ backgroundColor: maintenanceTheme.alert }} />
@@ -560,7 +370,7 @@ const VehicleInMaintenanceCard: React.FC<VehicleInMaintenanceCardProps> = ({ veh
               <Badge className="rounded-[8px] border" style={{ backgroundColor: `${maintenanceTheme.alert}14`, borderColor: `${maintenanceTheme.alert}44`, color: maintenanceTheme.alert }}>في الصيانة</Badge>
             </div>
             <p className="truncate text-sm font-semibold" style={{ color: maintenanceTheme.text }}>{vehicle.make} {vehicle.model} {vehicle.year}</p>
-            {vehicle.current_mileage && (
+            {vehicle.current_mileage != null && (
               <p className="mt-1 text-xs" style={{ color: maintenanceTheme.muted }}>المسافة الحالية: {vehicle.current_mileage.toLocaleString()} كم</p>
             )}
             {vehicle.last_maintenance_date && (
@@ -596,7 +406,6 @@ export default function MaintenanceRedesigned() {
   const [statusAction, setStatusAction] = useState<{ record: any; type: 'start' | 'complete' } | null>(null);
   const [exportDialogOpen, setExportDialogOpen] = useState(false);
   const [activeTour, setActiveTour] = useState<MaintenanceTourContent | null>(null);
-  const [featureAction, setFeatureAction] = useState<MaintenanceFeatureAction | null>(null);
   const [sidePanelOpen, setSidePanelOpen] = useState(false);
   const [viewMode, setViewMode] = useState<'dashboard' | 'list'>('dashboard');
   const [searchQuery, setSearchQuery] = useState("");
@@ -622,7 +431,7 @@ export default function MaintenanceRedesigned() {
   }, [searchParams, setSearchParams]);
 
   // Fetch data
-  const { data: maintenanceRecords, isLoading: maintenanceLoading, refetch } = useVehicleMaintenance(undefined, {
+  const { data: maintenanceRecords, isLoading: maintenanceLoading, error: maintenanceError, refetch } = useVehicleMaintenance(undefined, {
     limit: 100
   });
 
@@ -632,7 +441,7 @@ export default function MaintenanceRedesigned() {
   });
 
   // Stats
-  const { data: stats } = useMaintenanceStats();
+  const { data: stats, isLoading: statsLoading, error: statsError } = useMaintenanceStats();
 
   const { formatCurrency } = useCurrencyFormatter();
   const completeMaintenanceStatus = useCompleteMaintenanceStatus();
@@ -647,15 +456,18 @@ export default function MaintenanceRedesigned() {
       const matchesSearch = !searchQuery ||
         record.maintenance_number?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         record.vehicles?.plate_number?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        record.maintenance_type?.toLowerCase().includes(searchQuery.toLowerCase());
+        record.maintenance_type?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        maintenanceTypeConfig[record.maintenance_type as keyof typeof maintenanceTypeConfig]?.label.includes(searchQuery.trim());
 
-      const matchesStatus = statusFilter === "all" || record.status === statusFilter;
+      const matchesStatus = statusFilter === 'all' || record.status === statusFilter || (statusFilter === 'overdue' && ['pending','in_progress'].includes(record.status) && Boolean(record.scheduled_date) && new Date(record.scheduled_date) < new Date(new Date().toDateString()));
       const matchesType = typeFilter === "all" || record.maintenance_type === typeFilter;
       const matchesPriority = priorityFilter === "all" || record.priority === priorityFilter;
 
       return matchesSearch && matchesStatus && matchesType && matchesPriority;
     });
   }, [maintenanceRecords, searchQuery, statusFilter, typeFilter, priorityFilter]);
+
+  useEffect(() => { setCurrentPage(1); }, [searchQuery, statusFilter, typeFilter, priorityFilter]);
 
   // Pagination
   const totalPages = Math.ceil(filteredRecords.length / itemsPerPage);
@@ -721,8 +533,15 @@ export default function MaintenanceRedesigned() {
   };
 
   const handleExport = async () => {
-    toast.success('جاري تصدير البيانات...');
-    // Implement export logic
+    downloadOperationsCsv('maintenance-' + new Date().toISOString().slice(0,10) + '.csv', [
+      ['رقم الطلب','لوحة المركبة','نوع الصيانة','الحالة','الأولوية','التاريخ المجدول','التكلفة المقدرة (ر.ق)','التكلفة الفعلية (ر.ق)'],
+      ...filteredRecords.map(record => [record.maintenance_number, record.vehicles?.plate_number,
+        maintenanceTypeConfig[record.maintenance_type as keyof typeof maintenanceTypeConfig]?.label || 'صيانة',
+        statusConfig[record.status as keyof typeof statusConfig]?.label || 'غير محددة',
+        priorityConfig[record.priority as keyof typeof priorityConfig]?.label || 'غير محددة',
+        record.scheduled_date, record.estimated_cost, record.actual_cost]),
+    ]);
+    toast.success('تم تصدير ' + filteredRecords.length + ' سجل صيانة');
   };
 
   const handleConfirmStatusAction = async () => {
@@ -746,72 +565,12 @@ export default function MaintenanceRedesigned() {
   };
 
   const openFeatureAction = (action: MaintenanceFeatureAction) => {
-    setFeatureAction(action);
+    action.onConfirm();
   };
 
-  const openPaginationAction = (page: number) => {
-    openFeatureAction({
-      title: 'تغيير صفحة النتائج',
-      description: `سيتم عرض صفحة ${page} من سجلات الصيانة المطابقة للبحث والفلاتر الحالية.`,
-      confirmLabel: 'تغيير الصفحة',
-      tour: maintenanceTours.navigation,
-      onConfirm: () => setCurrentPage(page),
-    });
-  };
+  const openPaginationAction = (page: number) => setCurrentPage(page);
 
   const activeFiltersCount = [statusFilter, typeFilter, priorityFilter].filter(value => value !== 'all').length + (searchQuery ? 1 : 0);
-  const maintenanceMetrics = [
-    {
-      title: 'طلبات نشطة',
-      value: stats?.pendingCount || 0,
-      subtitle: `${stats?.inProgressCount || 0} قيد المعالجة`,
-      icon: Clock,
-      color: maintenanceTheme.water,
-      onClick: () => openFeatureAction({
-        title: 'عرض الطلبات النشطة',
-        description: 'سيتم فتح قائمة الصيانة مع فلتر الطلبات المعلقة لمراجعتها بسرعة.',
-        confirmLabel: 'عرض الطلبات',
-        tour: maintenanceTours.metrics,
-        onConfirm: () => { setViewMode('list'); setStatusFilter('pending'); },
-      }),
-    },
-    {
-      title: 'مركبات في الصيانة',
-      value: stats?.vehiclesInMaintenance || 0,
-      subtitle: 'مركبات غير جاهزة للتشغيل',
-      icon: Wrench,
-      color: maintenanceTheme.alert,
-      onClick: () => openFeatureAction({
-        title: 'عرض المركبات قيد الصيانة',
-        description: 'سيتم فتح قائمة الصيانة مع فلتر الطلبات قيد المعالجة.',
-        confirmLabel: 'عرض القائمة',
-        tour: maintenanceTours.metrics,
-        onConfirm: () => { setViewMode('list'); setStatusFilter('in_progress'); },
-      }),
-    },
-    {
-      title: 'مكتملة هذا الشهر',
-      value: stats?.completedThisMonth || 0,
-      subtitle: 'طلبات مغلقة',
-      icon: CheckCircle,
-      color: maintenanceTheme.success,
-      onClick: () => openFeatureAction({
-        title: 'عرض الصيانات المكتملة',
-        description: 'سيتم فتح قائمة الصيانة مع فلتر الطلبات المكتملة.',
-        confirmLabel: 'عرض المكتملة',
-        tour: maintenanceTours.metrics,
-        onConfirm: () => { setViewMode('list'); setStatusFilter('completed'); },
-      }),
-    },
-    {
-      title: 'تكلفة الشهر',
-      value: formatCurrency(stats?.costThisMonth || 0),
-      subtitle: 'إجمالي تكلفة الصيانة',
-      icon: DollarSign,
-      color: maintenanceTheme.focus,
-    },
-  ];
-
   const maintenanceTypeSummary = [
     { label: 'دورية', count: stats?.routineCount || 0, icon: RefreshCw, color: maintenanceTheme.water },
     { label: 'إصلاح', count: stats?.repairCount || 0, icon: Wrench, color: maintenanceTheme.focus },
@@ -819,266 +578,42 @@ export default function MaintenanceRedesigned() {
     { label: 'وقائية', count: stats?.preventiveCount || 0, icon: ShieldCheck, color: maintenanceTheme.success },
   ];
 
-  // Loading state
-  if (maintenanceLoading) {
-    return (
-      <div className="min-h-screen bg-[#F6F8FB] flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-12 h-12 border-3 border-sky-500 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-          <p className="text-sm text-slate-600 font-medium">جاري التحميل...</p>
-        </div>
-      </div>
-    );
-  }
+  if (maintenanceLoading || maintenanceError) return <OperationsWorkspace section="maintenance"><div className="opw-panel opw-empty" role={maintenanceError ? 'alert' : 'status'}><Wrench size={26}/><h3>{maintenanceError ? 'تعذّر تحميل طلبات الصيانة' : 'جارٍ تحميل سجل الصيانة…'}</h3><p>{maintenanceError ? 'أعد المحاولة للتحقق من السجل.' : 'نجهز بيانات الطلبات والمركبات.'}</p>{maintenanceError && <Button variant="outline" onClick={() => { void refetch(); }}>إعادة المحاولة</Button>}</div></OperationsWorkspace>;
 
   return (
-    <div className="min-h-screen" style={{ backgroundColor: maintenanceTheme.inner, color: maintenanceTheme.text }}>
-      <main className="mx-auto max-w-[1600px] space-y-5 px-4 py-6 sm:px-6 lg:px-8">
-        <section className="rounded-[8px] border bg-white p-4 shadow-sm sm:p-5" style={{ borderColor: maintenanceTheme.border }}>
-          <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
-            <div className="space-y-1">
-              <p className="text-xs font-semibold" style={{ color: maintenanceTheme.muted }}>إدارة الأسطول</p>
-              <h1 className="text-2xl font-bold sm:text-3xl" style={{ color: maintenanceTheme.text }}>الصيانة</h1>
-              <p className="text-sm" style={{ color: maintenanceTheme.muted }}>متابعة طلبات الصيانة والمركبات المتوقفة والتكاليف من مساحة تشغيل واحدة</p>
-            </div>
-
-            <div className="flex flex-wrap items-center gap-2">
-              <div className="flex items-center rounded-[8px] border p-1" style={{ borderColor: maintenanceTheme.border, backgroundColor: maintenanceTheme.inner }}>
-                <button
-                  onClick={() => openFeatureAction({
-                    title: 'فتح لوحة الصيانة',
-                    description: 'سيتم الانتقال إلى لوحة تعرض المؤشرات والتنبيهات وملخصات الصيانة.',
-                    confirmLabel: 'فتح اللوحة',
-                    tour: maintenanceTours.navigation,
-                    onConfirm: () => setViewMode('dashboard'),
-                  })}
-                  className="flex h-9 items-center gap-2 rounded-[8px] px-3 text-sm font-semibold transition"
-                  style={viewMode === 'dashboard' ? { backgroundColor: maintenanceTheme.surface, color: maintenanceTheme.success } : { color: maintenanceTheme.muted }}
-                >
-                  <CalendarIcon className="h-4 w-4" />
-                  لوحة
-                </button>
-                <button
-                  onClick={() => openFeatureAction({
-                    title: 'فتح قائمة الصيانة',
-                    description: 'سيتم الانتقال إلى القائمة التفصيلية للبحث والتصفية ومتابعة الطلبات.',
-                    confirmLabel: 'فتح القائمة',
-                    tour: maintenanceTours.navigation,
-                    onConfirm: () => setViewMode('list'),
-                  })}
-                  className="flex h-9 items-center gap-2 rounded-[8px] px-3 text-sm font-semibold transition"
-                  style={viewMode === 'list' ? { backgroundColor: maintenanceTheme.surface, color: maintenanceTheme.success } : { color: maintenanceTheme.muted }}
-                >
-                  <Layers className="h-4 w-4" />
-                  قائمة
-                </button>
-              </div>
-
-              <Button variant="outline" onClick={() => setExportDialogOpen(true)} className="h-10 gap-2 rounded-[8px] border bg-white" style={{ borderColor: maintenanceTheme.border, color: maintenanceTheme.text }}>
-                <Download className="h-4 w-4" style={{ color: maintenanceTheme.water }} />
-                تصدير
-              </Button>
-
-              <Button onClick={handleCreateNew} className="h-10 gap-2 rounded-[8px] text-white" style={{ backgroundColor: maintenanceTheme.success }}>
-                <Plus className="h-4 w-4" />
-                صيانة جديدة
-              </Button>
-            </div>
-          </div>
-        </section>
-
-        <section className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
-          {maintenanceMetrics.map((metric, index) => (
-            <EnhancedStatCard
-              key={metric.title}
-              title={metric.title}
-              value={metric.value}
-              subtitle={metric.subtitle}
-              icon={metric.icon}
-              color={metric.color}
-              delay={index * 0.05}
-              onClick={metric.onClick}
-            />
-          ))}
-        </section>
-
+    <OperationsWorkspace section="maintenance" actions={<>
+      <Button className="opw-primary" onClick={handleCreateNew}><Plus size={17}/>طلب صيانة جديد</Button>
+      <Button className="opw-secondary" variant="outline" onClick={() => setExportDialogOpen(true)} disabled={!filteredRecords.length}><Download size={16}/>تصدير السجل</Button>
+      <Button className="opw-secondary" variant="outline" onClick={() => setActiveTour(maintenanceTours.navigation)}><HelpCircle size={16}/>دليل الصيانة</Button>
+    </>}>
+      <div className="space-y-5">
+        <div className="opw-metrics">
+          <OperationsMetric label="طلبات معلّقة" value={statsLoading || statsError ? '—' : stats?.pendingCount ?? '—'} hint={(stats?.inProgressCount ?? '—') + ' طلب قيد المعالجة'} icon={Clock} onClick={() => { setViewMode('list'); setStatusFilter('pending'); }}/>
+          <OperationsMetric label="مركبات في الصيانة" value={statsLoading || statsError ? '—' : stats?.vehiclesInMaintenance ?? '—'} hint="بحسب الحالة التشغيلية للمركبات" icon={Wrench} tone="warning"/>
+          <OperationsMetric label="طلبات الشهر المكتملة" value={statsLoading || statsError ? '—' : stats?.completedThisMonth ?? '—'} hint="طلبات أُنشئت هذا الشهر وأُكملت" icon={CheckCircle}/>
+          <OperationsMetric label="تكلفة طلبات الشهر" value={statsLoading || statsError || !stats ? '—' : formatCurrency(stats.costThisMonth)} hint="فعلية أو مقدرة للطلبات المسجلة هذا الشهر" icon={DollarSign}/>
+        </div>
+        <div className="opw-section-tabs" role="group" aria-label="طريقة عرض الصيانة"><button aria-pressed={viewMode === 'dashboard'} onClick={() => setViewMode('dashboard')}><Calendar size={16}/>لوحة التشغيل</button><button aria-pressed={viewMode === 'list'} onClick={() => setViewMode('list')}><List size={16}/>سجل الطلبات</button><Button className="ms-auto" variant="ghost" onClick={() => { void refetch(); }} aria-label="تحديث سجل الصيانة"><RefreshCw size={16}/></Button></div>
         {viewMode === 'dashboard' ? (
-          <>
-            <section className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-              <div className="rounded-[8px] border bg-white p-5 shadow-sm lg:col-span-2" style={{ borderColor: maintenanceTheme.border }}>
-                <div className="mb-5 flex items-center justify-between gap-3">
-                  <div>
-                    <h2 className="text-lg font-bold" style={{ color: maintenanceTheme.text }}>ملخص الصيانات</h2>
-                    <p className="mt-1 text-sm" style={{ color: maintenanceTheme.muted }}>توزيع أنواع الصيانة الحالية</p>
-                  </div>
-                  <Button
-                    variant="outline"
-                    onClick={() => openFeatureAction({
-                      title: 'عرض كل الصيانات',
-                      description: 'سيتم فتح قائمة الصيانة الكاملة مع الإبقاء على الفلاتر الحالية.',
-                      confirmLabel: 'عرض الكل',
-                      tour: maintenanceTours.navigation,
-                      onConfirm: () => setViewMode('list'),
-                    })}
-                    className="h-10 rounded-[8px] border bg-white"
-                    style={{ borderColor: maintenanceTheme.border, color: maintenanceTheme.text }}
-                  >
-                    عرض الكل
-                  </Button>
-                </div>
-
-                <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-                  {maintenanceTypeSummary.map((item) => (
-                    <TypeSummaryCard key={item.label} label={item.label} count={item.count} icon={item.icon} color={item.color} />
-                  ))}
-                </div>
-              </div>
-
-              <div className="rounded-[8px] border bg-white p-5 shadow-sm" style={{ borderColor: maintenanceTheme.border }}>
-                <div className="mb-5">
-                  <h2 className="text-lg font-bold" style={{ color: maintenanceTheme.text }}>التنبيهات</h2>
-                  <p className="mt-1 text-sm" style={{ color: maintenanceTheme.muted }}>طلبات تحتاج انتباهك</p>
-                </div>
-
-                <div className="space-y-3">
-                  {(stats?.overdueCount || 0) > 0 && (
-                    <AlertCard
-                      title="متأخرة"
-                      count={stats?.overdueCount || 0}
-                      icon={AlertCircle}
-                      color={maintenanceTheme.alert}
-                      onClick={() => openFeatureAction({
-                        title: 'عرض الصيانات المتأخرة',
-                        description: 'سيتم فتح القائمة مع فلتر الأولوية العاجلة لمراجعة الطلبات التي تحتاج تدخلًا.',
-                        confirmLabel: 'عرض المتأخرة',
-                        tour: maintenanceTours.metrics,
-                        onConfirm: () => { setViewMode('list'); setPriorityFilter('urgent'); },
-                      })}
-                    />
-                  )}
-                  {(stats?.urgentCount || 0) > 0 && (
-                    <AlertCard
-                      title="عاجلة"
-                      count={stats?.urgentCount || 0}
-                      icon={AlertTriangle}
-                      color={maintenanceTheme.alert}
-                      onClick={() => openFeatureAction({
-                        title: 'عرض الصيانات العاجلة',
-                        description: 'سيتم فتح القائمة مع فلتر الأولوية العاجلة.',
-                        confirmLabel: 'عرض العاجلة',
-                        tour: maintenanceTours.metrics,
-                        onConfirm: () => { setViewMode('list'); setPriorityFilter('urgent'); },
-                      })}
-                    />
-                  )}
-                  {(stats?.overdueCount || 0) === 0 && (stats?.urgentCount || 0) === 0 && (
-                    <div className="rounded-[8px] px-4 py-8 text-center" style={{ backgroundColor: maintenanceTheme.inner }}>
-                      <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-[8px]" style={{ backgroundColor: `${maintenanceTheme.success}14` }}>
-                        <CheckCircle className="h-6 w-6" style={{ color: maintenanceTheme.success }} />
-                      </div>
-                      <p className="text-sm font-bold" style={{ color: maintenanceTheme.text }}>لا توجد تنبيهات</p>
-                      <p className="mt-1 text-xs" style={{ color: maintenanceTheme.muted }}>كل الصيانات تسير على ما يرام</p>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </section>
-
-            {(maintenanceVehicles?.length || 0) > 0 && (
-              <section className="rounded-[8px] border bg-white shadow-sm" style={{ borderColor: maintenanceTheme.border }}>
-                <div className="flex flex-col gap-3 border-b p-5 sm:flex-row sm:items-center sm:justify-between" style={{ borderColor: maintenanceTheme.border }}>
-                  <div>
-                    <h2 className="flex items-center gap-2 text-lg font-bold" style={{ color: maintenanceTheme.text }}>
-                      <Car className="h-5 w-5" style={{ color: maintenanceTheme.alert }} />
-                      المركبات في الصيانة
-                    </h2>
-                    <p className="mt-1 text-sm" style={{ color: maintenanceTheme.muted }}>المركبات التي حالتها تحت الصيانة</p>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Badge className="rounded-[8px] border" style={{ backgroundColor: `${maintenanceTheme.alert}14`, borderColor: `${maintenanceTheme.alert}44`, color: maintenanceTheme.alert }}>
-                      {maintenanceVehicles?.length || 0} مركبة
-                    </Badge>
-                    <Button
-                      variant="ghost"
-                      onClick={() => openFeatureAction({
-                        title: 'فتح صفحة الأسطول',
-                        description: 'سيتم فتح صفحة الأسطول لمراجعة كل المركبات وحالاتها التشغيلية.',
-                        confirmLabel: 'فتح الأسطول',
-                        tour: maintenanceTours.navigation,
-                        onConfirm: () => navigate('/fleet'),
-                      })}
-                      className="h-10 rounded-[8px]"
-                      style={{ color: maintenanceTheme.alert }}
-                    >
-                      عرض الكل
-                    </Button>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 gap-3 p-5 lg:grid-cols-2 xl:grid-cols-3">
-                  {maintenanceVehicles?.slice(0, 6).map((vehicle: any, index: number) => (
-                    <VehicleInMaintenanceCard
-                      key={vehicle.id}
-                      vehicle={vehicle}
-                      index={index}
-                      onViewVehicle={() => openFeatureAction({
-                        title: 'فتح ملف المركبة',
-                        description: 'سيتم فتح ملف المركبة في تبويب جديد لمراجعة التفاصيل والعقود والحالة.',
-                        confirmLabel: 'فتح المركبة',
-                        tour: maintenanceTours.navigation,
-                        onConfirm: () => window.open(`/fleet/vehicles/${vehicle.id}`, '_blank'),
-                      })}
-                    />
-                  ))}
-                </div>
-              </section>
-            )}
-
-            <section className="rounded-[8px] border bg-white shadow-sm" style={{ borderColor: maintenanceTheme.border }}>
-              <div className="flex flex-col gap-3 border-b p-5 sm:flex-row sm:items-center sm:justify-between" style={{ borderColor: maintenanceTheme.border }}>
-                <div>
-                  <h2 className="text-lg font-bold" style={{ color: maintenanceTheme.text }}>النشاط الأخير</h2>
-                  <p className="mt-1 text-sm" style={{ color: maintenanceTheme.muted }}>آخر طلبات الصيانة</p>
-                </div>
-                <Button
-                  variant="ghost"
-                  onClick={() => openFeatureAction({
-                    title: 'عرض النشاط الكامل',
-                    description: 'سيتم فتح قائمة الصيانة لعرض كل السجلات بدل آخر النشاط فقط.',
-                    confirmLabel: 'عرض الكل',
-                    tour: maintenanceTours.navigation,
-                    onConfirm: () => setViewMode('list'),
-                  })}
-                  className="h-10 rounded-[8px]"
-                  style={{ color: maintenanceTheme.water }}
-                >
-                  عرض الكل
-                </Button>
-              </div>
-
-              <div className="space-y-3 p-5">
-                {filteredRecords.slice(0, 5).map((record: any, index: number) => (
-                  <MaintenanceRecordCard
-                    key={record.id}
-                    record={record}
-                    index={index}
-                    onView={() => handleViewDetails(record)}
-                    onComplete={() => setStatusAction({ record, type: 'complete' })}
-                    onStartProgress={() => setStatusAction({ record, type: 'start' })}
-                    onDelete={() => setRecordToDelete(record)}
-                  />
-                ))}
-
-                {filteredRecords.length === 0 && (
-                  <div className="rounded-[8px] py-12 text-center" style={{ backgroundColor: maintenanceTheme.inner }}>
-                    <Wrench className="mx-auto mb-4 h-10 w-10" style={{ color: maintenanceTheme.muted }} />
-                    <h3 className="mb-2 font-bold" style={{ color: maintenanceTheme.text }}>لا توجد سجلات صيانة</h3>
-                    <p className="text-sm" style={{ color: maintenanceTheme.muted }}>ابدأ بإنشاء طلب صيانة جديد</p>
-                  </div>
-                )}
-              </div>
-            </section>
-          </>
+          <div className="opw-maintenance-columns"><div className="space-y-5">
+            <OperationsPanel title="المركبات تحت الصيانة" description="مركبات تحتاج متابعة جاهزيتها قبل العودة للتشغيل." action={<Button variant="outline" size="sm" onClick={() => navigate('/fleet')}>عرض الأسطول <ChevronLeft size={14}/></Button>}>
+              {maintenanceVehiclesLoading ? <p role="status" className="opw-page-note">جارٍ تحميل المركبات…</p> : maintenanceVehicles?.length ? <div className="opw-vehicle-strip">{maintenanceVehicles.slice(0,6).map((vehicle: any,index:number) => <VehicleInMaintenanceCard key={vehicle.id} vehicle={vehicle} index={index} onViewVehicle={() => navigate('/fleet/vehicles/' + vehicle.id)}/>)}</div> : <OperationsEmpty title="لا توجد مركبات تحت الصيانة في هذه القائمة" description="تظهر المركبات هنا عند تسجيل حالتها تحت الصيانة."/>}
+              {(maintenanceVehicles?.length ?? 0) > 6 && <p className="opw-page-note">يعرض القسم أول 6 مركبات؛ افتح الأسطول لمراجعة بقية المركبات.</p>}
+            </OperationsPanel>
+            <OperationsPanel title="آخر طلبات الصيانة" description="أحدث الطلبات المطابقة للفلاتر ضمن آخر 100 سجل محمّل." action={<Button variant="outline" size="sm" onClick={() => setViewMode('list')}>فتح السجل <ChevronLeft size={14}/></Button>}>
+              <div className="opw-records">{filteredRecords.slice(0,5).map((record:any,index:number) => <MaintenanceRecordCard key={record.id} record={record} index={index} onView={() => handleViewDetails(record)} onComplete={() => setStatusAction({record,type:'complete'})} onStartProgress={() => setStatusAction({record,type:'start'})} onDelete={() => setRecordToDelete(record)}/>)}</div>
+              {!filteredRecords.length && <OperationsEmpty title="لا توجد طلبات مطابقة" description="يمكنك تغيير الفلاتر أو إضافة طلب صيانة جديد." action={<Button variant="outline" onClick={handleCreateNew}><Plus size={15}/>طلب جديد</Button>}/>}
+            </OperationsPanel>
+          </div><aside>
+            <OperationsPanel title="تحتاج انتباهك" description="مراجعة الطلبات حسب الموعد والأولوية.">
+              {statsLoading ? <p role="status" className="opw-page-note">جارٍ تحميل المؤشرات…</p> : statsError || !stats ? <p role="alert" className="opw-page-note">تعذّر تحميل التنبيهات.</p> : <>
+                <button className="opw-attention-row" onClick={() => { setViewMode('list'); handleResetFilters(); setStatusFilter('overdue'); }}><AlertCircle size={18}/><span>متأخرة عن الموعد</span><b>{stats.overdueCount}</b><ChevronLeft size={14}/></button>
+                <button className="opw-attention-row" onClick={() => { setViewMode('list'); handleResetFilters(); setPriorityFilter('urgent'); }}><AlertTriangle size={18}/><span>أولوية عاجلة</span><b>{stats.urgentCount}</b><ChevronLeft size={14}/></button>
+                <p className="opw-page-note">يفتح كل تنبيه النتائج المطابقة ضمن السجل المحمّل.</p>
+              </>}
+            </OperationsPanel>
+            <OperationsPanel title="أنواع الصيانة" description="توزيع الأنواع بحسب سجلات المؤشرات.">{maintenanceTypeSummary.map(item => <div className="opw-type-row" key={item.label}><item.icon size={17}/><span>{item.label}</span><strong>{statsLoading || statsError ? '—' : item.count}</strong></div>)}</OperationsPanel>
+          </aside></div>
         ) : (
           <>
             <section className="rounded-[8px] border bg-white p-4 shadow-sm" style={{ borderColor: maintenanceTheme.border }}>
@@ -1086,7 +621,7 @@ export default function MaintenanceRedesigned() {
                 <div className="relative flex-1">
                   <Search className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2" style={{ color: maintenanceTheme.muted }} />
                   <Input
-                    placeholder="بحث برقم الطلب أو المركبة..."
+                    aria-label="البحث في سجل الصيانة" placeholder="رقم الطلب، اللوحة، أو نوع الصيانة…"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     className="h-11 rounded-[8px] border bg-white pr-10 text-sm"
@@ -1110,11 +645,12 @@ export default function MaintenanceRedesigned() {
 
                 <div className="flex flex-wrap items-center gap-2">
                   <Select value={statusFilter} onValueChange={setStatusFilter}>
-                    <SelectTrigger className="h-11 w-40 rounded-[8px] border bg-white" style={{ borderColor: maintenanceTheme.border }}>
+                    <SelectTrigger aria-label="حالة طلب الصيانة" className="h-11 w-40 rounded-[8px] border bg-white" style={{ borderColor: maintenanceTheme.border }}>
                       <SelectValue placeholder="الحالة" />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="all">كل الحالات</SelectItem>
+                      <SelectItem value="overdue">متأخرة عن الموعد</SelectItem>
                       <SelectItem value="pending">معلقة</SelectItem>
                       <SelectItem value="in_progress">قيد المعالجة</SelectItem>
                       <SelectItem value="completed">مكتملة</SelectItem>
@@ -1123,7 +659,7 @@ export default function MaintenanceRedesigned() {
                   </Select>
 
                   <Select value={typeFilter} onValueChange={setTypeFilter}>
-                    <SelectTrigger className="h-11 w-44 rounded-[8px] border bg-white" style={{ borderColor: maintenanceTheme.border }}>
+                    <SelectTrigger aria-label="نوع الصيانة" className="h-11 w-44 rounded-[8px] border bg-white" style={{ borderColor: maintenanceTheme.border }}>
                       <SelectValue placeholder="النوع" />
                     </SelectTrigger>
                     <SelectContent>
@@ -1136,7 +672,7 @@ export default function MaintenanceRedesigned() {
                   </Select>
 
                   <Select value={priorityFilter} onValueChange={setPriorityFilter}>
-                    <SelectTrigger className="h-11 w-40 rounded-[8px] border bg-white" style={{ borderColor: maintenanceTheme.border }}>
+                    <SelectTrigger aria-label="أولوية الصيانة" className="h-11 w-40 rounded-[8px] border bg-white" style={{ borderColor: maintenanceTheme.border }}>
                       <SelectValue placeholder="الأولوية" />
                     </SelectTrigger>
                     <SelectContent>
@@ -1217,10 +753,10 @@ export default function MaintenanceRedesigned() {
                   <span className="font-bold" style={{ color: maintenanceTheme.text }}>{totalPages}</span>
                 </p>
 
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2">
                   <Button
                     variant="outline"
-                    onClick={() => openPaginationAction(Math.max(1, currentPage - 1))}
+                    aria-label="الصفحة السابقة" onClick={() => openPaginationAction(Math.max(1, currentPage - 1))}
                     disabled={currentPage === 1}
                     className="h-10 rounded-[8px] border bg-white"
                     style={{ borderColor: maintenanceTheme.border }}
@@ -1228,7 +764,7 @@ export default function MaintenanceRedesigned() {
                     <ChevronRight className="h-4 w-4" />
                   </Button>
 
-                  {Array.from({ length: Math.min(5, totalPages) }, (_, i) => i + 1).map(page => (
+                  {pageNumbers(currentPage, totalPages).map(page => (
                     <Button
                       key={page}
                       variant={currentPage === page ? "default" : "ghost"}
@@ -1244,7 +780,7 @@ export default function MaintenanceRedesigned() {
 
                   <Button
                     variant="outline"
-                    onClick={() => openPaginationAction(Math.min(totalPages, currentPage + 1))}
+                    aria-label="الصفحة التالية" onClick={() => openPaginationAction(Math.min(totalPages, currentPage + 1))}
                     disabled={currentPage === totalPages}
                     className="h-10 rounded-[8px] border bg-white"
                     style={{ borderColor: maintenanceTheme.border }}
@@ -1256,7 +792,7 @@ export default function MaintenanceRedesigned() {
             )}
           </>
         )}
-      </main>
+      </div>
       {/* Side Panels */}
       <MaintenanceSidePanel
         isOpen={sidePanelOpen}
@@ -1312,7 +848,7 @@ export default function MaintenanceRedesigned() {
             </DialogDescription>
           </DialogHeader>
           <div className="rounded-[8px] border p-4 text-sm leading-7" style={{ borderColor: maintenanceTheme.border, backgroundColor: maintenanceTheme.inner, color: maintenanceTheme.text }}>
-            سيتم تصدير {filteredRecords.length} سجل حسب البحث والفلاتر الحالية.
+            سيتم تصدير {filteredRecords.length} سجل مطابق للفلاتر من آخر 100 طلب محمّل، بصيغة CSV التي يدعمها Excel.
           </div>
           <DialogFooter className="gap-2 sm:justify-between">
             <FeatureTourButton tour={maintenanceTours.export} onStart={setActiveTour} />
@@ -1328,18 +864,13 @@ export default function MaintenanceRedesigned() {
                 className="rounded-[8px] text-white"
                 style={{ backgroundColor: maintenanceTheme.success }}
               >
-                تصدير الآن
+                تنزيل CSV
               </Button>
             </div>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      <FeatureActionDialog
-        action={featureAction}
-        onClose={() => setFeatureAction(null)}
-        onStartTour={setActiveTour}
-      />
 
       <AlertDialog open={!!statusAction} onOpenChange={(open) => !open && setStatusAction(null)}>
         <AlertDialogContent className="rounded-[8px]" dir="rtl">
@@ -1420,6 +951,6 @@ export default function MaintenanceRedesigned() {
           }}
         />
       </Suspense>
-    </div>
+    </OperationsWorkspace>
   );
 }

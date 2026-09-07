@@ -7,7 +7,7 @@ import { isValidQatarPhone } from './helpers';
 
 const PhoneNumbersTab = ({ customer }: { customer: any }) => {
   const phones = [
-    { type: 'رئيسي', number: customer.phone, icon: Phone },
+    { type: 'رئيسي', number: customer.phone || '-', icon: Phone },
     { type: 'واتساب', number: customer.whatsapp || customer.phone || '-', icon: MessageSquare },
   ];
 
@@ -65,7 +65,7 @@ const PhoneNumbersTab = ({ customer }: { customer: any }) => {
               <p className="text-lg font-bold text-slate-900 font-mono mb-3" dir="ltr">
                 {phone.number}
               </p>
-              {phone.number !== '-' && (
+              {hasNumber && (
                 <div className="flex gap-2">
                   <Button
                     variant="ghost"
@@ -80,7 +80,7 @@ const PhoneNumbersTab = ({ customer }: { customer: any }) => {
                     variant="ghost"
                     size="sm"
                     className="flex-1 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 p-0 h-8"
-                    onClick={() => window.open(`https://wa.me/${phone.number.replace(/[^0-9]/g, '')}`, '_blank')}
+                    onClick={() => window.open(`https://wa.me/${phone.number.replace(/[^0-9]/g, '')}`, '_blank', 'noopener,noreferrer')}
                   >
                     <MessageSquare className="w-4 h-4 ml-1" />
                     واتساب

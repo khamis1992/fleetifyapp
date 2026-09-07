@@ -56,7 +56,7 @@ export function LawsuitCaseWorkflowCard() {
         <div>
           <Badge className="bg-[#EAF2F9] text-[#173A63] hover:bg-[#EAF2F9]">حالة القضية</Badge>
           <h2>سير عمل القضية</h2>
-          <p>تتغير إلى «تم رفع الدعوى» تلقائيًا بعد نجاح الاعتماد النهائي في تقاضي، ويمكن متابعة المراحل التالية من هنا.</p>
+          <p>تتحدث الحالة تلقائيًا عند وصول تأكيد تقاضي. إذا أودعت الدعوى ولم تتحدث الحالة، استخدم «تسجيل رفع الدعوى» لتوثيق الإيداع ومتابعة المراحل التالية.</p>
         </div>
         <div className="flex flex-wrap gap-2">
           <Badge variant="outline" dir="ltr">{legalCase.case_number}</Badge>
@@ -68,8 +68,7 @@ export function LawsuitCaseWorkflowCard() {
 
       <LegalCaseWorkflowPanel
         caseId={legalCase.id}
-        canMarkFiled={false}
-        filingBlockReason="تُسجّل حالة الرفع تلقائيًا من إيصال تقاضي؛ لا يلزم إجراء يدوي."
+        canMarkFiled
         onChanged={() => void legalCaseQuery.refetch()}
       />
     </section>

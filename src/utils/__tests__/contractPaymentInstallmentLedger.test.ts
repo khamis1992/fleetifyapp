@@ -30,6 +30,16 @@ const payment = (id: string, date: string, amount: number, invoiceId: string | n
 });
 
 describe('buildContractInstallmentLedger', () => {
+  it('uses schedule evidence for legacy service rent while retaining penalties as charges', () => {
+    const result = buildContractInstallmentLedger({
+      invoices: [invoice({ invoice_type: 'service' }), invoice({ id: 'penalty', invoice_type: 'service', penalty_id: 'p' })],
+      payments: [], allocations: [], rentalInvoiceIds: ['invoice-rent', 'penalty'],
+    });
+    expect(result.rentGroups).toHaveLength(1);
+    expect(result.rentGroups[0].label).toBe('فاتورة شهر 8/2026');
+    expect(result.chargeGroups).toHaveLength(1);
+    expect(result.chargeGroups[0].invoices[0].id).toBe('penalty');
+  });
   it.each(['payment', 'refund', 'transfer'])('does not count a completed %s as collected rent', (transaction_type) => {
     const result = buildContractInstallmentLedger({
       invoices: [invoice({ total_amount: 1500, paid_amount: 0 })],

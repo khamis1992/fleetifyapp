@@ -276,7 +276,7 @@ export const CustomerCard = React.forwardRef<HTMLDivElement, CustomerCardProps>(
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-9 w-9">
+              <Button variant="ghost" size="icon" className="h-9 w-9" aria-label="إجراءات الملف" title="إجراءات الملف">
                 <MoreVertical className="w-4 h-4" />
               </Button>
             </DropdownMenuTrigger>

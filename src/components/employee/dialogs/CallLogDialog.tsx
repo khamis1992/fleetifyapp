@@ -1,4 +1,5 @@
-﻿/**
+import { WorkspaceDialogContent as DialogContent, WorkspaceDialogHeader as DialogHeader, WorkspaceDialogFooter as DialogFooter, WorkspaceButton as Button, WorkspaceFormSection } from '@/components/employee-workspace/WorkspacePresentation';
+/**
  * Call Log Dialog
  * حوار تسجيل مكالمة مع العميل
  */
@@ -17,14 +18,7 @@ import {
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from '@/components/ui/dialog';
+import { Dialog, DialogDescription, DialogTitle } from '@/components/ui/dialog';
 import {
   Form,
   FormControl,
@@ -42,7 +36,7 @@ import {
 } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Button } from '@/components/ui/button';
+
 import {
   Loader2,
   Phone,
@@ -633,17 +627,10 @@ export const CallLogDialog: React.FC<CallLogDialogProps> = ({
         onOpenChange(true);
       }}
     >
-      <DialogContent className="sm:max-w-[550px]">
+      <DialogContent className="sm:max-w-[660px]">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2 text-xl">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white">
-              <Phone className="w-5 h-5" />
-            </div>
-            تسجيل مكالمة
-          </DialogTitle>
-          <DialogDescription>
-            سجّل تفاصيل المكالمة مع العميل لتتبع التواصل والأداء
-          </DialogDescription>
+          <DialogTitle>تسجيل مكالمة</DialogTitle>
+          <DialogDescription>توثيق الاتصال ونتيجته، مع تسجيل صوتي ومتابعة عند الحاجة.</DialogDescription>
         </DialogHeader>
 
         {savedCommunicationId ? (
@@ -718,6 +705,7 @@ export const CallLogDialog: React.FC<CallLogDialogProps> = ({
         ) : (
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            <WorkspaceFormSection number="01" title="العقد ونتيجة الاتصال" description="اختر العميل وحدد نوع المكالمة ونتيجتها.">
             {/* Contract Selection */}
             <FormField
               control={form.control}
@@ -744,7 +732,7 @@ export const CallLogDialog: React.FC<CallLogDialogProps> = ({
               )}
             />
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="ew-form-grid">
               {/* Call Type */}
               <FormField
                 control={form.control}
@@ -822,6 +810,8 @@ export const CallLogDialog: React.FC<CallLogDialogProps> = ({
               )}
             />
 
+            </WorkspaceFormSection>
+            <WorkspaceFormSection number="02" title="التسجيل الصوتي" description="يمكن إرفاق تسجيل ومراجعة ملخصه قبل الحفظ.">
             {/* Audio recording */}
             <div className="space-y-3 rounded-xl border border-slate-200 bg-slate-50 p-4">
               <div className="flex items-center justify-between gap-3">
@@ -914,6 +904,8 @@ export const CallLogDialog: React.FC<CallLogDialogProps> = ({
               )}
             </div>
 
+            </WorkspaceFormSection>
+            <WorkspaceFormSection number="03" title="التوثيق والخطوة التالية" description="دوّن ما تم الاتفاق عليه وحدد الحاجة إلى متابعة.">
             {/* Notes */}
             <FormField
               control={form.control}
@@ -972,6 +964,7 @@ export const CallLogDialog: React.FC<CallLogDialogProps> = ({
               />
             )}
 
+            </WorkspaceFormSection>
             <DialogFooter className="gap-2">
               <Button
                 type="button"

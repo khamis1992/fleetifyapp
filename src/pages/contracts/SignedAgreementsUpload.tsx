@@ -12,7 +12,7 @@ import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
 
 // Configuration for batch processing - معالجة متوازية
 // 10 ملفات في وقت واحد (بدون AI الآن)
-const BATCH_SIZE = 10;
+const BATCH_SIZE = 1; // Each file requires employee review before continuing.
 import {
   Upload,
   FileText,
@@ -139,7 +139,7 @@ export default function SignedAgreementsUpload() {
         )
       );
 
-      // إضافة timeout للمطابقة (45 ثانية)
+      // Manual review must finish before marking the file linked or advancing the queue.
       const matchPromise = matchAgreement(uploadResult.documentId, uploadedFile.file.name, (progress) => {
         // Progress from hook is 10-100%, map to 60-100%
         const matchProgress = 60 + (progress / 100) * 40;
@@ -152,13 +152,7 @@ export default function SignedAgreementsUpload() {
         );
       });
 
-      const timeoutPromise = new Promise<{ success: boolean; error: string }>((resolve) => {
-        setTimeout(() => {
-          resolve({ success: true, error: '' }); // اعتبره ناجح بدون مطابقة
-        }, 45000);
-      });
-
-      const matchResult = await Promise.race([matchPromise, timeoutPromise]);
+      const matchResult = await matchPromise;
 
       // Step 3: Update final status
       setUploadedFiles(prev =>
@@ -445,7 +439,7 @@ export default function SignedAgreementsUpload() {
       },
       matched: {
         icon: CheckCircle,
-        text: 'تمت المطابقة',
+        text: 'تم الربط — فحص الهوية مطلوب',
         className: 'bg-green-50 text-green-700 border-green-200',
       },
       unmatched: {
@@ -618,7 +612,7 @@ export default function SignedAgreementsUpload() {
                       <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg p-4 space-y-3">
                         <div className="flex items-center gap-2 text-sm font-medium text-green-800">
                           <CheckCircle className="w-4 h-4" />
-                          تمت المطابقة بنجاح (الثقة: {Math.round((file.matchData.confidence || 0) * 100)}%)
+                          تم تأكيد ربط الملف بالعقد. فحص هوية العميل مطلوب قبل اعتماد النسخة.
                         </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">

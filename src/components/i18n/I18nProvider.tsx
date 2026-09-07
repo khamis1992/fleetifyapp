@@ -27,7 +27,7 @@ interface I18nProviderProps {
 const I18nProvider: React.FC<I18nProviderProps> = ({
   children,
   language,
-  fallbackLanguage = 'en',
+  fallbackLanguage = 'ar',
   onLanguageChange,
   enableRTL = true,
   enableIconMirroring = true,
@@ -235,7 +235,7 @@ const I18nProvider: React.FC<I18nProviderProps> = ({
           <div className="text-red-500 text-xl mb-4">⚠️</div>
           <h2 className="text-lg font-semibold text-slate-900 mb-2">{t("internationalizationError")}</h2>
           <p className="text-slate-600 mb-4">
-            Failed to initialize internationalization: {initError}
+            تعذّر تحميل إعدادات اللغة. يرجى إعادة تحميل الصفحة.
           </p>
           <button
             onClick={() => window.location.reload()}

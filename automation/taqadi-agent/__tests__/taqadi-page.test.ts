@@ -1,4 +1,4 @@
-import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
@@ -15,12 +15,15 @@ import {
   TaqadiPortal,
 } from '../taqadi-page';
 import type { FilingPayload } from '../types';
+import { confirmSmartCardAuthenticationSucceeded, reserveSmartCardPinSubmission } from '../smart-card-pin';
 
 describe('TaqadiPortal classification fields', () => {
   let browser: Browser;
   let page: Page;
   let uploadFixturePath: string;
   let wordUploadFixturePath: string;
+
+  beforeEach(() => confirmSmartCardAuthenticationSucceeded());
 
   it('normalizes nationality country names without confusing South Sudan', () => {
     expect(nationalityForTaqadi('السودان')).toBe('سودان');
@@ -1776,6 +1779,138 @@ describe('TaqadiPortal classification fields', () => {
     };
     await expect(portal.confirmAccountPromptAndAdoptPortalPage())
       .resolves.toBe(true);
+  });
+
+  it('resumes company authorization without restarting the login handshake', async () => {
+    await page.route('**/*', async (route) => {
+      await route.fulfill({ contentType: 'text/html; charset=utf-8', body:
+        route.request().url().includes('/itc/home')
+          ? '<header id="header">شركة العراف لتأجير السيارات</header><main id="main">إدارة الدعاوى</main>'
+          : `<label><input type="radio" name="mode">اختيار الشركة</label>
+            <label><input type="radio" name="company" value="17201586">العراف 17201586</label>
+            <button onclick="location.href='https://taqadi.sjc.gov.qa/itc/home'">متابعة</button>`,
+      });
+    });
+    await page.goto('https://www.tawtheeq.gov.qa/idp/public/authn/qgp-authorization');
+    const navigate = vi.spyOn(page, 'goto');
+    try {
+      await new TaqadiPortal(page).ensureAuthenticated(async () => undefined, { resume: true });
+      expect(navigate).not.toHaveBeenCalled();
+      expect(page.url()).toBe('https://taqadi.sjc.gov.qa/itc/home');
+    } finally {
+      navigate.mockRestore();
+      await page.unroute('**/*');
+    }
+  }, 15_000);
+
+  it('resets the PIN budget after successful authentication but still blocks an unverified company', async () => {
+    await page.route('**/*', async (route) => {
+      await route.fulfill({ contentType: 'text/html; charset=utf-8', body:
+        '<header id="header">تقاضي</header><aside id="left-panel">حساب فردي</aside><main id="main">إدارة الدعاوى</main>',
+      });
+    });
+    await page.goto('https://taqadi.sjc.gov.qa/itc/home');
+    reserveSmartCardPinSubmission();
+    reserveSmartCardPinSubmission();
+    const portal = new TaqadiPortal(page) as unknown as {
+      tawtheeqSmartCardSelected: boolean;
+      tawtheeqSmartCardPinSubmitted: boolean;
+      confirmAccountPromptAndAdoptPortalPage: () => Promise<boolean>;
+    };
+    portal.tawtheeqSmartCardSelected = true;
+    portal.tawtheeqSmartCardPinSubmitted = true;
+    try {
+      await expect(portal.confirmAccountPromptAndAdoptPortalPage()).rejects.toMatchObject({
+        code: 'TAWTHEEQ_COMPANY_CONTEXT_NOT_VERIFIED',
+        details: { resumeSupported: true },
+      });
+      expect(reserveSmartCardPinSubmission()).toBe(true);
+    } finally {
+      await page.unroute('**/*');
+    }
+  }, 15_000);
+
+  it('does not treat an unrelated host with the home pathname as authentication proof', async () => {
+    await page.route('**/*', async (route) => {
+      await route.fulfill({ contentType: 'text/html', body: '<main id="main">company</main>' });
+    });
+    await page.goto('https://example.test/itc/home');
+    const portal = new TaqadiPortal(page) as unknown as {
+      isAuthenticatedPortalPage: (candidate: Page) => Promise<boolean>;
+    };
+    try {
+      await expect(portal.isAuthenticatedPortalPage(page)).resolves.toBe(false);
+    } finally {
+      await page.unroute('**/*');
+    }
+  });
+
+  it('never switches to password login while the smart-card handshake is in progress', async () => {
+    const previous = { ...agentConfig.tawtheeq };
+    agentConfig.tawtheeq.username = 'fixture-user';
+    agentConfig.tawtheeq.password = 'fixture-password';
+    await page.setContent('<form id="frm_mobileid_login"><input id="username"><input id="password" type="password"><button>استمر</button></form>');
+    const portal = new TaqadiPortal(page) as unknown as {
+      tawtheeqSmartCardSelected: boolean;
+      continueTawtheeqLoginIfReady: () => Promise<boolean>;
+    };
+    portal.tawtheeqSmartCardSelected = true;
+    try {
+      await expect(portal.continueTawtheeqLoginIfReady()).resolves.toBe(false);
+      expect(await page.locator('#username').inputValue()).toBe('');
+      expect(await page.locator('#password').inputValue()).toBe('');
+    } finally {
+      Object.assign(agentConfig.tawtheeq, previous);
+    }
+  });
+
+  it('stops on an existing rejected PIN before resuming automatic entry', async () => {
+    await page.route('**/*', async (route) => {
+      await route.fulfill({ contentType: 'text/html; charset=utf-8', body:
+        '<form id="pin-dialog-form"><p role="alert">الرقم السري غير صحيح</p><input id="pin" type="password"><button id="pin-ok-button">التالي</button></form>',
+      });
+    });
+    await page.goto('https://www.tawtheeq.gov.qa/idp/public/authn/smart-card');
+    const previousPin = agentConfig.tawtheeq.smartCardPin;
+    agentConfig.tawtheeq.smartCardPin = 'fixture-pin';
+    try {
+      await expect(new TaqadiPortal(page).ensureAuthenticated(async () => undefined, { resume: true }))
+        .rejects.toMatchObject({ code: 'SMART_CARD_PIN_REJECTED' });
+      expect(await page.locator('#pin').inputValue()).toBe('');
+      expect(reserveSmartCardPinSubmission()).toBe(true);
+      expect(reserveSmartCardPinSubmission()).toBe(true);
+    } finally {
+      agentConfig.tawtheeq.smartCardPin = previousPin;
+      await page.unroute('**/*');
+    }
+  });
+
+  it('does not reset the PIN limit by adopting a different persisted authenticated tab', async () => {
+    const context = await browser.newContext();
+    await context.route('**/*', async (route) => {
+      await route.fulfill({ contentType: 'text/html; charset=utf-8', body:
+        route.request().url().includes('/itc/home')
+          ? '<main id="main">شركة العراف لتأجير السيارات</main>'
+          : '<form id="pin-dialog-form"><input id="pin" type="password"></form>',
+      });
+    });
+    const current = await context.newPage();
+    const other = await context.newPage();
+    await current.goto('https://www.tawtheeq.gov.qa/idp/public/authn/smart-card');
+    await other.goto('https://taqadi.sjc.gov.qa/itc/home');
+    reserveSmartCardPinSubmission();
+    reserveSmartCardPinSubmission();
+    const portal = new TaqadiPortal(current) as unknown as {
+      tawtheeqSmartCardPinSubmitted: boolean;
+      confirmAccountPromptAndAdoptPortalPage: () => Promise<boolean>;
+    };
+    portal.tawtheeqSmartCardPinSubmitted = true;
+    try {
+      await portal.confirmAccountPromptAndAdoptPortalPage();
+      expect(reserveSmartCardPinSubmission()).toBe(false);
+    } finally {
+      await context.close();
+    }
   });
 
   it('selects the defendant role only inside the open party dialog', async () => {

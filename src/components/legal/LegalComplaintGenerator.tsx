@@ -801,10 +801,10 @@ export const LegalComplaintGenerator: React.FC<LegalComplaintGeneratorProps> = (
                           <Button size="sm" variant="ghost" onClick={handleCopy}>
                             {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
                           </Button>
-                          <Button size="sm" variant="ghost" onClick={handlePrint}>
+                          <Button size="sm" variant="ghost" onClick={handlePrint} aria-label="طباعة المستند" title="طباعة المستند">
                             <Printer className="w-4 h-4" />
                           </Button>
-                          <Button size="sm" variant="ghost" onClick={handleDownload}>
+                          <Button size="sm" variant="ghost" onClick={handleDownload} aria-label="تحميل المستند" title="تحميل المستند">
                             <Download className="w-4 h-4" />
                           </Button>
                         </div>

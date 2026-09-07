@@ -39,7 +39,7 @@ CREATE TABLE public.contracts (
 CREATE TABLE public.legal_cases (
   id uuid PRIMARY KEY, company_id uuid NOT NULL,
   contract_id uuid REFERENCES public.contracts(id), case_status text,
-  workflow_stage text, filing_date date, case_reference text,
+  workflow_stage text, filing_date date, case_reference text, complaint_number text,
   outcome_type text, outcome_date date, closed_at timestamptz,
   closure_reason text, notes text, stage_updated_at timestamptz,
   updated_at timestamptz
@@ -78,6 +78,10 @@ CREATE TABLE public.contract_operations_log (
   operation_details jsonb, old_values jsonb, new_values jsonb, notes text,
   performed_by uuid, performed_at timestamptz DEFAULT now()
 );
+CREATE TABLE public.legal_case_hearings (company_id uuid, case_id uuid);
+CREATE TABLE public.legal_case_appeals (company_id uuid, case_id uuid);
+CREATE TABLE public.legal_case_enforcements (company_id uuid, case_id uuid);
+CREATE TABLE public.taqadi_filing_artifacts (company_id uuid, job_id uuid, artifact_type text);
 -- Deliberately stubbed: vehicle derivation has separate tests; this suite checks
 -- that reversal honors the result and tenant scope, not its business formula.
 CREATE FUNCTION public.system_agent_vehicle_derived_state(uuid, uuid)

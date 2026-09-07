@@ -1,3 +1,4 @@
+import { WorkspaceDialogContent as DialogContent, WorkspaceDialogHeader as DialogHeader, WorkspaceDialogFooter as DialogFooter, WorkspaceButton as Button } from '@/components/employee-workspace/WorkspacePresentation';
 /**
  * Unassign Contract Dialog
  * حوار إلغاء تعيين عقد من موظف
@@ -13,14 +14,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { notifyContractUnassigned } from '@/utils/createNotification';
 
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from '@/components/ui/dialog';
+import { Dialog, DialogDescription, DialogTitle } from '@/components/ui/dialog';
 import {
   Form,
   FormControl,
@@ -37,7 +31,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { Button } from '@/components/ui/button';
+
 import { Loader2, XCircle, CheckCircle, AlertCircle } from 'lucide-react';
 
 // Validation Schema

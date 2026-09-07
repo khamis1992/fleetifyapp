@@ -1,3 +1,4 @@
+import { WorkspaceButton as Button, WorkspaceDialogContent as DialogContent, WorkspaceDialogFooter as DialogFooter, WorkspaceDialogHeader as DialogHeader } from '@/components/employee-workspace/WorkspacePresentation';
 import * as React from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { invalidateContractDocumentDependents } from '@/utils/contractDocumentQueries';
@@ -34,17 +35,10 @@ import { toast } from 'sonner';
 
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
+
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
+import { Dialog, DialogDescription, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Progress } from '@/components/ui/progress';

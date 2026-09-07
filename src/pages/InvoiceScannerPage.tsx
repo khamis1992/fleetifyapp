@@ -73,7 +73,7 @@ const InvoiceScannerPage: React.FC = () => {
       <div className="max-w-7xl mx-auto space-y-6">
         {/* Header */}
         <div className="bg-white rounded-lg shadow-sm p-6">
-          <div className="flex items-center justify-between">
+          <div data-finance-heading="" className="flex items-center justify-between">
             <div>
               <h1 className="text-3xl font-bold text-slate-900 flex items-center gap-3">
                 <Brain className="h-8 w-8 text-primary" />

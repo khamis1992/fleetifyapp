@@ -6,27 +6,27 @@ import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import type { NavigateFunction } from 'react-router-dom';
 
-const PaymentsTab = ({ payments, navigate, onAddPayment, customerName, customerPhone, customerIdNumber }: { 
-  payments: any[], 
-  navigate: NavigateFunction, 
-  onAddPayment: () => void, 
+const PaymentsTab = ({ payments, onAddPayment, customerName, customerPhone, customerIdNumber, isFiltered = false }: {
+  payments: any[],
+  navigate: NavigateFunction,
+  onAddPayment: () => void,
   customerName?: string,
   customerPhone?: string,
-  customerIdNumber?: string 
+  isFiltered?: boolean,
+  customerIdNumber?: string
 }) => {
-  
+
   const handlePrintPayments = () => {
-    const totalAmount = payments.reduce((sum, p) => sum + (p.amount || 0), 0);
     const completedPayments = payments.filter(p => p.payment_status === 'completed');
     const completedAmount = completedPayments.reduce((sum, p) => sum + (p.amount || 0), 0);
-    
+
     const receiptNumber = `RCP-${Date.now().toString().slice(-8)}`;
     const currentDateAr = new Date().toLocaleDateString('ar-QA', {
       year: 'numeric',
       month: 'long',
       day: 'numeric',
     });
-    
+
     const COMPANY_INFO = {
       name_ar: 'شركة العراف لتأجير السيارات',
       name_en: 'AL-ARAF CAR RENTAL L.L.C',
@@ -38,7 +38,7 @@ const PaymentsTab = ({ payments, navigate, onAddPayment, customerName, customerP
       authorized_signatory: 'شركة العراف لتأجير السيارات',
       authorized_title: '',
     };
-    
+
     const printContent = `
       <!DOCTYPE html>
       <html dir="rtl" lang="ar">
@@ -168,6 +168,8 @@ const PaymentsTab = ({ payments, navigate, onAddPayment, customerName, customerP
             <Button
               variant="outline"
               className="h-9 gap-2 border-[#DDE5EF] bg-white text-[#173A63] hover:bg-[#EEF5FB]"
+              disabled={isFiltered}
+              title={isFiltered ? 'امسح البحث قبل طباعة الإيصال' : undefined}
               onClick={handlePrintPayments}
             >
               <Printer className="w-4 h-4" />

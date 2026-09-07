@@ -1,5 +1,5 @@
-import { CSSProperties, useState, useEffect, useMemo, useCallback, useRef } from "react";
-import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
+import { useState, useEffect, useMemo, useCallback, useRef } from "react";
+import { Link, useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { PageCustomizer } from "@/components/PageCustomizer";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
@@ -30,7 +30,7 @@ import {
   XOctagon,
   MessageSquare,
   FileSignature,
-  Play,
+  Loader2,
   Scale,
   MoreVertical,
   List,
@@ -49,7 +49,6 @@ import {
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
 // Component imports
@@ -83,7 +82,6 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Loader2 } from "lucide-react";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 
 // Hook imports
@@ -96,24 +94,11 @@ import { generateShortContractNumber } from "@/utils/contractNumberGenerator";
 import { formatDateInGregorian } from "@/utils/dateFormatter";
 import { useCurrencyFormatter } from "@/hooks/useCurrencyFormatter";
 import { useUnifiedCompanyAccess } from "@/hooks/useUnifiedCompanyAccess";
-import { supabase, supabaseConfig } from "@/integrations/supabase/client";
-import { EmptyState } from '@/components/ui/EmptyState';
-import { systemColorPattern } from "@/lib/design-system/systemColorPattern";
+import { supabaseConfig } from "@/integrations/supabase/client";
+import "@/components/contracts/contracts-register.css";
+import { isContractOccupyingVehicle } from "@/utils/vehicleOperationalStatus";
 import { revertContractLegalProcedure } from '@/services/contractLegalProcedureService';
 import { SeizedActiveContractBanner } from '@/components/contracts/SeizedActiveContractBanner';
-
-const contractsTheme = systemColorPattern.colors;
-const contractsSystemStyle = {
-  '--contracts-text': contractsTheme.text,
-  '--contracts-surface': contractsTheme.surface,
-  '--contracts-inner': contractsTheme.innerSurface,
-  '--contracts-muted': contractsTheme.secondaryText,
-  '--contracts-border': contractsTheme.border,
-  '--contracts-info': contractsTheme.info,
-  '--contracts-alert': contractsTheme.alert,
-  '--contracts-focus': contractsTheme.focus,
-  '--contracts-success': contractsTheme.success,
-} as CSSProperties;
 
 // Animation variants
 const containerVariants = {
@@ -166,402 +151,6 @@ const getContractTabLabel = (tabId: string) => {
   return labels[tabId] || tabId;
 };
 
-// Status Badge Component
-const StatusBadge = ({ status, legalStatus, onClick }: { 
-  status: string; 
-  legalStatus?: string | null; 
-  onClick?: (e: React.MouseEvent) => void;
-}) => {
-  const statusConfig: Record<string, { icon: any; label: string; bg: string; text: string; border: string }> = {
-    active: { icon: CheckCircle, label: "نشط", bg: "bg-emerald-50", text: "text-emerald-700", border: "border-emerald-200" },
-    draft: { icon: FileEdit, label: "مسودة", bg: "bg-violet-50", text: "text-violet-700", border: "border-violet-200" },
-    under_review: { icon: Clock, label: "قيد المراجعة", bg: "bg-amber-50", text: "text-amber-700", border: "border-amber-200" },
-    cancelled: { icon: XCircle, label: "ملغي", bg: "bg-rose-50", text: "text-rose-600", border: "border-rose-200" },
-    expired: { icon: XOctagon, label: "منتهي", bg: "bg-rose-50", text: "text-rose-700", border: "border-rose-200" },
-    expiring_soon: { icon: AlertTriangle, label: "قارب الانتهاء", bg: "bg-orange-50", text: "text-orange-700", border: "border-orange-200" },
-    under_legal_procedure: { icon: Scale, label: "إجراء قانوني", bg: "bg-purple-50", text: "text-purple-700", border: "border-purple-200" },
-    pending_completion: { icon: Clock, label: "بانتظار الإكمال", bg: "bg-amber-50", text: "text-amber-700", border: "border-amber-200" },
-  };
-
-  const legalStatusConfig: Record<string, { icon: any; label: string; bg: string; text: string; border: string }> = {
-    under_legal_action: { icon: Scale, label: "تحت الإجراء القانوني", bg: "bg-purple-50", text: "text-purple-700", border: "border-purple-200" },
-    legal_case_filed: { icon: Scale, label: "تم رفع دعوى", bg: "bg-purple-100", text: "text-purple-800", border: "border-purple-300" },
-    in_court: { icon: Scale, label: "في المحكمة", bg: "bg-purple-200", text: "text-purple-900", border: "border-purple-400" },
-    judgment_issued: { icon: Scale, label: "صدر حكم", bg: "bg-indigo-100", text: "text-indigo-800", border: "border-indigo-300" },
-    execution_phase: { icon: Scale, label: "مرحلة التنفيذ", bg: "bg-indigo-200", text: "text-indigo-900", border: "border-indigo-400" },
-    settled: { icon: CheckCircle, label: "تم التسوية", bg: "bg-blue-50", text: "text-blue-700", border: "border-blue-200" },
-    closed: { icon: XCircle, label: "مغلق", bg: "bg-slate-50", text: "text-slate-600", border: "border-slate-200" },
-  };
-
-  const isLegacyLegalProcedure = status === 'under_legal_procedure';
-  const displayStatus = isLegacyLegalProcedure ? 'active' : status;
-  const effectiveLegalStatus = isLegacyLegalProcedure ? 'under_legal_action' : legalStatus;
-
-  const config = statusConfig[displayStatus] || statusConfig.active;
-  const Icon = config.icon;
-  const legalConfig = effectiveLegalStatus ? legalStatusConfig[effectiveLegalStatus] : null;
-
-  return (
-    <div className="flex items-center gap-1.5 flex-wrap">
-      <span 
-        className={cn(
-          "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border cursor-pointer transition-all duration-200 hover:shadow-md",
-          config.bg, config.text, config.border,
-          onClick && "hover:opacity-80"
-        )}
-        onClick={onClick}
-      >
-        <Icon className="w-3 h-3" />
-        {config.label}
-      </span>
-      {legalConfig && (
-        <span 
-          className={cn(
-            "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border",
-            legalConfig.bg, legalConfig.text, legalConfig.border
-          )}
-        >
-          <legalConfig.icon className="w-3 h-3" />
-          {legalConfig.label}
-        </span>
-      )}
-    </div>
-  );
-};
-
-// Quick Stat Card - New Design matching the image
-const QuickStatCard = ({ 
-  title, 
-  value, 
-  icon: Icon, 
-  color, 
-  badge,
-  details,
-  accentColor 
-}: {
-  title: string;
-  value: number | string;
-  icon: React.ElementType;
-  color: string;
-  badge?: { label: string; color: string };
-  details?: Array<{ label: string; value: number | string; dotColor: string }>;
-  accentColor?: string;
-}) => {
-  const colorClasses: Record<string, { border: string; iconBg: string; iconColor: string; badgeBg: string; badgeText: string }> = {
-    blue: { 
-      border: 'border-blue-500', 
-      iconBg: 'bg-blue-50', 
-      iconColor: 'text-blue-500',
-      badgeBg: 'bg-blue-50',
-      badgeText: 'text-blue-600'
-    },
-    slate: { 
-      border: 'border-slate-400', 
-      iconBg: 'bg-slate-50', 
-      iconColor: 'text-slate-500',
-      badgeBg: 'bg-slate-100',
-      badgeText: 'text-slate-600'
-    },
-    rose: { 
-      border: 'border-rose-500', 
-      iconBg: 'bg-rose-50', 
-      iconColor: 'text-rose-500',
-      badgeBg: 'bg-rose-50',
-      badgeText: 'text-rose-600'
-    },
-    emerald: { 
-      border: 'border-emerald-500', 
-      iconBg: 'bg-emerald-50', 
-      iconColor: 'text-emerald-500',
-      badgeBg: 'bg-emerald-50',
-      badgeText: 'text-emerald-600'
-    },
-    violet: { 
-      border: 'border-violet-500', 
-      iconBg: 'bg-violet-50', 
-      iconColor: 'text-violet-500',
-      badgeBg: 'bg-violet-50',
-      badgeText: 'text-violet-600'
-    },
-    amber: { 
-      border: 'border-amber-500', 
-      iconBg: 'bg-amber-50', 
-      iconColor: 'text-amber-500',
-      badgeBg: 'bg-amber-50',
-      badgeText: 'text-amber-600'
-    },
-    purple: { 
-      border: 'border-purple-500', 
-      iconBg: 'bg-purple-50', 
-      iconColor: 'text-purple-500',
-      badgeBg: 'bg-purple-50',
-      badgeText: 'text-purple-600'
-    },
-  };
-
-  const colors = colorClasses[color] || colorClasses.blue;
-  const borderColor = accentColor || colors.border;
-
-  return (
-    <motion.div
-      variants={itemVariants}
-      whileHover={{ y: -2, transition: { duration: 0.2 } }}
-      className={cn(
-        "relative overflow-hidden rounded-xl border border-slate-200 bg-white transition-all duration-300",
-        "hover:shadow-lg hover:shadow-black/5"
-      )}
-    >
-      {/* Left accent border */}
-      <div className={cn("absolute right-0 top-0 bottom-0 w-1", borderColor.replace('border-', 'bg-'))} />
-      
-      <div className="p-5 pr-6">
-        <div className="flex items-start justify-between">
-          <div className="flex-1">
-            {/* Title */}
-            <p className="text-sm font-medium text-slate-500 mb-2">{title}</p>
-            
-            {/* Value and Badge row */}
-            <div className="flex items-center gap-3 mb-3">
-              <p className="text-3xl font-bold text-slate-900">{value}</p>
-              {badge && (
-                <span className={cn(
-                  "px-2.5 py-0.5 rounded-full text-xs font-medium",
-                  badge.color === 'emerald' && "bg-emerald-50 text-emerald-600",
-                  badge.color === 'blue' && "bg-blue-50 text-blue-600",
-                  badge.color === 'rose' && "bg-rose-50 text-rose-600",
-                  badge.color === 'amber' && "bg-amber-50 text-amber-600",
-                  badge.color === 'purple' && "bg-purple-50 text-purple-600",
-                  badge.color === 'slate' && "bg-slate-100 text-slate-600"
-                )}>
-                  {badge.label}
-                </span>
-              )}
-            </div>
-          </div>
-          
-          {/* Icon */}
-          <div className={cn(
-            "w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0",
-            colors.iconBg
-          )}>
-            <Icon className={cn("w-5 h-5", colors.iconColor)} />
-          </div>
-        </div>
-
-        {/* Divider */}
-        {(details || badge) && <div className="border-t border-slate-100 my-3" />}
-
-        {/* Details section */}
-        {details && details.length > 0 && (
-          <div className="space-y-2">
-            {details.map((detail, index) => (
-              <div key={index} className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <span className={cn("w-2 h-2 rounded-full", detail.dotColor)} />
-                  <span className="text-sm text-slate-600">{detail.label}</span>
-                </div>
-                <span className="text-sm font-semibold text-slate-900">{detail.value}</span>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-    </motion.div>
-  );
-};
-
-// Contract List Item Component
-const ContractListItem = ({ 
-  contract, 
-  onView,
-  onEdit,
-  onRenew,
-  onCancel,
-  onManageStatus,
-  onConvertToLegal,
-  onRemoveLegal,
-  onReactivate,
-  isReactivating,
-}: {
-  contract: Contract;
-  onView: (c: Contract) => void;
-  onEdit: (c: Contract) => void;
-  onRenew: (c: Contract) => void;
-  onCancel: (c: Contract) => void;
-  onManageStatus: (c: Contract) => void;
-  onConvertToLegal: (c: Contract) => void;
-  onRemoveLegal: (c: Contract) => void;
-  onReactivate: (c: Contract) => void;
-  isReactivating: boolean;
-}) => {
-  const getCustomerName = () => {
-    return formatCustomerName(contract.customers);
-  };
-
-  const getVehicleInfo = () => {
-    const v = contract.vehicle;
-    if (!v) return "غير محدد";
-    const make = v.make || "";
-    const model = v.model || "";
-    const year = v.year || "";
-    const plate = v.plate_number || "";
-    return `${make} ${model} ${year}`.trim() + (plate ? ` | ${plate}` : "");
-  };
-
-  const { formatCurrency } = useCurrencyFormatter();
-
-  const isActive = contract.status === 'active';
-  const isCancelled = contract.status === 'cancelled';
-  const hasLegalStatus = contract.legal_status || contract.status === 'under_legal_procedure';
-
-  return (
-    <motion.div
-      variants={itemVariants}
-      whileHover="hover"
-      initial="rest"
-      animate="rest"
-      className={cn(
-        "group relative bg-white rounded-xl border p-5 transition-all duration-300",
-        "hover:shadow-xl hover:shadow-black/5 hover:border-slate-300",
-        "cursor-pointer"
-      )}
-      onClick={() => onView(contract)}
-    >
-      {/* Status Indicator Line */}
-      <div className={cn(
-        "absolute right-0 top-4 bottom-4 w-1 rounded-l-full transition-all duration-300",
-        isActive ? "bg-emerald-500" : 
-        isCancelled ? "bg-rose-500" : 
-        hasLegalStatus ? "bg-purple-500" : "bg-slate-300"
-      )} />
-
-      <div className="flex flex-col lg:flex-row lg:items-start gap-4 pr-3">
-        {/* Main Info */}
-        <div className="flex-1 min-w-0">
-          <div className="flex items-start justify-between gap-4 mb-3">
-            <div className="flex items-center gap-3">
-              <div className={cn(
-                "w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0",
-                isActive ? "bg-emerald-100" : 
-                isCancelled ? "bg-rose-100" : 
-                hasLegalStatus ? "bg-purple-100" : "bg-slate-100"
-              )}>
-                <FileText className={cn(
-                  "w-5 h-5",
-                  isActive ? "text-emerald-600" : 
-                  isCancelled ? "text-rose-600" : 
-                  hasLegalStatus ? "text-purple-600" : "text-slate-600"
-                )} />
-              </div>
-              <div>
-                <h3 className="font-bold text-slate-900 text-lg">{getCustomerName()}</h3>
-                <div className="flex items-center gap-3 text-sm text-slate-500 mt-0.5">
-                  <span className="flex items-center gap-1">
-                    <FileText className="w-3.5 h-3.5" />
-                    {contract.contract_number}
-                  </span>
-                  <span className="w-1 h-1 rounded-full bg-slate-300" />
-                  <span className="flex items-center gap-1">
-                    <Car className="w-3.5 h-3.5" />
-                    {getVehicleInfo()}
-                  </span>
-                </div>
-              </div>
-            </div>
-            <StatusBadge 
-              status={contract.status} 
-              legalStatus={contract.legal_status}
-              onClick={(e) => {
-                e.stopPropagation();
-                onManageStatus(contract);
-              }}
-            />
-          </div>
-
-          <SeizedActiveContractBanner contractStatus={contract.status} vehicleStatus={contract.vehicle?.status} className="mb-3" />
-
-          {/* Contract Details */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 py-3 border-t border-slate-100">
-            <div>
-              <p className="text-xs text-slate-400 mb-1">تاريخ البداية</p>
-              <p className="font-semibold text-slate-700 text-sm">{formatDateInGregorian(contract.start_date)}</p>
-            </div>
-            <div>
-              <p className="text-xs text-slate-400 mb-1">تاريخ الانتهاء</p>
-              <p className="font-semibold text-slate-700 text-sm">{formatDateInGregorian(contract.end_date)}</p>
-            </div>
-            <div>
-              <p className="text-xs text-slate-400 mb-1">القيمة الشهرية</p>
-              <p className="font-bold text-emerald-600">{formatCurrency(contract.monthly_amount || 0)}</p>
-            </div>
-            <div>
-              <p className="text-xs text-slate-400 mb-1">القيمة الإجمالية</p>
-              <p className="font-bold text-slate-700">{formatCurrency(contract.contract_amount || 0)}</p>
-            </div>
-          </div>
-        </div>
-
-        {/* Actions */}
-        <div className="flex flex-wrap items-center gap-2 lg:flex-col lg:items-end" onClick={(e) => e.stopPropagation()}>
-          <div className="flex items-center gap-2">
-             <Button
-               variant="outline"
-               size="default"
-               onClick={() => onView(contract)}
-               className="rounded-xl border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 min-h-[44px]"
-             >
-               <Eye className="w-4 h-4 ml-1.5" />
-               عرض
-             </Button>
-
-             <DropdownMenu>
-               <DropdownMenuTrigger asChild>
-                 <Button variant="outline" size="default" className="rounded-xl border-slate-200 dark:border-slate-700 px-3 min-h-[44px]">
-                   <MoreVertical className="w-4 h-4" />
-                 </Button>
-               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-48">
-                <DropdownMenuItem onClick={() => onEdit(contract)}>
-                  <Edit className="w-4 h-4 ml-2" />
-                  تعديل العقد
-                </DropdownMenuItem>
-                
-                {isActive && (
-                  <>
-                    <DropdownMenuItem onClick={() => onRenew(contract)}>
-                      <RefreshCw className="w-4 h-4 ml-2" />
-                      تجديد العقد
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={() => onCancel(contract)} className="text-rose-600 focus:text-rose-600">
-                      <XCircle className="w-4 h-4 ml-2" />
-                      إلغاء العقد
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => onConvertToLegal(contract)} className="text-purple-600 focus:text-purple-600">
-                      <Scale className="w-4 h-4 ml-2" />
-                      تحويل للقانونية
-                    </DropdownMenuItem>
-                  </>
-                )}
-                
-                {/* Cancelled contracts require a dedicated accounting/legal reversal path. */}
-                
-                {hasLegalStatus && (
-                  <DropdownMenuItem onClick={() => onRemoveLegal(contract)} className="text-emerald-600 focus:text-emerald-600">
-                    <CheckCircle className="w-4 h-4 ml-2" />
-                    إزالة الإجراء القانوني
-                  </DropdownMenuItem>
-                )}
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
-        </div>
-      </div>
-    </motion.div>
-  );
-};
-
-// Draft Card Component
 const DraftCard = ({ 
   draft, 
   onLoad, 
@@ -586,7 +175,7 @@ const DraftCard = ({
       <Button
         variant="ghost"
         size="sm"
-        className="h-8 w-8 p-0 text-rose-600 hover:text-rose-700 hover:bg-rose-50 opacity-0 group-hover:opacity-100 transition-opacity"
+        className="h-8 w-8 p-0 text-rose-600 hover:text-rose-700 hover:bg-rose-50 opacity-100 transition-opacity"
         onClick={() => onDelete(draft.id)}
       >
         <Trash2 className="h-4 w-4" />
@@ -595,7 +184,7 @@ const DraftCard = ({
            <Button
              variant="outline"
              size="default"
-             className="w-full rounded-xl border-violet-200 dark:border-violet-700 text-violet-700 dark:text-violet-300 hover:bg-violet-50 dark:hover:bg-violet-900/20 min-h-[44px]"
+             className="w-full rounded-xl border-violet-200 text-violet-700 hover:bg-violet-50 min-h-[44px]"
              onClick={() => onLoad(draft.id)}
            >
              <FileEdit className="h-4 w-4 ml-2" />
@@ -603,46 +192,6 @@ const DraftCard = ({
            </Button>
   </motion.div>
 );
-
-const OperationsMetric = ({
-  label,
-  value,
-  caption,
-  icon: Icon,
-  tone = "neutral",
-}: {
-  label: string;
-  value: number | string;
-  caption?: string;
-  icon: React.ElementType;
-  tone?: "success" | "info" | "focus" | "alert" | "neutral";
-}) => {
-  const toneClass = {
-    success: "bg-[#E8FBF6] text-[#22C7A1]",
-    info: "bg-[#EAF8FE] text-[#38BDF8]",
-    focus: "bg-[#ECEEFE] text-[#7C83F6]",
-    alert: "bg-[#FFF0F2] text-[#FB6B7A]",
-    neutral: "bg-[#F6F8FB] text-[#64748B]",
-  }[tone];
-
-  return (
-    <motion.div
-      variants={itemVariants}
-      className="rounded-[8px] border border-[#DDE5EF] bg-white p-4 shadow-[0_18px_42px_-34px_rgba(15,23,42,.58)]"
-    >
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <p className="text-xs font-bold text-[#94A3B8]">{label}</p>
-          <div className="mt-2 text-2xl font-black text-[#020617]">{value}</div>
-          {caption && <p className="mt-1 text-xs font-bold text-[#64748B]">{caption}</p>}
-        </div>
-        <div className={cn("flex h-10 w-10 shrink-0 items-center justify-center rounded-[8px]", toneClass)}>
-          <Icon className="h-5 w-5" />
-        </div>
-      </div>
-    </motion.div>
-  );
-};
 
 const getContractCustomerName = (contract: Contract) => formatCustomerName(contract.customers) || "عميل غير محدد";
 
@@ -711,16 +260,16 @@ const ModernStatusBadge = ({
   onClick?: (event: React.MouseEvent) => void;
 }) => {
   const statusMap: Record<string, { label: string; className: string; icon: React.ElementType }> = {
-    active: { label: "نشط", className: "bg-[#E8FBF6] text-[#22C7A1] border-[#BFEFE4]", icon: CheckCircle },
-    draft: { label: "مسودة", className: "bg-[#ECEEFE] text-[#7C83F6] border-[#D8D9FF]", icon: FileEdit },
-    under_review: { label: "قيد المراجعة", className: "bg-[#EAF8FE] text-[#38BDF8] border-[#BEE9FB]", icon: Clock },
-    cancelled: { label: "ملغي", className: "bg-[#FFF0F2] text-[#FB6B7A] border-[#FFD5DC]", icon: XCircle },
-    expired: { label: "منتهي", className: "bg-[#FFF0F2] text-[#FB6B7A] border-[#FFD5DC]", icon: XOctagon },
+    active: { label: "نشط", className: "bg-[#E8FBF6] text-[#0f766e] border-[#BFEFE4]", icon: CheckCircle },
+    draft: { label: "مسودة", className: "bg-[#ECEEFE] text-[#6554a4] border-[#D8D9FF]", icon: FileEdit },
+    under_review: { label: "قيد المراجعة", className: "bg-[#EAF8FE] text-[#0369a1] border-[#BEE9FB]", icon: Clock },
+    cancelled: { label: "ملغي", className: "bg-[#FFF0F2] text-[#be3455] border-[#FFD5DC]", icon: XCircle },
+    expired: { label: "منتهي", className: "bg-[#FFF0F2] text-[#be3455] border-[#FFD5DC]", icon: XOctagon },
     expiring_soon: { label: "قارب الانتهاء", className: "bg-[#FFF7ED] text-[#EA580C] border-[#FED7AA]", icon: AlertTriangle },
-    under_legal_procedure: { label: "إجراء قانوني", className: "bg-[#ECEEFE] text-[#7C83F6] border-[#D8D9FF]", icon: Scale },
-    pending_completion: { label: "بانتظار الإكمال", className: "bg-[#EAF8FE] text-[#38BDF8] border-[#BEE9FB]", icon: Clock },
+    under_legal_procedure: { label: "إجراء قانوني", className: "bg-[#ECEEFE] text-[#6554a4] border-[#D8D9FF]", icon: Scale },
+    pending_completion: { label: "بانتظار الإكمال", className: "bg-[#EAF8FE] text-[#0369a1] border-[#BEE9FB]", icon: Clock },
   };
-  const config = statusMap[status] || statusMap.active;
+  const config = statusMap[status] || { label: status === "suspended" ? "معلق" : status === "completed" ? "مكتمل" : status || "غير محدد", className: "bg-slate-100 text-slate-700 border-slate-200", icon: FileText };
   const Icon = config.icon;
 
   return (
@@ -733,8 +282,8 @@ const ModernStatusBadge = ({
         <Icon className="h-3.5 w-3.5" />
         {config.label}
       </button>
-      {(legalStatus || status === "under_legal_procedure") && (
-        <span className="inline-flex items-center gap-1.5 rounded-full border border-[#D8D9FF] bg-[#ECEEFE] px-2.5 py-1 text-xs font-black text-[#7C83F6]">
+      {(legalStatus && status !== "under_legal_procedure") && (
+        <span className="inline-flex items-center gap-1.5 rounded-full border border-[#D8D9FF] bg-[#ECEEFE] px-2.5 py-1 text-xs font-black text-[#6554a4]">
           <Scale className="h-3.5 w-3.5" />
           قانوني
         </span>
@@ -755,7 +304,7 @@ const CompactDatum = ({
   strong?: boolean;
 }) => (
   <div className="rounded-[8px] bg-[#F8FAFC] px-3 py-2">
-    <div className="mb-1 flex items-center gap-1 text-xs font-bold text-[#94A3B8]">
+    <div className="mb-1 flex items-center gap-1 text-xs font-bold text-[#687c74]">
       <Icon className="h-3.5 w-3.5" />
       {label}
     </div>
@@ -797,28 +346,27 @@ const ContractOperationsRow = ({
   return (
     <motion.div
       variants={itemVariants}
-      onClick={() => onView(contract)}
       className={cn(
-        "group rounded-[8px] border bg-white p-4 transition-all duration-200 hover:border-[#B7C4D6] hover:shadow-[0_18px_45px_-34px_rgba(15,23,42,.7)]",
+        "contracts-record",
         isActive && "border-[#BFEFE4]",
         isCancelled && "border-[#FFD5DC]",
         hasLegalStatus && "border-[#D8D9FF]"
       )}
     >
-      <div className="grid gap-4 xl:grid-cols-[minmax(260px,1.15fr)_minmax(220px,.78fr)_minmax(260px,.9fr)_auto] xl:items-center">
+      <div className="contracts-record-grid">
         <div className="min-w-0">
           <div className="flex items-start gap-3">
             <div className={cn(
               "mt-1 flex h-11 w-11 shrink-0 items-center justify-center rounded-[8px]",
-              isActive ? "bg-[#E8FBF6] text-[#22C7A1]" :
-              isCancelled ? "bg-[#FFF0F2] text-[#FB6B7A]" :
-              hasLegalStatus ? "bg-[#ECEEFE] text-[#7C83F6]" : "bg-[#F6F8FB] text-[#64748B]"
+              isActive ? "bg-[#E8FBF6] text-[#0f766e]" :
+              isCancelled ? "bg-[#FFF0F2] text-[#be3455]" :
+              hasLegalStatus ? "bg-[#ECEEFE] text-[#6554a4]" : "bg-[#F6F8FB] text-[#64748B]"
             )}>
               <FileText className="h-5 w-5" />
             </div>
             <div className="min-w-0 flex-1">
               <div className="mb-2 flex flex-wrap items-center gap-2">
-                <h3 className="truncate text-lg font-black text-[#020617]">{getContractCustomerName(contract)}</h3>
+                <h3 className="text-base font-bold text-[#213f38]"><button className="contracts-customer-link" onClick={() => onView(contract)}>{getContractCustomerName(contract)}</button></h3>
                 <ModernStatusBadge
                   status={contract.status}
                   legalStatus={contract.legal_status}
@@ -839,14 +387,15 @@ const ContractOperationsRow = ({
                 </span>
                 <span className="inline-flex items-center gap-1">
                   <FileSignature className="h-3.5 w-3.5" />
-                  {getContractPlate(contract)}
+                  {contract.vehicle_id ? <Link className="contracts-plate" to={`/fleet/vehicles/${contract.vehicle_id}`}>{getContractPlate(contract)}</Link> : getContractPlate(contract)}
                 </span>
                 <span className="inline-flex items-center gap-1" title="الموظف المسؤول عن العقد">
                   <UserRound className="h-3.5 w-3.5" />
-                  <span className="text-[#94A3B8]">المسؤول:</span>
+                  <span className="text-[#687c74]">المسؤول:</span>
                   {getContractAssignedEmployeeName(contract)}
                 </span>
               </div>
+              {contract.vehicle_id && isContractOccupyingVehicle(contract) && <span className="contracts-occupancy">المركبة مشغولة بهذا العقد</span>}
               <SeizedActiveContractBanner contractStatus={contract.status} vehicleStatus={contract.vehicles?.status} className="mt-3" />
               {incompleteReasons.length > 0 && (
                 <div className="mt-3 rounded-[8px] border border-[#FED7AA] bg-[#FFF7ED] px-3 py-2 text-xs font-bold leading-5 text-[#C2410C]">
@@ -871,16 +420,11 @@ const ContractOperationsRow = ({
           <CompactDatum label="البداية" value={formatDateInGregorian(contract.start_date)} icon={Calendar} />
           <CompactDatum label="النهاية" value={formatDateInGregorian(contract.end_date)} icon={Clock} />
           <div className="col-span-2 rounded-[8px] bg-[#F8FAFC] px-3 py-2">
-            <div className="mb-1 flex items-center justify-between text-xs font-bold text-[#94A3B8]">
-              <span>المدة المتبقية</span>
-              <span>{daysLeft === null ? "-" : daysLeft > 0 ? `${daysLeft} يوم` : "منتهي"}</span>
+            <div className="mb-1 flex items-center justify-between text-xs font-bold text-[#687c74]">
+              <span>حتى تاريخ النهاية</span>
+              <span>{daysLeft === null ? "-" : daysLeft > 0 ? `${daysLeft} يوم` : daysLeft === 0 ? "اليوم" : "مضى تاريخ النهاية"}</span>
             </div>
-            <div className="h-1.5 overflow-hidden rounded-full bg-[#E2E8F0]">
-              <div
-                className={cn("h-full rounded-full", daysLeft !== null && daysLeft < 30 ? "bg-[#FB6B7A]" : "bg-[#22C7A1]")}
-                style={{ width: `${daysLeft === null ? 0 : Math.max(8, Math.min(100, daysLeft / 4))}%` }}
-              />
-            </div>
+
           </div>
         </div>
 
@@ -888,7 +432,7 @@ const ContractOperationsRow = ({
           <CompactDatum label="الإيجار الشهري" value={formatCurrency(contract.monthly_amount || 0)} icon={Wallet} strong />
           <CompactDatum label="قيمة العقد" value={formatCurrency(contract.contract_amount || 0)} icon={TrendingUp} strong />
           <div className="rounded-[8px] bg-[#F8FAFC] px-3 py-2">
-            <div className="mb-1 flex items-center justify-between text-xs font-bold text-[#94A3B8]">
+            <div className="mb-1 flex items-center justify-between text-xs font-bold text-[#687c74]">
               <span>التحصيل</span>
               <span>{Math.round(progress)}%</span>
             </div>
@@ -911,7 +455,7 @@ const ContractOperationsRow = ({
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="default" className="h-10 rounded-[8px] border-[#DDE5EF] px-3">
+              <Button aria-label={`إجراءات العقد ${contract.contract_number}`} variant="outline" size="default" className="h-10 rounded-[8px] border-[#DDE5EF] px-3">
                 <MoreVertical className="h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
@@ -931,11 +475,11 @@ const ContractOperationsRow = ({
                     تجديد العقد
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={() => onCancel(contract)} className="text-[#FB6B7A] focus:text-[#FB6B7A]">
+                  <DropdownMenuItem onClick={() => onCancel(contract)} className="text-[#be3455] focus:text-[#be3455]">
                     <XCircle className="ml-2 h-4 w-4" />
                     إلغاء العقد
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => onConvertToLegal(contract)} className="text-[#7C83F6] focus:text-[#7C83F6]">
+                  <DropdownMenuItem onClick={() => onConvertToLegal(contract)} className="text-[#6554a4] focus:text-[#6554a4]">
                     <Scale className="ml-2 h-4 w-4" />
                     تحويل للشؤون القانونية
                   </DropdownMenuItem>
@@ -955,7 +499,7 @@ const ContractOperationsRow = ({
                 </>
               )}
               {hasLegalStatus && (
-                <DropdownMenuItem onClick={() => onRemoveLegal(contract)} className="text-[#22C7A1] focus:text-[#22C7A1]">
+                <DropdownMenuItem onClick={() => onRemoveLegal(contract)} className="text-[#0f766e] focus:text-[#0f766e]">
                   <CheckCircle className="ml-2 h-4 w-4" />
                   إزالة الإجراء القانوني
                 </DropdownMenuItem>
@@ -1044,7 +588,7 @@ function ContractsRedesigned() {
   }), [filters, page, pageSize]);
 
   // Data fetching
-  const { contracts, filteredContracts, isLoading, refetch, statistics, pagination } =
+  const { contracts, filteredContracts, isLoading, isFetching, error, statisticsError, statisticsLoading, refetch, statistics, pagination } =
     useContractsData(filtersWithPagination);
 
   const safeContracts = useMemo(() => Array.isArray(contracts) ? contracts : [], [contracts]);
@@ -1084,31 +628,6 @@ function ContractsRedesigned() {
     monthly_amount: contract.monthly_amount,
     status: contract.status,
   })), [safeContracts]);
-
-  // When the active tab/search/sort changes the filtered list may shrink, and the
-  // browser would otherwise clamp the scroll position to a jarring mid-page spot.
-  // Smoothly return to the top so the user starts at the new list's first item.
-  const prevFilterRef = useRef<{ tab: string; search: string; sort: string }>({
-    tab: activeTab,
-    search: debouncedSearchTerm,
-    sort: sortBy,
-  });
-  useEffect(() => {
-    const prev = prevFilterRef.current;
-    const changed =
-      prev.tab !== activeTab ||
-      prev.search !== debouncedSearchTerm ||
-      prev.sort !== sortBy;
-    if (!changed) return;
-    prevFilterRef.current = { tab: activeTab, search: debouncedSearchTerm, sort: sortBy };
-    const scroller =
-      document.querySelector('main[role="main"]') as HTMLElement | null;
-    if (scroller && scroller.scrollHeight > scroller.clientHeight) {
-      scroller.scrollTo({ top: 0, behavior: 'smooth' });
-    } else {
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
-  }, [activeTab, debouncedSearchTerm, sortBy]);
 
   // Sort contracts
   const sortedContracts = useMemo(() => {
@@ -1321,28 +840,13 @@ function ContractsRedesigned() {
     }
   }, [contractDrafts, toast]);
 
-  if (isInitialLoading) {
-    return (
-      <div
-        className="flex items-center justify-center min-h-screen bg-[#F6F8FB]"
-        style={contractsSystemStyle}
-      >
-        <div className="text-center">
-          <LoadingSpinner size="lg" className="mx-auto mb-4" />
-          <p className="text-[#94A3B8]">جاري تحميل العقود...</p>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <PageCustomizer pageId="contracts-page" title="" titleAr="">
       <div
-        className="contracts-system min-h-screen bg-[#F6F8FB]"
+        className="contracts-register"
         dir="rtl"
-        style={contractsSystemStyle}
       >
-        <header className="contracts-command-header sticky top-0 z-40 border-b border-[#DDE5EF] bg-white/95 backdrop-blur">
+        <header className="contracts-register-header">
           <div className="mx-auto max-w-[1600px] px-4 sm:px-6 lg:px-8">
             <div className="flex flex-col gap-4 py-4 lg:flex-row lg:items-center lg:justify-between">
               <div className="flex items-center gap-4">
@@ -1351,11 +855,11 @@ function ContractsRedesigned() {
                 </div>
                 <div>
                   <div className="mb-1 flex flex-wrap items-center gap-2">
-                    <span className="rounded-full bg-[#E8FBF6] px-3 py-1 text-xs font-black text-[#22C7A1]">مركز العقود</span>
-                    <span className="rounded-full bg-[#EAF8FE] px-3 py-1 text-xs font-black text-[#38BDF8]">تشغيل ومتابعة</span>
+                    <span className="rounded-full bg-[#E8FBF6] px-3 py-1 text-xs font-black text-[#0f766e]">العراف / إدارة التأجير</span>
+                    <span className="rounded-full bg-[#EAF8FE] px-3 py-1 text-xs font-black text-[#0369a1]">سجل العقود</span>
                   </div>
-                  <h1 className="text-2xl font-black text-[#020617]">إدارة العقود</h1>
-                  <p className="text-sm font-bold text-[#64748B]">تابع العقود النشطة، التحصيل، المسودات، والحالات القانونية من شاشة واحدة.</p>
+                  <h1 className="text-2xl font-black text-[#020617]">كل عقد، بتفاصيله.</h1>
+                  <p className="text-sm font-bold text-[#64748B]">مساحة واحدة لمتابعة العملاء والمركبات والتزامات الإيجار.</p>
                 </div>
               </div>
 
@@ -1379,7 +883,7 @@ function ContractsRedesigned() {
 
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="outline" size="default" className="h-11 rounded-[8px] border-[#DDE5EF] px-3">
+                    <Button aria-label="أدوات العقود" variant="outline" size="default" className="h-11 rounded-[8px] border-[#DDE5EF] px-3">
                       <MoreVertical className="h-4 w-4" />
                     </Button>
                   </DropdownMenuTrigger>
@@ -1411,6 +915,7 @@ function ContractsRedesigned() {
                 </DropdownMenu>
 
                 <Button
+                  aria-label="تحديث العقود"
                   onClick={handleRefresh}
                   variant="outline"
                   size="default"
@@ -1423,204 +928,15 @@ function ContractsRedesigned() {
             </div>
           </div>
         </header>
-        {/* Header Section */}
-        <header className="sticky top-0 z-40 bg-white border-b border-slate-200">
-          <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 py-4">
-              {/* Title */}
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-xl bg-teal-500 flex items-center justify-center shadow-lg shadow-teal-500/25">
-                  <FileSignature className="w-6 h-6 text-white" />
-                </div>
-                <div>
-                  <h1 className="text-2xl font-bold text-slate-900">إدارة العقود</h1>
-                  <p className="text-sm text-slate-500">إدارة ومتابعة جميع عقود الإيجار</p>
-                </div>
-              </div>
-
-              {/* Quick Actions */}
-              <div className="flex flex-wrap items-center gap-2">
-                 <TooltipProvider>
-                   <Tooltip>
-                     <TooltipTrigger asChild>
-                       <Button
-                         onClick={() => setShowContractWizard(true)}
-                         className="bg-teal-500 hover:bg-teal-600 text-white rounded-xl shadow-lg shadow-teal-500/25 transition-all duration-300 hover:shadow-xl min-h-[44px]"
-                       >
-                         <Plus className="w-4 h-4 ml-2" />
-                         عقد جديد
-                       </Button>
-                     </TooltipTrigger>
-                    <TooltipContent>
-                      <p>إنشاء عقد جديد</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-
-                <Button
-                  onClick={() => setShowExportDialog(true)}
-                  variant="outline"
-                  className="min-h-[44px] rounded-xl border-teal-300 bg-teal-50 font-semibold text-teal-700 hover:bg-teal-100"
-                >
-                  <FileSpreadsheet className="ml-2 h-4 w-4" />
-                  تقرير Excel شامل
-                </Button>
-
-                 <DropdownMenu>
-                   <DropdownMenuTrigger asChild>
-                     <Button variant="outline" size="default" className="rounded-xl border-slate-200 dark:border-slate-700 min-h-[44px]">
-                       <MoreVertical className="w-4 h-4" />
-                     </Button>
-                   </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-48">
-                    {user?.roles?.includes('super_admin') && (
-                      <DropdownMenuItem onClick={() => setShowCSVUpload(true)}>
-                        <Upload className="w-4 h-4 ml-2" />
-                        استيراد CSV
-                      </DropdownMenuItem>
-                    )}
-                    <DropdownMenuItem onClick={() => setShowContractPDFImport(true)}>
-                      <FileText className="w-4 h-4 ml-2" />
-                      استيراد PDF
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => setShowRemindersDialog(true)}>
-                      <MessageSquare className="w-4 h-4 ml-2" />
-                      إرسال تنبيهات
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => navigate('/contracts/signed-agreements')}>
-                      <FileSignature className="w-4 h-4 ml-2" />
-                      العقود الموقعة
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={() => setShowExportDialog(true)}>
-                      <Download className="w-4 h-4 ml-2" />
-                      تصدير البيانات
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-
-                 <Button
-                   onClick={handleRefresh}
-                   variant="outline"
-                   size="default"
-                   className="rounded-xl border-slate-200 dark:border-slate-700 min-h-[44px]"
-                   disabled={isRefreshing}
-                 >
-                   <RefreshCw className={cn("w-4 h-4", isRefreshing && "animate-spin")} />
-                 </Button>
-              </div>
-            </div>
-          </div>
-        </header>
-
         {/* Main Content */}
         <main className="contracts-workspace max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
-          <section className="rounded-[8px] border border-[#DDE5EF] bg-white p-4 shadow-[0_18px_42px_-34px_rgba(15,23,42,.58)]">
-            <div className="mb-4 flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
-              <div>
-                <p className="text-xs font-black text-[#22C7A1]">لوحة تشغيل العقود</p>
-                <h2 className="mt-1 text-xl font-black text-[#020617]">ما الذي يحتاج انتباهك الآن؟</h2>
-                <p className="mt-1 text-sm font-bold text-[#64748B]">ابدأ من الحالة، ثم افتح العقد أو نفّذ إجراء سريع بدون مغادرة السجل.</p>
-              </div>
-              <div className="flex flex-wrap gap-2 text-xs font-black">
-                <span className="rounded-full bg-[#E8FBF6] px-3 py-1 text-[#22C7A1]">{tabCounts.active} نشط</span>
-                <span className="rounded-full bg-[#FFF0F2] px-3 py-1 text-[#FB6B7A]">{tabCounts.cancelled} ملغى</span>
-                <span className="rounded-full bg-[#ECEEFE] px-3 py-1 text-[#7C83F6]">{tabCounts.legal_action} قانوني</span>
-              </div>
-            </div>
-
-            <motion.div
-              variants={containerVariants}
-              initial="hidden"
-              animate="visible"
-              className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4"
-            >
-              <OperationsMetric
-                label="إجمالي العقود"
-                value={tabCounts.all}
-                caption="جميع العقود المسجلة"
-                icon={FileText}
-                tone="neutral"
-              />
-              <OperationsMetric
-                label="العقود النشطة"
-                value={tabCounts.active}
-                caption="جاهزة للتشغيل والتحصيل"
-                icon={CheckCircle}
-                tone="success"
-              />
-              <OperationsMetric
-                label="الإيراد المتوقع"
-                value={formatCurrency(safeStatistics.totalRevenue || 0)}
-                caption="من العقود المسجلة"
-                icon={TrendingUp}
-                tone="info"
-              />
-              <OperationsMetric
-                label="ملفات قانونية"
-                value={tabCounts.legal_action}
-                caption="تحتاج متابعة منفصلة"
-                icon={Scale}
-                tone="focus"
-              />
-            </motion.div>
+          {statisticsError && <div role="alert" className="contracts-followup">تعذر تحديث ملخص العقود. <button onClick={handleRefresh}>إعادة المحاولة</button></div>}
+          <section className="contracts-summary" aria-label="ملخص العقود">
+            <button onClick={() => { setActiveTab('all'); setPage(1); }}><span>إجمالي العقود</span><strong>{statisticsError || statisticsLoading ? "—" : tabCounts.all}</strong><small>جميع العقود المسجلة <ChevronLeft size={14} /></small></button>
+            <button onClick={() => { setActiveTab('active'); setPage(1); }}><span>العقود النشطة</span><strong>{statisticsError || statisticsLoading ? "—" : tabCounts.active}</strong><small>متابعة الإيجار والتشغيل <ChevronLeft size={14} /></small></button>
+            <div><span>الإيجار الشهري المتوقع</span><strong>{statisticsError || statisticsLoading ? "—" : formatCurrency(safeStatistics.totalRevenue || 0)}</strong><small>العقود النشطة وقيد المراجعة</small></div>
+            <button onClick={() => { setActiveTab('legal_action'); setPage(1); }}><span>الملفات القانونية</span><strong>{statisticsError || statisticsLoading ? "—" : tabCounts.legal_action}</strong><small>عقود مرتبطة بإجراءات قانونية <ChevronLeft size={14} /></small></button>
           </section>
-          {/* Statistics Cards */}
-          <motion.div
-            variants={containerVariants}
-            initial="hidden"
-            animate="visible"
-            className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4"
-          >
-            <QuickStatCard
-              title="الإيرادات المتوقعة"
-              value={formatCurrency(safeStatistics.totalRevenue || 0)}
-              icon={TrendingUp}
-              color="blue"
-              badge={{ label: "شهرياً", color: "blue" }}
-              details={[
-                { label: "من العقود النشطة", value: safeStatistics.activeContracts?.length || 0, dotColor: "bg-emerald-500" },
-                { label: "قيد المراجعة", value: safeStatistics.underReviewContracts?.length || 0, dotColor: "bg-amber-500" },
-              ]}
-              accentColor="border-blue-500"
-            />
-            <QuickStatCard
-              title="حالة العمليات"
-              value={tabCounts.all}
-              icon={FileText}
-              color="slate"
-              details={[
-                { label: "منتهية", value: safeStatistics.expiredContracts?.length || 0, dotColor: "bg-rose-500" },
-                { label: "ملغية", value: safeStatistics.cancelledContracts?.length || 0, dotColor: "bg-slate-400" },
-                { label: "نشطة", value: safeStatistics.activeContracts?.length || 0, dotColor: "bg-emerald-500" },
-              ]}
-              accentColor="border-slate-400"
-            />
-            <QuickStatCard
-              title="القضايا القانونية"
-              value={tabCounts.legal_action}
-              icon={Scale}
-              color="rose"
-              badge={{ label: "إجمالي القضايا", color: "rose" }}
-              details={[
-                { label: "عقود خاضعة/قانونية", value: safeStatistics.legalProcedureContracts?.length || 0, dotColor: "bg-rose-500" },
-                { label: "عقود ما زالت نشطة", value: (safeStatistics.activeWithLegalIssues?.length || 0), dotColor: "bg-amber-500" },
-              ]}
-              accentColor="border-rose-500"
-            />
-            <QuickStatCard
-              title="العقود النشطة"
-              value={tabCounts.active}
-              icon={CheckCircle}
-              color="emerald"
-              badge={{ label: "قيد التنفيذ", color: "emerald" }}
-              details={[
-                { label: "عقود سالمة", value: (tabCounts.active - (safeStatistics.activeWithLegalIssues?.length || 0)), dotColor: "bg-emerald-500" },
-              ]}
-              accentColor="border-emerald-500"
-            />
-          </motion.div>
-
           {/* Contracts Needing Attention */}
           <AnimatePresence>
             {safeContracts.length > 0 && (
@@ -1629,7 +945,7 @@ function ContractsRedesigned() {
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -20 }}
               >
-                <ContractsNeedingAttention contracts={contractsNeedingAttention} />
+                <details className="contracts-followup"><summary>متابعة العقود المعروضة في هذه الصفحة</summary><ContractsNeedingAttention contracts={contractsNeedingAttention} /></details>
               </motion.div>
             )}
           </AnimatePresence>
@@ -1666,11 +982,13 @@ function ContractsRedesigned() {
             )}
           </AnimatePresence>
 
+          <div className="contracts-register-intro"><div><h2>سجل العقود</h2><p>ابحث عن عقد، أو اختر الحالة للوصول إلى ما تحتاجه.</p></div><span role="status">{isFetching ? "جاري تحديث النتائج…" : error ? "تعذر تحميل النتائج" : `${pagination?.totalCount ?? sortedContracts.length} نتيجة`}</span></div>
           <section className="contracts-filter-panel rounded-[8px] border border-[#DDE5EF] bg-white p-4 shadow-[0_18px_42px_-34px_rgba(15,23,42,.58)]">
             <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_240px]">
               <div className="relative">
-                <Search className="absolute right-4 top-1/2 h-5 w-5 -translate-y-1/2 text-[#94A3B8]" />
+                <Search className="absolute right-4 top-1/2 h-5 w-5 -translate-y-1/2 text-[#687c74]" />
                 <Input
+                  aria-label="البحث في العقود"
                   placeholder="ابحث برقم العقد، اسم العميل، رقم الجوال، الرقم الشخصي، أو رقم المركبة..."
                   value={searchTerm}
                   onChange={(event) => {
@@ -1682,8 +1000,8 @@ function ContractsRedesigned() {
                 {searchTerm && (
                   <button
                     type="button"
-                    onClick={() => setSearchTerm("")}
-                    className="absolute left-3 top-1/2 rounded-[8px] p-1.5 text-[#94A3B8] transition hover:bg-[#EEF2F7]"
+                    onClick={() => { setSearchTerm(""); setPage(1); }}
+                    className="contracts-clear-search"
                     aria-label="مسح البحث"
                   >
                     <XCircle className="h-5 w-5" />
@@ -1692,63 +1010,23 @@ function ContractsRedesigned() {
               </div>
 
               <select
+                aria-label="ترتيب النتائج في الصفحة"
                 value={sortBy}
                 onChange={(event) => setSortBy(event.target.value as any)}
                 className="h-12 rounded-[8px] border border-[#DDE5EF] bg-white px-4 text-sm font-black text-[#020617] outline-none transition focus:border-[#22C7A1] focus:ring-2 focus:ring-[#22C7A1]/20"
               >
-                <option value="default">الترتيب الافتراضي</option>
-                <option value="customer_name">حسب اسم العميل</option>
-                <option value="contract_date">الأحدث حسب تاريخ العقد</option>
-                <option value="end_date">الأقرب انتهاءً</option>
+                <option value="default">ترتيب الصفحة: الأحدث إضافة</option>
+                <option value="customer_name">ترتيب الصفحة: اسم العميل</option>
+                <option value="contract_date">ترتيب الصفحة: تاريخ العقد</option>
+                <option value="end_date">ترتيب الصفحة: الأقرب انتهاءً</option>
               </select>
             </div>
           </section>
 
-          {/* Search & Filters Bar */}
-          <div className="bg-white rounded-xl border border-slate-200/60 shadow-sm p-4">
-            <div className="flex flex-col lg:flex-row gap-4">
-              {/* Search */}
-              <div className="flex-1 relative">
-                <Search className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
-                 <Input
-                   placeholder="بحث برقم العقد، اسم العميل، رقم الجوال، الرقم الشخصي، رقم المركبة..."
-                   value={searchTerm}
-                   onChange={(e) => {
-                     setSearchTerm(e.target.value);
-                     setPage(1);
-                   }}
-                   className="h-12 pr-12 text-base bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-xl focus:bg-white dark:focus:bg-slate-900 focus:border-teal-500 transition-all"
-                 />
-                {searchTerm && (
-                  <button
-                    onClick={() => setSearchTerm('')}
-                    className="absolute left-4 top-1/2 -translate-y-1/2 p-1.5 hover:bg-slate-200 rounded-lg transition-colors"
-                  >
-                    <XCircle className="w-5 h-5 text-slate-400" />
-                  </button>
-                )}
-              </div>
-
-              {/* Sort */}
-              <div className="flex items-center gap-2">
-                 <select
-                   value={sortBy}
-                   onChange={(e) => setSortBy(e.target.value as any)}
-                   className="h-12 px-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 outline-none transition-all"
-                 >
-                   <option value="default">ترتيب افتراضي</option>
-                   <option value="customer_name">حسب اسم العميل</option>
-                   <option value="contract_date">حسب تاريخ العقد</option>
-                   <option value="end_date">حسب تاريخ الانتهاء</option>
-                 </select>
-              </div>
-            </div>
-          </div>
-
           {/* Tabs & Content */}
-          <div className="bg-white rounded-xl border border-slate-200/60 shadow-sm overflow-hidden">
+          <div className="contracts-results">
             {/* Tabs */}
-            <div className="border-b border-slate-200/60 bg-slate-50/50">
+            <div className="contracts-tabs">
               <ScrollArea className="w-full whitespace-nowrap">
                 <div className="flex p-2 gap-1">
                   {TAB_CONFIG.map((tab) => {
@@ -1758,6 +1036,7 @@ function ContractsRedesigned() {
                     
                     return (
                       <button
+                        aria-pressed={isActive}
                         key={tab.id}
                         onClick={() => {
                           setActiveTab(tab.id);
@@ -1783,7 +1062,7 @@ function ContractsRedesigned() {
                           isActive && tab.color === 'slate' && "text-slate-500",
                         )} />
                         <span>{getContractTabLabel(tab.id)}</span>
-                        {count > 0 && tab.id !== 'settings' && (
+                        {!statisticsError && !statisticsLoading && count > 0 && tab.id !== 'settings' && (
                           <Badge 
                             variant={isActive ? "default" : "secondary"}
                             className={cn(
@@ -1802,10 +1081,10 @@ function ContractsRedesigned() {
             </div>
 
             {/* Content */}
-            <div className="p-6">
+            <div className="contracts-results-body" aria-busy={isFetching}>
               {activeTab === "settings" ? (
                 <LateFinesSettings />
-              ) : sortedContracts.length === 0 ? (
+              ) : error ? (<div className="contracts-loading" role="alert"><AlertCircle /><p>تعذر تحميل العقود. أعد المحاولة.</p><Button variant="outline" onClick={handleRefresh}>إعادة المحاولة</Button></div>) : isInitialLoading ? (<div className="contracts-loading"><LoadingSpinner /><p>جاري تحميل العقود…</p></div>) : sortedContracts.length === 0 ? (
                 <div className="text-center py-16">
                   <div className="w-20 h-20 bg-slate-100 rounded-xl flex items-center justify-center mx-auto mb-6">
                     <FileText className="w-10 h-10 text-slate-400" />
@@ -1814,7 +1093,7 @@ function ContractsRedesigned() {
                   {searchTerm ? (
                     <>
                       <p className="text-slate-500 mb-6">لم يتم العثور على نتائج للبحث: "{searchTerm}"</p>
-                      <Button variant="outline" onClick={() => setSearchTerm("")} className="rounded-xl">
+                      <Button variant="outline" onClick={() => { setSearchTerm(""); setPage(1); }} className="rounded-xl">
                         <XCircle className="w-4 h-4 ml-2" />
                         مسح البحث
                       </Button>
@@ -1838,7 +1117,7 @@ function ContractsRedesigned() {
                     variants={containerVariants}
                     initial="hidden"
                     animate="visible"
-                    className="space-y-4"
+                    className="contracts-row-list"
                   >
                     {sortedContracts.map((contract) => (
                       <ContractOperationsRow
@@ -1869,7 +1148,7 @@ function ContractsRedesigned() {
                           type="button"
                           variant="outline"
                           size="icon"
-                          disabled={pagination.page <= 1}
+                          disabled={isFetching || pagination.page <= 1}
                           onClick={() => setPage((current) => Math.max(1, current - 1))}
                           aria-label="الصفحة السابقة"
                           title="الصفحة السابقة"
@@ -1883,7 +1162,7 @@ function ContractsRedesigned() {
                           type="button"
                           variant="outline"
                           size="icon"
-                          disabled={!pagination.hasMore}
+                          disabled={isFetching || !pagination.hasMore}
                           onClick={() => setPage((current) => Math.min(pagination.totalPages, current + 1))}
                           aria-label="الصفحة التالية"
                           title="الصفحة التالية"
@@ -2113,254 +1392,7 @@ function ContractsRedesigned() {
             </motion.div>
           )}
         </AnimatePresence>
-        <style>{`
-          .contracts-system {
-            --contracts-radius: 8px;
-            color: var(--contracts-text);
-          }
 
-          .contracts-system > header:not(.contracts-command-header) {
-            display: none !important;
-          }
-
-          .contracts-workspace > .grid.grid-cols-2.sm\\:grid-cols-2.lg\\:grid-cols-4 {
-            display: none !important;
-          }
-
-          .contracts-workspace > .bg-white.rounded-xl.border.border-slate-200\\/60.shadow-sm.p-4 {
-            display: none !important;
-          }
-
-          .contracts-system header,
-          .contracts-system .bg-white {
-            background-color: var(--contracts-surface) !important;
-          }
-
-          .contracts-system .bg-slate-50,
-          .contracts-system .bg-slate-100,
-          .contracts-system .bg-gray-50,
-          .contracts-system .bg-neutral-50 {
-            background-color: var(--contracts-inner) !important;
-          }
-
-          .contracts-system .border-slate-100,
-          .contracts-system .border-slate-200,
-          .contracts-system .border-slate-200\\/50,
-          .contracts-system .border-slate-200\\/60,
-          .contracts-system .border-slate-300,
-          .contracts-system .border-gray-200,
-          .contracts-system .border-neutral-100 {
-            border-color: var(--contracts-border) !important;
-          }
-
-          .contracts-system .text-slate-900,
-          .contracts-system .text-slate-800,
-          .contracts-system .text-slate-700,
-          .contracts-system .text-gray-900,
-          .contracts-system .text-neutral-900 {
-            color: var(--contracts-text) !important;
-          }
-
-          .contracts-system .text-slate-600,
-          .contracts-system .text-slate-500,
-          .contracts-system .text-slate-400,
-          .contracts-system .text-gray-500,
-          .contracts-system .text-neutral-500 {
-            color: var(--contracts-muted) !important;
-          }
-
-          .contracts-system .rounded-2xl,
-          .contracts-system .rounded-xl,
-          .contracts-system .rounded-lg,
-          .contracts-system .rounded-md {
-            border-radius: var(--contracts-radius) !important;
-          }
-
-          .contracts-system .shadow-sm,
-          .contracts-system .shadow-md,
-          .contracts-system .shadow-lg,
-          .contracts-system .shadow-xl {
-            box-shadow: 0 14px 30px -24px rgba(2, 6, 23, 0.42) !important;
-          }
-
-          .contracts-system .bg-teal-500,
-          .contracts-system .bg-teal-600,
-          .contracts-system .bg-emerald-500,
-          .contracts-system .bg-green-500 {
-            background-color: var(--contracts-success) !important;
-          }
-
-          .contracts-system .hover\\:bg-teal-600:hover,
-          .contracts-system .hover\\:bg-emerald-700:hover,
-          .contracts-system .hover\\:bg-green-100:hover {
-            background-color: rgba(34, 199, 161, 0.16) !important;
-          }
-
-          .contracts-system .text-teal-500,
-          .contracts-system .text-teal-600,
-          .contracts-system .text-emerald-500,
-          .contracts-system .text-emerald-600,
-          .contracts-system .text-emerald-700,
-          .contracts-system .text-green-600,
-          .contracts-system .focus\\:text-emerald-600:focus {
-            color: var(--contracts-success) !important;
-          }
-
-          .contracts-system .bg-teal-50,
-          .contracts-system .bg-emerald-50,
-          .contracts-system .bg-emerald-100,
-          .contracts-system .bg-green-50 {
-            background-color: rgba(34, 199, 161, 0.1) !important;
-          }
-
-          .contracts-system .border-teal-500,
-          .contracts-system .border-emerald-200,
-          .contracts-system .border-emerald-500,
-          .contracts-system .focus\\:border-teal-500:focus {
-            border-color: rgba(34, 199, 161, 0.32) !important;
-          }
-
-          .contracts-system .bg-blue-50,
-          .contracts-system .bg-blue-100,
-          .contracts-system .bg-violet-50,
-          .contracts-system .bg-violet-100,
-          .contracts-system .bg-purple-50,
-          .contracts-system .bg-purple-100,
-          .contracts-system .bg-indigo-100,
-          .contracts-system .bg-indigo-200 {
-            background-color: rgba(124, 131, 246, 0.1) !important;
-          }
-
-          .contracts-system .bg-blue-500,
-          .contracts-system .bg-violet-500,
-          .contracts-system .bg-purple-500,
-          .contracts-system .bg-indigo-500 {
-            background-color: var(--contracts-focus) !important;
-          }
-
-          .contracts-system .text-blue-500,
-          .contracts-system .text-blue-600,
-          .contracts-system .text-blue-700,
-          .contracts-system .text-blue-800,
-          .contracts-system .text-violet-500,
-          .contracts-system .text-violet-600,
-          .contracts-system .text-violet-700,
-          .contracts-system .text-purple-500,
-          .contracts-system .text-purple-600,
-          .contracts-system .text-purple-700,
-          .contracts-system .text-purple-800,
-          .contracts-system .text-purple-900,
-          .contracts-system .text-indigo-800,
-          .contracts-system .text-indigo-900,
-          .contracts-system .focus\\:text-purple-600:focus {
-            color: var(--contracts-focus) !important;
-          }
-
-          .contracts-system .border-blue-200,
-          .contracts-system .border-blue-500,
-          .contracts-system .border-violet-200,
-          .contracts-system .border-violet-500,
-          .contracts-system .border-purple-200,
-          .contracts-system .border-purple-300,
-          .contracts-system .border-purple-400,
-          .contracts-system .border-purple-500,
-          .contracts-system .border-indigo-300 {
-            border-color: rgba(124, 131, 246, 0.28) !important;
-          }
-
-          .contracts-system .bg-rose-50,
-          .contracts-system .bg-rose-100,
-          .contracts-system .bg-red-50,
-          .contracts-system .bg-red-100,
-          .contracts-system .bg-orange-50,
-          .contracts-system .bg-orange-100 {
-            background-color: rgba(251, 107, 122, 0.1) !important;
-          }
-
-          .contracts-system .bg-rose-500,
-          .contracts-system .bg-red-500,
-          .contracts-system .bg-orange-500 {
-            background-color: var(--contracts-alert) !important;
-          }
-
-          .contracts-system .text-rose-500,
-          .contracts-system .text-rose-600,
-          .contracts-system .text-rose-700,
-          .contracts-system .text-red-500,
-          .contracts-system .text-red-600,
-          .contracts-system .text-red-700,
-          .contracts-system .text-orange-500,
-          .contracts-system .text-orange-600,
-          .contracts-system .text-orange-700,
-          .contracts-system .focus\\:text-rose-600:focus {
-            color: var(--contracts-alert) !important;
-          }
-
-          .contracts-system .border-rose-200,
-          .contracts-system .border-rose-500,
-          .contracts-system .border-red-200,
-          .contracts-system .border-orange-200 {
-            border-color: rgba(251, 107, 122, 0.28) !important;
-          }
-
-          .contracts-system .bg-amber-50,
-          .contracts-system .bg-amber-100,
-          .contracts-system .bg-yellow-50 {
-            background-color: rgba(56, 189, 248, 0.12) !important;
-          }
-
-          .contracts-system .bg-amber-500,
-          .contracts-system .bg-yellow-500 {
-            background-color: var(--contracts-info) !important;
-          }
-
-          .contracts-system .text-amber-500,
-          .contracts-system .text-amber-600,
-          .contracts-system .text-amber-700,
-          .contracts-system .text-yellow-600 {
-            color: var(--contracts-info) !important;
-          }
-
-          .contracts-system .border-amber-200,
-          .contracts-system .border-amber-500 {
-            border-color: rgba(56, 189, 248, 0.28) !important;
-          }
-
-          .contracts-system input,
-          .contracts-system select,
-          .contracts-system textarea {
-            background-color: var(--contracts-surface) !important;
-            border-color: var(--contracts-border) !important;
-            color: var(--contracts-text) !important;
-            border-radius: var(--contracts-radius) !important;
-          }
-
-          .contracts-system input:focus,
-          .contracts-system select:focus,
-          .contracts-system textarea:focus {
-            border-color: var(--contracts-success) !important;
-            box-shadow: 0 0 0 3px rgba(34, 199, 161, 0.12) !important;
-          }
-
-          .contracts-system button[class*="bg-teal-500"],
-          .contracts-system button[class*="bg-emerald-600"],
-          .contracts-system button[class*="bg-slate-900"] {
-            background-color: var(--contracts-success) !important;
-            color: #ffffff !important;
-            box-shadow: 0 12px 24px -18px rgba(34, 199, 161, 0.72) !important;
-          }
-
-          .contracts-system .hover\\:bg-slate-50:hover,
-          .contracts-system .hover\\:bg-slate-200:hover,
-          .contracts-system .hover\\:bg-white\\/50:hover {
-            background-color: rgba(56, 189, 248, 0.08) !important;
-          }
-
-          .contracts-system .bg-gradient-to-br,
-          .contracts-system .bg-gradient-to-r {
-            background: var(--contracts-inner) !important;
-          }
-        `}</style>
       </div>
     </PageCustomizer>
   );

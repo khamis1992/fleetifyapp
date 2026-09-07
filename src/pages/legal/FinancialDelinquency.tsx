@@ -1,3 +1,4 @@
+import { LegalPageHeader } from '@/components/legal/workspace/LegalPageHeader';
 ﻿/* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -1724,40 +1725,7 @@ const FinancialDelinquencyPage: React.FC = () => {
   return (
     <div className="legal-system min-h-screen bg-[#F6F8FB] pb-8 text-right font-sans text-[#020617]" dir="rtl">
       <div className="mx-auto max-w-7xl space-y-5 px-4 py-5 md:px-6">
-        <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-            <div className="flex items-start gap-3">
-              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#22C7A1]/10 text-[#22C7A1]">
-                <Scale className="h-6 w-6" />
-              </div>
-              <div>
-                <h1 className="text-2xl font-bold tracking-tight text-[#020617] md:text-3xl">الشؤون القانونية</h1>
-                <p className="mt-1 max-w-3xl text-sm leading-6 text-[#94A3B8]">
-                  هذه الصفحة تعرض العقود التي تم تحويلها يدويًا للشؤون القانونية فقط. المتأخرون أو أصحاب المخالفات لا يظهرون هنا تلقائيًا حتى يتم تحويل العقد من تفاصيل العقد أو من أداة البحث أدناه.
-                </p>
-              </div>
-            </div>
-
-            <div className="flex flex-wrap gap-2">
-              <Button
-                variant="outline"
-                onClick={refreshAll}
-                disabled={queueFetching || openedCasesFetching || rentSearching || trafficSearching}
-                className="gap-2 rounded-xl border-slate-200 bg-white"
-              >
-                <RefreshCw className={cn('h-4 w-4', (queueFetching || openedCasesFetching || rentSearching || trafficSearching) && 'animate-spin')} />
-                تحديث
-              </Button>
-              <Button
-                onClick={() => setActiveTab('search')}
-                className="gap-2 rounded-xl bg-[#22C7A1] text-white hover:bg-[#1BAA8A]"
-              >
-                <FileSearch className="h-4 w-4" />
-                بحث عن مخالف
-              </Button>
-            </div>
-          </div>
-        </section>
+        <LegalPageHeader title="تجهيز الدعاوى" icon={Scale} description="ملفات العقود المحالة يدويًا إلى الشؤون القانونية. راجع المستحقات والمستندات، ثم استكمل تجهيز كل دعوى." actions={<><Button variant="outline" onClick={refreshAll} disabled={queueFetching || openedCasesFetching || rentSearching || trafficSearching}><RefreshCw className={cn('h-4 w-4 ml-2', (queueFetching || openedCasesFetching || rentSearching || trafficSearching) && 'animate-spin')} />تحديث</Button><Button onClick={() => setActiveTab('search')}><FileSearch className="h-4 w-4 ml-2" />بحث وإضافة عقد</Button></>} />
 
         <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <Card className="rounded-2xl border-slate-200 shadow-sm">
@@ -2017,7 +1985,7 @@ const FinancialDelinquencyPage: React.FC = () => {
                   const tone = readinessToneClassName[readiness.tone];
 
                   return (
-                  <article key={item.contract.id} className={cn('overflow-hidden rounded-xl border bg-white shadow-sm', tone.card)}>
+                  <article key={item.contract.id} className={cn('lw-queue-card overflow-hidden rounded-xl border bg-white shadow-sm', tone.card)}>
                     <div className="grid min-h-1.5 grid-cols-1 bg-slate-100">
                       <div className={cn('h-1.5', tone.rail)} style={{ width: `${readiness.progress}%` }} />
                     </div>
@@ -2064,7 +2032,7 @@ const FinancialDelinquencyPage: React.FC = () => {
                           </div>
                         </div>
 
-                        <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-5">
+                        <div className="lw-queue-money grid gap-2 sm:grid-cols-2 lg:grid-cols-5">
                           <div className="rounded-xl bg-[#F6F8FB] p-3">
                             <p className="text-xs font-semibold text-[#94A3B8]">الإيجار المتأخر</p>
                             <p className="mt-1 font-bold text-[#020617]">{formatCurrency(item.overdueRent)}</p>
@@ -2113,7 +2081,7 @@ const FinancialDelinquencyPage: React.FC = () => {
                         )}
                       </div>
 
-                      <div className="flex flex-col gap-2 sm:flex-row lg:flex-col lg:min-w-[176px]">
+                      <div className="lw-queue-actions flex flex-col gap-2 sm:flex-row lg:flex-col lg:min-w-[176px]">
                         <div className="hidden rounded-xl border border-slate-200 bg-white p-3 text-center text-xs font-bold text-[#64748B] lg:block">
                           <ListChecks className="mx-auto mb-1 h-5 w-5 text-[#22C7A1]" />
                           {readiness.nextAction}

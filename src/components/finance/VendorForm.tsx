@@ -235,7 +235,7 @@ export const VendorForm = ({ vendor, onSuccess }: VendorFormProps) => {
               <FormItem>
                 <FormLabel>اسم المورد (بالإنجليزية) *</FormLabel>
                 <FormControl>
-                  <Input {...field} placeholder="Vendor Name" />
+                  <Input {...field} placeholder="أدخل اسم المورد بالإنجليزية" />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -359,7 +359,7 @@ export const VendorForm = ({ vendor, onSuccess }: VendorFormProps) => {
             <FormItem>
               <FormLabel>العنوان (بالإنجليزية)</FormLabel>
               <FormControl>
-                <Textarea {...field} placeholder="Address" />
+                <Textarea {...field} placeholder="أدخل العنوان بالإنجليزية" />
               </FormControl>
               <FormMessage />
             </FormItem>

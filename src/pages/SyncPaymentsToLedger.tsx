@@ -3,7 +3,9 @@ import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
+import { FinancePageHeader } from '@/components/ui/FinancePageHeader';
+import { Link2 } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
 import { fetchLegacyRentalReceiptAudit } from '@/services/legacyRentalReceiptAudit';
@@ -25,12 +27,9 @@ const SyncPaymentsToLedger = () => {
   const hasResult=Boolean(audit.data) && !audit.error && !audit.isFetching;
   return (
     <div className="container mx-auto p-6 space-y-5" dir="rtl">
+      <FinancePageHeader title="مطابقة سندات الإيجار القديمة" description="راجع الروابط بين السندات والدفعات والقيود وحدد السجلات التي تحتاج متابعة." icon={Link2} />
       <Card>
-        <CardHeader>
-          <CardTitle>مطابقة سندات الإيجار القديمة</CardTitle>
-          <CardDescription>فحص الروابط ومفاتيح العمليات قبل أي ترحيل مالي.</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="space-y-4 pt-5">
           <Alert><AlertDescription>
             هذا الفحص لا ينشئ دفعات أو قيودًا، ولا يغيّر السندات. السند المرتبط بفاتورة قد يكون ملخصًا تراكميًا وليس قبضًا جديدًا.
             السند المستقل غير المرتبط يحتاج إثبات مصدره قبل تسجيله عبر مسار الدفعات.

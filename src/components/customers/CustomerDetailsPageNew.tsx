@@ -1,19 +1,3 @@
-/**
- * صفحة تفاصيل العميل — التجربة الجديدة "غرفة قيادة العميل"
- *
- * فلسفة التصميم (V3) — نفس لغة تصميم صفحة العقد:
- * - Hero فاتح بألوان التطبيق يجيب بنظرة واحدة: من العميل، حال العلاقة،
- *   كم له وكم عليه، وكيف نصل إليه فوراً.
- * - شريط إجراء واحد ذكي يرشّح "الخطوة التالية" حسب حالة الملف
- *   (تحصيل، مخالفات، فرصة تجديد، متابعة متأخرة، نمو).
- * - تبويبات لاصقة بشارات عدد — كل تبويب مسؤول عن عالم واحد فقط
- *   (نظرة عامة / العقود والمركبات / المالي / المخالفات / السجلات).
- * - عمود "نبض العميل": صحة الملف، فرص التجديد، تسجيل مكالمة سريع،
- *   وآخر النشاط — بدل توزيعها على تبويبات متفرقة.
- *
- * كل منطق الأعمال (الاستعلامات، الإجراءات، الحوارات) محفوظ كما هو.
- */
-
 import { useEffect, useState, useMemo, useCallback, useRef } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -31,26 +15,18 @@ import {
 import { useCustomerCRMActivity } from '@/hooks/useCustomerCRMActivity';
 import { useDeleteCustomer } from '@/hooks/useEnhancedCustomers';
 import { InvoicePreviewDialog } from '@/components/finance/InvoicePreviewDialog';
-import { motion } from 'framer-motion';
+
 import {
   AlertCircle,
   AlertTriangle,
-  Car,
-  CreditCard,
-  FileImage,
-  FileText,
   Folder,
   Loader2,
-  RefreshCw,
-  Sparkles,
-  Star,
   Upload,
   User,
-  Wallet,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { cn } from '@/lib/utils';
+
 import { UnifiedPaymentForm } from '@/components/finance/UnifiedPaymentForm';
 import { EnhancedCustomerForm } from '@/components/customers/EnhancedCustomerForm';
 import { CustomerAISummary } from '@/components/customers/CustomerAISummary';
@@ -70,7 +46,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { CustomerWorkspace, CustomerPanel, CustomerSearch } from './customer-workspace/CustomerWorkspace';
+import { resolveCustomerSection, type CustomerSection } from './customer-workspace/navigation';
 import {
   MissingDataWarnings,
   PersonalInfoTab,
@@ -85,20 +62,19 @@ import {
   DocumentCard,
   type CustomerDocument,
 } from './tabs';
-import { CustomerHero } from './customer-details-v3/CustomerHero';
+
 import { CustomerActionBar } from './customer-details-v3/CustomerActionBar';
 import { CustomerPulse } from './customer-details-v3/CustomerPulse';
 import {
   buildCustomerSnapshotV3,
   buildProfileCompletionV3,
-  getInitialCustomerTabV3,
 } from './customer-details-v3/tokens';
 
 // ===== Main Component =====
 const CustomerDetailsPageNew = () => {
   const { customerId } = useParams<{ customerId: string }>();
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { toast } = useToast();
   const { companyId, isAuthenticating } = useUnifiedCompanyAccess();
   const { formatCurrency } = useCurrencyFormatter();
@@ -108,7 +84,11 @@ const CustomerDetailsPageNew = () => {
 
   // State
   const requestedTab = searchParams.get('tab');
-  const [activeTab, setActiveTab] = useState(() => getInitialCustomerTabV3(requestedTab));
+  const activeTab = resolveCustomerSection(requestedTab);
+  const [recordSearch, setRecordSearch] = useState('');
+  const setActiveTab = useCallback((tab: CustomerSection) => {
+    setSearchParams(current => { const next = new URLSearchParams(current); next.set('tab', tab); return next; });
+  }, [setSearchParams]);
   const [isPaymentDialogOpen, setIsPaymentDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [selectedInvoice, setSelectedInvoice] = useState<any | null>(null);
@@ -118,10 +98,7 @@ const CustomerDetailsPageNew = () => {
   const [quickCrmNote, setQuickCrmNote] = useState('');
   const [quickCrmStatus, setQuickCrmStatus] = useState<'answered' | 'no_answer' | 'busy'>('answered');
 
-  useEffect(() => {
-    const nextTab = getInitialCustomerTabV3(requestedTab);
-    setActiveTab((currentTab) => (currentTab === nextTab ? currentTab : nextTab));
-  }, [requestedTab]);
+  useEffect(() => { setRecordSearch(''); }, [requestedTab, customerId]);
 
   // Queries
   const { data: customer, isLoading: loadingCustomer, error: customerError } = useQuery({
@@ -173,7 +150,7 @@ const CustomerDetailsPageNew = () => {
     enabled: !!customerId && !!companyId,
   });
 
-  const { data: documents = [] } = useCustomerDocuments(customerId);
+  const { data: documents = [], isLoading: loadingDocuments, error: documentError } = useCustomerDocuments(customerId);
   const uploadDocument = useUploadCustomerDocument();
 
   const { data: customerInvoices = [], isLoading: loadingInvoices } = useQuery({
@@ -450,405 +427,75 @@ const CustomerDetailsPageNew = () => {
 
   const latestPayment = payments[0];
   const latestInvoice = customerInvoices[0];
-
-  const tabs = [
-    { value: 'overview', label: 'نظرة عامة', icon: Sparkles, badge: 0 },
-    { value: 'contracts', label: 'العقود والمركبات', icon: FileText, badge: 0 },
-    { value: 'financial', label: 'المالي', icon: Wallet, badge: snapshot.openInvoicesCount },
-    { value: 'violations', label: 'المخالفات', icon: AlertTriangle, badge: trafficViolations.length },
-    { value: 'records', label: 'السجلات والمستندات', icon: Folder, badge: 0 },
-  ];
+  const matchesSearch = (...values: unknown[]) => values.some(value => String(value ?? '').toLocaleLowerCase().includes(recordSearch.trim().toLocaleLowerCase()));
+  const filteredContracts = contracts.filter(c => matchesSearch(c.contract_number, c.vehicle?.make, c.vehicle?.model, c.vehicle?.plate_number));
+  const filteredInvoices = customerInvoices.filter(i => matchesSearch(i.invoice_number, getInvoiceDisplayLabel(i), i.contract?.contract_number));
+  const filteredPayments = payments.filter(p => matchesSearch(p.payment_number, p.payment_method, p.amount));
+  const filteredDocuments = documents.filter(d => matchesSearch(d.document_name, d.document_type));
+  const filteredViolations = trafficViolations.filter(v => matchesSearch(v.violation_number, v.violation_type, v.vehicle?.plate_number));
+  const isSummaryLoading = loadingContracts || loadingInvoices || loadingViolations;
+  const uploadButton = <Button className="cw-primary gap-2" onClick={() => fileInputRef.current?.click()} disabled={isUploading}>
+    {isUploading ? <Loader2 className="h-4 w-4 animate-spin"/> : <Upload className="h-4 w-4"/>}{isUploading ? 'جاري الرفع…' : 'رفع مستند'}
+  </Button>;
 
   return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{ duration: 0.4 }}
-      className="min-h-screen bg-[#F6F8FB]"
-      dir="rtl"
-    >
-      <div className="mx-auto max-w-[1680px] space-y-4 px-4 pb-10 pt-4 sm:px-6">
-        {/* Systemic data-quality alerts */}
-        <MissingDataWarnings customer={customer} />
-
-        {/* ===== Hero identity band ===== */}
-        <CustomerHero
-          customer={customer}
-          customerName={customerName}
-          initials={initials}
-          snapshot={snapshot}
-          completion={completion}
-          contractsCount={contracts.length}
-          formatCurrency={formatCurrency}
-          onBack={handleBack}
-          onEdit={handleEdit}
-          onCall={handleCall}
-          onWhatsApp={handleWhatsApp}
-          onOpenContracts={() => setActiveTab('contracts')}
-        />
-
-        {/* ===== Smart action strip ===== */}
-        <CustomerActionBar
-          snapshot={snapshot}
-          formatCurrency={formatCurrency}
-          onAddPayment={() => setIsPaymentDialogOpen(true)}
-          onCreateContract={handleCreateContract}
-          onUploadDocument={() => fileInputRef.current?.click()}
-          onOpenCrm={handleOpenCrm}
-          onOpenViolations={() => setActiveTab('violations')}
-          onOpenFinancial={() => setActiveTab('financial')}
-          onOpenContracts={() => setActiveTab('contracts')}
-          onRenewContract={handleRenewContract}
-          onEdit={handleEdit}
-          onPrint={handlePrint}
-          onShare={handleShare}
-          onOpenLegal={handleOpenLegal}
-          onOpenLegalData={handleOpenLegalData}
-          onDelete={() => setIsDeleteDialogOpen(true)}
-        />
-
-        {/* ===== Main: workbench (+ pulse rail only on the overview tab) ===== */}
-        <div className={cn('grid gap-4', activeTab === 'overview' && 'xl:grid-cols-[minmax(0,1fr)_360px]')}>
-          {/* Workbench */}
-          <div className="min-w-0">
-            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-              <div className="sticky top-0 z-30 -mx-1 rounded-2xl border border-[#E5EAF1] bg-white/90 px-1 py-2 shadow-[0_6px_24px_-16px_rgba(15,23,42,0.3)] backdrop-blur-md">
-                <TabsList className="flex h-auto w-full justify-start gap-1.5 overflow-x-auto rounded-xl bg-transparent p-1">
-                  {tabs.map((tab) => (
-                    <TabsTrigger
-                      key={tab.value}
-                      value={tab.value}
-                      className="relative gap-2 whitespace-nowrap rounded-xl px-4 py-2.5 text-xs font-black text-slate-500 transition-all hover:bg-[#F6F8FB] data-[state=active]:bg-[#22C7A1] data-[state=active]:text-white data-[state=active]:shadow-[0_8px_18px_-8px_rgba(34,199,161,0.6)]"
-                    >
-                      <tab.icon className="h-4 w-4" />
-                      {tab.label}
-                      {tab.badge > 0 && (
-                        <span
-                          className={cn(
-                            'absolute -top-0.5 left-1.5 flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[9px] font-black',
-                            tab.value === 'violations'
-                              ? 'bg-[#FB6B7A] text-white'
-                              : 'bg-[#F59E0B] text-[#452A03]',
-                          )}
-                        >
-                          {tab.badge}
-                        </span>
-                      )}
-                    </TabsTrigger>
-                  ))}
-                </TabsList>
-              </div>
-
-              <div className="mt-4 min-h-[480px]">
-                {/* ===== Overview: AI summary + relationship glance ===== */}
-                {activeTab === 'overview' && (
-                  <div className="space-y-5">
-                    <CustomerAISummary
-                      customer={customer}
-                      contracts={contracts}
-                      invoices={customerInvoices}
-                      payments={payments}
-                      violations={trafficViolations}
-                      activities={crmActivities}
-                      scheduledFollowups={scheduledFollowups}
-                      formatCurrency={formatCurrency}
-                      onCreateContract={handleCreateContract}
-                      onOpenCrm={handleOpenCrm}
-                    />
-
-                    <div className="grid gap-3 sm:grid-cols-3">
-                      {[
-                        {
-                          label: 'قيمة العقود النشطة',
-                          value: formatCurrency(activeContractsValue),
-                          icon: FileText,
-                          tone: 'teal' as const,
-                          action: () => setActiveTab('contracts'),
-                        },
-                        {
-                          label: 'آخر دفعة',
-                          value: latestPayment ? formatCurrency(latestPayment.amount || 0) : '—',
-                          hint: latestPayment?.payment_date,
-                          icon: CreditCard,
-                          tone: 'ink' as const,
-                          action: () => setActiveTab('financial'),
-                        },
-                        {
-                          label: 'آخر فاتورة',
-                          value: latestInvoice
-                            ? getInvoiceDisplayLabel(latestInvoice)
-                            : '—',
-                          hint: latestInvoice
-                            ? [latestInvoice.invoice_number, latestInvoice.total_amount ? formatCurrency(latestInvoice.total_amount) : null]
-                                .filter(Boolean)
-                                .join(' · ')
-                            : undefined,
-                          icon: Wallet,
-                          tone: 'ink' as const,
-                          action: () => setActiveTab('financial'),
-                        },
-                      ].map((item) => (
-                        <button
-                          key={item.label}
-                          type="button"
-                          onClick={item.action}
-                          className={cn(
-                            'group rounded-2xl border bg-white p-4 text-right shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md',
-                            item.tone === 'teal'
-                              ? 'border-[#22C7A1]/25 hover:border-[#22C7A1]/50'
-                              : 'border-[#E5EAF1] hover:border-slate-300',
-                          )}
-                        >
-                          <div className="mb-3 flex items-center justify-between">
-                            <div
-                              className={cn(
-                                'flex h-9 w-9 items-center justify-center rounded-lg',
-                                item.tone === 'teal' ? 'bg-[#22C7A1]/10 text-[#0E9E7E]' : 'bg-[#F6F8FB] text-slate-500',
-                              )}
-                            >
-                              <item.icon className="h-[18px] w-[18px]" />
-                            </div>
-                          </div>
-                          <p className="text-[11px] font-bold text-slate-500">{item.label}</p>
-                          <p className="mt-1 truncate text-lg font-black text-[#0F172A]">{item.value}</p>
-                          {item.hint && <p className="mt-0.5 text-[11px] font-semibold text-slate-400">{item.hint}</p>}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* ===== Contracts + vehicles ===== */}
-                {activeTab === 'contracts' && (
-                  <div className="space-y-5">
-                    {loadingContracts ? (
-                      <TabLoadingState />
-                    ) : (
-                      <ContractsTab contracts={contracts} navigate={navigate} customerId={customerId || ''} />
-                    )}
-                    <div className="overflow-hidden rounded-2xl border border-[#E5EAF1] bg-white shadow-sm">
-                      <div className="flex items-center gap-2.5 border-b border-[#E5EAF1] bg-[#F6F8FB] px-4 py-3">
-                        <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#38BDF8]/12 text-[#0369A1]">
-                          <Car className="h-4 w-4" />
-                        </div>
-                        <h3 className="text-sm font-black text-[#0F172A]">المركبات المرتبطة بالعقود النشطة</h3>
-                      </div>
-                      <div className="p-4">
-                        {loadingContracts ? (
-                          <TabLoadingState />
-                        ) : (
-                          <VehiclesTab contracts={contracts} navigate={navigate} />
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {/* ===== Financial: invoices + payments ===== */}
-                {activeTab === 'financial' && (
-                  <Tabs defaultValue="invoices" className="w-full">
-                    <TabsList className="flex h-auto w-full justify-start gap-2 overflow-x-auto rounded-xl border border-[#E5EAF1] bg-white p-1 shadow-sm">
-                      <TabsTrigger
-                        value="invoices"
-                        className="gap-2 rounded-lg px-5 py-2.5 text-[#5B6677] transition-all data-[state=active]:bg-[#22C7A1] data-[state=active]:text-white"
-                      >
-                        <Wallet className="h-4 w-4" />
-                        الفواتير
-                      </TabsTrigger>
-                      <TabsTrigger
-                        value="payments"
-                        className="gap-2 rounded-lg px-5 py-2.5 text-[#5B6677] transition-all data-[state=active]:bg-[#22C7A1] data-[state=active]:text-white"
-                      >
-                        <RefreshCw className="h-4 w-4" />
-                        الدفعات
-                      </TabsTrigger>
-                    </TabsList>
-
-                    <TabsContent value="invoices" className="mt-4">
-                      {loadingInvoices ? (
-                        <TabLoadingState />
-                      ) : (
-                        <InvoicesTab
-                          invoices={customerInvoices}
-                          onInvoiceClick={(invoice) => {
-                            setSelectedInvoice(invoice);
-                            setIsInvoiceDialogOpen(true);
-                          }}
-                          violations={trafficViolations}
-                          customerName={customerName}
-                          customerPhone={customer.phone}
-                          customerIdNumber={customer.national_id || undefined}
-                        />
-                      )}
-                    </TabsContent>
-
-                    <TabsContent value="payments" className="mt-4">
-                      {loadingPayments ? (
-                        <TabLoadingState />
-                      ) : (
-                        <PaymentsTab
-                          payments={payments}
-                          navigate={navigate}
-                          onAddPayment={() => setIsPaymentDialogOpen(true)}
-                          customerName={customerName}
-                          customerPhone={customer.phone}
-                          customerIdNumber={customer.national_id || undefined}
-                        />
-                      )}
-                    </TabsContent>
-                  </Tabs>
-                )}
-
-                {/* ===== Violations ===== */}
-                {activeTab === 'violations' && (
-                  <ViolationsTab violations={trafficViolations} navigate={navigate} isLoading={loadingViolations} />
-                )}
-
-                {/* ===== Records: personal data + documents + activity ===== */}
-                {activeTab === 'records' && (
-                  <Tabs defaultValue="info" className="w-full">
-                    <TabsList className="flex h-auto w-full justify-start gap-2 overflow-x-auto rounded-xl border border-[#E5EAF1] bg-white p-1 shadow-sm">
-                      <TabsTrigger
-                        value="info"
-                        className="gap-2 rounded-lg px-5 py-2.5 text-[#5B6677] transition-all data-[state=active]:bg-[#22C7A1] data-[state=active]:text-white"
-                      >
-                        <User className="h-4 w-4" />
-                        البيانات الشخصية
-                      </TabsTrigger>
-                      <TabsTrigger
-                        value="documents"
-                        className="gap-2 rounded-lg px-5 py-2.5 text-[#5B6677] transition-all data-[state=active]:bg-[#22C7A1] data-[state=active]:text-white"
-                      >
-                        <Folder className="h-4 w-4" />
-                        المستندات
-                      </TabsTrigger>
-                      <TabsTrigger
-                        value="activity"
-                        className="gap-2 rounded-lg px-5 py-2.5 text-[#5B6677] transition-all data-[state=active]:bg-[#22C7A1] data-[state=active]:text-white"
-                      >
-                        <RefreshCw className="h-4 w-4" />
-                        النشاط والمتابعة
-                      </TabsTrigger>
-                    </TabsList>
-
-                    <TabsContent value="info" className="mt-4">
-                      <div className="grid gap-4 lg:grid-cols-2">
-                        <div className="overflow-hidden rounded-2xl border border-[#E5EAF1] bg-white shadow-sm">
-                          <div className="border-b border-[#E5EAF1] bg-[#F6F8FB] px-4 py-3">
-                            <h3 className="text-sm font-black text-[#0F172A]">البيانات الأساسية</h3>
-                          </div>
-                          <div className="p-4">
-                            <PersonalInfoTab customer={customer} />
-                          </div>
-                        </div>
-                        <div className="overflow-hidden rounded-2xl border border-[#E5EAF1] bg-white shadow-sm">
-                          <div className="border-b border-[#E5EAF1] bg-[#F6F8FB] px-4 py-3">
-                            <h3 className="text-sm font-black text-[#0F172A]">أرقام التواصل</h3>
-                          </div>
-                          <div className="p-4">
-                            <PhoneNumbersTab customer={customer} />
-                          </div>
-                        </div>
-                      </div>
-                    </TabsContent>
-
-                    <TabsContent value="documents" className="mt-4">
-                      <div className="rounded-2xl border border-[#E5EAF1] bg-white p-5 shadow-sm">
-                        <div className="mb-5 flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
-                          <div>
-                            <h3 className="text-base font-black text-[#0F172A]">مستندات العميل</h3>
-                            <p className="mt-1 text-xs font-semibold text-slate-500">
-                              {documents.length} مستند محفوظ في ملف العميل
-                            </p>
-                          </div>
-                          <Button
-                            size="sm"
-                            onClick={() => fileInputRef.current?.click()}
-                            disabled={isUploading}
-                            className="h-9 gap-2 rounded-xl bg-[#22C7A1] px-4 text-xs font-black text-white shadow-[0_8px_20px_-8px_rgba(34,199,161,0.6)] hover:bg-[#0E9E7E]"
-                          >
-                            {isUploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
-                            {isUploading ? 'جاري الرفع...' : 'رفع مستند'}
-                          </Button>
-                        </div>
-
-                        {documents.length > 0 ? (
-                          <div className="grid grid-cols-2 gap-4 md:grid-cols-3 xl:grid-cols-4">
-                            {documents.map((doc: CustomerDocument, index: number) => (
-                              <DocumentCard key={doc.id} doc={doc} index={index} />
-                            ))}
-                          </div>
-                        ) : (
-                          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-                            {['صورة العميل', 'رخصة القيادة', 'الهوية الوطنية', 'عقد الإيجار'].map((placeholder, index) => (
-                              <button
-                                type="button"
-                                key={index}
-                                className="flex aspect-[4/3] flex-col items-center justify-center rounded-xl border border-dashed border-[#B8C6D8] bg-[#F6F8FB] text-slate-400 transition-colors hover:border-[#22C7A1] hover:bg-[#ECFDF9] hover:text-[#0E9E7E]"
-                                onClick={() => fileInputRef.current?.click()}
-                              >
-                                <FileImage className="mb-2 h-7 w-7" />
-                                <p className="text-xs font-black">{placeholder}</p>
-                              </button>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    </TabsContent>
-
-                    <TabsContent value="activity" className="mt-4">
-                      <div className="space-y-5">
-                        <div className="overflow-hidden rounded-2xl border border-[#E5EAF1] bg-white shadow-sm">
-                          <div className="flex items-center gap-2.5 border-b border-[#E5EAF1] bg-[#F6F8FB] px-4 py-3">
-                            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#7C83F6]/12 text-[#4F46E5]">
-                              <Star className="h-4 w-4" />
-                            </div>
-                            <h3 className="text-sm font-black text-[#0F172A]">سجل المتابعة والملاحظات</h3>
-                          </div>
-                          <div className="p-4">
-                            <NotesTab
-                              customerId={customerId || ''}
-                              customerPhone={customer.phone}
-                              companyId={companyId || ''}
-                            />
-                          </div>
-                        </div>
-                        <ActivityTab
-                          customerId={customerId || ''}
-                          companyId={companyId || ''}
-                          contracts={contracts}
-                          payments={payments}
-                          violations={trafficViolations}
-                        />
-                      </div>
-                    </TabsContent>
-                  </Tabs>
-                )}
-              </div>
-            </Tabs>
+    <>
+      <CustomerWorkspace
+        customer={customer} customerName={customerName} initials={initials} snapshot={snapshot} completion={completion}
+        contractsCount={contracts.length} formatCurrency={formatCurrency} onBack={handleBack} onEdit={handleEdit}
+        onCall={handleCall} onWhatsApp={handleWhatsApp} onOpenContracts={() => setActiveTab('contracts')}
+        section={activeTab} onSectionChange={setActiveTab} onCreateContract={handleCreateContract}
+        onAddPayment={() => setIsPaymentDialogOpen(true)} loadingSummary={isSummaryLoading}
+        counts={{ contracts: contracts.length, vehicles: contracts.filter(c => c.status === 'active' && c.vehicle).length,
+          invoices: customerInvoices.length, payments: payments.length, violations: trafficViolations.length, documents: documents.length }}
+        actions={<CustomerActionBar snapshot={snapshot} formatCurrency={formatCurrency}
+          onAddPayment={() => setIsPaymentDialogOpen(true)} onCreateContract={handleCreateContract}
+          onUploadDocument={() => setActiveTab('documents')} onOpenCrm={handleOpenCrm}
+          onOpenViolations={() => setActiveTab('violations')} onOpenFinancial={() => setActiveTab('invoices')}
+          onOpenContracts={() => setActiveTab('contracts')} onRenewContract={handleRenewContract}
+          onEdit={handleEdit} onPrint={handlePrint} onShare={handleShare} onOpenLegal={handleOpenLegal}
+          onOpenLegalData={handleOpenLegalData} onDelete={() => setIsDeleteDialogOpen(true)}/>}
+      >
+        {activeTab === 'overview' && <div className="cw-overview-grid">
+          <div className="cw-overview-main">
+            <div className="cw-overview-intro">
+              <div className="cw-eyebrow">العلاقة مع العميل</div>
+              <h3>{isSummaryLoading ? 'جاري قراءة ملف العميل…' : snapshot.riskMeta.label}</h3>
+              <p>{isSummaryLoading ? 'يتم تحميل العقود والبيانات المالية المرتبطة بالملف.' : snapshot.riskHelper}</p>
+              <Button variant="outline" onClick={() => setActiveTab(snapshot.dueNowTotal > 0 ? 'invoices' : 'activity')}>{snapshot.dueNowTotal > 0 ? 'مراجعة المستحقات' : 'فتح سجل المتابعة'}</Button>
+            </div>
+            <CustomerPanel title="آخر العمليات" description="نقاط وصول سريعة إلى حركة حساب العميل">
+              <div className="cw-recent-row"><div><p>العقود النشطة</p><strong>{loadingContracts ? '—' : formatCurrency(activeContractsValue)}</strong><p>القيمة الإجمالية للعقود النشطة</p></div><button onClick={() => setActiveTab('contracts')}>عرض العقود ←</button></div>
+              <div className="cw-recent-row"><div><p>آخر دفعة</p><strong>{loadingPayments ? '—' : latestPayment ? formatCurrency(latestPayment.amount || 0) : 'لا توجد دفعات مسجلة'}</strong><p>{latestPayment?.payment_date}</p></div><button onClick={() => setActiveTab('payments')}>سجل الدفعات ←</button></div>
+              <div className="cw-recent-row"><div><p>آخر فاتورة</p><strong>{loadingInvoices ? '—' : latestInvoice ? getInvoiceDisplayLabel(latestInvoice) : 'لا توجد فواتير مسجلة'}</strong><p>{latestInvoice?.invoice_number}</p></div><button onClick={() => setActiveTab('invoices')}>عرض الفواتير ←</button></div>
+            </CustomerPanel>
+            <details className="cw-panel"><summary className="cursor-pointer p-5 text-sm font-semibold">تحليل العلاقة وتوصيات المتابعة</summary><div className="p-4"><CustomerAISummary customer={customer} contracts={contracts} invoices={customerInvoices} payments={payments} violations={trafficViolations} activities={crmActivities} scheduledFollowups={scheduledFollowups} formatCurrency={formatCurrency} onCreateContract={handleCreateContract} onOpenCrm={handleOpenCrm}/></div></details>
           </div>
-
-          {/* Pulse rail — visible only on the overview tab */}
-          {activeTab === 'overview' && (
-            <CustomerPulse
-              snapshot={snapshot}
-              completion={completion}
-              crmActivities={crmActivities}
-              crmStats={crmStats}
-              quickCrmNote={quickCrmNote}
-              callStatus={quickCrmStatus}
-              isSavingCall={isAddingCrmActivity}
-              onCrmNoteChange={setQuickCrmNote}
-              onCallStatusChange={setQuickCrmStatus}
-              onSaveCall={handleSaveQuickCrmActivity}
-              onEdit={handleEdit}
-              onUploadDocument={() => fileInputRef.current?.click()}
-              onOpenCrm={handleOpenCrm}
-              onRenewContract={handleRenewContract}
-            />
-          )}
-        </div>
-      </div>
+          <CustomerPulse snapshot={snapshot} completion={completion} crmActivities={crmActivities} crmStats={crmStats}
+            quickCrmNote={quickCrmNote} callStatus={quickCrmStatus} isSavingCall={isAddingCrmActivity}
+            onCrmNoteChange={setQuickCrmNote} onCallStatusChange={setQuickCrmStatus} onSaveCall={handleSaveQuickCrmActivity}
+            onEdit={handleEdit} onUploadDocument={() => setActiveTab('documents')} onOpenCrm={handleOpenCrm} onRenewContract={handleRenewContract}/>
+        </div>}
+        {activeTab === 'info' && <div className="cw-info-grid"><MissingDataWarnings customer={customer}/><PersonalInfoTab customer={customer}/><PhoneNumbersTab customer={customer}/></div>}
+        {['contracts', 'vehicles', 'invoices', 'payments', 'violations', 'documents'].includes(activeTab) && <CustomerSearch value={recordSearch} onChange={setRecordSearch} placeholder={activeTab === 'documents' ? 'ابحث باسم المستند…' : 'ابحث في سجلات هذا القسم…'}/>}
+        {recordSearch && <p className="mb-4 text-xs text-slate-500" role="status">نتائج البحث عن «{recordSearch}» <button className="underline" onClick={() => setRecordSearch('')}>عرض جميع السجلات</button></p>}
+        {activeTab === 'contracts' && (loadingContracts ? <TabLoadingState/> : <ContractsTab contracts={filteredContracts} navigate={navigate} customerId={customerId || ''}/>)}
+        {activeTab === 'vehicles' && (loadingContracts ? <TabLoadingState/> : <VehiclesTab contracts={filteredContracts} navigate={navigate}/>)}
+        {activeTab === 'invoices' && (loadingInvoices ? <TabLoadingState/> : <InvoicesTab isFiltered={!!recordSearch.trim()} invoices={filteredInvoices}
+          onInvoiceClick={invoice => { setSelectedInvoice(invoice); setIsInvoiceDialogOpen(true); }} violations={trafficViolations}
+          customerName={customerName} customerPhone={customer.phone} customerIdNumber={customer.national_id || undefined}/>)}
+        {activeTab === 'payments' && (loadingPayments ? <TabLoadingState/> : <PaymentsTab isFiltered={!!recordSearch.trim()} payments={filteredPayments} navigate={navigate}
+          onAddPayment={() => setIsPaymentDialogOpen(true)} customerName={customerName} customerPhone={customer.phone} customerIdNumber={customer.national_id || undefined}/>)}
+        {activeTab === 'violations' && <ViolationsTab violations={filteredViolations} navigate={navigate} isLoading={loadingViolations}/>}
+        {activeTab === 'documents' && <CustomerPanel title="مكتبة المستندات" description={documents.length + ' مستند في ملف العميل'} action={uploadButton}>
+          {loadingDocuments ? <TabLoadingState/> : documentError ? <p role="alert">تعذر تحميل المستندات. أعد المحاولة بتحديث الصفحة.</p> : filteredDocuments.length ? <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">{filteredDocuments.map((doc: CustomerDocument, index) => <DocumentCard key={doc.id} doc={doc} index={index}/>)}</div> :
+            <div className="cw-empty"><Folder className="h-10 w-10"/><h3>{recordSearch ? 'لا توجد مستندات مطابقة' : 'ابدأ بتنظيم وثائق العميل'}</h3><p>{recordSearch ? 'جرّب اسماً آخر أو امسح البحث لعرض كل الملفات.' : 'أضف الهوية أو رخصة القيادة أو المستندات الداعمة للوصول إليها من ملف العميل.'}</p>{!recordSearch && uploadButton}</div>}
+          <p className="cw-document-help">PDF، صور JPG وPNG، أو مستندات Word · الحد الأقصى 10 ميجابايت لكل ملف</p>
+        </CustomerPanel>}
+        {activeTab === 'activity' && <div className="space-y-5"><CustomerPanel title="التواصل والملاحظات" action={<Button variant="outline" onClick={handleOpenCrm}>فتح إدارة العلاقات</Button>}>
+          <NotesTab customerId={customerId || ''} customerPhone={customer.phone} companyId={companyId || ''}/>
+          </CustomerPanel><CustomerPanel title="التسلسل الزمني للعمليات"><ActivityTab customerId={customerId || ''} companyId={companyId || ''} contracts={contracts} payments={payments} violations={trafficViolations}/></CustomerPanel></div>}
+      </CustomerWorkspace>
 
       <input
         ref={fileInputRef}
@@ -969,12 +616,12 @@ const CustomerDetailsPageNew = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </motion.div>
+    </>
   );
 };
 
 const TabLoadingState = () => (
-  <div className="flex h-32 items-center justify-center">
+  <div className="flex h-32 items-center justify-center gap-3" role="status" aria-label="جاري تحميل بيانات القسم">
     <Loader2 className="h-6 w-6 animate-spin text-slate-300" />
   </div>
 );

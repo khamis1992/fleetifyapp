@@ -177,6 +177,12 @@ BEGIN
         USING ERRCODE = '23505';
     END IF;
 
+    IF v_existing.violation_type IS DISTINCT FROM v_violation_type
+       OR round(COALESCE(v_existing.fine_amount, 0)::numeric, 2) IS DISTINCT FROM v_amount THEN
+      RAISE EXCEPTION 'This violation number and date already exist with different details'
+        USING ERRCODE = '23505';
+    END IF;
+
     RETURN pg_catalog.jsonb_build_object(
       'success', true,
       'created', false,

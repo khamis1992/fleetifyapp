@@ -53,7 +53,6 @@ import {
   AlertTriangle,
   CalendarIcon,
   Loader2,
-  X,
 } from 'lucide-react';
 
 const priorityOptions = [
@@ -80,12 +79,14 @@ export const PersonalReminders: React.FC<PersonalRemindersProps> = ({
   const [selectedDate, setSelectedDate] = React.useState<Date | undefined>();
   const [selectedTime, setSelectedTime] = React.useState('');
 
-  const { data: reminders = [], isLoading } = usePersonalReminders();
+  const [showCompleted,setShowCompleted] = React.useState(false);
+  const { data: reminders = [], isLoading, isError, refetch } = usePersonalReminders(showCompleted);
   const createReminder = useCreateReminder();
   const toggleReminder = useToggleReminder();
   const deleteReminder = useDeleteReminder();
 
-  const displayedReminders = limit ? reminders.slice(0, limit) : reminders;
+  const filteredReminders = reminders.filter(reminder=>reminder.is_completed === showCompleted);
+  const displayedReminders = limit ? filteredReminders.slice(0, limit) : filteredReminders;
 
   const handleAddReminder = async () => {
     if (!newReminder.title.trim()) return;
@@ -100,10 +101,10 @@ export const PersonalReminders: React.FC<PersonalRemindersProps> = ({
       reminderTime = dateTime.toISOString();
     }
 
-    await createReminder.mutateAsync({
+    try { await createReminder.mutateAsync({
       ...newReminder,
       reminder_time: reminderTime,
-    });
+    }); } catch { return; }
 
     setNewReminder({ title: '', priority: 'medium' });
     setSelectedDate(undefined);
@@ -115,7 +116,7 @@ export const PersonalReminders: React.FC<PersonalRemindersProps> = ({
     if (!reminder.reminder_time) return null;
     
     const date = parseISO(reminder.reminder_time);
-    const isPastDue = isPast(date);
+    const isPastDue = isPast(date) && !reminder.is_completed;
     const isDueToday = isToday(date);
     const isDueTomorrow = isTomorrow(date);
 
@@ -196,7 +197,7 @@ export const PersonalReminders: React.FC<PersonalRemindersProps> = ({
                     <label className="text-sm font-medium mb-2 block">الأولوية</label>
                     <Select
                       value={newReminder.priority}
-                      onValueChange={(value: any) =>
+                      onValueChange={(value: PersonalReminder['priority']) =>
                         setNewReminder({ ...newReminder, priority: value })
                       }
                     >
@@ -279,6 +280,8 @@ export const PersonalReminders: React.FC<PersonalRemindersProps> = ({
       </CardHeader>
 
       <CardContent className={cn(compact && 'px-0 pb-0')}>
+        {!compact&&<div className="tw-personal-tools" role="group" aria-label="عرض التذكيرات"><button aria-pressed={!showCompleted} onClick={()=>setShowCompleted(false)}>المفتوحة</button><button aria-pressed={showCompleted} onClick={()=>setShowCompleted(true)}>المكتملة</button><span>{displayedReminders.length} تذكير</span></div>}
+        {isError&&<div role="alert" className="tw-query-error">تعذر تحميل التذكيرات <Button variant="outline" onClick={()=>refetch()}>إعادة المحاولة</Button></div>}
         {displayedReminders.length === 0 ? (
           <div className="text-center py-8 text-slate-400">
             <Bell className="h-8 w-8 mx-auto mb-2 opacity-50" />

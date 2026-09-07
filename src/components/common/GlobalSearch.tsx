@@ -12,7 +12,7 @@ import {
 import { supabase } from '@/integrations/supabase/client';
 import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
 import { Users, FileText, Receipt, Car, Search } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { DialogTitle, DialogDescription } from '@/components/ui/dialog';
 
 interface SearchResult {
   id: string;
@@ -37,6 +37,12 @@ export const GlobalSearch: React.FC<GlobalSearchProps> = ({ open: controlledOpen
 
   const open = controlledOpen !== undefined ? controlledOpen : uncontrolledOpen;
   const setOpen = onOpenChange || setUncontrolledOpen;
+
+  useEffect(() => {
+    const showSearch = () => setOpen(true);
+    document.addEventListener('fleetify:open-global-search', showSearch);
+    return () => document.removeEventListener('fleetify:open-global-search', showSearch);
+  }, [setOpen]);
 
   useEffect(() => {
     const down = (e: KeyboardEvent) => {
@@ -181,6 +187,8 @@ export const GlobalSearch: React.FC<GlobalSearchProps> = ({ open: controlledOpen
 
   return (
     <CommandDialog open={open} onOpenChange={setOpen}>
+      <DialogTitle className="sr-only">البحث في النظام</DialogTitle>
+      <DialogDescription className="sr-only">ابحث عن العملاء والعقود والفواتير والمركبات.</DialogDescription>
       <CommandInput
         placeholder="بحث في العملاء، العقود، الفواتير، المركبات..."
         value={search}

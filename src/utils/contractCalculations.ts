@@ -26,6 +26,8 @@ type BillingEvidence = {
   invoice_type?: string | null;
   invoice_number?: string | null;
   penalty_id?: string | null;
+  installment_number?: number | null;
+  financial_hold_reason?: string | null;
 };
 
 export type ContractBillingPeriodValidation = {
@@ -38,6 +40,8 @@ export type ContractBillingPeriodValidation = {
   outsideScheduleMonths: string[];
   scheduleTotal: number;
   usesEstablishedSchedule: boolean;
+  billingBasis: 'unresolved' | 'generated_monthly' | 'scheduled_monthly' | 'scheduled_partial';
+  basisMessage: string | null;
 };
 
 const INACTIVE_BILLING_STATUSES = new Set([
@@ -52,10 +56,6 @@ const INACTIVE_BILLING_STATUSES = new Set([
 const toMonthOrdinal = (date: CalendarDate) => date.year * 12 + date.month - 1;
 
 const roundCurrency = (value: number) => Math.round(value * 100) / 100;
-
-const daysInCalendarMonth = (date: CalendarDate) => (
-  new Date(Date.UTC(date.year, date.month, 0)).getUTCDate()
-);
 
 const formatMonthOrdinal = (ordinal: number) => {
   const year = Math.floor(ordinal / 12);
@@ -158,6 +158,8 @@ export const analyzeContractBillingPeriod = ({
     outsideScheduleMonths: [],
     scheduleTotal: 0,
     usesEstablishedSchedule: false,
+    billingBasis: 'unresolved',
+    basisMessage: null,
   };
 
   if (!start || !end) return emptyResult;
@@ -230,6 +232,9 @@ export const analyzeContractBillingPeriod = ({
   let billingStartMonth = formatMonthOrdinal(billingStartOrdinal);
   let billingEndMonth = formatMonthOrdinal(endMonthOrdinal);
   const blockers: string[] = [];
+  if (!Number.isFinite(total) || !Number.isFinite(monthly) || total <= 0.01 || monthly <= 0.01) {
+    blockers.push('قيمة العقد والإيجار الشهري يجب أن تكونا مبلغين موجبين صالحين');
+  }
   if (invoiceMonths.includes(null)) {
     blockers.push('توجد فاتورة إيجار فعّالة بلا شهر فوترة صالح؛ راجع شهر الفاتورة ولا تعتمد تاريخ الاستحقاق بدلاً منه');
   }
@@ -243,6 +248,15 @@ export const analyzeContractBillingPeriod = ({
   // 35 full installments of 1,800). Treating each row as a full installment
   // incorrectly invents an extra month outside the contract.
   if (activeSchedules.length > 0) {
+    if (activeSchedules.some(schedule => schedule.financial_hold_reason)) {
+      blockers.push('توجد أقساط معلقة للمراجعة المالية؛ يجب حسمها قبل إصدار فواتير');
+    }
+    const numbered = activeSchedules.filter(schedule => schedule.installment_number != null);
+    if (numbered.length > 0 && (numbered.length !== activeSchedules.length
+      || [...numbered].sort((a, b) => a.installment_number! - b.installment_number!)
+        .some((schedule, index) => schedule.installment_number !== index + 1))) {
+      blockers.push('أرقام الأقساط يجب أن تكون متسلسلة دون تكرار بدءاً من 1');
+    }
     if (scheduleMonths.length !== activeSchedules.length) {
       blockers.push('يوجد قسط فعّال بلا تاريخ استحقاق صالح');
     }
@@ -272,17 +286,6 @@ export const analyzeContractBillingPeriod = ({
       const overMonthlyMonths = scheduleMonths
         .filter(({ schedule }) => Number(schedule.amount ?? schedule.total_amount ?? 0) > monthly + 0.01)
         .map(({ month }) => formatMonthOrdinal(month));
-      const firstAmount = Number(
-        scheduleMonths.find(({ month }) => month === firstScheduleOrdinal)?.schedule.amount
-        ?? scheduleMonths.find(({ month }) => month === firstScheduleOrdinal)?.schedule.total_amount
-        ?? 0,
-      );
-      const lastAmount = Number(
-        scheduleMonths.find(({ month }) => month === lastScheduleOrdinal)?.schedule.amount
-        ?? scheduleMonths.find(({ month }) => month === lastScheduleOrdinal)?.schedule.total_amount
-        ?? 0,
-      );
-
       if (invalidInteriorMonths.length > 0) {
         blockers.push(
           `قيمة الأقساط الكاملة لا تساوي الإيجار الشهري في: ${invalidInteriorMonths.join('، ')}`,
@@ -291,21 +294,9 @@ export const analyzeContractBillingPeriod = ({
       if (overMonthlyMonths.length > 0) {
         blockers.push(`قسط يتجاوز الإيجار الشهري في: ${overMonthlyMonths.join('، ')}`);
       }
-      if (
-        firstScheduleOrdinal === startMonthOrdinal
-        && start.day > 1
-        && firstAmount >= monthly - 0.01
-      ) {
-        blockers.push('قسط شهر البداية غير مجزأ رغم أن العقد يبدأ أثناء الشهر');
-      }
-      if (
-        firstScheduleOrdinal === startMonthOrdinal
-        && lastScheduleOrdinal === endMonthOrdinal
-        && end.day < daysInCalendarMonth(end)
-        && lastAmount >= monthly - 0.01
-      ) {
-        blockers.push('قسط شهر النهاية غير مجزأ رغم أن العقد ينتهي أثناء الشهر');
-      }
+      // An installment date is a billing month, not evidence of daily proration.
+      // A complete persisted plan matching the contract total may use full or
+      // partial boundary installments. Never invent a new amount from the day.
     }
 
     if (firstScheduleOrdinal !== null && lastScheduleOrdinal !== null) {
@@ -332,6 +323,10 @@ export const analyzeContractBillingPeriod = ({
       outsideScheduleMonths,
       scheduleTotal,
       usesEstablishedSchedule: blockers.length === 0,
+      billingBasis: blockers.length ? 'unresolved' : activeSchedules.some(schedule =>
+        Number(schedule.amount ?? schedule.total_amount ?? 0) < monthly - 0.01)
+        ? 'scheduled_partial' : 'scheduled_monthly',
+      basisMessage: blockers.length ? null : `${activeSchedules.length} قسطاً بإجمالي ${scheduleTotal.toLocaleString('ar-QA')} ر.ق مطابق لقيمة العقد. تُستخدم مبالغ جدول الدفعات كما سُجلت، دون فرض تجزئة من تاريخ البداية أو النهاية.`,
     };
   }
 
@@ -364,6 +359,8 @@ export const analyzeContractBillingPeriod = ({
     outsideScheduleMonths,
     scheduleTotal,
     usesEstablishedSchedule: false,
+    billingBasis: blockers.length ? 'unresolved' : 'generated_monthly',
+    basisMessage: null,
   };
 };
 

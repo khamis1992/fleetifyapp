@@ -1,3 +1,5 @@
+import { LegalPageState } from '@/components/legal/workspace/LegalPageState';
+import { LegalPageHeader } from '@/components/legal/workspace/LegalPageHeader';
 import React, { useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -39,7 +41,7 @@ interface LegalReport {
 }
 
 export const LegalReports: React.FC = () => {
-  const { data, isLoading, error } = useLatePaymentCustomers();
+  const { data, isLoading, error, refetch } = useLatePaymentCustomers();
   const lateCustomers=data?.verified;
   const reviews=data?.review||[];
 
@@ -334,39 +336,11 @@ export const LegalReports: React.FC = () => {
     printWindow.document.close();
   };
 
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center h-96">
-        <LoadingSpinner size="lg" />
-      </div>
-    );
-  }
-  if(error) return <Alert variant="destructive"><AlertDescription>{error.message}</AlertDescription></Alert>;
+  if (isLoading || error) return <LegalPageState title="البلاغات القانونية" loading={isLoading} message={(error as Error | null)?.message} onRetry={() => { void refetch(); }} />;
 
   return (
     <div className="legal-system container mx-auto space-y-6 py-6">
-      {/* Page Header */}
-      <Card className="bg-gradient-to-br from-primary/5 via-primary/3 to-background border-primary/20">
-        <CardHeader>
-          <div className="flex items-center gap-3">
-            <div className="p-3 rounded-xl bg-primary/10">
-              <FileText className="h-8 w-8 text-primary" />
-            </div>
-             <div>
-               <div className="flex items-center gap-2">
-                 <CardTitle className="text-2xl">البلاغات القانونية</CardTitle>
-                  <HelpIcon
-                    topic="legalReports"
-                    size="md"
-                  />
-               </div>
-              <CardDescription className="text-base mt-1">
-                مسودات تجمع حتى 4 عقود متأخرة لكل تقرير (30 يومًا أو أكثر من التأخير)
-              </CardDescription>
-            </div>
-          </div>
-        </CardHeader>
-      </Card>
+      <LegalPageHeader title="البلاغات القانونية" icon={FileText} description="مسودات متابعة تجمع حتى أربعة عقود متأخرة لكل بلاغ. راجع البيانات قبل اعتماد الإجراء القانوني." actions={<HelpIcon topic="legalReports" size="md" />} />
 
       {/* Statistics */}
       {reviews.length>0&&<Alert><AlertDescription>

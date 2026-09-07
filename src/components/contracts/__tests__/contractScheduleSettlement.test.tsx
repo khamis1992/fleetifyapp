@@ -48,7 +48,7 @@ describe('mounted reconciled installment tab', () => {
   });
   it('partial overdue totals and filters use only the remaining 1000, not the full 1500', () => {
     show();
-    const metric = screen.getByText('المتأخر').closest('.rounded-2xl');
+    const metric = screen.getByText('المتأخر').closest("div");
     expect(within(metric as HTMLElement).getByText('QAR 1000.00')).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: /^جزئي/ }));
     expect(screen.getByText('القسط 1')).toBeInTheDocument();

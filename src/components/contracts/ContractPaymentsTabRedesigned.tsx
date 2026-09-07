@@ -1,3 +1,4 @@
+import { ContractSectionHeading, ContractMetricStrip } from './contract-details-v3/ContractSection';
 /**
  * تبويب الدفعات - تصميم محسّن V2
  * Professional SaaS design with improved visual hierarchy
@@ -144,6 +145,7 @@ interface ContractPaymentsTabRedesignedProps {
   customerId: string;
   invoiceIds: string[];
   invoices: InstallmentLedgerInvoice[];
+  rentalInvoiceIds?: string[];
   contractStartDate?: string | null;
   formatCurrency: (amount: number) => string;
   contractNumber?: string;
@@ -547,34 +549,7 @@ const PaymentMetrics = ({
     },
   ];
 
-  return (
-    <motion.div
-      variants={fadeInUp}
-      className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4"
-    >
-      {metricCards.map((metric, idx) => (
-        <motion.div
-          key={idx}
-          variants={scaleIn}
-          className="rounded-2xl border border-[#E5EAF1] bg-white p-4 shadow-[0_10px_30px_-22px_rgba(15,23,42,0.25)]"
-        >
-          <div className="flex items-start justify-between mb-3">
-            <div className={cn("flex h-8 w-8 items-center justify-center rounded-lg", metric.tintBg, metric.iconColor)}>
-              <metric.icon className="h-4 w-4" />
-            </div>
-            <div className={cn("px-2 py-1 rounded-lg text-[11px] font-bold", metric.badgeBg, metric.badgeText)}>
-              {metric.subtext.split(' • ')[0]}
-            </div>
-          </div>
-          <p className="text-base font-black text-[#0F172A] mb-1">{metric.value}</p>
-          <p className="text-[11px] font-bold text-slate-500">
-            {metric.title}
-            {metric.subtext.includes(' • ') ? ` — ${metric.subtext.split(' • ')[1]}` : ''}
-          </p>
-        </motion.div>
-      ))}
-    </motion.div>
-  );
+  return <ContractMetricStrip items={metricCards} />;
 };
 
 // ===== Payment Card Component =====
@@ -1042,7 +1017,7 @@ const InstallmentLedgerCard = ({
       )}>
         <CollapsibleTrigger asChild>
           <button type="button" className="w-full p-0 text-right focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400">
-            <div className="grid gap-4 p-4 lg:grid-cols-[1.3fr_1.7fr_auto] lg:items-center">
+            <div className="grid gap-5 p-5 2xl:grid-cols-[1.3fr_1.7fr_auto] 2xl:items-center">
               <div className="flex min-w-0 items-start gap-3">
                 <div className={cn(
                   'flex h-11 w-11 shrink-0 items-center justify-center rounded-xl',
@@ -1071,19 +1046,19 @@ const InstallmentLedgerCard = ({
                 </div>
               </div>
 
-              <div className="grid grid-cols-3 gap-2 rounded-xl border border-[#E5EAF1] bg-[#F8FAFC] p-3">
+              <div className="grid grid-cols-3 gap-3 border-y border-[#e7eeea] bg-white py-4">
                 <div>
                   <p className="text-[11px] font-bold text-slate-400">قيمة القسط</p>
-                  <p className="mt-1 whitespace-nowrap text-sm font-black text-[#0F172A]">{formatCurrency(group.totalAmount)}</p>
+                  <p className="mt-1 break-words text-sm font-black text-[#0F172A]">{formatCurrency(group.totalAmount)}</p>
                 </div>
                 <div>
                   <p className="text-[11px] font-bold text-slate-400">المسدد</p>
-                  <p className="mt-1 whitespace-nowrap text-sm font-black text-emerald-700">{formatCurrency(group.paidAmount)}</p>
+                  <p className="mt-1 break-words text-sm font-black text-emerald-700">{formatCurrency(group.paidAmount)}</p>
                 </div>
                 <div>
                   <p className="text-[11px] font-bold text-slate-400">المتبقي</p>
                   <p className={cn(
-                    'mt-1 whitespace-nowrap text-sm font-black',
+                    'mt-1 break-words text-sm font-black',
                     group.remainingAmount > 0 ? 'text-rose-700' : 'text-slate-500',
                   )}>
                     {formatCurrency(group.remainingAmount)}
@@ -1257,6 +1232,7 @@ export const ContractPaymentsTabRedesigned = ({
   customerId,
   invoiceIds,
   invoices,
+  rentalInvoiceIds,
   formatCurrency,
   contractNumber,
   customerInfo,
@@ -1321,8 +1297,8 @@ export const ContractPaymentsTabRedesigned = ({
   }, [evidence, invoices, creators, creatorsError]);
   const allocationsForLedger = evidence?.allocations;
   const installmentLedger = useMemo(
-    () => buildContractInstallmentLedger({ invoices, payments, allocations: allocationsForLedger || [] }),
-    [allocationsForLedger, invoices, payments],
+    () => buildContractInstallmentLedger({ invoices, payments, allocations: allocationsForLedger || [], rentalInvoiceIds }),
+    [allocationsForLedger, invoices, payments, rentalInvoiceIds],
   );
   const invoiceLinkedPaymentIds = useMemo(() => new Set([
     ...payments.filter((payment) => payment.invoice_id && invoiceIds.includes(payment.invoice_id)).map((payment) => payment.id),
@@ -1533,11 +1509,12 @@ export const ContractPaymentsTabRedesigned = ({
   return (
     <>
       <div className="space-y-5">
+<ContractSectionHeading number="02.2" title="دفتر التحصيل" description="تتبّع ما خُصّص لكل شهر، أو انتقل إلى سجل الإيصالات." />
         {/* Metrics Overview */}
         <PaymentMetrics payments={payments} formatCurrency={formatCurrency} />
 
         {/* Header & Actions */}
-        <div className="flex flex-col gap-3 rounded-2xl border border-[#E5EAF1] bg-white p-4 shadow-[0_10px_30px_-22px_rgba(15,23,42,0.25)] sm:flex-row sm:items-center sm:justify-between">
+        <div className="contract-workbench">
           <div>
             <h2 className="mb-1 text-xl font-black text-[#0F172A]">دفتر تحصيل العقد</h2>
             <p className="text-slate-500 text-sm">

@@ -430,7 +430,7 @@ export default function PurchaseOrders() {
         <Breadcrumbs />
 
         {/* Header Area */}
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div data-finance-heading="" className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
             <h1 className="text-3xl font-bold text-slate-900 tracking-tight">
               أوامر الشراء
@@ -953,7 +953,7 @@ export default function PurchaseOrders() {
                           <input
                             type="text"
                             list="sku-options"
-                            placeholder="SKU..."
+                            placeholder="رمز الصنف…"
                             className="w-full bg-transparent border-none p-0 text-sm font-mono text-slate-600 focus:ring-0 placeholder-slate-300 uppercase text-right"
                             value={item.sku}
                             onChange={(e) =>

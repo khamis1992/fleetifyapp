@@ -123,20 +123,24 @@ export const buildContractInstallmentLedger = ({
   invoices,
   payments,
   allocations,
+  rentalInvoiceIds = [],
   today = new Date().toISOString().slice(0, 10),
 }: {
   invoices: InstallmentLedgerInvoice[];
   payments: InstallmentLedgerPayment[];
   allocations: InstallmentLedgerAllocation[];
+  rentalInvoiceIds?: string[];
   today?: string;
 }): ContractInstallmentLedger => {
   const invoiceById = new Map(invoices.map((invoice) => [invoice.id, invoice]));
   const paymentById = new Map(payments.map((payment) => [payment.id, payment]));
   const groups = new Map<string, InstallmentLedgerInvoice[]>();
+  const rentalIds = new Set(rentalInvoiceIds);
 
   for (const invoice of invoices) {
     const monthKey = getInvoiceBillingMonthKey(invoice);
-    const category = isChargeInvoice(invoice) ? 'charge' : 'rent';
+    const isPenalty = Boolean(invoice.penalty_id) || invoice.invoice_number.toUpperCase().startsWith('TV-');
+    const category = isPenalty || (isChargeInvoice(invoice) && !rentalIds.has(invoice.id)) ? 'charge' : 'rent';
     const groupId = category === 'rent'
       ? `rent:${monthKey || invoice.id}`
       : `charge:${invoice.id}`;

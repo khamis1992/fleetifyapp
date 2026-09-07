@@ -10,9 +10,22 @@ export function reserveSmartCardPinSubmission() {
   return true;
 }
 
-export function startWindowsSmartCardPinHelper(pin: string): 'started' | 'not-applicable' | 'limit-reached' {
-  if (process.platform !== 'win32' || process.env.VITEST || !pin) return 'not-applicable';
-  if (!reserveSmartCardPinSubmission()) return 'limit-reached';
+/** Only call after this login flow has reached an authenticated portal page. */
+export function confirmSmartCardAuthenticationSucceeded() {
+  smartCardPinSubmissions = 0;
+}
+
+export const SMART_CARD_PIN_LIMIT_MESSAGE =
+  'توقف إدخال الرقم السري تلقائيًا بعد محاولتين لم تُؤكّد نتيجتهما. لا يعني ذلك أن الرقم خاطئ. أكمل الدخول يدويًا في نافذة الوكيل، واختر حساب شركة العراف، ثم اضغط «متابعة من تقاضي».';
+
+export interface SmartCardPinHelper {
+  readonly status: 'watching' | 'submitted' | 'not-applicable' | 'limit-reached';
+  /** Prevent a later native submission; true means one was already authorized. */
+  cancel(): boolean;
+}
+
+export function startWindowsSmartCardPinHelper(pin: string): SmartCardPinHelper | null {
+  if (process.platform !== 'win32' || process.env.VITEST || !pin) return null;
 
   const systemRoot = process.env.SystemRoot || 'C:\\Windows';
   const powershellPath = path.join(
@@ -46,10 +59,43 @@ export function startWindowsSmartCardPinHelper(pin: string): 'started' | 'not-ap
         TMP: process.env.TMP || '',
         TAQADI_SMART_CARD_PIN: pin,
       },
-      stdio: 'ignore',
+      stdio: ['pipe', 'pipe', 'ignore'],
       windowsHide: true,
     },
   );
+  let status: SmartCardPinHelper['status'] = 'watching';
+  let authorized = false;
+  let cancelled = false;
+  let output = '';
+  const cancel = () => {
+    cancelled = true;
+    child.stdin?.end();
+    child.kill();
+    if (status === 'watching') status = 'not-applicable';
+    return authorized;
+  };
+  child.stdin?.on('error', () => { /* Closing a native dialog can close stdin. */ });
+  child.on('error', () => {
+    if (!authorized) status = 'not-applicable';
+  });
+  child.on('exit', () => {
+    if (status === 'watching') status = 'not-applicable';
+  });
+  child.stdout?.on('data', (data: Buffer) => {
+    if (cancelled || status !== 'watching') return;
+    output = (output + data.toString('utf8')).slice(-256);
+    if (!output.split(/\r?\n/).includes('pin-ready')) return;
+    // Launching the helper is not a PIN attempt. Reserve only when a real
+    // native password dialog exists, immediately before authorizing entry.
+    if (!reserveSmartCardPinSubmission()) {
+      status = 'limit-reached';
+      cancel();
+      return;
+    }
+    authorized = true;
+    status = 'submitted';
+    child.stdin?.write('submit\n');
+  });
   child.unref();
-  return 'started';
+  return { get status() { return status; }, cancel };
 }

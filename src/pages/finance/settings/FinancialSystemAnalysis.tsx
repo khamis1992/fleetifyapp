@@ -68,7 +68,7 @@ export default function FinancialSystemAnalysis() {
 
   return (
     <div className="container mx-auto py-6 space-y-6">
-      <div className="flex items-center justify-between">
+      <div data-finance-heading="" className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold">تحليل النظام المالي الذكي</h1>
           <p className="text-muted-foreground">
@@ -473,7 +473,7 @@ export default function FinancialSystemAnalysis() {
                           onClick={() => window.open('https://supabase.com/dashboard/project/qwhunliohlkkahbspfiu/settings/functions', '_blank')}
                           className="text-xs text-primary"
                         >
-                          إعداد API Key
+                          إعداد مفتاح الاتصال
                         </Button>
                       )}
                     </div>

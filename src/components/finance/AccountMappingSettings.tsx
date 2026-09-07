@@ -1,5 +1,11 @@
 import React, { useState } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -41,17 +47,25 @@ import {
   AccountMapping,
 } from "@/hooks/useAccountMappings";
 import { useChartOfAccounts } from "@/hooks/useChartOfAccounts";
+import { isEligibleAccountMapping } from "@/utils/accountMappingValidation";
+import { useUnifiedCompanyAccess } from "@/hooks/useUnifiedCompanyAccess";
 
 export const AccountMappingSettings: React.FC = () => {
+  const { companyId } = useUnifiedCompanyAccess();
   const [selectedDefaultType, setSelectedDefaultType] = useState<string>("");
   const [selectedChartAccount, setSelectedChartAccount] = useState<string>("");
-  const [editingMapping, setEditingMapping] = useState<AccountMapping | null>(null);
+  const [editingMapping, setEditingMapping] = useState<AccountMapping | null>(
+    null
+  );
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
 
-  const { data: defaultTypes, isLoading: loadingDefaultTypes } = useDefaultAccountTypes();
-  const { data: mappings, isLoading: loadingMappings } = useAccountMappings();
-  const { data: chartAccounts, isLoading: loadingChart } = useChartOfAccounts();
+  const typesQuery = useDefaultAccountTypes();
+  const mappingsQuery = useAccountMappings();
+  const chartQuery = useChartOfAccounts();
+  const { data: defaultTypes, isLoading: loadingDefaultTypes } = typesQuery;
+  const { data: mappings, isLoading: loadingMappings } = mappingsQuery;
+  const { data: chartAccounts, isLoading: loadingChart } = chartQuery;
   const createMappingMutation = useCreateAccountMapping();
   const updateMappingMutation = useUpdateAccountMapping();
   const deleteMappingMutation = useDeleteAccountMapping();
@@ -59,23 +73,40 @@ export const AccountMappingSettings: React.FC = () => {
   const isLoading = loadingDefaultTypes || loadingMappings || loadingChart;
 
   // Group default types by category
-  const groupedDefaultTypes = defaultTypes?.reduce((acc, type) => {
-    if (!acc[type.account_category]) {
-      acc[type.account_category] = [];
-    }
-    acc[type.account_category].push(type);
-    return acc;
-  }, {} as Record<string, DefaultAccountType[]>) || {};
+  const groupedDefaultTypes =
+    defaultTypes?.reduce((acc, type) => {
+      if (!acc[type.account_category]) {
+        acc[type.account_category] = [];
+      }
+      acc[type.account_category].push(type);
+      return acc;
+    }, {} as Record<string, DefaultAccountType[]>) || {};
 
   // Get unmapped default types
-  const mappedTypeIds = mappings?.map(m => m.default_account_type_id) || [];
-  const unmappedTypes = defaultTypes?.filter(type => !mappedTypeIds.includes(type.id)) || [];
+  const mappedTypeIds = mappings?.map((m) => m.default_account_type_id) || [];
+  const unmappedTypes =
+    defaultTypes?.filter((type) => !mappedTypeIds.includes(type.id)) || [];
 
   // Filter chart accounts for selection (only detail accounts)
-  const detailAccounts = chartAccounts?.filter(account => !account.is_header && account.is_active) || [];
+  const activeTypeId = isEditDialogOpen
+    ? editingMapping?.default_account_type_id
+    : selectedDefaultType;
+  const activeType = defaultTypes?.find((type) => type.id === activeTypeId);
+  const detailAccounts =
+    chartAccounts?.filter((account) =>
+      isEligibleAccountMapping(
+        account,
+        activeType?.account_category,
+        companyId,
+        activeType?.type_code
+      )
+    ) || [];
+  const selectionValid = detailAccounts.some(
+    (account) => account.id === selectedChartAccount
+  );
 
   const handleCreateMapping = () => {
-    if (!selectedDefaultType || !selectedChartAccount) return;
+    if (!selectedDefaultType || !selectionValid) return;
 
     createMappingMutation.mutate(
       {
@@ -99,7 +130,7 @@ export const AccountMappingSettings: React.FC = () => {
   };
 
   const handleUpdateMapping = () => {
-    if (!editingMapping || !selectedChartAccount) return;
+    if (!editingMapping || !selectionValid) return;
 
     updateMappingMutation.mutate(
       {
@@ -150,6 +181,32 @@ export const AccountMappingSettings: React.FC = () => {
     );
   }
 
+  if (
+    typesQuery.isError ||
+    mappingsQuery.isError ||
+    chartQuery.isError ||
+    !companyId
+  ) {
+    return (
+      <Card>
+        <CardContent className="space-y-3 p-6" role="alert">
+          <p>
+            تعذر التحقق من ربط الحسابات. أعد تحميل البيانات قبل إجراء أي تعديل.
+          </p>
+          <Button
+            onClick={() => {
+              void typesQuery.refetch();
+              void mappingsQuery.refetch();
+              void chartQuery.refetch();
+            }}
+          >
+            إعادة المحاولة
+          </Button>
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
     <div className="space-y-6">
       <Card>
@@ -159,17 +216,27 @@ export const AccountMappingSettings: React.FC = () => {
             ربط الحسابات
           </CardTitle>
           <CardDescription>
-            قم بربط أنواع الحسابات الافتراضية مع حسابات دليل الحسابات الخاص بك لضمان التكامل الصحيح مع العمليات المالية
+            قم بربط أنواع الحسابات الافتراضية مع حسابات دليل الحسابات الخاص بك
+            لضمان التكامل الصحيح مع العمليات المالية
           </CardDescription>
         </CardHeader>
         <CardContent>
+          <p className="mb-4 text-sm text-muted-foreground">
+            الربط متاح للحسابات النشطة من المستوى الثالث أو أعلى، مع مطابقة
+            الفئة وطبيعة الرصيد. حساب إيرادات رسوم التأخير المحصّلة مستقل عن ذمم
+            الإيجار.
+          </p>
           <div className="flex justify-between items-center mb-6">
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <AlertCircle className="h-4 w-4" />
-              {mappings?.length || 0} من {defaultTypes?.length || 0} نوع حساب مربوط
+              {mappings?.length || 0} من {defaultTypes?.length || 0} نوع حساب
+              مربوط
             </div>
-            
-            <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+
+            <Dialog
+              open={isCreateDialogOpen}
+              onOpenChange={setIsCreateDialogOpen}
+            >
               <DialogTrigger asChild>
                 <Button disabled={unmappedTypes.length === 0}>
                   <Plus className="h-4 w-4 mr-2" />
@@ -185,55 +252,82 @@ export const AccountMappingSettings: React.FC = () => {
                 </DialogHeader>
                 <div className="space-y-4">
                   <div>
-                    <label className="text-sm font-medium">نوع الحساب الافتراضي</label>
-                    <Select value={selectedDefaultType} onValueChange={setSelectedDefaultType}>
+                    <label className="text-sm font-medium">
+                      نوع الحساب الافتراضي
+                    </label>
+                    <Select
+                      value={selectedDefaultType}
+                      onValueChange={(value) => {
+                        setSelectedDefaultType(value);
+                        setSelectedChartAccount("");
+                      }}
+                    >
                       <SelectTrigger>
                         <SelectValue placeholder="اختر نوع الحساب" />
                       </SelectTrigger>
                       <SelectContent>
-                        {Object.entries(groupedDefaultTypes).map(([category, types]) => (
-                          <div key={category}>
-                            <div className="px-2 py-1 text-xs font-semibold text-muted-foreground">
-                              {getCategoryLabel(category)}
+                        {Object.entries(groupedDefaultTypes).map(
+                          ([category, types]) => (
+                            <div key={category}>
+                              <div className="px-2 py-1 text-xs font-semibold text-muted-foreground">
+                                {getCategoryLabel(category)}
+                              </div>
+                              {types
+                                .filter((type) =>
+                                  unmappedTypes.some((ut) => ut.id === type.id)
+                                )
+                                .map((type) => (
+                                  <SelectItem key={type.id} value={type.id}>
+                                    {type.type_name_ar || type.type_name}
+                                  </SelectItem>
+                                ))}
                             </div>
-                            {types
-                              .filter(type => unmappedTypes.some(ut => ut.id === type.id))
-                              .map((type) => (
-                                <SelectItem key={type.id} value={type.id}>
-                                  {type.type_name_ar || type.type_name}
-                                </SelectItem>
-                              ))}
-                          </div>
-                        ))}
+                          )
+                        )}
                       </SelectContent>
                     </Select>
                   </div>
-                  
+
                   <div>
-                    <label className="text-sm font-medium">الحساب من دليل الحسابات</label>
-                    <Select value={selectedChartAccount} onValueChange={setSelectedChartAccount}>
+                    <label className="text-sm font-medium">
+                      الحساب من دليل الحسابات
+                    </label>
+                    <Select
+                      value={selectedChartAccount}
+                      onValueChange={setSelectedChartAccount}
+                    >
                       <SelectTrigger>
                         <SelectValue placeholder="اختر الحساب" />
                       </SelectTrigger>
                       <SelectContent>
                         {detailAccounts.map((account) => (
                           <SelectItem key={account.id} value={account.id}>
-                            {account.account_code} - {account.account_name_ar || account.account_name}
+                            {account.account_code} -{" "}
+                            {account.account_name_ar || account.account_name}
                           </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
                   </div>
-                  
+
                   <div className="flex justify-end gap-2">
-                    <Button variant="outline" onClick={() => setIsCreateDialogOpen(false)}>
+                    <Button
+                      variant="outline"
+                      onClick={() => setIsCreateDialogOpen(false)}
+                    >
                       إلغاء
                     </Button>
-                    <Button 
+                    <Button
                       onClick={handleCreateMapping}
-                      disabled={!selectedDefaultType || !selectedChartAccount || createMappingMutation.isPending}
+                      disabled={
+                        !selectedDefaultType ||
+                        !selectionValid ||
+                        createMappingMutation.isPending
+                      }
                     >
-                      {createMappingMutation.isPending ? "جاري الحفظ..." : "حفظ"}
+                      {createMappingMutation.isPending
+                        ? "جاري الحفظ..."
+                        : "حفظ"}
                     </Button>
                   </div>
                 </div>
@@ -243,11 +337,16 @@ export const AccountMappingSettings: React.FC = () => {
 
           <div className="space-y-4">
             {Object.entries(groupedDefaultTypes).map(([category, types]) => {
-              const categoryMappings = mappings?.filter(m => 
-                types.some(t => t.id === m.default_account_type_id)
-              ) || [];
-              
-              if (categoryMappings.length === 0 && types.filter(t => unmappedTypes.some(ut => ut.id === t.id)).length === 0) {
+              const categoryMappings =
+                mappings?.filter((m) =>
+                  types.some((t) => t.id === m.default_account_type_id)
+                ) || [];
+
+              if (
+                categoryMappings.length === 0 &&
+                types.filter((t) => unmappedTypes.some((ut) => ut.id === t.id))
+                  .length === 0
+              ) {
                 return null;
               }
 
@@ -261,22 +360,46 @@ export const AccountMappingSettings: React.FC = () => {
                       {categoryMappings.length} من {types.length} مربوط
                     </span>
                   </div>
-                  
+
                   <div className="grid gap-3">
                     {categoryMappings.map((mapping) => (
                       <Card key={mapping.id} className="p-4">
                         <div className="flex items-center justify-between">
                           <div className="space-y-1">
                             <div className="font-medium">
-                              {mapping.default_account_type?.type_name_ar || mapping.default_account_type?.type_name}
+                              {mapping.default_account_type?.type_name_ar ||
+                                mapping.default_account_type?.type_name}
                             </div>
                             <div className="text-sm text-muted-foreground">
-                              مربوط مع: {mapping.chart_of_accounts?.account_code} - {mapping.chart_of_accounts?.account_name_ar || mapping.chart_of_accounts?.account_name}
+                              مربوط مع:{" "}
+                              {mapping.chart_of_accounts?.account_code} -{" "}
+                              {mapping.chart_of_accounts?.account_name_ar ||
+                                mapping.chart_of_accounts?.account_name}
                             </div>
+                            {!isEligibleAccountMapping(
+                              chartAccounts?.find(
+                                (account) =>
+                                  account.id === mapping.chart_of_accounts_id
+                              ),
+                              mapping.default_account_type?.account_category,
+                              companyId,
+                              mapping.default_account_type?.type_code
+                            ) && (
+                              <p className="text-sm text-destructive">
+                                هذا الربط يحتاج تصحيحًا: الحساب غير صالح للترحيل
+                                أو لا يطابق نوع العملية.
+                              </p>
+                            )}
                           </div>
-                          
+
                           <div className="flex items-center gap-2">
-                            <Dialog open={isEditDialogOpen && editingMapping?.id === mapping.id} onOpenChange={setIsEditDialogOpen}>
+                            <Dialog
+                              open={
+                                isEditDialogOpen &&
+                                editingMapping?.id === mapping.id
+                              }
+                              onOpenChange={setIsEditDialogOpen}
+                            >
                               <DialogTrigger asChild>
                                 <Button
                                   variant="outline"
@@ -290,41 +413,63 @@ export const AccountMappingSettings: React.FC = () => {
                                 <DialogHeader>
                                   <DialogTitle>تعديل ربط الحساب</DialogTitle>
                                   <DialogDescription>
-                                    تعديل الحساب المربوط مع نوع الحساب: {editingMapping?.default_account_type?.type_name_ar || editingMapping?.default_account_type?.type_name}
+                                    تعديل الحساب المربوط مع نوع الحساب:{" "}
+                                    {editingMapping?.default_account_type
+                                      ?.type_name_ar ||
+                                      editingMapping?.default_account_type
+                                        ?.type_name}
                                   </DialogDescription>
                                 </DialogHeader>
                                 <div className="space-y-4">
                                   <div>
-                                    <label className="text-sm font-medium">الحساب من دليل الحسابات</label>
-                                    <Select value={selectedChartAccount} onValueChange={setSelectedChartAccount}>
+                                    <label className="text-sm font-medium">
+                                      الحساب من دليل الحسابات
+                                    </label>
+                                    <Select
+                                      value={selectedChartAccount}
+                                      onValueChange={setSelectedChartAccount}
+                                    >
                                       <SelectTrigger>
                                         <SelectValue placeholder="اختر الحساب" />
                                       </SelectTrigger>
                                       <SelectContent>
                                         {detailAccounts.map((account) => (
-                                          <SelectItem key={account.id} value={account.id}>
-                                            {account.account_code} - {account.account_name_ar || account.account_name}
+                                          <SelectItem
+                                            key={account.id}
+                                            value={account.id}
+                                          >
+                                            {account.account_code} -{" "}
+                                            {account.account_name_ar ||
+                                              account.account_name}
                                           </SelectItem>
                                         ))}
                                       </SelectContent>
                                     </Select>
                                   </div>
-                                  
+
                                   <div className="flex justify-end gap-2">
-                                    <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
+                                    <Button
+                                      variant="outline"
+                                      onClick={() => setIsEditDialogOpen(false)}
+                                    >
                                       إلغاء
                                     </Button>
-                                    <Button 
+                                    <Button
                                       onClick={handleUpdateMapping}
-                                      disabled={!selectedChartAccount || updateMappingMutation.isPending}
+                                      disabled={
+                                        !selectionValid ||
+                                        updateMappingMutation.isPending
+                                      }
                                     >
-                                      {updateMappingMutation.isPending ? "جاري التحديث..." : "حفظ التعديل"}
+                                      {updateMappingMutation.isPending
+                                        ? "جاري التحديث..."
+                                        : "حفظ التعديل"}
                                     </Button>
                                   </div>
                                 </div>
                               </DialogContent>
                             </Dialog>
-                            
+
                             <AlertDialog>
                               <AlertDialogTrigger asChild>
                                 <Button variant="outline" size="sm">
@@ -333,15 +478,25 @@ export const AccountMappingSettings: React.FC = () => {
                               </AlertDialogTrigger>
                               <AlertDialogContent>
                                 <AlertDialogHeader>
-                                  <AlertDialogTitle>تأكيد الحذف</AlertDialogTitle>
+                                  <AlertDialogTitle>
+                                    تأكيد الحذف
+                                  </AlertDialogTitle>
                                   <AlertDialogDescription>
-                                    هل تريد حذف ربط الحساب "{mapping.default_account_type?.type_name_ar || mapping.default_account_type?.type_name}"؟
-                                    سيتم الاعتماد على البحث التلقائي للحسابات في العمليات المالية.
+                                    هل تريد حذف ربط الحساب "
+                                    {mapping.default_account_type
+                                      ?.type_name_ar ||
+                                      mapping.default_account_type?.type_name}
+                                    "؟ سيتم الاعتماد على البحث التلقائي للحسابات
+                                    في العمليات المالية.
                                   </AlertDialogDescription>
                                 </AlertDialogHeader>
                                 <AlertDialogFooter>
                                   <AlertDialogCancel>إلغاء</AlertDialogCancel>
-                                  <AlertDialogAction onClick={() => handleDeleteMapping(mapping.id)}>
+                                  <AlertDialogAction
+                                    onClick={() =>
+                                      handleDeleteMapping(mapping.id)
+                                    }
+                                  >
                                     حذف
                                   </AlertDialogAction>
                                 </AlertDialogFooter>
@@ -351,28 +506,39 @@ export const AccountMappingSettings: React.FC = () => {
                         </div>
                       </Card>
                     ))}
-                    
+
                     {/* Show unmapped types in this category */}
-                    {types.filter(t => unmappedTypes.some(ut => ut.id === t.id)).map((type) => (
-                      <Card key={type.id} className="p-4 border-dashed border-muted-foreground/30">
-                        <div className="flex items-center justify-between">
-                          <div className="space-y-1">
-                            <div className="font-medium text-muted-foreground">
-                              {type.type_name_ar || type.type_name}
+                    {types
+                      .filter((t) => unmappedTypes.some((ut) => ut.id === t.id))
+                      .map((type) => (
+                        <Card
+                          key={type.id}
+                          className="p-4 border-dashed border-muted-foreground/30"
+                        >
+                          <div className="flex items-center justify-between">
+                            <div className="space-y-1">
+                              <div className="font-medium text-muted-foreground">
+                                {type.type_name_ar || type.type_name}
+                              </div>
+                              <div className="text-sm text-muted-foreground">
+                                يلزم تحديد حساب صالح قبل استخدام هذا الربط
+                              </div>
                             </div>
-                            <div className="text-sm text-muted-foreground">
-                              غير مربوط - سيتم البحث التلقائي
-                            </div>
+                            <Badge
+                              variant="outline"
+                              className="text-muted-foreground"
+                            >
+                              غير مربوط
+                            </Badge>
                           </div>
-                          <Badge variant="outline" className="text-muted-foreground">
-                            غير مربوط
-                          </Badge>
-                        </div>
-                      </Card>
-                    ))}
+                        </Card>
+                      ))}
                   </div>
-                  
-                  {category !== Object.keys(groupedDefaultTypes).slice(-1)[0] && <Separator className="my-6" />}
+
+                  {category !==
+                    Object.keys(groupedDefaultTypes).slice(-1)[0] && (
+                    <Separator className="my-6" />
+                  )}
                 </div>
               );
             })}

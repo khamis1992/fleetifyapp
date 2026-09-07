@@ -1,5 +1,5 @@
 import { supabase } from '@/integrations/supabase/client';
-import { convertAllPagesToImages } from '@/services/contractPDFExtractor';
+import { loadSignedContractPages } from '@/utils/signedContractReview';
 
 export type LegalIdentityMatchStatus =
   | 'pending'
@@ -131,10 +131,10 @@ export async function verifyLegalContractDocumentIdentity(
         document.document_name || 'signed-contract.pdf',
         { type: 'application/pdf' },
       );
-      const pageImages = await convertAllPagesToImages(file, 2, 10);
-      const pages = pageImages.map((imageBase64, index) => ({
+      const pageImages = await loadSignedContractPages(file);
+      const pages = pageImages.map((page, index) => ({
         pageNumber: index + 1,
-        imageBase64,
+        imageBase64: page.image,
       }));
       const { error } = await supabase.functions.invoke('contract-id-scanner', {
         body: {

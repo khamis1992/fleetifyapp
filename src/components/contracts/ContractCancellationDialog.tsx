@@ -38,7 +38,6 @@ export const ContractCancellationDialog: React.FC<ContractCancellationDialogProp
   onCancelled,
 }) => {
   const [cancellationReason, setCancellationReason] = React.useState('');
-  const [transferTrafficViolationsToCompany, setTransferTrafficViolationsToCompany] = React.useState(false);
   const [recordVehicleCondition, setRecordVehicleCondition] = React.useState(false);
   const [showVehicleSection, setShowVehicleSection] = React.useState(false);
   
@@ -56,18 +55,10 @@ export const ContractCancellationDialog: React.FC<ContractCancellationDialogProp
   });
 
   const isProcessing = updateContractStatus.isPending;
-  const requiresCompanyTransfer = cancellationImpact.data?.requiresCompanyTransfer === true;
-  const cancellationIsBlocked = requiresCompanyTransfer && (
-    cancellationImpact.data?.blockedPenaltyCount !== 0
-    || !cancellationImpact.data?.authorizedToTransfer
-    || !transferTrafficViolationsToCompany
-  );
-
   // Reset state when dialog closes
   React.useEffect(() => {
     if (!open) {
       setCancellationReason('');
-      setTransferTrafficViolationsToCompany(false);
       setRecordVehicleCondition(false);
       setShowVehicleSection(false);
       setVehicleCondition('good');
@@ -101,7 +92,7 @@ export const ContractCancellationDialog: React.FC<ContractCancellationDialogProp
         status: 'cancelled',
         reason: cancellationReason.trim(),
         companyId: contract.company_id,
-        transferTrafficViolationsToCompany,
+        transferTrafficViolationsToCompany: false,
         vehicleReturn: recordVehicleCondition && contract.vehicle_id
           ? {
               inspection_date: new Date().toISOString(),
@@ -127,8 +118,8 @@ export const ContractCancellationDialog: React.FC<ContractCancellationDialogProp
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
+      <DialogContent dir="rtl" className="w-[calc(100%-2rem)] max-w-lg max-h-[90dvh] overflow-y-auto rounded-2xl bg-white text-slate-900">
+        <DialogHeader className="pr-8 text-right">
           <DialogTitle className="flex items-center gap-2 text-red-600">
             <XCircle className="h-5 w-5" />
             إلغاء العقد
@@ -143,8 +134,8 @@ export const ContractCancellationDialog: React.FC<ContractCancellationDialogProp
           <Alert variant="destructive" className="border-red-200 bg-red-50">
             <AlertTriangle className="h-4 w-4" />
             <AlertDescription className="text-red-800">
-              <strong>تحذير:</strong> هذا الإجراء سيؤدي إلى إلغاء العقد نهائياً. 
-              لا يمكن التراجع عن هذا الإجراء.
+              سيصبح العقد ملغيًا مع الاحتفاظ بسجله. تخضع إعادة التفعيل لصلاحية المدة وتوفر المركبة.
+              راجع أدناه أثر الإلغاء على الفواتير والأقساط قبل التأكيد.
             </AlertDescription>
           </Alert>
 
@@ -173,8 +164,6 @@ export const ContractCancellationDialog: React.FC<ContractCancellationDialogProp
             impact={cancellationImpact.data}
             isLoading={cancellationImpact.isLoading || cancellationImpact.isFetching}
             error={cancellationImpact.error}
-            transferToCompany={transferTrafficViolationsToCompany}
-            onTransferToCompanyChange={setTransferTrafficViolationsToCompany}
             disabled={isProcessing}
           />
 
@@ -324,7 +313,6 @@ export const ContractCancellationDialog: React.FC<ContractCancellationDialogProp
               || cancellationImpact.isLoading
               || cancellationImpact.isFetching
               || !!cancellationImpact.error
-              || cancellationIsBlocked
               || cancellationReason.trim().length < 5
               || (recordVehicleCondition && (!odometerReading || odometerReading <= 0))
             }

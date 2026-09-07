@@ -1,21 +1,14 @@
 import { PageCustomizer } from "@/components/PageCustomizer";
 import { AccountingAlerts } from "@/components/finance/AccountingAlerts";
 import { AlertTriangle } from "lucide-react";
+import { FinancePageHeader } from '@/components/ui/FinancePageHeader';
 
 export default function AlertsPage() {
   return (
     <PageCustomizer pageId="finance-alerts" title="" titleAr="">
       <div className="space-y-6">
         {/* Header */}
-        <div>
-          <h1 className="text-3xl font-bold flex items-center gap-2">
-            <AlertTriangle className="h-8 w-8 text-primary" />
-            التنبيهات المحاسبية
-          </h1>
-          <p className="text-muted-foreground mt-1">
-            مراقبة تلقائية لجميع الأخطاء والمشاكل المحاسبية المحتملة
-          </p>
-        </div>
+        <FinancePageHeader title="التنبيهات المحاسبية" description="راجع التنبيهات والفروقات التي تحتاج إلى متابعة." icon={AlertTriangle} />
 
         {/* Alerts Component */}
         <AccountingAlerts />

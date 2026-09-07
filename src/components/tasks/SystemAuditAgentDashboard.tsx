@@ -10,7 +10,6 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
-import { systemColorPattern } from "@/lib/design-system/systemColorPattern";
 import {
   useSystemAuditDashboard,
   useSyncSystemAuditReviewTasks,
@@ -52,7 +51,7 @@ import {
   XCircle,
 } from "lucide-react";
 
-const colors = systemColorPattern.colors;
+const colors = { info: '#2F7966', success: '#608D43', focus: '#A4844B', alert: '#B74B43', border: '#E0E7D8' };
 const allDomains: SystemAuditDomain[] = [
   "contracts",
   "accounting",
@@ -1046,7 +1045,12 @@ function HumanDecisionPanel({
   const [expandedTaskId, setExpandedTaskId] = React.useState<string | null>(
     null
   );
-  const visibleTasks = tasks.slice(0, 8);
+  const [search,setSearch] = React.useState('');
+  const [page,setPage] = React.useState(1);
+  const filteredTasks = tasks.filter(task=>`${task.title} ${task.description || ''}`.toLocaleLowerCase().includes(search.trim().toLocaleLowerCase()));
+  const pages = Math.max(1,Math.ceil(filteredTasks.length/8));
+  const currentPage = Math.min(page,pages);
+  const visibleTasks = filteredTasks.slice((currentPage-1)*8,currentPage*8);
   const trailing = tasks.length
     ? `${formatNumber(tasks.length)} قرار مفتوح`
     : pendingReviewCount
@@ -1065,6 +1069,7 @@ function HumanDecisionPanel({
       />
 
       <div className="border-t p-4" style={{ borderColor: colors.border }}>
+        <div className="tw-personal-tools"><input aria-label="البحث في قرارات الوكيل" placeholder="ابحث في القرارات والبيانات المرتبطة…" value={search} onChange={event=>{setSearch(event.target.value);setPage(1);}}/><span>{formatNumber(filteredTasks.length)} قرار</span></div>
         {isLoading && tasks.length === 0 ? (
           <div className="flex min-h-[150px] items-center justify-center gap-2 rounded-lg border border-dashed border-[#CBD5E1] bg-[#F8FAFC] text-sm font-semibold text-[#64748B]">
             <Loader2 className="h-4 w-4 animate-spin text-[#38BDF8]" />
@@ -1092,14 +1097,14 @@ function HumanDecisionPanel({
           <div className="flex min-h-[150px] flex-col items-center justify-center rounded-lg border border-dashed border-[#CBD5E1] bg-[#F8FAFC] px-4 text-center">
             <CheckCircle2 className="h-8 w-8 text-[#22C7A1]" />
             <h3 className="mt-3 text-sm font-bold text-[#0F172A]">
-              لا توجد قرارات مفتوحة الآن
+              {search ? 'لا توجد قرارات مطابقة للبحث' : 'لا توجد قرارات مفتوحة الآن'}
             </h3>
             <p className="mt-1 max-w-xl text-sm leading-6 text-[#64748B]">
-              عند ظهور عناصر تحتاج قرارًا بشريًا سيعرضها الوكيل هنا مع خيارات
-              المعالجة مباشرة.
+              {search ? 'غيّر عبارة البحث لعرض بقية القرارات.' : 'عند ظهور عناصر تحتاج قرارًا بشريًا سيعرضها الوكيل هنا مع خيارات المعالجة مباشرة.'}
             </p>
           </div>
         )}
+        {pages>1&&<div className="tw-pagination"><Button variant="outline" disabled={currentPage===1} onClick={()=>{setPage(currentPage-1);setExpandedTaskId(null);}}>القرارات السابقة</Button><span>{currentPage} / {pages}</span><Button variant="outline" disabled={currentPage===pages} onClick={()=>{setPage(currentPage+1);setExpandedTaskId(null);}}>القرارات التالية</Button></div>}
       </div>
     </section>
   );

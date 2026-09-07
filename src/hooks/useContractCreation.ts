@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { createContractWithHandoff, type VehicleHandoffConsent } from '@/services/contractVehicleHandoff'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/integrations/supabase/client'
 import { toast } from 'sonner'
@@ -36,6 +37,7 @@ interface PerformanceBreakdown {
 }
 
 interface ContractInputData {
+  vehicle_handoff?: VehicleHandoffConsent;
   customer_id: string
   vehicle_id?: string | null
   contract_type?: string
@@ -280,8 +282,7 @@ export const useContractCreation = () => {
         updateStepStatus('activation', 'processing')
         console.log('[CONTRACT_CREATION] Creating contract and billing graph atomically...')
 
-        const { data: contractRpcResult, error: createError } = await supabase
-          .rpc('create_contract_with_violation_override_atomic', rpcParams)
+        const { data: contractRpcResult, error: createError } = await createContractWithHandoff(rpcParams, inputContractData.vehicle_handoff)
 
         // معالجة أخطاء الاتصال بقاعدة البيانات
         if (createError) {

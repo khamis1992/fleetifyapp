@@ -121,7 +121,7 @@ export function LeaveReportModal({ open, onOpenChange }: LeaveReportModalProps) 
             </div>
           ) : (
             <div className="text-center py-8 text-muted-foreground">
-              لا توجد بيانات إجازات
+              تقرير الإجازات غير مرتبط بمصدر البيانات حاليًا. ستظهر النتائج عند تفعيل الربط.
             </div>
           )}
 

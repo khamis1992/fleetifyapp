@@ -97,6 +97,8 @@ export function useSignedAgreementUpload() {
 
       try {
         // Step 1: Upload file to Supabase storage with progress tracking
+        const { reviewSignedContract } = await import('@/components/contracts/SignedContractReview');
+        file = await reviewSignedContract(file, {});
         onProgress?.(5);
 
         // Use timestamp + random string for storage path (Supabase doesn't support Arabic in paths)
@@ -486,11 +488,23 @@ export function useSignedAgreementUpload() {
 
         // Update document with match data if found
         if (contractMatch && contractMatch.contractId) {
+          // Filename matching is only a proposal. Require the employee to inspect
+          // the actual bytes against the proposed contract before binding them.
+          const { data: uploaded, error: readError } = await supabase.from('contract_documents')
+            .select('file_path, document_name, mime_type').eq('id', documentId).eq('company_id', currentCompanyId).single();
+          if (readError || !uploaded?.file_path) throw readError || new Error('تعذر قراءة نسخة العقد');
+          const { data: blob, error: downloadError } = await supabase.storage.from('contract-documents').download(uploaded.file_path);
+          if (downloadError || !blob) throw downloadError || new Error('تعذر تنزيل نسخة العقد');
+          const { reviewSignedContract } = await import('@/components/contracts/SignedContractReview');
+          await reviewSignedContract(new File([blob], uploaded.document_name, { type: uploaded.mime_type || 'application/pdf' }), {
+            contractNumber: contractMatch.contractNumber, customerName: contractMatch.customerName,
+            vehiclePlate: contractMatch.vehiclePlate, allowRotation: false,
+          });
           const { error: updateError } = await supabase
             .from('contract_documents')
             .update({
               contract_id: contractMatch.contractId,
-              notes: `Matched via AI with confidence: ${contractMatch.confidence}`,
+              notes: `Filename proposal reviewed before binding at ${new Date().toISOString()}; identity verification still required`,
             })
             .eq('id', documentId)
             .eq('company_id', currentCompanyId);

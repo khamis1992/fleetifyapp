@@ -1,3 +1,6 @@
+import { LegalCalendar } from '@/components/legal/workspace/LegalCalendar';
+import { legalCaseCsv, downloadLegalCases } from '@/components/legal/workspace/legalCaseExport';
+import { legalCaseTypeLabel, legalCaseStatusLabel } from '@/components/legal/workspace/legalLabels';
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -46,19 +49,6 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import {
-  BarChart,
-  Bar,
-  PieChart,
-  Pie,
-  Cell,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  Legend,
-  ResponsiveContainer,
-} from 'recharts';
 import { useLegalCases, useLegalCaseStats, useUpdateLegalCase, LegalCase } from '@/hooks/useLegalCases';
 import { JudgmentSettlementsView } from '@/components/legal/JudgmentSettlementsView';
 import { LegalCaseWorkflowPanel } from '@/components/legal/LegalCaseWorkflowPanel';
@@ -110,12 +100,14 @@ import {
   FileIcon,
 } from 'lucide-react';
 import { formatCurrency, cn } from '@/lib/utils';
-import { format, addDays, differenceInDays } from 'date-fns';
+import { format, addDays, differenceInCalendarDays } from 'date-fns';
 import { ar } from 'date-fns/locale';
 import LegalCaseCreationWizard from '@/components/legal/LegalCaseCreationWizard';
 import AutoCreateCaseTriggersConfig from '@/components/legal/AutoCreateCaseTriggersConfig';
 import EnhancedLegalNoticeGenerator from '@/components/legal/EnhancedLegalNoticeGenerator';
-import { CHART_COLORS, StatusBadge, TabButton, KPICard } from './legal-cases';
+import { StatusBadge, TabButton } from './legal-cases';
+import { LegalPageHeader } from '@/components/legal/workspace/LegalPageHeader';
+import { LegalDashboard } from '@/components/legal/workspace/LegalDashboard';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { formatCustomerName } from '@/utils/formatCustomerName';
@@ -167,7 +159,11 @@ export const LegalCasesTracking: React.FC = () => {
   const queryClient = useQueryClient();
   const [searchParams, setSearchParams] = useSearchParams();
   const activeTab = searchParams.get('view') || 'dashboard';
-  const setActiveTab = (tab: string) => setSearchParams({ view: tab });
+  const setActiveTab = (tab: string) => setSearchParams(previous => {
+    const next = new URLSearchParams(previous);
+    next.set('view', tab);
+    return next;
+  });
   
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('current');
@@ -880,16 +876,17 @@ export const LegalCasesTracking: React.FC = () => {
 
   const { data: casesResponse, isLoading, error } = useLegalCases(
     {
+      contract_id: searchParams.get('contract_id') || undefined,
       case_status: !['all', 'current'].includes(statusFilter) ? statusFilter : undefined,
       exclude_cancelled: statusFilter === 'current',
       case_type: typeFilter !== 'all' ? typeFilter : undefined,
       search: searchTerm || undefined,
-      page: currentPage,
-      pageSize,
+      page: activeTab === 'cases' ? currentPage : 1,
+      pageSize: activeTab === 'cases' ? pageSize : 1000,
     }
   );
 
-  const { data: stats, isLoading: isLoadingStats } = useLegalCaseStats();
+  const { data: stats, isLoading: isLoadingStats, error: statsError } = useLegalCaseStats();
 
   const cases = casesResponse?.data || [];
   const totalCases = casesResponse?.count || 0;
@@ -934,146 +931,21 @@ export const LegalCasesTracking: React.FC = () => {
     bulkDeleteCasesMutation.mutate([...selectedCancellableCaseIds]);
   }, [bulkDeleteCasesMutation, selectedCancellableCaseIds]);
 
-  // Calculate KPI data
-  const kpiData = useMemo(() => {
-    const activeCases = stats?.active || 0;
-    const totalValue = stats?.totalValue || 0;
-    const highPriority = stats?.highPriority || 0;
-    const closedCases = stats?.closed || 0;
-    
-    return [
-      {
-        title: "إجمالي المطالبات",
-        value: formatCurrency(totalValue),
-        subValue: "تعويضات وحوادث وإيجارات",
-        change: "+12%",
-        isPositive: true,
-        icon: DollarSign,
-        color: "bg-[#FCD34D]",
-        textColor: "text-[#D97706]",
-        progressColor: "bg-[#FCD34D]",
-        barValue: 45,
-      },
-      {
-        title: "القضايا النشطة",
-        value: activeCases.toString(),
-        subValue: `من أصل ${stats?.total || 0} قضية`,
-        change: "+5%",
-        isPositive: false,
-        icon: Gavel,
-        color: "bg-[#60A5FA]",
-        textColor: "text-[#2563EB]",
-        progressColor: "bg-[#60A5FA]",
-        barValue: stats?.total ? (activeCases / stats.total) * 100 : 0,
-      },
-      {
-        title: "قضايا عالية الأولوية",
-        value: highPriority.toString(),
-        subValue: "تحتاج متابعة فورية",
-        change: "-2%",
-        isPositive: true,
-        icon: AlertTriangle,
-        color: "bg-[#F87171]",
-        textColor: "text-[#DC2626]",
-        progressColor: "bg-[#F87171]",
-        barValue: stats?.total ? (highPriority / stats.total) * 100 : 60,
-      },
-      {
-        title: "القضايا المغلقة",
-        value: closedCases.toString(),
-        subValue: "تم حلها بنجاح",
-        change: "مهم",
-        isPositive: true,
-        icon: CheckCircle2,
-        color: "bg-[#4ADE80]",
-        textColor: "text-[#16A34A]",
-        progressColor: "bg-[#4ADE80]",
-        barValue: stats?.total ? (closedCases / stats.total) * 100 : 80,
-      },
-    ];
-  }, [stats]);
-
-  // Financial data for chart - Real data from cases
-  const financialData = useMemo(() => {
-    if (!cases || cases.length === 0) {
-      return [];
-    }
-
-    const monthNames = ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو', 'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'];
-    const monthlyData: Record<number, { claimed: number; recovered: number }> = {};
-    
-    // Initialize last 6 months
-    const now = new Date();
-    for (let i = 5; i >= 0; i--) {
-      const monthIndex = (now.getMonth() - i + 12) % 12;
-      monthlyData[monthIndex] = { claimed: 0, recovered: 0 };
-    }
-
-    // Aggregate data by month
-    cases.forEach(legalCase => {
-      const createdDate = new Date(legalCase.created_at);
-      const monthIndex = createdDate.getMonth();
-      
-      // Only include if within the last 6 months
-      const monthsAgo = (now.getMonth() - monthIndex + 12) % 12;
-      if (monthsAgo < 6 || (now.getMonth() < monthIndex && now.getMonth() + 12 - monthIndex < 6)) {
-        if (!monthlyData[monthIndex]) {
-          monthlyData[monthIndex] = { claimed: 0, recovered: 0 };
-        }
-        
-        // Add case_value to claimed
-        const caseValue = parseFloat(String(legalCase.case_value || 0));
-        monthlyData[monthIndex].claimed += caseValue;
-        
-        // If case is closed/settled/won, add to recovered
-        const closedStatuses = ['closed', 'won', 'settled'];
-        if (closedStatuses.includes(legalCase.case_status || '')) {
-          monthlyData[monthIndex].recovered += caseValue;
-        }
-      }
-    });
-
-    // Convert to array format for chart
-    const result = [];
-    for (let i = 5; i >= 0; i--) {
-      const monthIndex = (now.getMonth() - i + 12) % 12;
-      result.push({
-        name: monthNames[monthIndex],
-        claimed: monthlyData[monthIndex]?.claimed || 0,
-        recovered: monthlyData[monthIndex]?.recovered || 0,
-      });
-    }
-    
-    return result;
-  }, [cases]);
-
-  // Case types data for pie chart
-  const caseTypesData = useMemo(() => {
-    if (!stats) return [];
-    const byType = stats.byType || {};
-    return [
-      { name: 'قضايا مدنية', value: byType.civil || 0, color: CHART_COLORS.red },
-      { name: 'قضايا تجارية', value: byType.commercial || 0, color: CHART_COLORS.blue },
-      { name: 'قضايا جنائية', value: byType.criminal || 0, color: CHART_COLORS.yellow },
-      { name: 'قضايا عمالية', value: byType.labor || 0, color: CHART_COLORS.green },
-      { name: 'قضايا إدارية', value: byType.administrative || 0, color: CHART_COLORS.purple },
-    ].filter(item => item.value > 0);
-  }, [stats]);
-
   // Generate upcoming hearings from real hearing_date in cases
   const upcomingHearings = useMemo(() => {
     if (!cases || cases.length === 0) return [];
     const today = new Date();
     
     return cases
-      .filter(c => c.hearing_date) // Only cases with hearing dates
+      .filter(c => c.hearing_date && Number.isFinite(Date.parse(c.hearing_date))) // Valid saved hearing dates only
       .map(c => {
         const hearingDate = new Date(c.hearing_date!);
-        const daysUntil = differenceInDays(hearingDate, today);
+        const daysUntil = differenceInCalendarDays(hearingDate, today);
         return {
+          id: c.id,
           date: format(hearingDate, 'yyyy-MM-dd'),
           displayDate: format(hearingDate, 'dd MMM yyyy', { locale: ar }),
-          time: '09:00 ص',
+          time: c.hearing_date?.includes('T') ? hearingDate.toLocaleTimeString('ar-QA', { hour: '2-digit', minute: '2-digit' }) : 'لم يحدد الوقت',
           caseId: c.case_number,
           title: (() => {
             const caseTitle = getLegalCaseTitle(c);
@@ -1089,45 +961,12 @@ export const LegalCasesTracking: React.FC = () => {
       .sort((a, b) => a.daysUntil - b.daysUntil); // Sort by nearest date
   }, [cases]);
 
-  const caseTaskReminders = useMemo(() => {
-    return upcomingHearings
-      .filter(h => h.daysUntil >= 0)
-      .slice(0, 5)
-      .map(h => ({
-        id: h.caseId,
-        title: `جلسة ${h.caseId} - ${h.title}`,
-        dueDate: h.displayDate,
-        daysUntil: h.daysUntil,
-        completed: false,
-      }));
-  }, [upcomingHearings]);
-
   const handleCaseCreated = () => {
     setShowCaseWizard(false);
     toast.success('تم إنشاء القضية بنجاح');
   };
 
-  const getTypeLabel = (type: string): string => {
-    const labels: Record<string, string> = {
-      civil: 'مدنية',
-      criminal: 'جنائية',
-      commercial: 'تجارية',
-      labor: 'عمالية',
-      administrative: 'إدارية',
-      rental_dispute: 'نزاع إيجار',
-      accident: 'حادث',
-      theft: 'سرقة',
-      traffic_violation: 'مخالفة مرورية',
-      payment_default: 'تخلف عن سداد',
-      payment_collection: 'تحصيل مستحقات',
-      contract_breach: 'خرق عقد',
-      vehicle_damage: 'أضرار مركبة',
-      accident_claim: 'مطالبة حادث',
-      insurance_claim: 'مطالبة تأمين',
-      other: 'أخرى',
-    };
-    return labels[type] || type;
-  };
+  const getTypeLabel = legalCaseTypeLabel;
 
   const getOutcomeLabel = (outcome?: LegalCase['outcome_type']): string => {
     const labels: Record<string, string> = {
@@ -1172,170 +1011,26 @@ export const LegalCasesTracking: React.FC = () => {
   }
 
   // --- Dashboard View ---
-  const DashboardView = () => (
-    <div className="space-y-6 animate-in fade-in duration-500">
-      {/* KPI Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        {kpiData.map((stat, index) => (
-          <KPICard key={index} {...stat} />
-        ))}
-      </div>
-
-      {/* Charts Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Financial Chart */}
-        <div className="legal-panel p-5 lg:col-span-2">
-          <div className="flex justify-between items-center mb-6">
-            <div>
-              <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100">التحليل المالي للقضايا</h3>
-              <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">التعويضات vs المطالبات</p>
-            </div>
-            <Badge variant="outline" className="text-xs border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400">
-              آخر 6 أشهر
-            </Badge>
-          </div>
-          <div className="h-72">
-            {financialData.length > 0 && financialData.some(d => d.claimed > 0 || d.recovered > 0) ? (
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={financialData}>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                  <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontSize: 12 }} />
-                  <YAxis axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontSize: 12 }} />
-                  <Tooltip
-                    cursor={{ fill: '#F6F8FB' }}
-                    contentStyle={{ borderRadius: '8px', border: '1px solid #E5EAF1', boxShadow: '0 1px 3px rgba(2, 6, 23, 0.04)' }}
-                    formatter={(value: number) => [formatCurrency(value), '']}
-                  />
-                  <Legend iconType="circle" wrapperStyle={{ paddingTop: '20px' }} />
-                  <Bar dataKey="claimed" name="إجمالي المطالبات" fill="#38BDF8" radius={[6, 6, 0, 0]} barSize={24} />
-                  <Bar dataKey="recovered" name="تم تحصيله" fill="#22C7A1" radius={[6, 6, 0, 0]} barSize={24} />
-                </BarChart>
-              </ResponsiveContainer>
-            ) : (
-              <div className="h-full flex flex-col items-center justify-center text-slate-400">
-                <DollarSign size={48} className="mb-3 opacity-50" />
-                <p className="text-sm font-medium">لا توجد بيانات مالية بعد</p>
-                <p className="text-xs mt-1">قم بإضافة قيم المطالبات في القضايا</p>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Case Types Pie Chart */}
-        <div className="legal-panel p-5">
-          <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100 mb-6">أنواع القضايا</h3>
-          {caseTypesData.length > 0 ? (
-            <>
-              <div className="h-56 relative">
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={caseTypesData}
-                      cx="50%"
-                      cy="50%"
-                      innerRadius={50}
-                      outerRadius={70}
-                      paddingAngle={5}
-                      dataKey="value"
-                    >
-                      {caseTypesData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.color} />
-                      ))}
-                    </Pie>
-                    <Tooltip formatter={(value: number) => [value, 'قضية']} />
-                  </PieChart>
-                </ResponsiveContainer>
-                <div className="absolute inset-0 flex items-center justify-center flex-col pointer-events-none">
-                  <span className="text-3xl font-bold text-slate-900">{stats?.total || 0}</span>
-                  <span className="text-xs text-slate-400">قضية</span>
-                </div>
-              </div>
-              <div className="space-y-3 mt-4">
-                {caseTypesData.map((item, idx) => (
-                  <div key={idx} className="flex justify-between items-center text-sm p-2 bg-slate-50 rounded-lg">
-                    <div className="flex items-center gap-2">
-                      <div className="w-2 h-2 rounded-full" style={{ backgroundColor: item.color }} />
-                      <span className="text-slate-700">{item.name}</span>
-                    </div>
-                    <span className="font-bold text-slate-900">{item.value}</span>
-                  </div>
-                ))}
-              </div>
-            </>
-          ) : (
-            <div className="h-56 flex items-center justify-center text-slate-400">
-              لا توجد بيانات متاحة
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Quick Stats */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        <Card className="legal-panel">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm flex items-center gap-2">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#38BDF8]/10 text-[#38BDF8]">
-                <Scale className="w-4 h-4" />
-              </div>
-              إجمالي القضايا
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-slate-900">{stats?.total || 0}</div>
-            <p className="text-xs text-slate-500 mt-1">
-              {stats?.active || 0} نشطة • {stats?.closed || 0} مغلقة
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card className="legal-panel">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm flex items-center gap-2">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#22C7A1]/10 text-[#22C7A1]">
-                <Users className="w-4 h-4" />
-              </div>
-              عملاء متأثرين
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-slate-900">
-              {new Set(cases.map(c => c.client_id).filter(Boolean)).size}
-            </div>
-            <p className="text-xs text-slate-500 mt-1">عميل لديه قضايا</p>
-          </CardContent>
-        </Card>
-
-        <Card className="legal-panel">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm flex items-center gap-2">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#7C83F6]/10 text-[#7C83F6]">
-                <Clock className="w-4 h-4" />
-              </div>
-              الجلسات القادمة
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-slate-900">
-              {upcomingHearings.filter(h => h.daysUntil >= 0).length}
-            </div>
-            <p className="text-xs text-slate-500 mt-1">جلسة محكمة قادمة</p>
-          </CardContent>
-        </Card>
-      </div>
-    </div>
-  );
+  const DashboardView = () => <LegalDashboard cases={cases} totalLoadedScope={totalCases} stats={stats}
+    loading={isLoading || isLoadingStats} error={Boolean(error || statsError)}
+    onRetry={() => { void queryClient.invalidateQueries({ queryKey: ['legal-cases'] }); void queryClient.invalidateQueries({ queryKey: ['legal-case-stats'] }); }}
+    onOpen={handleViewDetails} customerName={getLegalCaseCustomerName} caseTitle={getLegalCaseTitle} typeLabel={getTypeLabel} />;
 
   // --- Cases List View ---
   const CasesListView = () => (
     <div className="legal-panel overflow-hidden animate-in fade-in duration-500">
+      {searchParams.get('contract_id') && <div className="flex items-center justify-between gap-3 border-b p-4 text-sm bg-teal-50 text-teal-900">
+        <span>تُعرض القضايا المرتبطة بالعقد المحدد فقط.</span>
+        <Button variant="outline" onClick={() => { setCurrentPage(1); setSearchParams(previous => { const next = new URLSearchParams(previous); next.delete('contract_id'); return next; }); }}>عرض جميع القضايا</Button>
+      </div>}
       <div className="flex flex-col items-center justify-between gap-4 border-b border-[#E5EAF1] p-4 md:flex-row md:p-5">
         <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
           <div className="relative flex-1 w-full sm:w-72">
             <Search className="absolute right-3 top-1/2 -translate-y-1/2 text-[#94A3B8]" size={16} />
             <Input
               type="text"
-              placeholder="بحث برقم اللوحة، اسم العميل..."
+              aria-label="البحث في سجل القضايا"
+              placeholder="ابحث برقم القضية أو العقد أو اسم العميل…"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full rounded-lg border-[#E5EAF1] bg-[#F6F8FB] py-2.5 pl-4 pr-10 text-sm focus:border-[#38BDF8] focus:ring-2 focus:ring-[#38BDF8]/20"
@@ -1343,6 +1038,8 @@ export const LegalCasesTracking: React.FC = () => {
           </div>
           <Button
             variant="outline"
+            aria-expanded={showFilters}
+            aria-controls="legal-case-filters"
             onClick={() => setShowFilters(!showFilters)}
             className="legal-action-secondary flex min-h-[44px] w-full items-center justify-center gap-2 px-4 py-2.5 text-sm sm:w-auto"
           >
@@ -1373,12 +1070,11 @@ export const LegalCasesTracking: React.FC = () => {
               <span>إلغاء المحدد ({selectedCancellableCaseIds.length})</span>
             </Button>
           )}
-          <Button
-            variant="outline"
-            className="legal-action-secondary flex min-h-[44px] w-full items-center justify-center gap-2 px-4 py-2.5 text-sm sm:w-auto"
-          >
-            <Download size={16} />
-            <span>تصدير</span>
+          <Button variant="outline" disabled={isLoading || cases.length === 0} onClick={() => downloadLegalCases(legalCaseCsv([
+            ['رقم القضية', 'عنوان القضية', 'العميل', 'النوع', 'الحالة', 'قيمة المطالبة (ر.ق)', 'المحكمة', 'موعد الجلسة'],
+            ...cases.map(item => [item.case_number, getLegalCaseTitle(item), getLegalCaseCustomerName(item), getTypeLabel(item.case_type), legalCaseStatusLabel(item.case_status), item.case_value ?? '', item.court_name, item.hearing_date]),
+          ]))} className="legal-action-secondary gap-2">
+            <Download size={16} /><span>تصدير الصفحة الحالية</span>
           </Button>
           <Button
             onClick={() => setShowCaseWizard(true)}
@@ -1399,7 +1095,7 @@ export const LegalCasesTracking: React.FC = () => {
             exit={{ height: 0, opacity: 0 }}
             className="overflow-hidden border-b border-[#E5EAF1]"
           >
-            <div className="grid grid-cols-1 gap-4 bg-[#F6F8FB] p-5 sm:grid-cols-2 lg:grid-cols-3">
+            <div id="legal-case-filters" className="grid grid-cols-1 gap-4 bg-[#F6F8FB] p-5 sm:grid-cols-2 lg:grid-cols-3">
               <Select value={statusFilter} onValueChange={setStatusFilter}>
                 <SelectTrigger className="rounded-lg border-[#E5EAF1] bg-white">
                   <SelectValue placeholder="تصفية حسب الحالة" />
@@ -1482,7 +1178,7 @@ export const LegalCasesTracking: React.FC = () => {
               <TableHead className="px-6 py-4 font-medium">المطالبة</TableHead>
               <TableHead className="px-6 py-4 font-medium">الحالة</TableHead>
               <TableHead className="px-6 py-4 font-medium">موعد الجلسة</TableHead>
-              <TableHead className="px-6 py-4 font-medium"></TableHead>
+              <TableHead className="px-6 py-4 font-medium">الإجراءات</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody className="divide-y divide-[#E5EAF1]">
@@ -1510,7 +1206,7 @@ export const LegalCasesTracking: React.FC = () => {
                       className="rounded border-[#CBD5E1] text-[#38BDF8] focus:ring-[#38BDF8] disabled:cursor-not-allowed disabled:opacity-40"
                     />
                   </TableCell>
-                  <TableCell className="px-6 py-4 font-semibold text-[#020617]">{item.case_number}</TableCell>
+                  <TableCell className="px-6 py-4 font-semibold text-[#020617]"><button type="button" className="lw-file-link" onClick={() => handleViewDetails(item)} aria-label={`فتح القضية ${item.case_number}`}><FileText size={15} /><bdi>{item.case_number}</bdi></button></TableCell>
                   <TableCell className="px-6 py-4">
                     <div className="font-medium text-[#020617]">{getLegalCaseCustomerName(item as LegalCase)}</div>
                     <div className="mt-0.5 text-xs text-[#94A3B8]">
@@ -1523,13 +1219,13 @@ export const LegalCasesTracking: React.FC = () => {
                     </span>
                   </TableCell>
                   <TableCell className="px-6 py-4 font-medium text-[#020617]">
-                    {formatCurrency(item.case_value || item.total_costs || 0)}
+                    {item.case_value == null ? 'غير محددة' : formatCurrency(item.case_value)}
                   </TableCell>
                   <TableCell className="px-6 py-4">
                     <StatusBadge status={item.case_status} />
                   </TableCell>
                   <TableCell className="px-6 py-4 text-[#64748B]">
-                    {item.hearing_date ? (
+                    {item.hearing_date && Number.isFinite(Date.parse(item.hearing_date)) ? (
                       <span className="flex items-center gap-1.5">
                         <CalendarDays size={14} className="text-[#38BDF8]" />
                         {format(new Date(item.hearing_date), 'dd MMM yyyy', { locale: ar })}
@@ -1544,6 +1240,7 @@ export const LegalCasesTracking: React.FC = () => {
                         <Button
                           variant="ghost"
                           size="sm"
+                          aria-label={`إجراءات القضية ${item.case_number}`}
                           className="rounded-lg p-1 text-[#94A3B8] transition-colors hover:bg-[#38BDF8]/10 hover:text-[#38BDF8]"
                         >
                           <MoreHorizontal size={18} />
@@ -1606,7 +1303,7 @@ export const LegalCasesTracking: React.FC = () => {
                           onClick={() => handleDeleteCase(item as LegalCase)}
                         >
                           <XCircle size={14} />
-                          حذف
+                          إلغاء القضية
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
@@ -1680,186 +1377,7 @@ export const LegalCasesTracking: React.FC = () => {
   );
 
   // --- Calendar View ---
-  const CalendarView = () => {
-    // Get upcoming hearings (cases with hearing dates)
-    const futureHearings = upcomingHearings.filter(h => h.daysUntil >= 0);
-    const pastHearings = upcomingHearings.filter(h => h.daysUntil < 0);
-    const nextHearing = futureHearings[0];
-
-    return (
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-in fade-in duration-500">
-        <div className="lg:col-span-2 bg-white rounded-xl shadow-sm border border-slate-200 hover:border-teal-500/50 hover:shadow-sm transition-all duration-300 p-6">
-          <div className="flex justify-between items-center mb-6">
-            <h3 className="font-bold text-slate-900 text-lg">جدول الجلسات</h3>
-            <div className="flex gap-2">
-              <Badge variant="outline" className="text-xs border-slate-200 text-slate-600">
-                {futureHearings.length} جلسة قادمة
-              </Badge>
-            </div>
-          </div>
-          <div className="space-y-4">
-            {futureHearings.length > 0 ? (
-              futureHearings.map((event, idx) => (
-                <div
-                  key={idx}
-                  className={cn(
-                    "flex gap-4 p-4 rounded-lg border transition-all bg-white",
-                    event.daysUntil <= 3
-                      ? "border-red-200 bg-red-50/50 shadow-sm"
-                      : "border-slate-100 hover:border-rose-200 hover:shadow-md"
-                  )}
-                >
-                  <div className={cn(
-                    "flex flex-col items-center justify-center rounded-xl w-16 h-16 shrink-0 shadow-sm",
-                    event.daysUntil <= 3
-                      ? "bg-gradient-to-br from-red-500 to-rose-600 text-white"
-                      : "bg-gradient-to-br from-rose-500 to-rose-600 text-white"
-                  )}>
-                    <span className="text-xl font-bold">{event.date.split('-')[2]}</span>
-                    <span className="text-xs font-medium">
-                      {format(new Date(event.date), 'MMM', { locale: ar })}
-                    </span>
-                  </div>
-                  <div className="flex-1">
-                    <div className="flex justify-between items-start">
-                      <h4 className="font-bold text-slate-900">{event.title}</h4>
-                      <span className={cn(
-                        "text-xs px-2.5 py-1 rounded-lg font-medium",
-                        event.daysUntil === 0
-                          ? "bg-red-100 text-red-600 font-bold"
-                          : event.daysUntil <= 3
-                            ? "bg-amber-100 text-amber-700"
-                            : "bg-slate-100 text-slate-600"
-                      )}>
-                        {event.daysUntil === 0 ? 'اليوم' : event.daysUntil === 1 ? 'غداً' : `بعد ${event.daysUntil} يوم`}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-2 mt-1.5 flex-wrap">
-                      <span className="text-sm text-rose-600 font-semibold">{event.caseId}</span>
-                      {event.caseRef && (
-                        <>
-                          <span className="text-slate-300">|</span>
-                          <span className="text-xs text-slate-500">{event.caseRef}</span>
-                        </>
-                      )}
-                      <span className="text-slate-300">|</span>
-                      <span className="text-sm text-slate-600">{event.location}</span>
-                    </div>
-                  </div>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="self-center rounded-xl border-slate-200 hover:bg-rose-50 hover:border-rose-200 hover:text-rose-600 transition-all"
-                    onClick={() => {
-                      const caseItem = cases.find(c => c.case_number === event.caseId);
-                      if (caseItem) handleViewDetails(caseItem as LegalCase);
-                    }}
-                  >
-                    التفاصيل
-                  </Button>
-                </div>
-              ))
-            ) : (
-              <div className="text-center py-16 text-slate-400">
-                <div className="w-16 h-16 rounded-full bg-slate-100 flex items-center justify-center mx-auto mb-4">
-                  <CalendarDays className="w-8 h-8 text-slate-300" />
-                </div>
-                <p className="font-medium text-slate-500">لا توجد جلسات قادمة</p>
-                <p className="text-sm mt-2">قم بإضافة مواعيد الجلسات في القضايا</p>
-              </div>
-            )}
-          </div>
-        </div>
-
-        <div className="space-y-6">
-          {/* Next Hearing Card */}
-          {nextHearing ? (
-            <div className="bg-rose-600 text-white rounded-xl p-6 shadow-sm">
-              <div className="flex items-center gap-2 mb-1">
-                <CalendarDays className="w-5 h-5" />
-                <h3 className="font-bold text-lg">الجلسة القادمة</h3>
-              </div>
-              <p className="text-rose-100 text-sm mb-5">
-                {nextHearing.daysUntil === 0 ? 'اليوم!' : nextHearing.daysUntil === 1 ? 'غداً' : `باقي ${nextHearing.daysUntil} يوم`}
-              </p>
-              <div className="bg-white/15 backdrop-blur-sm p-5 rounded-xl mb-5 border border-white/20 shadow-inner">
-                <div className="text-3xl font-bold mb-2">
-                  {nextHearing.displayDate}
-                </div>
-                <div className="mt-2 text-base font-medium">{nextHearing.title}</div>
-                <div className="mt-1 text-sm opacity-90">{nextHearing.caseId} • {nextHearing.location}</div>
-              </div>
-              <Button
-                variant="secondary"
-                className="w-full py-2.5 bg-white text-rose-600 rounded-xl font-semibold text-sm hover:bg-rose-50 transition-all shadow-md"
-                onClick={() => {
-                  const caseItem = cases.find(c => c.case_number === nextHearing.caseId);
-                  if (caseItem) handleViewDetails(caseItem as LegalCase);
-                }}
-              >
-                عرض تفاصيل القضية
-              </Button>
-            </div>
-          ) : (
-            <div className="bg-slate-100 text-slate-500 rounded-xl p-6 border border-slate-200">
-              <div className="text-center">
-                <CalendarDays className="w-10 h-10 mx-auto mb-3 opacity-50" />
-                <h3 className="font-medium">لا توجد جلسات قادمة</h3>
-                <p className="text-xs mt-1">أضف مواعيد الجلسات في القضايا</p>
-              </div>
-            </div>
-          )}
-
-          {/* Tasks Card - Linked to real case hearings */}
-          <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
-            <h3 className="font-bold text-slate-900 mb-4 text-sm flex items-center gap-2">
-              <Clock size={16} className="text-rose-500" />
-              تذكيرات المهام
-            </h3>
-            <div className="space-y-3">
-              {caseTaskReminders.length > 0 ? (
-                caseTaskReminders.map((task, i) => (
-                  <div key={task.id} className="flex items-center gap-3 p-2 rounded-xl hover:bg-slate-50 transition-colors">
-                    <div
-                      className={cn(
-                        "w-5 h-5 rounded-lg border flex items-center justify-center shrink-0",
-                        task.daysUntil <= 3 ? 'border-red-400 bg-red-50' : 'border-slate-300 bg-slate-50'
-                      )}
-                    >
-                      {task.daysUntil <= 1 && <AlertTriangle size={12} className="text-red-500" />}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <span className="text-sm text-slate-700 block truncate">
-                        {decodeLegalTaskTitle(
-                          {
-                            title: task.title,
-                            metadata: (task as { metadata?: { workflow_key?: string | null } }).metadata,
-                          },
-                          selectedCase?.case_number,
-                        )}
-                      </span>
-                      <span className="text-xs text-slate-400">{task.dueDate}</span>
-                    </div>
-                  </div>
-                ))
-              ) : (
-                <div className="text-center py-4 text-slate-400 text-sm">
-                  لا توجد تذكيرات حالياً
-                </div>
-              )}
-            </div>
-            <Button
-              variant="outline"
-              className="w-full mt-4 py-2.5 border border-dashed border-slate-300 rounded-xl text-xs text-slate-500 hover:bg-slate-50 transition-all"
-              onClick={() => navigate('/tasks')}
-            >
-              إدارة المهام
-            </Button>
-          </div>
-        </div>
-      </div>
-    );
-  };
+  const CalendarView = () => <LegalCalendar hearings={upcomingHearings} loading={isLoading} error={Boolean(error)} loadedCount={cases.length} totalCount={totalCases} onRetry={() => { void queryClient.invalidateQueries({ queryKey: ['legal-cases'] }); }} onOpen={id => { const item = cases.find(c => c.id === id); if (item) handleViewDetails(item); }} />;
 
   // --- Legal Collection View ---
 
@@ -1876,36 +1394,6 @@ export const LegalCasesTracking: React.FC = () => {
 
     return (
       <div className="space-y-6 animate-in fade-in duration-500">
-        <div className="legal-hero p-5">
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-            <div>
-              <p className="text-sm font-semibold text-[#38BDF8]">إعدادات الشؤون القانونية</p>
-              <h2 className="mt-2 text-2xl font-bold text-[#020617]">تشغيل الخدمات القانونية</h2>
-              <p className="mt-2 max-w-3xl text-sm leading-6 text-[#64748B]">
-                إدارة المحفزات التلقائية للقضايا وقواعد إنشاء الملفات القانونية من بيانات العملاء والفواتير غير المسددة.
-              </p>
-            </div>
-            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:w-[360px]">
-              {[
-                { label: 'الشركة', value: 'متصلة', icon: CheckCircle2, color: '#22C7A1' },
-                { label: 'المحفزات', value: 'جاهزة', icon: Zap, color: '#38BDF8' },
-              ].map((item) => (
-                <div key={item.label} className="rounded-lg border border-[#E5EAF1] bg-white p-3">
-                  <div className="flex items-center gap-2">
-                    <span className="flex h-8 w-8 items-center justify-center rounded-lg" style={{ backgroundColor: `${item.color}14`, color: item.color }}>
-                      <item.icon className="h-4 w-4" />
-                    </span>
-                    <div>
-                      <div className="text-xs text-[#64748B]">{item.label}</div>
-                      <div className="text-sm font-semibold text-[#020617]">{item.value}</div>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-
         <Card className="legal-panel">
           <CardHeader className="border-b border-[#E5EAF1]">
             <CardTitle className="flex items-center gap-2 text-lg">
@@ -1944,37 +1432,6 @@ export const LegalCasesTracking: React.FC = () => {
 
     return (
       <div className="space-y-6 animate-in fade-in duration-500">
-        <div className="legal-hero p-5">
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-            <div>
-              <p className="text-sm font-semibold text-[#7C83F6]">الإنذارات القانونية</p>
-              <h2 className="mt-2 text-2xl font-bold text-[#020617]">مستندات رسمية قابلة للتعديل والطباعة</h2>
-              <p className="mt-2 max-w-3xl text-sm leading-6 text-[#64748B]">
-                إنشاء إنذارات ومخاطبات قانونية من بيانات العملاء والفواتير غير المسددة، مع ترويسة الشركة والشعار وبياناتها الرسمية.
-              </p>
-            </div>
-            <div className="grid grid-cols-1 gap-2 sm:grid-cols-3 lg:w-[460px]">
-              {[
-                { label: 'الشعار', value: 'مضمن', icon: CheckCircle2, color: '#22C7A1' },
-                { label: 'القوالب', value: 'متعددة', icon: FileText, color: '#7C83F6' },
-                { label: 'العملة', value: 'ريال قطري', icon: DollarSign, color: '#38BDF8' },
-              ].map((item) => (
-                <div key={item.label} className="rounded-lg border border-[#E5EAF1] bg-white p-3">
-                  <div className="flex items-center gap-2">
-                    <span className="flex h-8 w-8 items-center justify-center rounded-lg" style={{ backgroundColor: `${item.color}14`, color: item.color }}>
-                      <item.icon className="h-4 w-4" />
-                    </span>
-                    <div>
-                      <div className="text-xs text-[#64748B]">{item.label}</div>
-                      <div className="text-sm font-semibold text-[#020617]">{item.value}</div>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-
         <ErrorBoundary>
           <EnhancedLegalNoticeGenerator
             companyId={companyId}
@@ -2016,73 +1473,28 @@ export const LegalCasesTracking: React.FC = () => {
 
   return (
     <div className="legal-system w-full min-h-screen font-sans text-right pb-10" dir="rtl">
-      {/* Sub-System Header - Enhanced Design */}
-      <div className="sticky top-0 z-30 border-b border-[#E5EAF1] bg-[#F6F8FB]/95 px-4 py-4 backdrop-blur md:px-8">
-        <div className="legal-hero mx-auto mb-4 flex max-w-7xl flex-col gap-4 p-4 md:flex-row md:items-center md:justify-between">
-          <div className="flex items-center gap-4">
-            <div className="relative">
-              <div className="absolute inset-0 rounded-lg bg-[#38BDF8]/20 blur-xl" />
-              <div className="legal-icon relative h-12 w-12">
-                <Gavel size={24} />
-              </div>
-            </div>
-            <div>
-              <h1 className="text-2xl font-bold text-slate-900">الشؤون القانونية</h1>
-              <p className="text-sm text-slate-500">إدارة نزاعات وحوادث تأجير السيارات</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-3">
-            <Button
-              onClick={() => navigate('/legal/lawsuit-data')}
-              variant="outline"
-              size="sm"
-              className="legal-action-secondary gap-2"
-            >
-              <FileText className="w-4 h-4" />
-              <span className="hidden sm:inline">بيانات التقاضي</span>
-            </Button>
-            <Button
-              onClick={() => setShowTriggersConfig(true)}
-              variant="outline"
-              size="sm"
-              className="legal-action-secondary gap-2"
-            >
-              <Zap className="w-4 h-4" />
-              <span className="hidden sm:inline">الإنشاء التلقائي</span>
-            </Button>
-            <Button
-              onClick={() => setShowCaseWizard(true)}
-              size="sm"
-              className="legal-action-primary gap-2"
-            >
-              <Plus className="w-4 h-4" />
-              <span className="hidden sm:inline">قضية جديدة</span>
-            </Button>
-            <div className="hidden md:flex flex-col items-end mr-2">
-              <span className="text-sm font-semibold text-slate-700">
-                {user?.email?.split('@')[0] || 'المستخدم'}
-              </span>
-              <span className="text-xs text-slate-400">مدير النظام</span>
-            </div>
-            <div className="w-10 h-10 rounded-full bg-slate-100 border border-slate-200 overflow-hidden flex items-center justify-center">
-              <Users className="w-5 h-5 text-slate-400" />
-            </div>
-          </div>
-        </div>
-
-        {/* Tab Navigation */}
-        <div className="legal-tabbar mx-auto flex max-w-7xl gap-2 overflow-x-auto scrollbar-hide">
-          <TabButton id="dashboard" label="نظرة عامة" icon={LayoutDashboard} activeTab={activeTab} onClick={setActiveTab} />
-          <TabButton id="cases" label="سجل القضايا" icon={FileText} activeTab={activeTab} onClick={setActiveTab} />
-          <TabButton id="calendar" label="الجلسات والمواعيد" icon={CalendarDays} activeTab={activeTab} onClick={setActiveTab} />
-          <TabButton id="collection" label="التحصيل القانوني" icon={DollarSign} activeTab={activeTab} onClick={setActiveTab} />
-          <TabButton id="notices" label="الإنذارات القانونية" icon={FileText} activeTab={activeTab} onClick={setActiveTab} />
-          <TabButton id="settings" label="الإعدادات" icon={Settings} activeTab={activeTab} onClick={setActiveTab} />
-        </div>
-      </div>
+      <LegalPageHeader featured={activeTab === 'dashboard'}
+        title={activeTab === 'dashboard' ? 'مركز المتابعة القانونية' : activeTab === 'cases' ? 'سجل القضايا' : activeTab === 'calendar' ? 'الجلسات والمواعيد' : activeTab === 'collection' ? 'التحصيل القانوني' : activeTab === 'notices' ? 'الإنذارات القانونية' : 'إعدادات الشؤون القانونية'}
+        eyebrow="الشؤون القانونية / إدارة الملفات"
+        description={{ dashboard: 'نظّم ملفات القضايا، تابع مواعيدها، وانتقل إلى الإجراء التالي بوضوح.', cases: 'ابحث في ملفات الشركة، راجع الحالة والمطالبة، ثم افتح القضية لمتابعة إجراءاتها.', calendar: 'جدول موحّد لمواعيد الجلسات القادمة والسابقة، مرتبط مباشرة بملفات القضايا.', collection: 'راجع الأحكام والمبالغ المسددة والأرصدة المتبقية، وسجّل إجراءات التسوية.', notices: 'اختر قالب الوثيقة، أكمل بيانات العميل، ثم راجع النص قبل التنزيل أو الطباعة.', settings: 'اضبط شروط إنشاء القضايا تلقائيًا وأولوية الملفات وإعدادات الإشعار.' }[activeTab] || 'إدارة ومتابعة الملفات القانونية.'}
+        icon={Scale}
+        actions={<>
+          <Button className="lw-primary gap-2" onClick={() => setShowCaseWizard(true)}><Plus size={16} />قضية جديدة</Button>
+          <Button className="lw-secondary gap-2" variant="outline" onClick={() => navigate('/legal/lawsuit-data')}><FileText size={16} />بيانات التقاضي</Button>
+          <Button className="lw-secondary gap-2" variant="outline" onClick={() => setShowTriggersConfig(true)}><Zap size={16} />الإنشاء التلقائي</Button>
+        </>}
+      />
+      <nav className="lw-case-tabs" aria-label="عروض القضايا">
+        <TabButton id="dashboard" label="نظرة عامة" icon={LayoutDashboard} activeTab={activeTab} onClick={setActiveTab} />
+        <TabButton id="cases" label="سجل القضايا" icon={FileText} activeTab={activeTab} onClick={setActiveTab} />
+        <TabButton id="calendar" label="الجلسات والمواعيد" icon={CalendarDays} activeTab={activeTab} onClick={setActiveTab} />
+        <TabButton id="collection" label="التحصيل القانوني" icon={DollarSign} activeTab={activeTab} onClick={setActiveTab} />
+        <TabButton id="notices" label="الإنذارات القانونية" icon={FileText} activeTab={activeTab} onClick={setActiveTab} />
+        <TabButton id="settings" label="الإعدادات" icon={Settings} activeTab={activeTab} onClick={setActiveTab} />
+      </nav>
 
       {/* Main Content Area */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="min-w-0">
         {renderContent()}
       </div>
 
@@ -2105,7 +1517,7 @@ export const LegalCasesTracking: React.FC = () => {
 
       {/* Case Details Dialog */}
       <Dialog open={showCaseDetails} onOpenChange={setShowCaseDetails}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="lw-case-details max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Gavel className="w-5 h-5 text-[#E55B5B]" />
@@ -2119,7 +1531,7 @@ export const LegalCasesTracking: React.FC = () => {
           {selectedCase && (
             <div className="space-y-6">
               {/* Case Info */}
-              <div className="grid grid-cols-2 gap-4">
+              <div className="lw-case-facts grid grid-cols-2 gap-4">
                 <div className="space-y-1">
                   <p className="text-sm text-slate-500">رقم القضية</p>
                   <p className="font-medium">{selectedCase.case_number}</p>
@@ -2326,7 +1738,7 @@ export const LegalCasesTracking: React.FC = () => {
                             variant="ghost"
                             onClick={() => handleDownloadDocument(doc.id)}
                             disabled={downloadDocumentMutation.isPending}
-                          >
+                           aria-label="تحميل المستند" title="تحميل المستند">
                             <Download className="w-4 h-4" />
                           </Button>
                           {doc.source !== 'lawsuit_preparation' && (
@@ -2336,7 +1748,7 @@ export const LegalCasesTracking: React.FC = () => {
                               className="text-red-500 hover:text-red-700"
                               onClick={() => handleDeleteDocument(doc.id)}
                               disabled={deleteDocumentMutation.isPending}
-                            >
+                             aria-label="حذف المستند" title="حذف المستند">
                               <XCircle className="w-4 h-4" />
                             </Button>
                           )}
@@ -2433,7 +1845,7 @@ export const LegalCasesTracking: React.FC = () => {
                       size="sm"
                       variant="ghost"
                       onClick={() => setUploadFile(null)}
-                    >
+                     aria-label="إزالة الملف المختار" title="إزالة الملف المختار">
                       <X className="w-4 h-4" />
                     </Button>
                   </div>

@@ -151,7 +151,7 @@ export const ContractInvoiceDialog = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg" dir="rtl" data-tour="contract-invoice-dialog">
+      <DialogContent className="contract-operation-dialog max-w-lg" dir="rtl" data-tour="contract-invoice-dialog">
         <DialogHeader>
           <div className="mb-2 flex justify-end">
             <Button type="button" variant="outline" size="sm" onClick={() => startTour('contract-add-invoice')}>

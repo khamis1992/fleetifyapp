@@ -1,3 +1,4 @@
+import { ContractMetricStrip } from './contract-details-v3/ContractSection';
 /**
  * مكون الجدول الزمني التفاعلي
  * عرض المحطات الرئيسية للعقد بشكل بصري
@@ -6,16 +7,12 @@
 import { useMemo } from 'react';
 import { Badge } from '@/components/ui/badge';
 import {
-  Calendar,
-  AlertCircle,
-  DollarSign,
   FileText,
   Flag,
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
 import type { Contract } from '@/types/contracts';
-import { cn } from '@/lib/utils';
 
 interface TimelineEvent {
   date: Date;
@@ -119,32 +116,6 @@ export const TimelineView = ({
       });
     }
 
-    // حدث المخالفات المرورية — بتاريخ أول مخالفة إن وجد
-    if (trafficViolationsCount > 0) {
-      timelineEvents.push({
-        date: new Date(),
-        title: 'مخالفات مرورية',
-        description: `${trafficViolationsCount} مخالفة مرورية مسجلة على مركبة العقد`,
-        type: 'violation',
-        icon: <AlertCircle className="h-4 w-4" />,
-        status: 'warning',
-      });
-    }
-
-    // حدث الدفعات المكتملة — بتاريخ آخر تحديث للعقد
-    const canonicalPaidTotal = paidTotal ?? Number(contract.total_paid || 0);
-    const canonicalRemainingTotal = remainingTotal ?? Number(contract.balance_due || 0);
-    if (canonicalPaidTotal > 0) {
-      timelineEvents.push({
-        date: contract.updated_at ? new Date(contract.updated_at) : new Date(),
-        title: 'التحصيل المالي',
-        description: `تم تحصيل ${formatCurrency(canonicalPaidTotal)} من قيمة العقد`,
-        type: 'payment',
-        icon: <DollarSign className="h-4 w-4" />,
-        status: canonicalRemainingTotal <= 0 ? 'completed' : 'pending',
-      });
-    }
-
     // حدث النهاية
     if (contract.end_date) {
       timelineEvents.push({
@@ -158,73 +129,24 @@ export const TimelineView = ({
     }
 
     // ترتيب الأحداث حسب التاريخ
-    return timelineEvents.sort((a, b) => a.date.getTime() - b.date.getTime());
-  }, [auditLogs, contract, formatCurrency, paidTotal, remainingTotal, trafficViolationsCount]);
+    return timelineEvents.filter(event => !Number.isNaN(event.date.getTime())).sort((a, b) => a.date.getTime() - b.date.getTime());
+  }, [auditLogs, contract]);
 
-  return (
-    <div className="rounded-2xl border border-[#E5EAF1] bg-white shadow-[0_10px_30px_-22px_rgba(15,23,42,0.25)]">
-      {/* Panel header */}
-      <div className="flex items-center gap-3 border-b border-[#E5EAF1] bg-[#F6F8FB] px-4 py-3">
-        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#EEF2FF] text-[#4F46E5]">
-          <Calendar className="h-4 w-4" />
-        </div>
-        <div>
-          <p className="text-[10px] font-black uppercase tracking-wide text-slate-400">Timeline</p>
-          <h3 className="text-sm font-black text-[#0F172A]">الجدول الزمني للعقد</h3>
-        </div>
-      </div>
-
-      <div className="p-4 sm:p-6">
-        {events.length === 0 ? (
-          <div className="py-8 text-center text-slate-500">
-            <Calendar className="mx-auto mb-3 h-12 w-12 text-slate-300" />
-            <p className="text-sm">لا توجد أحداث في الجدول الزمني</p>
-          </div>
-        ) : (
-          <div className="relative">
-            {/* Connecting line */}
-            <div className="absolute inset-y-2 right-[19px] w-px bg-[#E5EAF1]" />
-
-            <div className="space-y-6">
-              {events.map((event, index) => {
-                const tone = getTone(event.status);
-                return (
-                  <div key={index} className="relative flex gap-4">
-                    {/* Icon chip */}
-                    <div className="relative z-10 flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-[#E5EAF1] bg-white shadow-sm">
-                      <div className={cn('flex h-8 w-8 items-center justify-center rounded-full', tone.chip)}>
-                        {event.icon}
-                      </div>
-                    </div>
-
-                    {/* Content */}
-                    <div className="min-w-0 flex-1 pb-1">
-                      <div className="flex items-center gap-2">
-                        <h4 className="text-xs font-black text-[#0F172A]">{event.title}</h4>
-                        <Badge
-                          variant="secondary"
-                          className={cn('h-5 rounded-full px-2 text-[10px] font-bold', tone.badge)}
-                        >
-                          {getStatusLabel(event.status)}
-                        </Badge>
-                      </div>
-                      <p className="mt-1 text-xs text-slate-500">{event.description}</p>
-                    </div>
-
-                    {/* Date badge — opposite side */}
-                    <time
-                      dir="ltr"
-                      className="shrink-0 pt-1 text-[10px] font-bold text-slate-400"
-                    >
-                      {format(event.date, 'dd MMM yyyy', { locale: ar })}
-                    </time>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        )}
-      </div>
-    </div>
-  );
+  return <div className="space-y-6">
+    <ContractMetricStrip items={[
+      { title:'المحصل حتى الآن', value:formatCurrency(paidTotal ?? Number(contract.total_paid || 0)) },
+      { title:'الرصيد المتبقي', value:formatCurrency(remainingTotal ?? Number(contract.balance_due || 0)) },
+      { title:'المخالفات المسجلة', value:trafficViolationsCount },
+      { title:'محطات العقد', value:events.length },
+    ]} />
+    <section className="rounded-2xl border border-[#dce5e1] bg-white p-5 sm:p-7" aria-label="الجدول الزمني للعقد">
+      <h3 className="text-lg font-semibold text-[#193731]">الجدول الزمني للعقد</h3>
+      <p className="mt-2 mb-5 text-sm text-[#64756e]">محطات العقد مرتبة حسب التاريخ. الأرصدة أعلاه ملخص حالي وليست أحداث سداد.</p>
+      {events.length===0 ? <p className="py-10 text-center text-sm text-slate-500">لا توجد أحداث في الجدول الزمني</p> :
+        <ol className="contract-record-timeline">{events.map((event,index)=><li key={index}>
+          <time dateTime={event.date.toISOString()}>{format(event.date,'dd MMM yyyy',{locale:ar})}</time>
+          <article><div className="flex flex-wrap items-center justify-between gap-3"><h4>{event.title}</h4><Badge variant="secondary" className={getTone(event.status).badge}>{getStatusLabel(event.status)}</Badge></div><p>{event.description}</p></article>
+        </li>)}</ol>}
+    </section>
+  </div>;
 };

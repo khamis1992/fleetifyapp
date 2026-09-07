@@ -1,16 +1,16 @@
-﻿/**
+import { WorkspaceButton as Button, WorkspaceDialogContent as DialogContent, WorkspaceDialogFooter as DialogFooter, WorkspaceDialogHeader as DialogHeader, EmployeeWorkspacePresentation, WorkspaceViewHeading, WorkspaceFormSection } from '@/components/employee-workspace/WorkspacePresentation';
+/**
  * Employee Workspace Page - Redesigned
  * صفحة مساحة عمل الموظف - تصميم احترافي
  */
 
 import React, { useEffect, useState, useMemo, useRef } from 'react';
+import { OperationsWorkspace, OperationsMetric } from '@/components/operations/OperationsWorkspace';
 import { useNavigate } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { customerCommunicationsClient } from '@/integrations/supabase/customerCommunicationsClient';
 import { 
-  ArrowRight, 
   RefreshCw, 
   Briefcase, 
   Car,
@@ -25,7 +25,6 @@ import {
   Search,
   Star,
   TrendingUp,
-  Filter,
   XCircle,
   PauseCircle,
   Scale,
@@ -45,24 +44,16 @@ import {
   Sparkles,
 } from 'lucide-react';
 
-import { Button } from '@/components/ui/button';
+
 import { Checkbox } from '@/components/ui/checkbox';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
+import { Dialog, DialogDescription, DialogTitle } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Separator } from '@/components/ui/separator';
 import { Textarea } from '@/components/ui/textarea';
 import { useEmployeeContracts } from '@/hooks/useEmployeeContracts';
 import { useEmployeeTasks } from '@/hooks/useEmployeeTasks';
@@ -73,7 +64,6 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import {
-  formatCustomerName,
   getCustomerDataIssues as getCustomerRecordDataIssues,
   hasArabicText,
 } from '@/utils/formatCustomerName';
@@ -1810,37 +1800,32 @@ export const EmployeeWorkspace: React.FC = () => {
     {
       icon: FilePlus2,
       label: 'عقد جديد',
+      description: 'إنشاء عقد وإكمال بياناته',
       onClick: () => openNewContractWizard(),
-      variant: 'default',
-      className: 'bg-[#11A37F] text-white hover:bg-[#0D876A]'
     },
     { 
       icon: Phone, 
-      label: 'تسجيل مكالمة', 
+      label: 'تسجيل مكالمة',
+      description: 'نتيجة الاتصال والخطوة التالية',
       onClick: () => setShowCallDialog(true),
-      variant: 'default',
-      className: 'bg-[#1D4F7A] text-white hover:bg-[#163F62]'
     },
     { 
       icon: Calendar, 
-      label: 'جدولة موعد', 
+      label: 'جدولة موعد',
+      description: 'موعد متابعة مرتبط بالعميل',
       onClick: () => setShowFollowupDialog(true),
-      variant: 'secondary',
-      className: 'bg-[#EEF4FA] text-[#173A63] hover:bg-[#DDEAF5]'
     },
     { 
       icon: FileText, 
-      label: 'ملاحظة جديدة', 
+      label: 'ملاحظة جديدة',
+      description: 'توثيق تفاصيل العقد',
       onClick: () => setShowNoteDialog(true),
-      variant: 'secondary',
-      className: 'bg-[#FFF6E5] text-[#9A5B00] hover:bg-[#FFE9B8]'
     },
     {
       icon: ClipboardCheck,
       label: 'إقفال اليوم',
+      description: 'ملخص النشاط وقائمة التحقق',
       onClick: () => setShowDailyLogDialog(true),
-      variant: 'default',
-      className: 'bg-[#142033] text-white hover:bg-[#1D4F7A]'
     },
   ];
 
@@ -2659,109 +2644,20 @@ export const EmployeeWorkspace: React.FC = () => {
   };
 
   return (
-    <div className="min-h-dvh bg-[#F0F2F5] text-[#142033] overflow-y-auto" dir="rtl" style={{ WebkitOverflowScrolling: 'touch', height: '100dvh' }}>
-
-      {/* --- Compact Header --- */}
-      <header className="sticky top-0 z-40 border-b border-[#E2E8F0] bg-white/95 backdrop-blur-md">
-        <div className="mx-auto max-w-7xl px-3 sm:px-4 lg:px-6">
-          <div className="flex h-14 items-center justify-between gap-1 sm:h-16 sm:gap-3">
-            <div className="flex min-w-0 items-center gap-2 sm:gap-3">
-              <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-[#11A37F] to-[#0D876A] text-white shadow-sm sm:h-10 sm:w-10 sm:rounded-xl">
-                <Briefcase className="h-4 w-4 sm:h-5 sm:w-5" />
-              </div>
-              <div className="min-w-0">
-                <h1 className="truncate whitespace-nowrap text-sm font-black sm:text-lg">مساحة عملي</h1>
-                <p className="hidden truncate text-xs text-[#6A7688] sm:block">
-                  {user?.email?.split('@')[0]}
-                </p>
-              </div>
-            </div>
-
-            {/* Header Stats - Compact */}
-            <div className="hidden items-center gap-4 md:flex">
-              <div className="flex items-center gap-1.5 text-xs">
-                <span className="h-2 w-2 rounded-full bg-[#11A37F]" />
-                <span className="font-bold text-[#6A7688]">{contractStats.activeContracts}</span>
-                <span className="text-[#94A3B8]">عقد</span>
-              </div>
-              <div className="flex items-center gap-1.5 text-xs">
-                <span className="h-2 w-2 rounded-full bg-[#F59E0B]" />
-                <span className="font-bold text-[#6A7688]">{taskStats.todayTasks}</span>
-                <span className="text-[#94A3B8]">مهمة</span>
-              </div>
-              <div className="flex items-center gap-1.5 text-xs">
-                <span className="h-2 w-2 rounded-full bg-[#EF4444]" />
-                <span className="font-bold text-[#6A7688]">{formatCurrency(collectionStats.totalPending)}</span>
-                <span className="text-[#94A3B8]">مستحق</span>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-1 sm:gap-2">
-              <span className="flex items-center max-sm:[&_button]:h-8 max-sm:[&_button]:w-8 max-sm:[&_button]:px-0">
-                <NotificationBell />
-              </span>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={handleRefresh}
-                disabled={isLoading}
-                className="h-9 w-9 rounded-xl text-[#6A7688] hover:bg-[#F1F5F9] hover:text-[#142033]"
-              >
-                <RefreshCw className={cn("h-4 w-4", isLoading && "animate-spin")} />
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => navigate('/dashboard')}
-                className="h-9 w-9 rounded-xl text-[#6A7688] hover:bg-[#F1F5F9] hover:text-[#142033]"
-              >
-                <ArrowRight className="h-4 w-4" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={handleSignOut}
-                className="h-9 w-9 rounded-xl text-[#EF4444] hover:bg-[#FEF2F2] hover:text-[#DC2626]"
-              >
-                <LogOut className="h-4 w-4" />
-              </Button>
-            </div>
-          </div>
-        </div>
-      </header>
-
-      {/* --- Quick Actions Bar --- */}
-      <div className="border-b border-[#E2E8F0] bg-white">
-        <div className="mx-auto max-w-7xl px-3 sm:px-4 lg:px-6">
-          <div className="flex gap-2 overflow-x-auto py-2.5 scrollbar-hide max-sm:gap-1.5 max-sm:py-2 sm:gap-3 sm:py-3">
-            {quickActions.map((action) => {
-              const Icon = action.icon;
-              return (
-                <button
-                  key={action.label}
-                  type="button"
-                  onClick={action.onClick}
-                  className={cn(
-                    "flex shrink-0 items-center gap-1.5 rounded-xl px-3 py-2 text-[10px] font-bold transition-all active:scale-95 max-sm:gap-1 max-sm:px-2.5 max-sm:py-1.5 sm:gap-2 sm:px-5 sm:py-3 sm:text-sm",
-                    action.className
-                  )}
-                >
-                  <Icon className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-                  <span className="whitespace-nowrap">{action.label}</span>
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      </div>
-
-      <div className="mx-auto max-w-7xl px-3 pb-24 pt-4 sm:px-4 sm:py-5 lg:px-6">
+    <EmployeeWorkspacePresentation>
+    <OperationsWorkspace section="employee" actions={<>
+      <Button className="opw-primary" onClick={() => setShowDailyLogDialog(true)}><ClipboardCheck size={16} />{isDailyLogClosed ? 'عرض إقفال اليوم' : 'إقفال يوم العمل'}</Button>
+      <Button className="opw-secondary" variant="outline" onClick={handleRefresh} disabled={isLoading}><RefreshCw size={16} className={isLoading ? 'animate-spin' : ''} />تحديث مساحة العمل</Button>
+    </>}>
+      <div className="ad-employee-session"><span>مرحبًا، {user?.email?.split('@')[0]}</span><div><NotificationBell /><Button variant="ghost" onClick={handleSignOut}><LogOut size={16} />تسجيل الخروج</Button></div></div>
+      <nav className="ad-employee-actions" aria-label="إجراءات العمل اليومية">{quickActions.map(action => <button key={action.label} type="button" onClick={action.onClick}><action.icon size={19} /><span>{action.label}<small>{action.description}</small></span></button>)}</nav>
+      <div className="ad-employee-body">
 
         <EmployeeLegalReviewPanel profileId={workspaceProfile?.id} />
 
         {/* --- Daily Log Card --- */}
         <Card className={cn(
-          "mb-4 overflow-hidden rounded-2xl border shadow-sm sm:mb-5",
+          "ad-daily-log mb-4 overflow-hidden rounded-2xl border shadow-sm sm:mb-5",
           isDailyLogClosed ? "border-[#A7F3D0] bg-gradient-to-l from-[#ECFDF5] to-white" : "border-[#E2E8F0] bg-white"
         )}>
           <CardContent className="p-4 sm:p-5">
@@ -2813,99 +2709,31 @@ export const EmployeeWorkspace: React.FC = () => {
           </CardContent>
         </Card>
 
-        {/* --- Stats Cards --- */}
-        <div className="mb-4 grid grid-cols-2 gap-3 sm:mb-5 sm:gap-4 lg:grid-cols-4">
-          <Card className="group rounded-2xl border-[#E2E8F0] bg-white shadow-sm transition-all hover:shadow-md">
-            <CardContent className="p-4 sm:p-5">
-              <div className="flex items-start justify-between">
-                <div className="min-w-0">
-                  <p className="text-[11px] font-bold text-[#6A7688] sm:text-xs">العقود المخصصة</p>
-                  <h3 className="mt-1 text-xl font-black text-[#142033] sm:text-2xl">{contractStats.totalContracts}</h3>
-                  <p className="mt-1 text-[10px] font-bold text-[#11A37F] sm:text-xs">نشطة</p>
-                </div>
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#EEF4FA] text-[#1D4F7A] sm:h-12 sm:w-12">
-                  <FileText className="h-4 w-4 sm:h-5 sm:w-5" />
-                </div>
-              </div>
-              <div className="mt-3 h-1 w-full overflow-hidden rounded-full bg-[#EEF4FA]">
-                <div className="h-full rounded-full bg-[#1D4F7A] transition-all" style={{ width: `${Math.min(100, (contractStats.activeContracts / Math.max(1, contractStats.totalContracts)) * 100)}%` }} />
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="group rounded-2xl border-[#E2E8F0] bg-white shadow-sm transition-all hover:shadow-md">
-            <CardContent className="p-4 sm:p-5">
-              <div className="flex items-start justify-between">
-                <div className="min-w-0">
-                  <p className="text-[11px] font-bold text-[#6A7688] sm:text-xs">المستحقات</p>
-                   <h3 className="mt-1 whitespace-nowrap text-sm font-black leading-tight text-[#142033] sm:text-2xl">{formatCurrency(collectionStats.totalPending)}</h3>
-                  <p className="mt-1 text-[10px] font-bold text-[#D97706] sm:text-xs">هذا الشهر</p>
-                </div>
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#FEF3C7] text-[#D97706] sm:h-12 sm:w-12">
-                  <DollarSign className="h-4 w-4 sm:h-5 sm:w-5" />
-                </div>
-              </div>
-              <div className="mt-3 h-1 w-full overflow-hidden rounded-full bg-[#FEF3C7]">
-                <div className="h-full rounded-full bg-[#D97706] transition-all" style={{ width: `${Math.min(100, collectionStats.collectionRate)}%` }} />
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="group rounded-2xl border-[#E2E8F0] bg-white shadow-sm transition-all hover:shadow-md">
-            <CardContent className="p-4 sm:p-5">
-              <div className="flex items-start justify-between">
-                <div className="min-w-0">
-                  <p className="text-[11px] font-bold text-[#6A7688] sm:text-xs">مهام اليوم</p>
-                  <h3 className="mt-1 text-xl font-black text-[#142033] sm:text-2xl">{taskStats.todayTasks}</h3>
-                  <p className="mt-1 text-[10px] font-bold text-[#11A37F] sm:text-xs">{taskStats.completionRate}% إنجاز</p>
-                </div>
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#D1FAE5] text-[#059669] sm:h-12 sm:w-12">
-                  <CheckCircle className="h-4 w-4 sm:h-5 sm:w-5" />
-                </div>
-              </div>
-              <div className="mt-3 h-1 w-full overflow-hidden rounded-full bg-[#D1FAE5]">
-                <div className="h-full rounded-full bg-[#059669] transition-all" style={{ width: `${taskStats.completionRate}%` }} />
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="group rounded-2xl border-[#E2E8F0] bg-white shadow-sm transition-all hover:shadow-md">
-            <CardContent className="p-4 sm:p-5">
-              <div className="flex items-start justify-between">
-                <div className="min-w-0">
-                  <p className="text-[11px] font-bold text-[#6A7688] sm:text-xs">نقاط الأداء</p>
-                  <h3 className="mt-1 text-xl font-black text-[#142033] sm:text-2xl">{performance ? Math.round(performance.performance_score) : 0}</h3>
-                  <p className="mt-1 text-[10px] font-bold text-[#1D4F7A] sm:text-xs">{performanceGrade?.label_ar || 'جيد'}</p>
-                </div>
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#EEF4FA] text-[#1D4F7A] sm:h-12 sm:w-12">
-                  <Star className="h-4 w-4 sm:h-5 sm:w-5" />
-                </div>
-              </div>
-              <div className="mt-3 h-1 w-full overflow-hidden rounded-full bg-[#EEF4FA]">
-                <div className="h-full rounded-full bg-[#1D4F7A] transition-all" style={{ width: `${performance ? Math.min(100, performance.performance_score) : 0}%` }} />
-              </div>
-            </CardContent>
-          </Card>
+        <div className="opw-metrics ad-employee-metrics" aria-busy={isLoading}>
+          <OperationsMetric label="العقود المخصصة" value={isLoading ? '—' : contractStats.totalContracts} hint={contractStats.activeContracts + ' عقد نشط'} icon={FileText} />
+          <OperationsMetric label="المستحقات" value={isLoading ? '—' : <bdi className="ad-money">{formatCurrency(collectionStats.totalPending)}</bdi>} hint="المتبقي في التحصيل الشهري" icon={DollarSign} tone="warning" />
+          <OperationsMetric label="مهام اليوم" value={isLoading ? '—' : taskStats.todayTasks} hint={taskStats.completionRate + '% معدل إنجاز المهام'} icon={CheckCircle} />
+          <OperationsMetric label="نقاط الأداء" value={isLoading ? '—' : displayPerformanceScore} hint={performance ? performanceGrade?.label_ar || 'التقييم المسجل' : 'تقدير من التحصيل وإنجاز المهام'} icon={Star} />
         </div>
-
-        <div className="grid grid-cols-12 gap-4 sm:gap-5">
+        <div className="ad-work-layout">
 
           {/* --- Main Content (Left) --- */}
-          <div className="col-span-12 space-y-4 sm:space-y-5 lg:col-span-8">
+          <div className="ad-work-main">
 
           <Tabs value={activeTab} className="w-full" onValueChange={setActiveTab}>
-            <div className="mb-3 -mx-1 overflow-x-auto rounded-xl border border-[#E2E8F0] bg-white p-1 shadow-sm sm:mx-0 sm:mb-4">
-              <TabsList className="h-auto min-w-max bg-transparent p-0">
-                <TabsTrigger value="overview" className="rounded-lg px-3 py-2 text-xs font-bold data-[state=active]:bg-[#142033] data-[state=active]:text-white sm:px-4 sm:py-2.5 sm:text-sm">نظرة عامة</TabsTrigger>
-                <TabsTrigger value="collections" className="rounded-lg px-3 py-2 text-xs font-bold data-[state=active]:bg-[#142033] data-[state=active]:text-white sm:px-4 sm:py-2.5 sm:text-sm">التحصيل الشهري</TabsTrigger>
-                <TabsTrigger value="contracts" className="rounded-lg px-3 py-2 text-xs font-bold data-[state=active]:bg-[#142033] data-[state=active]:text-white sm:px-4 sm:py-2.5 sm:text-sm">العقود ({contractStats.totalContracts})</TabsTrigger>
-                <TabsTrigger value="tasks" className="rounded-lg px-3 py-2 text-xs font-bold data-[state=active]:bg-[#142033] data-[state=active]:text-white sm:px-4 sm:py-2.5 sm:text-sm">المهام ({taskStats.totalTasks})</TabsTrigger>
-                <TabsTrigger value="log" className="rounded-lg px-3 py-2 text-xs font-bold data-[state=active]:bg-[#142033] data-[state=active]:text-white sm:px-4 sm:py-2.5 sm:text-sm">سجل التواصل</TabsTrigger>
+            <div className="ew-tabs">
+              <TabsList aria-label="أقسام مساحة الموظف">
+                <TabsTrigger value="overview"><Briefcase />أولويات اليوم</TabsTrigger>
+                <TabsTrigger value="collections"><DollarSign />التحصيل</TabsTrigger>
+                <TabsTrigger value="contracts"><FileText />العقود <span>({contractStats.totalContracts})</span></TabsTrigger>
+                <TabsTrigger value="tasks"><CheckCircle />المهام <span>({taskStats.totalTasks})</span></TabsTrigger>
+                <TabsTrigger value="log"><Phone />سجل التواصل</TabsTrigger>
               </TabsList>
             </div>
 
             {/* View: Overview */}
             <TabsContent value="overview" className="space-y-6 mt-0">
+              <WorkspaceViewHeading title="أولويات اليوم" description="العقود التي تحتاج اهتمامك ومواعيدك القادمة في مكان واحد."><Button variant="outline" onClick={() => setShowFollowupDialog(true)}><Calendar />جدولة متابعة</Button></WorkspaceViewHeading>
               
               {/* Priority Section */}
               {priorityContracts.length > 0 && (
@@ -2922,6 +2750,8 @@ export const EmployeeWorkspace: React.FC = () => {
                       <div
                         key={contract.id}
                         className="flex cursor-pointer items-center gap-3 border-b border-[#FDE68A]/50 p-3 transition-colors last:border-0 hover:bg-[#FFFBEB] sm:p-4"
+                        role="button" tabIndex={0}
+                        onKeyDown={(event) => { if (event.target === event.currentTarget && (event.key === 'Enter' || event.key === ' ')) { event.preventDefault(); openWorkspaceContractDetails(contract.id); } }}
                         onClick={() => openWorkspaceContractDetails(contract.id)}
                       >
                         <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#FDE68A] text-xs font-black text-[#92400E] sm:h-10 sm:w-10">
@@ -2972,13 +2802,13 @@ export const EmployeeWorkspace: React.FC = () => {
                           tabIndex={0}
                           onClick={() => openTaskDetails(task)}
                           onKeyDown={(event) => {
-                            if (event.key === 'Enter' || event.key === ' ') {
+                            if (event.target === event.currentTarget && (event.key === 'Enter' || event.key === ' ')) {
                               event.preventDefault();
                               openTaskDetails(task);
                             }
                           }}
                           className={cn(
-                            "flex cursor-pointer items-center gap-3 rounded-xl border p-3 transition-all",
+                            "ew-task-row flex cursor-pointer items-center gap-3 border transition-all",
                             task.status === 'completed'
                               ? "border-[#F1F5F9] bg-[#F8FAFC] opacity-60"
                               : "border-[#E2E8F0] bg-white hover:border-[#11A37F]/40 hover:shadow-sm"
@@ -3054,8 +2884,9 @@ export const EmployeeWorkspace: React.FC = () => {
 
             {/* View: Monthly Collections */}
             <TabsContent value="collections" className="space-y-4 mt-0 sm:space-y-5">
+              <WorkspaceViewHeading title="التحصيل الشهري" description="راجع المبالغ والفواتير المستحقة لكل عميل، ثم سجّل الدفعة المناسبة."></WorkspaceViewHeading>
               {/* Stats Cards */}
-              <div className="grid grid-cols-3 gap-2 sm:gap-4">
+              <div className="ew-collection-stats grid grid-cols-3 gap-2 sm:gap-4">
                 <Card className="rounded-2xl border-[#E2E8F0] bg-white shadow-sm">
                   <CardContent className="p-2.5 sm:p-4">
                     <p className="text-[10px] font-bold text-[#6A7688] sm:text-xs">المستهدف</p>
@@ -3101,7 +2932,7 @@ export const EmployeeWorkspace: React.FC = () => {
                         return (
                           <div
                             key={group.customer_id}
-                            className="overflow-hidden rounded-xl border border-[#E2E8F0] bg-white transition-all hover:border-[#11A37F]/40 hover:shadow-sm"
+                            className="ew-collection-group border bg-white"
                           >
                             {/* Customer Header */}
                             <div className="flex items-center gap-3 p-3 sm:p-4">
@@ -3172,6 +3003,8 @@ export const EmployeeWorkspace: React.FC = () => {
                                   size="sm"
                                   variant="ghost"
                                   className="h-9 w-9 rounded-lg p-0 text-gray-400 hover:bg-[#F1F5F9] hover:text-gray-600"
+                                  aria-label={`${isExpanded ? 'إخفاء' : 'عرض'} فواتير ${group.customer_name}`}
+                                  aria-expanded={isExpanded}
                                   onClick={() => toggleCustomerExpanded(group.customer_id)}
                                 >
                                   {isExpanded ? (
@@ -3191,7 +3024,9 @@ export const EmployeeWorkspace: React.FC = () => {
                                     <div
                                       key={invoice.invoice_id}
                                       className="group/invoice flex cursor-pointer items-center gap-3 rounded-lg border border-[#E2E8F0] bg-white p-3 transition-all hover:border-[#11A37F]/40 hover:shadow-sm"
-                                      onClick={() => openWorkspaceContractDetails(invoice.contract_id, invoice.contract_number)}
+                                      role="button" tabIndex={0}
+                        onKeyDown={(event) => { if (event.target === event.currentTarget && (event.key === 'Enter' || event.key === ' ')) { event.preventDefault(); openWorkspaceContractDetails(invoice.contract_id, invoice.contract_number); } }}
+                        onClick={() => openWorkspaceContractDetails(invoice.contract_id, invoice.contract_number)}
                                     >
                                       <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#FEF3C7] text-[#D97706] transition-colors group-hover/invoice:bg-[#D1FAE5] group-hover/invoice:text-[#059669]">
                                         <FileText className="h-4 w-4" />
@@ -3247,6 +3082,7 @@ export const EmployeeWorkspace: React.FC = () => {
 
             {/* View: Contracts */}
             <TabsContent value="contracts" className="mt-0">
+              <WorkspaceViewHeading title="عقودي وعملائي" description="ابحث عن العقد وتابع بياناته ومستنداته وإجراءاته من ملف واحد."><Button onClick={() => openNewContractWizard()}><FilePlus2 />عقد جديد</Button></WorkspaceViewHeading>
               <Card className="rounded-2xl border-[#E2E8F0] bg-white shadow-sm">
                 <CardHeader className="border-b border-[#F1F5F9] pb-3">
                   <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -3259,7 +3095,7 @@ export const EmployeeWorkspace: React.FC = () => {
                     <div className="relative w-full sm:w-64">
                       <Search className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
                       <Input
-                        placeholder="بحث برقم العقد أو الاسم..."
+                        aria-label="البحث عن عقد أو عميل" placeholder="بحث برقم العقد أو الاسم..."
                         className="h-10 rounded-xl border-[#E2E8F0] bg-[#F8FAFC] pr-9 text-sm"
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
@@ -3277,6 +3113,7 @@ export const EmployeeWorkspace: React.FC = () => {
                       <button
                         key={item.key}
                         type="button"
+                        aria-pressed={contractWorkFilter === item.key}
                         onClick={() => setContractWorkFilter(item.key)}
                         className={cn(
                           "flex shrink-0 items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-bold transition-all",
@@ -3352,7 +3189,7 @@ export const EmployeeWorkspace: React.FC = () => {
                       <section
                         key={customerGroup.customerId}
                         className={cn(
-                          "overflow-hidden rounded-xl border",
+                          "ew-customer-group overflow-hidden rounded-xl border",
                           isGroupFullyPaid
                             ? "border-[#A7F3D0] bg-[#F0FDF6]"
                             : "border-[#E2E8F0] bg-[#F8FAFC]",
@@ -3471,7 +3308,7 @@ export const EmployeeWorkspace: React.FC = () => {
                                <div
                                  key={contract.id}
                                  className={cn(
-                                   "group relative overflow-hidden rounded-xl border transition-all hover:shadow-md",
+                                   "ew-contract-card group relative overflow-hidden rounded-xl border transition-all",
                                    isFullyPaidContract
                                      ? "border-[#A7F3D0] bg-[#F0FDF6] hover:border-[#34D399]"
                                      : "border-[#E2E8F0] bg-white hover:border-[#11A37F]/40",
@@ -3642,11 +3479,12 @@ export const EmployeeWorkspace: React.FC = () => {
 
                                  {/* Action Buttons */}
                                  <div className={cn(
-                                   "flex flex-wrap gap-1.5 border-t px-3 py-2.5 sm:gap-2 sm:px-4",
+                                   "ew-contract-actions flex flex-wrap border-t",
                                    isFullyPaidContract
                                      ? "border-[#D1FAE5] bg-[#ECFDF5]"
                                      : "border-[#F1F5F9] bg-[#F8FAFC]",
                                  )}>
+                                  <Button variant="outline" size="sm" onClick={() => openWorkspaceContractDetails(contract.id, contract.contract_number)}><Briefcase />فتح ملف العقد</Button>
                                   {contract.status === 'active' && (
                                     <Button
                                       size="sm"
@@ -3689,7 +3527,7 @@ export const EmployeeWorkspace: React.FC = () => {
                                     })}
                                   >
                                     <ScanLine className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
-                                    {hasSignedContract ? 'نسخة' : 'تصوير'}
+                                    {hasSignedContract ? 'النسخة الموقعة' : 'تصوير العقد'}
                                   </Button>
 
                                   {contract.status === 'active' && hasCollectibleInvoiceBalance(contract) && (
@@ -3708,7 +3546,7 @@ export const EmployeeWorkspace: React.FC = () => {
                                       }}
                                     >
                                       <DollarSign className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
-                                      دفعة
+                                      تسجيل دفعة
                                     </Button>
                                   )}
 
@@ -3724,7 +3562,7 @@ export const EmployeeWorkspace: React.FC = () => {
                                       ) : (
                                         <CheckCircle className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
                                       )}
-                                      إغلاق
+                                      إغلاق العقد
                                     </Button>
                                   )}
 
@@ -3744,7 +3582,7 @@ export const EmployeeWorkspace: React.FC = () => {
                                       }}
                                     >
                                       <Scale className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
-                                      قانونية
+                                      تحويل للشؤون القانونية
                                     </Button>
                                   )}
 
@@ -3759,7 +3597,7 @@ export const EmployeeWorkspace: React.FC = () => {
                                       }}
                                     >
                                       <Phone className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
-                                      اتصال
+                                      تسجيل مكالمة
                                     </Button>
                                   )}
 
@@ -3795,7 +3633,7 @@ export const EmployeeWorkspace: React.FC = () => {
                                         }}
                                       >
                                         <Calendar className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
-                                        متابعة
+                                        جدولة متابعة
                                       </Button>
                                       <Button
                                         size="sm"
@@ -3808,7 +3646,7 @@ export const EmployeeWorkspace: React.FC = () => {
                                         }}
                                       >
                                         <XCircle className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
-                                        إلغاء
+                                        إلغاء العقد
                                       </Button>
                                       {(contract.traffic_violation_count || 0) > 0 && (
                                         <Button
@@ -3829,7 +3667,7 @@ export const EmployeeWorkspace: React.FC = () => {
                                           ) : (
                                             <Upload className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
                                           )}
-                                          مخالفات
+                                          إرفاق إثبات المخالفات
                                         </Button>
                                       )}
                                     </>
@@ -3869,6 +3707,7 @@ export const EmployeeWorkspace: React.FC = () => {
 
             {/* View: Tasks */}
             <TabsContent value="tasks" className="mt-0">
+              <WorkspaceViewHeading title="المهام والمتابعات" description="راجع تفاصيل المهمة، حدّث إنجازها، وأرسل ردك إلى المشرف."><Button onClick={() => setShowFollowupDialog(true)}><Calendar />متابعة جديدة</Button></WorkspaceViewHeading>
               <Card className="rounded-2xl border-[#E2E8F0] bg-white shadow-sm">
                 <CardHeader className="border-b border-[#F1F5F9] pb-3">
                   <div className="flex items-center justify-between">
@@ -3888,6 +3727,14 @@ export const EmployeeWorkspace: React.FC = () => {
                 </CardHeader>
                 <CardContent className="p-3 sm:p-4">
                   <div className="space-y-2">
+                    {tasks.length === 0 && (
+                      <div className="ew-empty">
+                        <CheckCircle aria-hidden="true" />
+                        <h3>لا توجد مهام مسندة إليك حاليًا</h3>
+                        <p>ستظهر هنا المهام القادمة وطلبات المتابعة عند إسنادها إليك.</p>
+                        <Button variant="outline" onClick={() => setShowFollowupDialog(true)}><Calendar />جدولة متابعة</Button>
+                      </div>
+                    )}
                     {tasks.map((task) => (
                       <div
                         key={task.id}
@@ -3895,13 +3742,13 @@ export const EmployeeWorkspace: React.FC = () => {
                         tabIndex={0}
                         onClick={() => openTaskDetails(task)}
                         onKeyDown={(event) => {
-                          if (event.key === 'Enter' || event.key === ' ') {
+                          if (event.target === event.currentTarget && (event.key === 'Enter' || event.key === ' ')) {
                             event.preventDefault();
                             openTaskDetails(task);
                           }
                         }}
                         className={cn(
-                          "flex cursor-pointer items-center gap-3 rounded-xl border p-3 transition-all",
+                          "ew-task-row flex cursor-pointer items-center gap-3 border transition-all",
                           task.status === 'completed'
                             ? "border-[#F1F5F9] bg-[#F8FAFC] opacity-60"
                             : "border-[#E2E8F0] bg-white hover:border-[#11A37F]/40 hover:shadow-sm"
@@ -3962,6 +3809,7 @@ export const EmployeeWorkspace: React.FC = () => {
             </TabsContent>
 
             <TabsContent value="log" className="mt-0">
+              <WorkspaceViewHeading title="سجل التواصل" description="تسلسل المكالمات والملاحظات المحفوظة مع العملاء."><div className="flex flex-wrap gap-2"><Button variant="outline" onClick={() => setShowCallDialog(true)}><Phone />تسجيل مكالمة</Button><Button variant="outline" onClick={() => setShowNoteDialog(true)}><FileText />إضافة ملاحظة</Button></div></WorkspaceViewHeading>
               <Card className="rounded-2xl border-[#DDE5EF] shadow-sm">
                 <CardHeader className="border-b border-[#EEF2F6] p-4">
                   <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -3993,6 +3841,7 @@ export const EmployeeWorkspace: React.FC = () => {
                               ? 'bg-[#142033] text-white hover:bg-[#142033]'
                               : 'border-[#E2E8F0] text-[#475569]',
                           )}
+                          aria-pressed={communicationLogFilter === filterKey}
                           onClick={() => setCommunicationLogFilter(filterKey)}
                         >
                           {filterLabel}
@@ -4024,7 +3873,7 @@ export const EmployeeWorkspace: React.FC = () => {
                   ) : (
                     <div className="space-y-4">
                       {groupedCommunicationLog.map((group) => (
-                        <div key={group.date}>
+                        <div key={group.date} className="ew-log-day">
                           <div className="mb-2 flex items-center gap-2">
                             <Calendar className="h-3.5 w-3.5 text-[#8A9AAF]" />
                             <span className="text-xs font-black text-[#40516A]">
@@ -4048,7 +3897,7 @@ export const EmployeeWorkspace: React.FC = () => {
                               return (
                                 <div
                                   key={item.id}
-                                  className="rounded-xl border border-[#EEF2F6] bg-[#FBFCFE] p-3"
+                                  className="ew-log-entry"
                                 >
                                   <div className="flex flex-wrap items-center gap-2">
                                     <span className={cn(
@@ -4138,7 +3987,7 @@ export const EmployeeWorkspace: React.FC = () => {
         </div>
 
         {/* --- Sidebar (Right) --- */}
-        <div className="col-span-12 space-y-4 sm:space-y-5 lg:col-span-4">
+        <div className="ad-work-aside">
 
           {/* Performance Detailed */}
           <Card className="rounded-2xl border-[#E2E8F0] bg-white shadow-sm">
@@ -4252,7 +4101,7 @@ export const EmployeeWorkspace: React.FC = () => {
 
       {/* --- Dialogs --- */}
       <Dialog open={showDailyLogDialog} onOpenChange={setShowDailyLogDialog}>
-        <DialogContent className="max-h-[92vh] overflow-y-auto max-sm:w-[calc(100vw-1rem)] max-sm:max-w-none sm:max-w-5xl">
+        <DialogContent className="ew-daily-closeout max-h-[92vh] overflow-y-auto max-sm:w-[calc(100vw-1rem)] max-sm:max-w-none sm:max-w-5xl">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-xl font-black text-[#142033]">
               <ClipboardCheck className="h-5 w-5 text-[#11A37F]" />
@@ -4265,7 +4114,10 @@ export const EmployeeWorkspace: React.FC = () => {
 
           {dailyLogForm && (
             <div className="space-y-5">
-              <div className="grid grid-cols-1 gap-3 rounded-xl border border-[#DDE5EF] bg-[#F8FAFC] p-4 sm:grid-cols-2 lg:grid-cols-4">
+              <nav className="ew-closeout-index" aria-label="أقسام إقفال اليوم"><a href="#ew-day-details">بيانات اليوم</a><a href="#ew-day-activity">النشاط والنتائج</a><a href="#ew-day-review">المراجعة والإقفال</a></nav>
+              <div id="ew-day-details" className="ew-closeout-section">
+              <WorkspaceFormSection number="01" title="بيانات يوم العمل" description="راجع التاريخ وأوقات العمل وحالة اليوم.">
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
                 <div className="space-y-2">
                   <Label htmlFor="daily-log-date">التاريخ</Label>
                   <Input
@@ -4327,6 +4179,7 @@ export const EmployeeWorkspace: React.FC = () => {
                         "rounded-lg font-bold",
                         dailyLogForm.status === 'completed' && "bg-[#11A37F] text-white hover:bg-[#0D876A]"
                       )}
+                      aria-pressed={dailyLogForm.status === 'completed'}
                       onClick={() => updateDailyLogField('status', 'completed')}
                     >
                       مكتمل
@@ -4338,6 +4191,7 @@ export const EmployeeWorkspace: React.FC = () => {
                         "rounded-lg font-bold",
                         dailyLogForm.status === 'incomplete' && "bg-[#9A5B00] text-white hover:bg-[#7A4800]"
                       )}
+                      aria-pressed={dailyLogForm.status === 'incomplete'}
                       onClick={() => updateDailyLogField('status', 'incomplete')}
                     >
                       غير مكتمل
@@ -4354,6 +4208,7 @@ export const EmployeeWorkspace: React.FC = () => {
                         "rounded-lg font-bold",
                         dailyLogForm.legalReferrals === 'no' && "bg-[#1D4F7A] text-white hover:bg-[#163F62]"
                       )}
+                      aria-pressed={dailyLogForm.legalReferrals === 'no'}
                       onClick={() => updateDailyLogField('legalReferrals', 'no')}
                     >
                       لا
@@ -4365,6 +4220,7 @@ export const EmployeeWorkspace: React.FC = () => {
                         "rounded-lg font-bold",
                         dailyLogForm.legalReferrals === 'yes' && "bg-[#11A37F] text-white hover:bg-[#0D876A]"
                       )}
+                      aria-pressed={dailyLogForm.legalReferrals === 'yes'}
                       onClick={() => updateDailyLogField('legalReferrals', 'yes')}
                     >
                       نعم
@@ -4373,6 +4229,9 @@ export const EmployeeWorkspace: React.FC = () => {
                 </div>
               </div>
 
+              </WorkspaceFormSection></div>
+              <div id="ew-day-activity" className="ew-closeout-section">
+              <WorkspaceFormSection number="02" title="النشاط والنتائج" description="مؤشرات اليوم والاتصالات والعمليات المسجلة في النظام.">
               <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
                 <div className="rounded-xl border border-[#DDE5EF] bg-white p-4">
                   <h3 className="mb-3 text-sm font-black text-[#142033]">مؤشرات بداية اليوم</h3>
@@ -4572,6 +4431,9 @@ export const EmployeeWorkspace: React.FC = () => {
                 )}
               </div>
 
+              </WorkspaceFormSection></div>
+              <div id="ew-day-review" className="ew-closeout-section">
+              <WorkspaceFormSection number="03" title="المراجعة قبل الإقفال" description="أكمل قائمة التحقق ووثّق الحالات والعوائق.">
               <div className="rounded-xl border border-[#DDE5EF] bg-white p-4">
                 <div className="mb-3 flex items-center justify-between gap-3">
                   <h3 className="text-sm font-black text-[#142033]">قائمة التحقق اليومية</h3>
@@ -4649,6 +4511,7 @@ export const EmployeeWorkspace: React.FC = () => {
                 />
                 تم تحديث الصفحة وتصدير التقرير الشامل عند الحاجة
               </label>
+              </WorkspaceFormSection></div>
             </div>
           )}
 
@@ -4715,6 +4578,7 @@ export const EmployeeWorkspace: React.FC = () => {
           </DialogHeader>
 
           {customerDataForm && (
+            <WorkspaceFormSection number="01" title="بيانات الهوية" description="تأكد من مطابقة الاسم والجنسية للمستند الرسمي.">
             <div className="space-y-4">
               {['company', 'corporate'].includes(String(customerDataForm.customerType || '').toLowerCase()) ? (
                 <div className="space-y-2">
@@ -4769,6 +4633,7 @@ export const EmployeeWorkspace: React.FC = () => {
                 لا تعتمد على التخمين. استخدم الهوية أو الجواز فقط، لأن هذه البيانات تُستخدم في التقاضي والتحصيل.
               </div>
             </div>
+            </WorkspaceFormSection>
           )}
 
           <DialogFooter className="gap-2">
@@ -4879,6 +4744,7 @@ export const EmployeeWorkspace: React.FC = () => {
 
           {selectedTask && (
             <div className="space-y-4">
+              <WorkspaceFormSection number="01" title="تفاصيل المهمة" description="راجع المطلوب والسجل المرتبط بالمهمة.">
               {selectedTask.description ? (
                 (() => {
                   const parts = splitTaskDescription(selectedTask.description);
@@ -4934,7 +4800,9 @@ export const EmployeeWorkspace: React.FC = () => {
                 </p>
               )}
 
+              </WorkspaceFormSection>
               {selectedTask.status !== 'completed' && selectedTask.customer_id && (
+                <WorkspaceFormSection number="02" title="توثيق التنفيذ" description="أرسل تحديثك وحدد ما إذا كانت المهمة مكتملة.">
                 <div className="space-y-2">
                   <Label htmlFor="task-reply" className="text-sm font-bold text-[#142033]">
                     ردك (يظهر لدى الإدارة في سجل تواصل الفريق)
@@ -4957,6 +4825,7 @@ export const EmployeeWorkspace: React.FC = () => {
                     إنجاز المهمة تلقائياً بعد إرسال الرد
                   </label>
                 </div>
+                </WorkspaceFormSection>
               )}
 
               <div className="flex items-center justify-end gap-2 border-t border-[#F1F5F9] pt-3">
@@ -4994,14 +4863,14 @@ export const EmployeeWorkspace: React.FC = () => {
         open={showContractDetailsDialog}
         onOpenChange={setShowContractDetailsDialog}
       >
-        <DialogContent dir="rtl" className="max-h-[90vh] overflow-y-auto max-sm:w-[calc(100vw-1rem)] max-sm:max-w-none sm:max-w-[760px]">
+        <DialogContent dir="rtl" className="ew-contract-detail max-h-[90vh] overflow-y-auto max-sm:w-[calc(100vw-1rem)] max-sm:max-w-none sm:max-w-[760px]">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-right">
               <Briefcase className="h-5 w-5 text-[#1D4F7A]" />
-              تفاصيل العقد داخل مساحة العمل
+              ملف العقد
             </DialogTitle>
             <DialogDescription className="text-right">
-              عرض سريع للمتابعة والتحصيل بدون مغادرة مساحة الموظف.
+              بيانات العميل والمركبة، الملخص المالي، وإجراءات المتابعة.
             </DialogDescription>
           </DialogHeader>
 
@@ -5017,7 +4886,7 @@ export const EmployeeWorkspace: React.FC = () => {
 
                 return (
                   <>
-              <div className="rounded-xl border border-[#DDE5EF] bg-[#F8FAFC] p-4">
+              <div className="ew-detail-summary rounded-xl border border-[#DDE5EF] bg-[#F8FAFC] p-4">
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                   <div>
                     <p className="text-xs font-bold text-[#6A7688]">رقم العقد</p>
@@ -5083,6 +4952,7 @@ export const EmployeeWorkspace: React.FC = () => {
                 </div>
               </div>
 
+              <WorkspaceFormSection number="01" title="بيانات العقد" description="معلومات العميل والمركبة وفترة العقد.">
               <div className="grid gap-3 sm:grid-cols-2">
                 <div className="rounded-xl border border-[#E2E8F0] bg-white p-4">
                   <p className="mb-3 text-sm font-black text-[#142033]">بيانات العميل</p>
@@ -5134,14 +5004,15 @@ export const EmployeeWorkspace: React.FC = () => {
                 </div>
               </div>
 
-              <div className="rounded-xl border border-[#DDE5EF] bg-[#FBFCFE] p-4">
-                <p className="mb-3 text-sm font-black text-[#142033]">إجراءات الموظف</p>
+              </WorkspaceFormSection>
+              <WorkspaceFormSection number="02" title="إجراءات المتابعة" description="اختر الإجراء المناسب لهذا العقد.">
+              <div>
                 {selectedCustomerDataIssues.length > 0 && selectedDueBalance > 0 && (
                   <div className="mb-3 rounded-lg border border-[#FDE68A] bg-[#FFFBEB] px-3 py-2 text-xs font-bold text-[#92400E]">
                     التحويل للشؤون القانونية يتطلب استكمال بيانات العميل أولاً.
                   </div>
                 )}
-                <div className="flex flex-wrap gap-2">
+                <div className="ew-detail-actions">
                   {selectedCollectibleBalance > 0 && (
                     <Button
                       className="gap-2 bg-[#11A37F] font-bold text-white hover:bg-[#0D876A]"
@@ -5252,6 +5123,7 @@ export const EmployeeWorkspace: React.FC = () => {
                   )}
                 </div>
               </div>
+              </WorkspaceFormSection>
                   </>
                 );
               })()}
@@ -5470,7 +5342,8 @@ export const EmployeeWorkspace: React.FC = () => {
           refetchPerformance();
         }}
       />
-    </div>
+    </OperationsWorkspace>
+    </EmployeeWorkspacePresentation>
   );
 };
 

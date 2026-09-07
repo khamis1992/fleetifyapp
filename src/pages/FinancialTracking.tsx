@@ -8,13 +8,9 @@ import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
 import {
   useRentalPaymentReceipts,
-  useAllRentalPaymentReceipts,
   useCustomersWithRental,
-  useCustomerPaymentTotals,
   useCreateRentalReceipt,
   useDeleteRentalReceipt,
-  useCustomerOutstandingBalance,
-  useCustomerUnpaidMonths,
   useCustomerVehicles,
   calculateDelayFine,
   type CustomerWithRental,
@@ -29,6 +25,9 @@ import { HelpIcon } from '@/components/help/HelpIcon';
 import { financialHelpContent } from '@/data/helpContent';
 import { printDocument, convertReceiptToPrintable } from '@/utils/printHelper';
 import { useBanks } from '@/hooks/useTreasury';
+import { useCustomerCollectionSummary } from '@/hooks/finance/useCustomerCollectionSummary';
+import { CustomerCollectionCards } from './financial-tracking/CustomerCollectionCards';
+import { CustomerOpenInvoices } from './financial-tracking/CustomerOpenInvoices';
 
 import {
   UnpaidByMonthView,
@@ -90,6 +89,11 @@ const FinancialTrackingInner: React.FC = () => {
 
   // Vehicle selection state (for customers with multiple vehicles)
   const [selectedVehicleId, setSelectedVehicleId] = useState<string | null>(null);
+
+  useEffect(() => {
+    setSelectedCustomer(null); setSelectedVehicleId(null); setSearchTerm('');
+    setReceiptIdempotencyKey(crypto.randomUUID());
+  },[companyId]);
 
   // Set up real-time subscription for rental payment receipts
   useEffect(() => {
@@ -177,62 +181,25 @@ const FinancialTrackingInner: React.FC = () => {
   // Fetch customer's vehicles
   const { data: customerVehicles = [], isLoading: loadingVehicles } = useCustomerVehicles(selectedCustomer?.id);
   
-  // Fetch ALL receipts for company (for monthly summaries)
-  const { data: allReceipts = [], isLoading: loadingAllReceipts } = useAllRentalPaymentReceipts();
-  
-  // Fetch receipts for selected customer
-  const { data: receipts = [], isLoading: loadingReceipts } = useRentalPaymentReceipts(selectedCustomer?.id);
-  
-  // Fetch customer totals
-  const { data: totalsData } = useCustomerPaymentTotals(selectedCustomer?.id);
-  
-  // Fetch outstanding balance
-  const { data: outstandingBalance, isLoading: loadingBalance } = useCustomerOutstandingBalance(selectedCustomer?.id);
-  
-  // Fetch unpaid months
-  const { data: unpaidMonths = [], isLoading: loadingUnpaid } = useCustomerUnpaidMonths(selectedCustomer?.id);
-  
+  const collectionQuery = useCustomerCollectionSummary();
+  const receiptQuery = useRentalPaymentReceipts(selectedCustomer?.id);
+  const { data: receipts = [], isLoading: loadingReceipts } = receiptQuery;
+  const customerCollection = collectionQuery.data && selectedCustomer
+    ? collectionQuery.data.customers.find(row => row.customer_id === selectedCustomer.id) || {
+      customer_id:selectedCustomer.id,total:0,rent:0,fines:0,advances:0,other:0,count:0,
+      pending:0,partial_count:0,last_payment_date:null,
+    } : undefined;
+
   // Create receipt mutation
   const createReceiptMutation = useCreateRentalReceipt();
   
   // Delete receipt mutation
   const deleteReceiptMutation = useDeleteRentalReceipt();
 
-  // Calculate monthly revenue summary
-  const monthlySummary = useMemo(() => {
-    const summary: Record<string, { month: string; rent: number; fines: number; total: number; count: number }> = {};
-    
-    allReceipts.forEach(receipt => {
-      // Validate date before parsing
-      if (!receipt.payment_date) return;
-      
-      const dateObj = new Date(receipt.payment_date);
-      if (isNaN(dateObj.getTime())) return; // Skip invalid dates
-      
-      const monthKey = format(dateObj, 'yyyy-MM');
-      const monthLabel = format(dateObj, 'MMMM yyyy', { locale: ar });
-      
-      if (!summary[monthKey]) {
-        summary[monthKey] = {
-          month: monthLabel,
-          rent: 0,
-          fines: 0,
-          total: 0,
-          count: 0
-        };
-      }
-      
-      summary[monthKey].rent += receipt.rent_amount || 0;
-      summary[monthKey].fines += receipt.fine || 0;
-      summary[monthKey].total += receipt.total_paid || 0;
-      summary[monthKey].count += 1;
-    });
-    
-    // Convert to array and sort by month (newest first)
-    return Object.entries(summary)
-      .sort(([a], [b]) => b.localeCompare(a))
-      .map(([key, data]) => ({ ...data, monthKey: key }));
-  }, [allReceipts]);
+  const monthlySummary = useMemo(() => (collectionQuery.data?.monthly || []).map(row => ({
+    ...row, monthKey:row.month_key,
+    month:format(new Date(`${row.month_key}-01T12:00:00`),'MMMM yyyy',{locale:ar}),
+  })),[collectionQuery.data]);
 
   // Filtered monthly summary based on selected month
   const filteredMonthlySummary = useMemo(() => {
@@ -253,22 +220,6 @@ const FinancialTrackingInner: React.FC = () => {
 
   // Get receipts for selected customer (already filtered by hook)
   const customerReceipts = receipts;
-
-  // Calculate totals for selected customer
-  const customerTotals = useMemo(() => {
-    if (totalsData) {
-      return {
-        total: totalsData.total_payments || 0,
-        totalFines: totalsData.total_fines || 0,
-        totalRent: totalsData.total_rent || 0
-      };
-    }
-    // Fallback calculation from receipts
-    const total = customerReceipts.reduce((sum, r) => sum + r.total_paid, 0);
-    const totalFines = customerReceipts.reduce((sum, r) => sum + r.fine, 0);
-    const totalRent = customerReceipts.reduce((sum, r) => sum + r.rent_amount, 0);
-    return { total, totalFines, totalRent };
-  }, [totalsData, customerReceipts]);
 
   // Fine calculation is now imported from useRentalPayments hook
 
@@ -342,19 +293,11 @@ const FinancialTrackingInner: React.FC = () => {
       (receipt.total_paid || 0).toString()
     ]);
 
-    // Add totals row
-    rows.push([
-      'الإجمالي',
-      '',
-      (customerTotals?.totalRent || 0).toString(),
-      (customerTotals?.totalFines || 0).toString(),
-      (customerTotals?.total || 0).toString()
-    ]);
-
     // Create CSV content
     // Combine headers and rows
     const csvContent = [
-      `سجل مدفوعات العميل: ${selectedCustomer.name}`,
+      `أوراق إيصالات العميل: ${selectedCustomer.name}`,
+      `القيم تاريخية كما سجلت على الأوراق؛ ملخص التحصيل متاح من الدفعات الفعلية.`,
       `تاريخ التصدير: ${format(new Date(), 'dd/MM/yyyy HH:mm', { locale: ar })}`,
       '',
       headers.join(','),
@@ -517,29 +460,12 @@ const FinancialTrackingInner: React.FC = () => {
           </thead>
           <tbody>
             ${receiptsRows}
-            <tr class="totals">
-              <td colspan="2">الإجمالي الكلي</td>
-              <td>${(customerTotals?.totalRent || 0).toLocaleString('en-US')}</td>
-              <td>${(customerTotals?.totalFines || 0).toLocaleString('en-US')}</td>
-              <td>${(customerTotals?.total || 0).toLocaleString('en-US')}</td>
-            </tr>
+
           </tbody>
         </table>
 
-        <div class="summary-cards">
-          <div class="summary-card">
-            <h3>إجمالي المدفوعات</h3>
-            <p style="color: #007bff;">${(customerTotals?.total || 0).toLocaleString('en-US')} ريال</p>
-          </div>
-          <div class="summary-card">
-            <h3>إجمالي الغرامات</h3>
-            <p style="color: #dc3545;">${(customerTotals?.totalFines || 0).toLocaleString('en-US')} ريال</p>
-          </div>
-          <div class="summary-card">
-            <h3>عدد الإيصالات</h3>
-            <p style="color: #28a745;">${customerReceipts.length}</p>
-          </div>
-        </div>
+        <p>أوراق إيصالات تاريخية كما سُجلت، وقد تتضمن ملخصات تراكمية. يُراجع التحصيل الحالي من ملخص الدفعات.</p>
+        <p>عدد الأوراق: ${customerReceipts.length}</p>
 
         <div class="no-print" style="text-align: center; margin-top: 30px;">
           <button onclick="window.print()" style="padding: 10px 30px; font-size: 16px; cursor: pointer; background: #007bff; color: white; border: none; border-radius: 5px;">
@@ -765,19 +691,7 @@ const FinancialTrackingInner: React.FC = () => {
         throw customerError;
       }
 
-      // Update all rental payment receipts with the new customer name
-      // @ts-ignore - Custom table not in generated types
-      const { error: receiptsError } = await supabase
-        .from('rental_payment_receipts')
-        .update({ customer_name: trimmedName })
-        .eq('customer_id', selectedCustomer.id)
-        .eq('company_id', companyId);
-
-      if (receiptsError) {
-        console.error('Error updating receipts with new name:', receiptsError);
-        // Don't throw - this is not critical, customer name is updated
-        toast.warning('تم تحديث العميل لكن فشل تحديث بعض الإيصالات');
-      }
+      // Historical receipts retain the customer name captured when issued.
 
       // Update local state
       setSelectedCustomer({
@@ -979,7 +893,7 @@ const FinancialTrackingInner: React.FC = () => {
   return (
     <div className="container mx-auto p-4 md:p-6 space-y-6" dir="rtl">
       {/* Page Header */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+      <div data-finance-heading="" className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2">
             <h1 className="text-2xl sm:text-3xl font-bold">نظام تتبع المدفوعات</h1>
@@ -1004,7 +918,7 @@ const FinancialTrackingInner: React.FC = () => {
           </TabsTrigger>
           <TabsTrigger value="monthly" className="flex items-center gap-1 sm:gap-2 text-sm sm:text-base">
             <TrendingUp className="h-4 w-4" />
-            الإيرادات الشهرية
+            التحصيل الشهري
           </TabsTrigger>
           <TabsTrigger value="unpaid-by-month" className="flex items-center gap-1 sm:gap-2 text-sm sm:text-base">
             <AlertTriangle className="h-4 w-4" />
@@ -1072,23 +986,30 @@ const FinancialTrackingInner: React.FC = () => {
             />
           )}
 
-          <PaymentHistoryTable
+          {selectedCustomer && <CustomerCollectionCards totals={customerCollection}
+            loading={collectionQuery.isLoading} error={collectionQuery.error}
+            onRetry={() => { void collectionQuery.refetch(); }} />}
+          {selectedCustomer && collectionQuery.data && <CustomerOpenInvoices
+            invoices={collectionQuery.data.open_invoices.filter(row=>row.customer_id===selectedCustomer.id)}
+            asOf={collectionQuery.data.as_of} />}
+          {receiptQuery.error ? <div role="alert" className="rounded-xl border border-destructive/40 p-4">
+            تعذر تحميل أوراق الإيصالات. <button type="button" onClick={() => { void receiptQuery.refetch(); }}>إعادة المحاولة</button>
+          </div> : <PaymentHistoryTable
             selectedCustomer={selectedCustomer}
             customerReceipts={customerReceipts}
-            customerTotals={customerTotals}
-            totalsData={totalsData}
-            unpaidMonths={unpaidMonths}
             onExportToExcel={exportToExcel}
             onPrintAllReceipts={printAllReceipts}
             onPrintReceipt={printReceipt}
             onDeleteClick={handleDeleteClick}
-          />
+          />}
         </TabsContent>
 
         {/* Monthly Revenue Tab */}
         <TabsContent value="monthly" className="space-y-6 mt-6">
           <MonthlyRevenueTab
-            loading={loadingAllReceipts}
+            loading={collectionQuery.isLoading}
+            error={collectionQuery.error}
+            onRetry={() => { void collectionQuery.refetch(); }}
             filteredMonthlySummary={filteredMonthlySummary}
             monthlySummary={monthlySummary}
             selectedMonthFilter={selectedMonthFilter}

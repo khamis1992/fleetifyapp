@@ -168,6 +168,7 @@ export function useTrafficViolations(options?: { limit?: number; offset?: number
           `)
           .eq('company_id', profile.company_id)
           .order('created_at', { ascending: false })
+          .order('id', { ascending: false }) // Stable page boundaries for records imported together.
           .range(offset, offset + limit - 1); // Apply pagination with range
 
         if (error) {
@@ -550,15 +551,22 @@ export function useTrafficViolationsStats() {
 
       if (!profile?.company_id) throw new Error('لم يتم العثور على بيانات المستخدم');
 
-      // Fetch ALL violations for accurate stats (without limit)
-      const { data: violations, error } = await supabase
+      // PostgREST caps each response even without an explicit limit.
+      const violations: {status:string|null;payment_status:string|null;amount:number|null;penalty_date:string|null;customer_id:string|null;contract_id:string|null}[] = [];
+      for(let offset=0;;offset+=500) {
+      const { data, error } = await supabase
         .from('penalties')
         .select('status, payment_status, amount, penalty_date, customer_id, contract_id')
-        .eq('company_id', profile.company_id);
+        .eq('company_id', profile.company_id)
+        .order('id')
+        .range(offset,offset+499);
 
       if (error) {
         console.error('Error fetching violations stats:', error);
         throw error;
+      }
+      violations.push(...data);
+      if(data.length<500) break;
       }
 
       const paidCount = violations.filter(v => v.payment_status === 'paid').length;

@@ -1,21 +1,13 @@
-﻿/**
- * صفحة تفاصيل العقد — التجربة الجديدة "غرفة تحكم العقد"
- *
- * فلسفة التصميم (V3):
- * - Hero سينمائي داكن يجيب بنظرة واحدة: من، أي مركبة، كم، كم تبقى، متى.
- * - شريط إجراء واحد ذكي يرشّح الخطوة التالية حسب حالة العقد.
- * - تبويبات لاصقة بشارات عدد — كل تبويب مسؤول عن عالم واحد فقط.
- * - عمود "نبض العقد" يجمع صحة العقد، المهام، التشخيص المالي، CRM، والسجل
- *   في مكان واحد بدل تكرارها في أربع مناطق مختلفة.
- *
- * كل منطق الأعمال (الاستعلامات، الإجراءات، الحوارات) محفوظ كما هو.
- */
+import { ContractSectionHeading } from './contract-details-v3/ContractSection';
+/** Light contract workspace: identity, lifecycle actions and focused service sections. */
 
 import { useState, useMemo, useCallback, useEffect } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { motion } from 'framer-motion';
+import { ContractFinancialIntegrityPanel } from './ContractFinancialIntegrityPanel';
+import { financialIntegrityQueryOptions } from '@/services/contractFinancialIntegrity';
 import {
   AlertCircle,
   AlertTriangle,
@@ -32,7 +24,7 @@ import {
   RefreshCw,
   ShieldCheck,
 } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -51,9 +43,12 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ContractStatusManagement } from './ContractStatusManagement';
+import { ContractRecordedPenalties, isRecordedPenaltyOpen } from './ContractRecordedPenalties';
 import { ContractCancellationDialog } from './ContractCancellationDialog';
 import { LegalTransferReadinessWizard as ConvertToLegalDialog } from './LegalTransferReadinessWizard';
 import { PermanentContractDeleteDialog } from './PermanentContractDeleteDialog';
@@ -104,7 +99,6 @@ import { generateContractBillingGraph } from '@/services/contractBillingGraph';
 import { refreshContractFinancialQueries } from '@/utils/contractFinancialQueries';
 import { fetchContractInvoiceEvidence } from '@/services/contractInvoiceEvidence';
 import { contractPaymentEvidenceQueryOptions, type ContractPaymentEvidence } from '@/services/contractPaymentEvidence';
-import { contractFinancialSyncQueryOptions, retryContractFinancialReads } from '@/services/contractFinancialSynchronization';
 
 import { ContractHero } from './contract-details-v3/ContractHero';
 import { ContractActionBar } from './contract-details-v3/ContractActionBar';
@@ -155,6 +149,7 @@ const FinancialTab = ({
   isGeneratingMissingInvoices,
   billingGenerationBlocker,
   customerName,
+  billingPlanSummary,
   trafficViolations,
 }: {
   contract: Contract;
@@ -175,11 +170,12 @@ const FinancialTab = ({
   onGenerateMissingInvoices?: () => void;
   isGeneratingMissingInvoices?: boolean;
   billingGenerationBlocker?: string | null;
+  billingPlanSummary?: string | null;
   customerName: string;
   trafficViolations: ContractTrafficViolation[];
 }) => (
   <div className="space-y-5">
-    <Tabs defaultValue="overview" className="w-full">
+    <Tabs defaultValue="invoices" className="w-full">
       <TabsList className="flex h-auto w-full justify-start gap-2 overflow-x-auto rounded-xl border border-slate-200 bg-white p-1 shadow-sm">
         <TabsTrigger
           value="overview"
@@ -229,6 +225,7 @@ const FinancialTab = ({
           onGenerateMissingInvoices={onGenerateMissingInvoices}
           isGeneratingMissingInvoices={isGeneratingMissingInvoices}
           billingGenerationBlocker={billingGenerationBlocker}
+          billingPlanSummary={billingPlanSummary}
           contractNumber={contract.contract_number}
           customerInfo={{
             name: customerName,
@@ -247,6 +244,7 @@ const FinancialTab = ({
           companyId={companyId}
           customerId={contract.customer_id}
           invoiceIds={invoices.map((inv) => inv.id)}
+          rentalInvoiceIds={paymentSchedules.map((schedule) => schedule.invoice_id).filter((id): id is string => Boolean(id))}
           invoices={invoices}
           contractStartDate={contract.start_date}
           formatCurrency={formatCurrency}
@@ -303,10 +301,11 @@ const VehicleTab = ({
 
   return (
     <div className="space-y-5">
-      <div className="grid gap-4 lg:grid-cols-[1.15fr_0.85fr]">
+      <ContractSectionHeading number="03" title="ملف المركبة" description="بيانات المركبة المرتبطة بالعقد ومحاضر حالتها عند الاستلام والتسليم." />
+      <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_240px]">
         {/* Vehicle identity */}
-        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-          <div className="flex items-start justify-between gap-4">
+        <div className="rounded-2xl border border-[#dce5e1] bg-white p-6">
+          <div className="flex flex-wrap items-start justify-between gap-4">
             <div className="flex items-start gap-4">
               <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-[#22C7A1]/10 text-[#0E9E7E]">
                 <Car className="h-7 w-7" />
@@ -336,14 +335,14 @@ const VehicleTab = ({
             )}
           </div>
 
-          <div className="mt-5 grid grid-cols-2 gap-3 lg:grid-cols-4">
+          <div className="mt-6 grid grid-cols-2 gap-px overflow-hidden rounded-xl border border-[#dce5e1] bg-[#dce5e1]">
             {[
               { label: 'نوع الوقود', value: fuelLabel },
               { label: 'قراءة العداد', value: `${vehicle?.current_mileage?.toLocaleString() || '0'} كم` },
               { label: 'رقم الهيكل', value: vehicle?.vin ? `...${vehicle.vin.slice(-8)}` : 'غير محدد', ltr: true },
               { label: 'اللون', value: vehicle?.color || 'غير محدد' },
             ].map((item) => (
-              <div key={item.label} className="rounded-xl border border-slate-200 bg-slate-50 p-3.5">
+              <div key={item.label} className="bg-white p-4">
                 <p className="text-[11px] font-bold text-slate-400">{item.label}</p>
                 <p className="mt-1 truncate text-sm font-black text-[#0F172A]" dir={item.ltr ? 'ltr' : 'rtl'}>
                   {item.value}
@@ -420,6 +419,9 @@ const ContractDetailsPageRedesigned = () => {
   const [isDeletePermanentDialogOpen, setIsDeletePermanentDialogOpen] = useState(false);
   const [isRemoveLegalDialogOpen, setIsRemoveLegalDialogOpen] = useState(false);
   const [isRemovingLegal, setIsRemovingLegal] = useState(false);
+  const [legalReversalReason, setLegalReversalReason] = useState('');
+  const [legalReversalKey, setLegalReversalKey] = useState(() => crypto.randomUUID());
+  const [lifecycleError, setLifecycleError] = useState<string | null>(null);
   const [isReactivateDialogOpen, setIsReactivateDialogOpen] = useState(false);
   const [isReactivating, setIsReactivating] = useState(false);
   const [reactivationViolationsAccepted, setReactivationViolationsAccepted] = useState(false);
@@ -503,15 +505,8 @@ const ContractDetailsPageRedesigned = () => {
     gcTime: 300000,
   });
 
-  const {
-    data: financialSyncResult,
-    error: financialSyncError,
-    isFetching: isFinancialSyncing,
-  } = useQuery(contractFinancialSyncQueryOptions(queryClient, {
-    contractId: contract?.id || '',
-    contractNumber: contract?.contract_number || contractNumber || '',
-    companyId: companyId || '',
-  }));
+  const [isRefreshingDetails, setIsRefreshingDetails] = useState(false);
+  const [detailsRefreshError, setDetailsRefreshError] = useState<string | null>(null);
 
   // Fetch invoices with caching (including cancelled to show full history)
   const {
@@ -580,6 +575,20 @@ const ContractDetailsPageRedesigned = () => {
     gcTime: 300000,
   });
 
+  const { data: recordedPenalties = [], error: recordedPenaltiesError } = useQuery({
+    queryKey: ['contract-recorded-penalties', contract?.id, companyId],
+    enabled: Boolean(contract?.id && companyId),
+    queryFn: async () => {
+      const { data, error } = await supabase.from('penalties')
+        .select('id,penalty_number,penalty_date,violation_type,amount,payment_status,status,responsibility_party')
+        .eq('company_id', companyId!).eq('contract_id', contract!.id).order('penalty_date', { ascending: false });
+      if (error) throw error;
+      return data || [];
+    },
+  });
+  const unrepresentedPenalties = recordedPenalties.filter(p =>
+    !trafficViolations.some(v => v.violation_number && v.violation_number === p.penalty_number));
+  const openRecordedPenalties = unrepresentedPenalties.filter(isRecordedPenaltyOpen);
   const unsettledTrafficViolations = useMemo(
     () => trafficViolations.filter((violation) => ![
       'paid',
@@ -595,11 +604,11 @@ const ContractDetailsPageRedesigned = () => {
   const reactivationViolationTotal = useMemo(
     () => unsettledTrafficViolations.reduce(
       (total, violation) => total + Number(violation.fine_amount || violation.total_amount || 0),
-      0,
+      openRecordedPenalties.reduce((total, p) => total + Number(p.amount || 0), 0),
     ),
-    [unsettledTrafficViolations],
+    [unsettledTrafficViolations, openRecordedPenalties],
   );
-  const reactivationHasViolations = unsettledTrafficViolations.length > 0;
+  const reactivationHasViolations = unsettledTrafficViolations.length + openRecordedPenalties.length > 0;
 
   // Vehicle inspections
   const {
@@ -668,10 +677,16 @@ const ContractDetailsPageRedesigned = () => {
   const generatePaymentSchedulesFromInvoices = useGeneratePaymentSchedulesFromInvoices();
 
   // ===== Derived state =====
-  const snapshot: ContractFinancialSnapshot = useMemo(
-    () => buildContractFinancialSnapshotV3(invoices, contractPayments, paymentSchedules, contract || undefined),
-    [contract, invoices, contractPayments, paymentSchedules],
-  );
+  const integrityQuery = useQuery(financialIntegrityQueryOptions(contract?.company_id || '', contract?.id || ''));
+  const snapshot: ContractFinancialSnapshot = useMemo(() => {
+    const local = buildContractFinancialSnapshotV3(invoices, contractPayments, paymentSchedules, contract || undefined);
+    const verified = integrityQuery.data;
+    if (!verified) return local;
+    return { ...local, paidTotal: verified.canonical_paid, outstandingTotal: verified.outstanding,
+      dueNowTotal: verified.due_now, invoicesTotal: verified.active_invoice_total,
+      remainingTotal: verified.original_remaining,
+      financialReviewRequired: verified.header_mismatch || verified.issues.length > 0 };
+  }, [contract, invoices, contractPayments, paymentSchedules, integrityQuery.data]);
 
   const officialPaymentSchedules = useMemo(() => {
     const activeIds = new Set(snapshot.activeSchedules.map((schedule) => schedule.id).filter(Boolean));
@@ -790,17 +805,20 @@ const ContractDetailsPageRedesigned = () => {
     setIsOfficialExportOpen(true);
   }, [documentGenerationBlocker, toast]);
 
-  const handleRefresh = useCallback(() => {
-    void Promise.all([
-      queryClient.invalidateQueries({ queryKey: ['contract-details', contractNumber, companyId] }),
-      queryClient.invalidateQueries({ queryKey: ['contract-financial-refresh', contract?.id, companyId] }),
-      queryClient.invalidateQueries({ queryKey: ['contract-invoices', contract?.id] }),
-      queryClient.invalidateQueries({ queryKey: ['contract-payments'] }),
-      queryClient.invalidateQueries({ queryKey: ['contract-violations', contract?.id, companyId] }),
-      queryClient.invalidateQueries({ queryKey: ['payment-schedules', contract?.id] }),
-      queryClient.invalidateQueries({ queryKey: ['contract-audit-logs', contract?.id, companyId] }),
+  const handleRefresh = useCallback(async () => {
+    setIsRefreshingDetails(true);
+    setDetailsRefreshError(null);
+    const results = await Promise.allSettled([
+      queryClient.invalidateQueries({ queryKey: ['contract-details', contractNumber, companyId] }, { throwOnError: true }),
+      ...(contract?.id && companyId ? [
+        refreshContractFinancialQueries(queryClient, { contractId: contract.id, contractNumber: contract.contract_number, companyId }, { cancelInFlight: true }),
+        queryClient.invalidateQueries({ queryKey: ['contract-violations', contract.id, companyId] }, { throwOnError: true }),
+        queryClient.invalidateQueries({ queryKey: ['contract-recorded-penalties', contract.id, companyId] }, { throwOnError: true }),
+      ] : []),
     ]);
-  }, [companyId, contract?.id, contractNumber, queryClient]);
+    if (results.some(result => result.status === 'rejected')) setDetailsRefreshError('تعذر تحميل بعض بيانات العقد. أعد المحاولة؛ البيانات المعروضة قد تكون غير محدثة.');
+    setIsRefreshingDetails(false);
+  }, [companyId, contract?.id, contract?.contract_number, contractNumber, queryClient]);
 
   const handleCustomerClick = useCallback(() => {
     if (contract?.customer?.id) {
@@ -808,22 +826,6 @@ const ContractDetailsPageRedesigned = () => {
     }
   }, [contract, navigate]);
 
-  const handleRetryFinancialReads = useCallback(async () => {
-    if (!contract?.id || !companyId) return;
-    try {
-      await retryContractFinancialReads(queryClient, {
-        contractId: contract.id,
-        contractNumber: contract.contract_number,
-        companyId,
-      });
-    } catch {
-      toast({
-        title: 'تعذر تحميل النتائج الجديدة',
-        description: 'لم تُعد المزامنة المالية. تحقق من الاتصال ثم أعد تحميل البيانات.',
-        variant: 'destructive',
-      });
-    }
-  }, [contract?.id, contract?.contract_number, companyId, queryClient, toast]);
 
   const handleVehicleClick = useCallback(() => {
     if (contract?.vehicle?.id) {
@@ -921,7 +923,6 @@ const ContractDetailsPageRedesigned = () => {
           queryClient.invalidateQueries({ queryKey: ['invoices'] }),
           queryClient.invalidateQueries({ queryKey: ['payment-schedules'] }),
           queryClient.invalidateQueries({ queryKey: ['contract-details'] }),
-          queryClient.invalidateQueries({ queryKey: ['contract-financial-refresh'] }),
         ]);
       } catch (cancelError) {
         console.error('Error cancelling invoice:', cancelError);
@@ -1040,6 +1041,7 @@ const ContractDetailsPageRedesigned = () => {
   }, []);
 
   const handleReactivate = useCallback(() => {
+    setLifecycleError(null);
     setReactivationViolationsAccepted(false);
     setIsReactivateDialogOpen(true);
   }, []);
@@ -1181,12 +1183,13 @@ const ContractDetailsPageRedesigned = () => {
         throw new Error('لم تؤكد قاعدة البيانات اكتمال إضافة المخالفة');
       }
 
-      // Send WhatsApp notification to customer
+      // Saving a violation does not itself authorize customer communication.
       try {
         const customerPhone = contract.customer?.phone;
-        if (customerPhone && result.created) {
+        if (violation.notify_customer && result.created) {
+          if (!customerPhone) throw new Error('لا يوجد رقم هاتف للعميل');
           const { generateViolationNotification } = await import('@/services/whatsapp/MessageTemplates');
-          const { whatsAppService } = await import('@/services/whatsapp/WhatsAppService');
+          const { sendWhatsAppMessage } = await import('@/utils/whatsappWebSender');
 
           const message = generateViolationNotification({
             customerName: formatCustomerName(contract.customer),
@@ -1199,17 +1202,21 @@ const ContractDetailsPageRedesigned = () => {
             location: violation.location || undefined,
           });
 
-          // Try to send message (don't fail if WhatsApp is not configured)
-          if (whatsAppService.isInitialized()) {
-            await whatsAppService.sendTextMessage(customerPhone, message);
-            toast({
-              title: 'تم الإرسال',
-              description: 'تم إرسال إشعار واتساب للعميل',
-            });
-          }
+          const delivery = await sendWhatsAppMessage({
+            phone: customerPhone, message, companyId,
+            purpose: 'traffic_violation_reminder', entityType: 'customer', entityId: contract.customer_id,
+            requestId: result.violation_id,
+          });
+          if (!delivery.success) throw new Error(delivery.error || 'تعذر إرسال الإشعار');
+          toast({ title: 'تم الإرسال', description: 'تم إرسال إشعار واتساب للعميل' });
         }
       } catch (whatsappError) {
         console.warn('Failed to send WhatsApp notification:', whatsappError);
+        toast({
+          title: 'حُفظت المخالفة ولم يُرسل الإشعار',
+          description: 'يمكنك إرسال الإشعار من قسم المتابعة. لا تُعد إضافة المخالفة.',
+          variant: 'destructive',
+        });
       }
 
       queryClient.invalidateQueries({ queryKey: ['contract-violations', contract.id] });
@@ -1232,7 +1239,8 @@ const ContractDetailsPageRedesigned = () => {
   }, [contract, toast]);
 
   const executeReactivateContract = useCallback(async () => {
-    if (!contract?.id) return;
+    if (!contract?.id || isReactivating) return;
+    setLifecycleError(null);
     if (reactivationHasViolations && !reactivationViolationsAccepted) {
       toast({
         title: 'يلزم تأكيد المخالفات',
@@ -1264,6 +1272,8 @@ const ContractDetailsPageRedesigned = () => {
       setIsReactivateDialogOpen(false);
       setReactivationViolationsAccepted(false);
     } catch (reactivateError) {
+      setLifecycleError(reactivateError && typeof reactivateError === 'object' && 'message' in reactivateError
+        ? String(reactivateError.message) : 'تعذرت إعادة التفعيل، أعد المحاولة.');
       console.error('خطأ في إعادة تفعيل العقد:', reactivateError);
       toast({
         title: 'تعذر إعادة تفعيل العقد',
@@ -1278,23 +1288,29 @@ const ContractDetailsPageRedesigned = () => {
     queryClient,
     reactivationHasViolations,
     reactivationViolationsAccepted,
+    isReactivating,
     toast,
   ]);
 
   const executeRemoveLegalProcedure = useCallback(async () => {
-    if (!contract?.id || !companyId) return;
+    if (!contract?.id || !companyId || isRemovingLegal) return;
 
+    setLifecycleError(null);
     setIsRemovingLegal(true);
     try {
       await revertContractLegalProcedure({
         contractId: contract.id,
         companyId,
-        reason: 'تمت إزالة الإجراء القانوني من صفحة تفاصيل العقد',
+        reason: legalReversalReason,
+        idempotencyKey: legalReversalKey,
       });
 
       queryClient.invalidateQueries({ queryKey: ['contract-details'] });
       queryClient.invalidateQueries({ queryKey: ['contracts'] });
       queryClient.invalidateQueries({ queryKey: ['delinquent-customers'] });
+      queryClient.invalidateQueries({ queryKey: ['legal-cases'] });
+      queryClient.invalidateQueries({ queryKey: ['vehicles'] });
+      queryClient.invalidateQueries({ queryKey: ['manual-legal-delinquency-queue'] });
 
       toast({
         title: 'تم إزالة الإجراء القانوني',
@@ -1303,6 +1319,7 @@ const ContractDetailsPageRedesigned = () => {
 
       setIsRemoveLegalDialogOpen(false);
     } catch (removeLegalError) {
+      setLifecycleError(removeLegalError instanceof Error ? removeLegalError.message : 'تعذرت إزالة الإجراء القانوني');
       console.error('خطأ في إزالة الإجراء القانوني:', removeLegalError);
       toast({
         title: 'خطأ في إزالة الإجراء القانوني',
@@ -1312,7 +1329,7 @@ const ContractDetailsPageRedesigned = () => {
     } finally {
       setIsRemovingLegal(false);
     }
-  }, [contract, companyId, queryClient, toast]);
+  }, [contract, companyId, queryClient, toast, isRemovingLegal, legalReversalReason, legalReversalKey]);
 
   // Row-level integrity warnings from the invoice/payment evidence readers.
   // These keep legacy records visible without failing the whole page.
@@ -1349,7 +1366,7 @@ const ContractDetailsPageRedesigned = () => {
               {error ? 'تعذر تحميل بيانات العقد. تحقق من الاتصال ثم أعد المحاولة.' : 'لم يتم العثور على العقد المطلوب.'}
             </p>
             {error && (
-              <Button onClick={financialSyncResult?.readError ? handleRetryFinancialReads : handleRefresh} variant="outline" className="mb-2 w-full gap-2">
+              <Button onClick={handleRefresh} variant="outline" className="mb-2 w-full gap-2">
                 <RefreshCw className="h-4 w-4" />
                 إعادة المحاولة
               </Button>
@@ -1392,7 +1409,7 @@ const ContractDetailsPageRedesigned = () => {
                 {invoicesError.message}
               </p>
             )}
-            <Button onClick={financialSyncResult?.readError ? handleRetryFinancialReads : handleRefresh} className="w-full gap-2 bg-[#0F172A] hover:bg-[#1E293B]">
+            <Button onClick={handleRefresh} className="w-full gap-2 bg-[#0F172A] hover:bg-[#1E293B]">
               <RefreshCw className="h-4 w-4" />
               إعادة تحميل جميع بيانات العقد
             </Button>
@@ -1403,11 +1420,12 @@ const ContractDetailsPageRedesigned = () => {
   }
 
   const tabs = [
-    { value: 'health', label: 'صحة العقد', icon: ShieldCheck, badge: 0 },
-    { value: 'financial', label: 'المالي', icon: Receipt, badge: snapshot.openInvoicesCount },
+    { value: 'health', label: 'نظرة عامة', icon: ShieldCheck, badge: 0 },
+    { value: 'financial', label: 'الملف المالي', icon: Receipt, badge: snapshot.openInvoicesCount },
     { value: 'vehicle', label: 'المركبة', icon: Car, badge: 0 },
-    { value: 'violations', label: 'المخالفات', icon: AlertCircle, badge: unsettledTrafficViolations.length },
-    { value: 'records', label: 'السجل والمستندات', icon: Folder, badge: 0 },
+    { value: 'violations', label: 'المخالفات', icon: AlertCircle, badge: unsettledTrafficViolations.length + openRecordedPenalties.length },
+    { value: 'followup', label: 'المتابعة والتواصل', icon: LayoutDashboard, badge: 0 },
+    { value: 'records', label: 'المستندات والسجل', icon: Folder, badge: 0 },
   ];
 
   const paidAmount = snapshot.paidTotal;
@@ -1417,56 +1435,32 @@ const ContractDetailsPageRedesigned = () => {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.4 }}
-      className="min-h-screen bg-[#F6F8FB]"
+      className="contract-workspace min-h-screen bg-[#f5f7f6] text-slate-900"
       dir="rtl"
     >
-      <div className="mx-auto max-w-[1680px] space-y-4 px-4 pb-10 sm:px-6">
+      <div className="mx-auto max-w-[1560px] space-y-5 px-3 py-5 pb-28 sm:px-6 sm:pb-12">
         {/* Systemic alerts (seizure / expiry) */}
         <SeizedActiveContractBanner
           contractStatus={contract.status}
           vehicleStatus={contract.vehicle?.status}
           className="pt-4"
         />
-        <ContractAlerts contract={contract} />
-        {isFinancialSyncing && (
+        {isRefreshingDetails && (
           <Alert className="border-sky-200 bg-sky-50 text-sky-900">
             <Loader2 className="h-4 w-4 animate-spin" />
-            <AlertDescription>يجري التحقق آلياً من أرصدة العقد والفواتير والدفعات.</AlertDescription>
+            <AlertDescription>يجري تحميل أحدث بيانات العقد والفواتير والدفعات.</AlertDescription>
           </Alert>
         )}
-        {snapshot.financialReviewRequired && (
-          <Alert className="border-amber-300 bg-amber-50 text-amber-950">
-            <AlertTriangle className="h-4 w-4" />
-            <AlertDescription>
-              المسدد محسوب من تخصيصات الدفعات المكتملة، وتوجد أرصدة مخزنة أو روابط أقساط تحتاج مطابقة قبل اعتماد المطالبة.
-            </AlertDescription>
-          </Alert>
-        )}
+        <ContractFinancialIntegrityPanel companyId={contract.company_id} contractId={contract.id} formatCurrency={formatCurrency} />
 
-        {!!financialSyncError && !isFinancialSyncing && (
-          <Alert className="border-amber-300 bg-amber-50 text-amber-950">
-            <AlertTriangle className="h-4 w-4" />
+        {detailsRefreshError && !isRefreshingDetails && (
+          <Alert variant="destructive">
             <AlertDescription className="flex flex-wrap items-center justify-between gap-3">
-              <span>{financialSyncError instanceof Error ? financialSyncError.message : 'تعذرت المزامنة الخلفية للأرصدة. لم يعتبر النظام ذلك رصيداً صفرياً.'}</span>
-              <Button type="button" size="sm" variant="outline" onClick={handleRefresh} className="gap-2">
-                <RefreshCw className="h-3.5 w-3.5" />
-                إعادة المحاولة
-              </Button>
+              <span>{detailsRefreshError}</span>
+              <Button type="button" size="sm" variant="outline" onClick={handleRefresh}>إعادة تحميل البيانات</Button>
             </AlertDescription>
           </Alert>
-        )}
-        {financialSyncResult?.readError && !isFinancialSyncing && !financialSyncError && (
-          <Alert className="border-amber-300 bg-amber-50 text-amber-950">
-            <AlertTriangle className="h-4 w-4" />
-            <AlertDescription className="flex flex-wrap items-center justify-between gap-3">
-              <span>{financialSyncResult.readError}</span>
-              <Button type="button" size="sm" variant="outline" onClick={handleRetryFinancialReads}>
-                إعادة تحميل النتائج فقط
-              </Button>
-            </AlertDescription>
-          </Alert>
-        )}
-        {unavailableSecondarySources.length > 0 && (
+        )}        {unavailableSecondarySources.length > 0 && (
           <Alert className="border-amber-300 bg-amber-50 text-amber-950">
             <AlertTriangle className="h-4 w-4" />
             <AlertDescription>
@@ -1513,11 +1507,12 @@ const ContractDetailsPageRedesigned = () => {
           onVehicleClick={handleVehicleClick}
         />
 
+        <ContractAlerts contract={contract} />
         {/* ===== Smart action strip ===== */}
         <ContractActionBar
           contract={contract}
           snapshot={snapshot}
-          violationsCount={unsettledTrafficViolations.length}
+          violationsCount={unsettledTrafficViolations.length + openRecordedPenalties.length}
           daysRemaining={contractStats?.daysRemaining ?? null}
           formatCurrency={formatCurrency}
           onEdit={handleAmend}
@@ -1528,7 +1523,12 @@ const ContractDetailsPageRedesigned = () => {
           onTerminate={handleTerminate}
           onReactivate={handleReactivate}
           onConvertToLegal={() => setIsConvertToLegalOpen(true)}
-          onRemoveLegal={() => setIsRemoveLegalDialogOpen(true)}
+          onRemoveLegal={() => {
+            setLifecycleError(null);
+            setLegalReversalReason('');
+            setLegalReversalKey(crypto.randomUUID());
+            setIsRemoveLegalDialogOpen(true);
+          }}
           onDeletePermanent={handleOpenDeletePermanent}
           onCollect={() => setActiveTab('financial')}
           onOpenViolations={() => setActiveTab('violations')}
@@ -1537,24 +1537,24 @@ const ContractDetailsPageRedesigned = () => {
         />
 
         {/* ===== Main: workbench (+ pulse rail only on the health tab) ===== */}
-        <div className={cn('grid gap-4', activeTab === 'health' && 'xl:grid-cols-[minmax(0,1fr)_360px]')}>
+        <div className="min-w-0">
           {/* Workbench */}
           <div className="min-w-0">
-            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-              <div className="sticky top-0 z-30 -mx-1 rounded-2xl border border-[#E5EAF1] bg-white/90 px-1 py-2 shadow-[0_6px_24px_-16px_rgba(15,23,42,0.3)] backdrop-blur-md">
-                <TabsList className="flex h-auto w-full justify-start gap-1.5 overflow-x-auto rounded-xl bg-transparent p-1">
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="grid min-w-0 gap-5 lg:grid-cols-[190px_minmax(0,1fr)]">
+              <div className="min-w-0 self-start rounded-2xl border border-slate-200 bg-white p-2 lg:sticky lg:top-4">
+                <TabsList className="flex h-auto w-full justify-start gap-1 overflow-x-auto bg-transparent p-0 lg:flex-col lg:items-stretch">
                   {tabs.map((tab) => (
                     <TabsTrigger
                       key={tab.value}
                       value={tab.value}
-                      className="relative gap-2 whitespace-nowrap rounded-xl px-4 py-2.5 text-xs font-black text-slate-500 transition-all hover:bg-[#F6F8FB] data-[state=active]:bg-[#22C7A1] data-[state=active]:text-white data-[state=active]:shadow-[0_8px_18px_-8px_rgba(34,199,161,0.6)]"
+                      className="shrink-0 justify-start gap-2 whitespace-nowrap rounded-xl px-3 py-3 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-50 data-[state=active]:bg-teal-50 data-[state=active]:text-teal-800 data-[state=active]:shadow-none"
                     >
                       <tab.icon className="h-4 w-4" />
                       {tab.label}
                       {tab.badge > 0 && (
                         <span
                           className={cn(
-                            'absolute -top-0.5 left-1.5 flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[9px] font-black',
+                            'ms-auto flex h-5 min-w-5 shrink-0 items-center justify-center rounded-md px-1 text-[10px] font-semibold',
                             tab.value === 'violations'
                               ? 'bg-[#FB6B7A] text-white'
                               : 'bg-[#F59E0B] text-[#452A03]',
@@ -1568,7 +1568,7 @@ const ContractDetailsPageRedesigned = () => {
                 </TabsList>
               </div>
 
-              <div className="mt-4 min-h-[480px]">
+              <div className="contract-service-section min-w-0 min-h-[400px]">
                 {activeTab === 'health' && (
                   <ContractHealthAnalysis
                     contract={contract}
@@ -1579,9 +1579,36 @@ const ContractDetailsPageRedesigned = () => {
                   />
                 )}
 
+          {/* Pulse rail — visible only on the health (overview) tab */}
+          {activeTab === 'followup' && (
+            <ContractPulse
+              contract={contract}
+              snapshot={snapshot}
+              invoices={invoices}
+              payments={contractPayments}
+              paymentSchedules={paymentSchedules}
+              crmActivities={crmActivities}
+              crmStats={crmStats}
+              violationsCount={unsettledTrafficViolations.length + openRecordedPenalties.length}
+              daysRemaining={contractStats?.daysRemaining ?? null}
+              auditLogs={contractAuditLogs}
+              formatCurrency={formatCurrency}
+              crmNote={quickCrmNote}
+              callStatus={quickCrmStatus}
+              isSavingCall={isAddingCrmActivity}
+              onCrmNoteChange={setQuickCrmNote}
+              onCallStatusChange={setQuickCrmStatus}
+              onSaveCall={handleSaveQuickCrmActivity}
+              onOpenCrm={handleOpenCustomerCrm}
+              onWhatsApp={handleWhatsAppCustomer}
+              onOpenFinancial={() => setActiveTab('financial')}
+              onOpenViolations={() => setActiveTab('violations')}
+            />
+          )}
                 {activeTab === 'records' && (
                   <div className="space-y-5">
-                    <Tabs defaultValue="official" className="w-full">
+                    <ContractSectionHeading number="06" title="المستندات والسجل" description="نسخ العقد ومرفقاته ومحطاته الرئيسية في ملف واحد." />
+                    <Tabs defaultValue="documents" className="w-full">
                       <TabsList className="flex h-auto w-full justify-start gap-2 overflow-x-auto rounded-xl border border-[#E5EAF1] bg-white p-1 shadow-sm">
                         <TabsTrigger
                           value="official"
@@ -1627,21 +1654,14 @@ const ContractDetailsPageRedesigned = () => {
                       </TabsContent>
 
                       <TabsContent value="timeline" className="mt-4">
-                        <Card className="rounded-2xl border-[#E5EAF1] shadow-sm">
-                          <CardHeader className="border-b border-[#E5EAF1] bg-[#F6F8FB]">
-                            <CardTitle className="text-lg text-[#0F172A]">الجدول الزمني للعقد</CardTitle>
-                          </CardHeader>
-                          <CardContent>
                             <TimelineView
                               contract={contract}
-                              trafficViolationsCount={trafficViolations.length}
+                              trafficViolationsCount={trafficViolations.length + unrepresentedPenalties.length}
                               formatCurrency={formatCurrency}
                               auditLogs={contractAuditLogs}
                               paidTotal={snapshot.paidTotal}
                               remainingTotal={snapshot.remainingTotal}
                             />
-                          </CardContent>
-                        </Card>
                       </TabsContent>
                     </Tabs>
                   </div>
@@ -1671,6 +1691,7 @@ const ContractDetailsPageRedesigned = () => {
                     }
                     isGeneratingMissingInvoices={isGeneratingMissingInvoices}
                     billingGenerationBlocker={billingPeriodValidation?.blockingMessage}
+                    billingPlanSummary={billingPeriodValidation?.basisMessage}
                     customerName={customerName}
                     trafficViolations={trafficViolations}
                   />
@@ -1686,43 +1707,25 @@ const ContractDetailsPageRedesigned = () => {
                 )}
 
                 {activeTab === 'violations' && (
+                  <div className="space-y-5">
+                  {recordedPenaltiesError && <Alert variant="destructive"><AlertDescription>تعذر تحميل سجل المخالفات المحاسبي. لا يمكن اعتبار العقد خاليًا من المخالفات.</AlertDescription></Alert>}
+                  <ContractRecordedPenalties penalties={unrepresentedPenalties} formatCurrency={formatCurrency} />
                   <ContractViolationsTabRedesigned
+                    contractStartDate={contract.start_date}
+                    contractEndDate={contract.end_date}
                     violations={trafficViolations}
                     formatCurrency={formatCurrency}
                     contractNumber={contract.contract_number}
                     onAddViolation={handleAddViolation}
+                    hasAdditionalPenalties={unrepresentedPenalties.length > 0}
                   />
+                  </div>
                 )}
               </div>
             </Tabs>
           </div>
 
-          {/* Pulse rail — visible only on the health (overview) tab */}
-          {activeTab === 'health' && (
-            <ContractPulse
-              contract={contract}
-              snapshot={snapshot}
-              invoices={invoices}
-              payments={contractPayments}
-              paymentSchedules={paymentSchedules}
-              crmActivities={crmActivities}
-              crmStats={crmStats}
-              violationsCount={unsettledTrafficViolations.length}
-              daysRemaining={contractStats?.daysRemaining ?? null}
-              auditLogs={contractAuditLogs}
-              formatCurrency={formatCurrency}
-              crmNote={quickCrmNote}
-              callStatus={quickCrmStatus}
-              isSavingCall={isAddingCrmActivity}
-              onCrmNoteChange={setQuickCrmNote}
-              onCallStatusChange={setQuickCrmStatus}
-              onSaveCall={handleSaveQuickCrmActivity}
-              onOpenCrm={handleOpenCustomerCrm}
-              onWhatsApp={handleWhatsAppCustomer}
-              onOpenFinancial={() => setActiveTab('financial')}
-              onOpenViolations={() => setActiveTab('violations')}
-            />
-          )}
+
         </div>
       </div>
 
@@ -1769,6 +1772,11 @@ const ContractDetailsPageRedesigned = () => {
             setIsEditWizardOpen(open);
             if (!open) {
               queryClient.invalidateQueries({ queryKey: ['contract-details'] });
+              void refreshContractFinancialQueries(queryClient, {
+                contractId: contract.id, contractNumber: contract.contract_number, companyId: contract.company_id,
+              }).catch(error => toast({ title: error.message, variant: 'destructive' }));
+              queryClient.invalidateQueries({ queryKey: ['contract-amendments', contract.id] });
+              queryClient.invalidateQueries({ queryKey: ['vehicles'] });
             }
           }}
           editContract={contract}
@@ -1825,11 +1833,12 @@ const ContractDetailsPageRedesigned = () => {
       <AlertDialog
         open={isReactivateDialogOpen}
         onOpenChange={(open) => {
+          if (isReactivating) return;
           setIsReactivateDialogOpen(open);
           if (!open && !isReactivating) setReactivationViolationsAccepted(false);
         }}
       >
-        <AlertDialogContent className="rounded-2xl" data-tour="contract-reactivate-dialog">
+        <AlertDialogContent dir="rtl" className="max-h-[90dvh] w-[calc(100%-2rem)] overflow-y-auto rounded-2xl bg-white text-slate-900" data-tour="contract-reactivate-dialog">
           <AlertDialogHeader>
             <AlertDialogTitle className="text-emerald-600">إعادة تفعيل العقد</AlertDialogTitle>
             <AlertDialogDescription data-tour="contract-reactivate-warning">
@@ -1866,14 +1875,23 @@ const ContractDetailsPageRedesigned = () => {
               ابدأ الجولة التعريفية
             </Button>
           </AlertDialogHeader>
-          <AlertDialogFooter data-tour="contract-reactivate-actions">
+          {lifecycleError && <Alert variant="destructive"><AlertDescription>{lifecycleError}</AlertDescription></Alert>}
+          {contractStats?.daysRemaining !== null && (contractStats?.daysRemaining ?? 0) < 0 && (
+            <Alert className="border-amber-200 bg-amber-50 text-amber-950">
+              <AlertDescription className="space-y-3">
+                <p>انتهت مدة هذا العقد. لإعادته إلى نشط، عدّل مدة العقد أولًا ثم راجع توفر المركبة. لن يمدد النظام المدة أو ينشئ التزامات تلقائيًا.</p>
+                <Button variant="outline" onClick={() => { setIsReactivateDialogOpen(false); handleAmend(); }}>مراجعة وتعديل مدة العقد</Button>
+              </AlertDescription>
+            </Alert>
+          )}
+          <AlertDialogFooter className="gap-2 sm:space-x-0" data-tour="contract-reactivate-actions">
             <AlertDialogCancel className="rounded-xl">إلغاء</AlertDialogCancel>
             <AlertDialogAction
               onClick={(event) => {
                 event.preventDefault();
                 void executeReactivateContract();
               }}
-              disabled={isReactivating || (reactivationHasViolations && !reactivationViolationsAccepted)}
+              disabled={isReactivating || (contractStats?.daysRemaining ?? 0) < 0 || (reactivationHasViolations && !reactivationViolationsAccepted)}
               className="rounded-xl bg-emerald-600 hover:bg-emerald-700"
               data-tour="contract-reactivate-submit"
             >
@@ -1907,8 +1925,8 @@ const ContractDetailsPageRedesigned = () => {
       />
 
       {/* Remove Legal Procedure Dialog */}
-      <AlertDialog open={isRemoveLegalDialogOpen} onOpenChange={setIsRemoveLegalDialogOpen}>
-        <AlertDialogContent className="rounded-2xl" data-tour="contract-remove-legal-dialog">
+      <AlertDialog open={isRemoveLegalDialogOpen} onOpenChange={(open) => { if (!isRemovingLegal) setIsRemoveLegalDialogOpen(open); }}>
+        <AlertDialogContent dir="rtl" className="max-h-[90dvh] w-[calc(100%-2rem)] overflow-y-auto rounded-2xl bg-white text-slate-900" data-tour="contract-remove-legal-dialog">
           <AlertDialogHeader>
             <AlertDialogTitle className="text-emerald-600">إزالة الإجراء القانوني</AlertDialogTitle>
             <AlertDialogDescription asChild>
@@ -1933,11 +1951,19 @@ const ContractDetailsPageRedesigned = () => {
               ابدأ الجولة التعريفية
             </Button>
           </AlertDialogHeader>
-          <AlertDialogFooter data-tour="contract-remove-legal-actions">
-            <AlertDialogCancel className="rounded-xl">إلغاء</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={executeRemoveLegalProcedure}
+          <div className="space-y-2">
+            <Label htmlFor="legal-reversal-reason">سبب إزالة الإجراء القانوني</Label>
+            <Textarea id="legal-reversal-reason" value={legalReversalReason}
               disabled={isRemovingLegal}
+              onChange={(event) => { setLegalReversalReason(event.target.value); setLegalReversalKey(crypto.randomUUID()); }}
+              placeholder="اكتب سببًا واضحًا من 10 أحرف على الأقل" />
+          </div>
+          {lifecycleError && <Alert variant="destructive"><AlertDescription>{lifecycleError}</AlertDescription></Alert>}
+          <AlertDialogFooter className="gap-2 sm:space-x-0" data-tour="contract-remove-legal-actions">
+            <AlertDialogCancel disabled={isRemovingLegal} className="rounded-xl">إلغاء</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(event) => { event.preventDefault(); void executeRemoveLegalProcedure(); }}
+              disabled={isRemovingLegal || [...legalReversalReason.trim()].length < 10}
               className="rounded-xl bg-emerald-600 hover:bg-emerald-700"
               data-tour="contract-remove-legal-submit"
             >
@@ -1956,7 +1982,7 @@ const ContractDetailsPageRedesigned = () => {
 
       {/* Cancel Invoice Dialog */}
       <AlertDialog open={isCancelInvoiceDialogOpen} onOpenChange={setIsCancelInvoiceDialogOpen}>
-        <AlertDialogContent className="rounded-2xl" data-tour="contract-cancel-invoice-dialog">
+        <AlertDialogContent dir="rtl" className="max-h-[90dvh] w-[calc(100vw-2rem)] overflow-y-auto rounded-2xl bg-white p-6 text-slate-900" data-tour="contract-cancel-invoice-dialog">
           <AlertDialogHeader>
             <AlertDialogTitle className="text-red-600">إلغاء الفاتورة</AlertDialogTitle>
             <AlertDialogDescription asChild>

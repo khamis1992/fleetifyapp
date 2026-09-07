@@ -1,3 +1,4 @@
+import { FinanceContextActions } from "@/components/finance/workspace/FinanceContextActions";
 /**
  * صفحة الموردين - تصميم جديد متوافق مع الداشبورد
  */
@@ -132,7 +133,7 @@ const Vendors = () => {
     <div className="min-h-screen bg-[#F6F8FB] p-6" dir="rtl">
       <div className="space-y-6">
         {/* Page Header */}
-        <div className="flex items-center justify-between">
+        <div data-finance-heading="" className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold text-slate-900">الموردين</h1>
             <p className="text-sm text-slate-500 mt-1">
@@ -179,6 +180,7 @@ const Vendors = () => {
           </div>
         </div>
 
+        <FinanceContextActions ids={["vendor-categories"]} />
         {/* Statistics Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <StatCard
@@ -192,7 +194,7 @@ const Vendors = () => {
           <StatCard
             title="الموردين النشطين"
             value={stats.activeVendors}
-            subtitle="Active Vendors"
+            subtitle="الموردون النشطون"
             icon={CheckCircle}
             variant="emerald"
             trend="up"
@@ -202,7 +204,7 @@ const Vendors = () => {
           <StatCard
             title="التصنيفات"
             value={stats.totalCategories}
-            subtitle="Categories"
+            subtitle="تصنيفات الموردين"
             icon={Layers}
             variant="violet"
             delay={0.2}
@@ -210,7 +212,7 @@ const Vendors = () => {
           <StatCard
             title="إجمالي المستحقات"
             value={formatCurrency(stats.totalBalance)}
-            subtitle="Total Balance"
+            subtitle="إجمالي الأرصدة"
             icon={DollarSign}
             variant="sky"
             delay={0.25}

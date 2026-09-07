@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Bell, BellRing, Volume2, VolumeX, Settings, Filter, Search, X } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { WorkspaceButton as Button } from '@/components/employee-workspace/WorkspacePresentation';
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -148,6 +148,7 @@ export const UnifiedNotificationBell: React.FC<UnifiedNotificationBellProps> = (
         <Button
           variant="ghost"
           size="icon"
+          aria-label={`الإشعارات (${totalAlerts})`}
           className="relative hover:bg-accent/50 transition-colors"
         >
           <motion.div

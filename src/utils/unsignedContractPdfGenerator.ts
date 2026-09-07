@@ -24,7 +24,7 @@ export const generateUnsignedContractPdf = async (contractData: UnsignedContract
     });
 
     // Get image data
-    const imgData = canvas.toDataURL('image/jpeg', 0.98);
+
 
     // Create PDF
     const doc = new jsPDF({
@@ -33,23 +33,18 @@ export const generateUnsignedContractPdf = async (contractData: UnsignedContract
       orientation: 'portrait'
     });
 
-    const imgWidth = 210; // A4 width in mm
-    const imgHeight = (canvas.height * imgWidth) / canvas.width;
-    const pageHeight = 297; // A4 height in mm
-
-    let heightLeft = imgHeight;
-    let position = 0;
-
-    // Add image to PDF
-    doc.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight);
-    heightLeft -= pageHeight;
-
-    while (heightLeft >= 0) {
-      position = heightLeft - imgHeight;
-      doc.addPage();
-      doc.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight);
-      heightLeft -= pageHeight;
+    // Reserve the bottom 27mm for a readable contract identifier on every page.
+    const sliceHeight = Math.floor(canvas.width * 270 / 210);
+    for (let offset = 0, page = 0; offset < canvas.height; offset += sliceHeight, page++) {
+      if (page > 0) doc.addPage();
+      const slice = document.createElement('canvas');
+      slice.width = canvas.width;
+      slice.height = Math.min(sliceHeight, canvas.height - offset);
+      slice.getContext('2d')!.drawImage(canvas, 0, offset, slice.width, slice.height, 0, 0, slice.width, slice.height);
+      doc.addImage(slice.toDataURL('image/jpeg', 0.98), 'JPEG', 0, 0, 210, slice.height * 210 / slice.width);
     }
+    const { stampContractQr } = await import('./contractQrStamp');
+    await stampContractQr(doc, contractData.contract_number);
 
     // Return as blob
     const pdfBlob = doc.output('blob');

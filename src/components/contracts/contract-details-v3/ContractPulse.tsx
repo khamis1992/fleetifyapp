@@ -1,3 +1,4 @@
+import { ContractSectionHeading } from './ContractSection';
 /**
  * ContractPulseV3 — the living side rail (light theme).
  * Consolidates health / smart-tasks / financial diagnosis / CRM log /
@@ -275,15 +276,15 @@ export function ContractPulse({
         icon: Calendar,
       },
       ...invoices.slice(0, 4).map((invoice) => ({
-        date: invoice.updated_at || invoice.invoice_date,
-        title: invoice.payment_status === 'paid' ? 'سداد فاتورة' : 'فاتورة مفتوحة',
-        detail: `${invoice.invoice_number} — ${formatCurrency(invoice.balance_due || invoice.total_amount || 0)}`,
+        date: invoice.invoice_date,
+        title: 'إصدار فاتورة',
+        detail: `${invoice.invoice_number} — ${formatCurrency(invoice.total_amount || 0)}`,
         tone: (invoice.payment_status === 'paid' ? 'success' : 'warning') as 'success' | 'warning',
         icon: Receipt,
       })),
       ...paymentSchedules.slice(0, 3).map((payment) => ({
         date: payment.due_date || contract.start_date || '',
-        title: payment.status === 'paid' ? 'دفعة مكتملة' : 'دفعة مجدولة',
+        title: payment.status === 'paid' ? 'استحقاق قسط مسدد' : 'استحقاق قسط',
         detail: formatCurrency(Number(payment.amount || 0)),
         tone: (payment.status === 'paid' ? 'success' : 'neutral') as 'success' | 'neutral',
         icon: CreditCard,
@@ -330,7 +331,8 @@ export function ContractPulse({
   const [expandedDiagnosis, setExpandedDiagnosis] = useState(false);
 
   return (
-    <aside className="grid gap-4">
+    <aside className="grid items-start gap-5 xl:grid-cols-2" aria-label="المتابعة والتواصل">
+      <div className="xl:col-span-2"><ContractSectionHeading number="05" title="المتابعة والتواصل" description="رتّب الخطوة التالية، وسجّل التواصل مع العميل، وراجع آخر نشاط على العقد." /></div>
       {/* ===== Health ===== */}
       <Panel>
         <PanelHeader

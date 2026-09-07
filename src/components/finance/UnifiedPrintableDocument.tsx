@@ -5,6 +5,7 @@ import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { Printer, Download } from "lucide-react";
 import { format } from 'date-fns';
+import { getCurrencyConfig } from "@/utils/currencyConfig";
 import { ar } from 'date-fns/locale';
 
 import { useFleetifyTranslation } from "@/hooks/useTranslation";
@@ -201,7 +202,7 @@ export const UnifiedPrintableDocument: React.FC<UnifiedPrintableDocumentProps> =
   };
 
   const documentTitle = getDocumentTitle();
-  const currency = data.currency || 'QAR';
+  const currency = getCurrencyConfig(data.currency || 'QAR').symbol;
 
   // Get payment method in Arabic
   const getPaymentMethodArabic = (method?: string) => {
@@ -220,7 +221,7 @@ export const UnifiedPrintableDocument: React.FC<UnifiedPrintableDocumentProps> =
   };
 
   return (
-    <div className={className}>
+    <div className={className} dir="rtl">
       {/* Print buttons - hidden when printing */}
       <div className="no-print flex justify-end gap-2 mb-4">
         <Button onClick={handlePrint} className="flex items-center gap-2">
@@ -244,19 +245,18 @@ export const UnifiedPrintableDocument: React.FC<UnifiedPrintableDocumentProps> =
                 {data.company?.name_ar || 'العراف لتأجير السيارات ذ.م.م'}
               </h2>
               <p className="text-sm font-light">
-                {data.company?.name_en || 'CAR RENTAL L.L.C'}
+                خدمات تأجير السيارات
               </p>
               <div className="text-xs font-mono mt-2 pt-1 border-t border-white/30">
-                C.R: {data.company?.cr_number || '146832'} | DOHA-QATAR
+                السجل التجاري: {data.company?.cr_number || '146832'} | الدوحة - قطر
               </div>
             </div>
 
             {/* Document Type & Number */}
             <div className="text-left rtl:text-right flex flex-col items-start rtl:items-end">
               <h1 className="text-3xl font-extrabold tracking-tight">{documentTitle.ar}</h1>
-              <h2 className="text-xl font-light">{documentTitle.en}</h2>
               <div className="mt-4 p-2 bg-white text-[#004d40] rounded-lg text-center min-w-[120px]">
-                <span className="text-sm font-medium block">رقم | NO.</span>
+                <span className="text-sm font-medium block">رقم</span>
                 <span className="text-2xl font-extrabold block">
                   {data.documentNumber}
                 </span>
@@ -269,7 +269,7 @@ export const UnifiedPrintableDocument: React.FC<UnifiedPrintableDocumentProps> =
           {/* Date */}
           <div className="flex justify-end mb-6">
             <div className="text-center">
-              <div className="text-sm font-medium text-slate-600 mb-1">التاريخ | Date</div>
+              <div className="text-sm font-medium text-slate-600 mb-1">التاريخ</div>
               <div className="text-lg font-bold text-[#004d40]">
                 {format(new Date(data.date), 'dd MMMM yyyy', { locale: ar })}
               </div>
@@ -295,7 +295,7 @@ export const UnifiedPrintableDocument: React.FC<UnifiedPrintableDocumentProps> =
             {data.customer.phone && (
               <div className="grid grid-cols-1 md:grid-cols-5 gap-4 items-center">
                 <div className="md:col-span-2 text-base font-medium text-slate-700">
-                  رقم الجوال | Phone Number
+                  رقم الجوال
                 </div>
                 <div className="md:col-span-3 text-lg font-bold text-[#004d40] border-b-2 border-slate-300 pb-1">
                   {data.customer.phone}
@@ -306,7 +306,7 @@ export const UnifiedPrintableDocument: React.FC<UnifiedPrintableDocumentProps> =
             {data.customer.vehicle_number && (
               <div className="grid grid-cols-1 md:grid-cols-5 gap-4 items-center">
                 <div className="md:col-span-2 text-base font-medium text-slate-700">
-                  رقم المركبة | Vehicle Number
+                  رقم المركبة
                 </div>
                 <div className="md:col-span-3 text-lg font-bold text-[#004d40] border-b-2 border-slate-300 pb-1">
                   {data.customer.vehicle_number}
@@ -317,7 +317,7 @@ export const UnifiedPrintableDocument: React.FC<UnifiedPrintableDocumentProps> =
             {data.month && (
               <div className="grid grid-cols-1 md:grid-cols-5 gap-4 items-center">
                 <div className="md:col-span-2 text-base font-medium text-slate-700">
-                  الشهر | Month
+                  الشهر
                 </div>
                 <div className="md:col-span-3 text-lg font-bold text-[#004d40] border-b-2 border-slate-300 pb-1">
                   {data.month}
@@ -328,7 +328,7 @@ export const UnifiedPrintableDocument: React.FC<UnifiedPrintableDocumentProps> =
             {/* Amount in Words */}
             <div className="grid grid-cols-1 md:grid-cols-5 gap-4 items-center">
               <div className="md:col-span-2 text-base font-medium text-slate-700">
-                مبلغ وقدره | The Sum of
+                مبلغ وقدره
               </div>
               <div className="md:col-span-3 text-lg font-bold text-[#004d40] border-b-2 border-slate-300 pb-1">
                 {amountInWords}
@@ -344,7 +344,7 @@ export const UnifiedPrintableDocument: React.FC<UnifiedPrintableDocumentProps> =
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   <div className="text-sm font-medium text-slate-600 mb-2">
-                    طريقة الدفع | Payment Method
+                    طريقة الدفع
                   </div>
                   <div className="text-lg font-bold text-[#004d40]">
                     {getPaymentMethodArabic(data.paymentMethod)}
@@ -356,19 +356,19 @@ export const UnifiedPrintableDocument: React.FC<UnifiedPrintableDocumentProps> =
                   <div className="space-y-2">
                     {data.checkDetails.checkNumber && (
                       <div>
-                        <span className="text-xs text-slate-500">شيك رقم | Cheque No.: </span>
+                        <span className="text-xs text-slate-500">شيك رقم: </span>
                         <span className="font-bold">{data.checkDetails.checkNumber}</span>
                       </div>
                     )}
                     {data.checkDetails.bankName && (
                       <div>
-                        <span className="text-xs text-slate-500">على بنك | On Bank: </span>
+                        <span className="text-xs text-slate-500">على بنك: </span>
                         <span className="font-bold">{data.checkDetails.bankName}</span>
                       </div>
                     )}
                     {data.checkDetails.dueDate && (
                       <div>
-                        <span className="text-xs text-slate-500">تاريخ الاستحقاق | Due Date: </span>
+                        <span className="text-xs text-slate-500">تاريخ الاستحقاق: </span>
                         <span className="font-bold">
                           {format(new Date(data.checkDetails.dueDate), 'dd/MM/yyyy')}
                         </span>
@@ -386,10 +386,10 @@ export const UnifiedPrintableDocument: React.FC<UnifiedPrintableDocumentProps> =
               <table className="w-full border border-slate-300">
                 <thead className="bg-slate-100">
                   <tr>
-                    <th className="border border-slate-300 p-2 text-right">البيان | Description</th>
-                    <th className="border border-slate-300 p-2 text-center">الكمية | Qty</th>
-                    <th className="border border-slate-300 p-2 text-center">السعر | Price</th>
-                    <th className="border border-slate-300 p-2 text-center">المجموع | Total</th>
+                    <th className="border border-slate-300 p-2 text-right">البيان</th>
+                    <th className="border border-slate-300 p-2 text-center">الكمية</th>
+                    <th className="border border-slate-300 p-2 text-center">السعر</th>
+                    <th className="border border-slate-300 p-2 text-center">المجموع</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -415,13 +415,13 @@ export const UnifiedPrintableDocument: React.FC<UnifiedPrintableDocumentProps> =
             <div className="mb-6 space-y-2">
               {data.breakdown.rentAmount !== undefined && (
                 <div className="flex justify-between items-center p-2 border-b">
-                  <span className="text-slate-700">الإيجار الشهري | Monthly Rent</span>
+                  <span className="text-slate-700">الإيجار الشهري</span>
                   <span className="font-bold">{data.breakdown.rentAmount.toLocaleString('en-US')} {currency}</span>
                 </div>
               )}
               {data.breakdown.fineAmount !== undefined && data.breakdown.fineAmount > 0 && (
                 <div className="flex justify-between items-center p-2 border-b bg-red-50">
-                  <span className="text-red-700">غرامة التأخير | Late Fine</span>
+                  <span className="text-red-700">غرامة التأخير</span>
                   <span className="font-bold text-red-700">
                     {data.breakdown.fineAmount.toLocaleString('en-US')} {currency}
                   </span>
@@ -429,7 +429,7 @@ export const UnifiedPrintableDocument: React.FC<UnifiedPrintableDocumentProps> =
               )}
               {data.breakdown.otherCharges !== undefined && data.breakdown.otherCharges > 0 && (
                 <div className="flex justify-between items-center p-2 border-b">
-                  <span className="text-slate-700">رسوم أخرى | Other Charges</span>
+                  <span className="text-slate-700">رسوم أخرى</span>
                   <span className="font-bold">{data.breakdown.otherCharges.toLocaleString('en-US')} {currency}</span>
                 </div>
               )}
@@ -440,7 +440,7 @@ export const UnifiedPrintableDocument: React.FC<UnifiedPrintableDocumentProps> =
           {data.notes && (
             <div className="mb-6 p-4 bg-slate-50 rounded-lg">
               <div className="text-sm font-medium text-slate-600 mb-2">
-                وذلك عن | Being for
+                وذلك عن
               </div>
               <div className="text-base text-slate-800">
                 {data.notes}
@@ -452,7 +452,7 @@ export const UnifiedPrintableDocument: React.FC<UnifiedPrintableDocumentProps> =
           <div className="mt-6 p-4 bg-[#004d40]/5 border-2 border-[#004d40] rounded-lg">
             <div className="flex justify-between items-center">
               <span className="text-xl font-bold text-slate-700">
-                المبلغ الإجمالي | Total Amount
+                المبلغ الإجمالي
               </span>
               <div className="flex items-center gap-2">
                 <span className="text-3xl font-extrabold text-[#004d40]">
@@ -469,17 +469,17 @@ export const UnifiedPrintableDocument: React.FC<UnifiedPrintableDocumentProps> =
           <div className="mt-10 grid grid-cols-3 gap-10 print:mt-20">
             <div className="text-center">
               <div className="border-t-2 border-slate-400 pt-2 mt-16 text-sm text-slate-600">
-                توقيع المستلم | Receiver Sign.
+                توقيع المستلم
               </div>
             </div>
             <div className="text-center">
               <div className="border-t-2 border-slate-400 pt-2 mt-16 text-sm text-slate-600">
-                توقيع المحاسب | Accountant's Sign.
+                توقيع المحاسب
               </div>
             </div>
             <div className="text-center">
               <div className="border-t-2 border-slate-400 pt-2 mt-16 text-sm text-slate-600">
-                توقيع المدير | Manager's Sign.
+                توقيع المدير
               </div>
             </div>
           </div>
@@ -489,7 +489,7 @@ export const UnifiedPrintableDocument: React.FC<UnifiedPrintableDocumentProps> =
         <CardFooter className="bg-slate-800 text-white p-4 text-xs text-center print:p-2">
           <div className="max-w-xl mx-auto space-y-1">
             <p>
-              {data.company?.address || 'P. O. Box: 9022 - Lusail City, Doha, Qatar | Marina twin Tower Block A-31th Floor'}
+              {data.company?.address || 'ص.ب: 9022 - مدينة لوسيل، الدوحة، قطر | برجا المارينا، المبنى أ، الطابق 31'}
             </p>
             <div className="flex justify-center gap-4">
               <span>{data.company?.email || 'info@alaraf.com'}</span>

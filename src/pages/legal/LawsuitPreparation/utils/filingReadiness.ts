@@ -1,6 +1,7 @@
 import type { DocumentsState, LawsuitPreparationState } from '../store/types';
 import { isMemoSnapshotCurrent } from './documentGenerators';
 import { evaluateLegalCaseReadiness, getDefendantContact } from './legalCaseWorkflow';
+import { hasKnownTaqadiNationality, DEFENDANT_NATIONALITY_REQUIRED_MESSAGE } from '@/utils/taqadiNationality';
 
 export const BASE_FILING_DOCUMENT_IDS = [
   'memo',
@@ -80,7 +81,8 @@ export function getFilingReadiness(state: LawsuitPreparationState): FilingReadin
     latestSnapshot?.readiness_status === 'approved'
       && isMemoSnapshotCurrent(state, latestSnapshot),
   );
-  const taqadiComplete = Boolean(
+  const nationalityComplete = hasKnownTaqadiNationality(state.taqadiData?.defendant?.nationality);
+  const taqadiComplete = nationalityComplete && Boolean(
     state.taqadiData?.caseTitle?.trim()
       && state.taqadiData?.facts?.trim()
       && state.taqadiData?.claims?.trim()
@@ -100,6 +102,7 @@ export function getFilingReadiness(state: LawsuitPreparationState): FilingReadin
     missingReasons.push(signedLeaseBlockingReason);
   }
   if (!taqadiComplete) missingReasons.push('بيانات تقاضي النهائية غير مكتملة.');
+  if (!nationalityComplete) missingReasons.push(DEFENDANT_NATIONALITY_REQUIRED_MESSAGE);
 
   const finalizationReasons: string[] = [];
   if (!profileApproved) finalizationReasons.push('مراجعة الوكيل لم تبدأ أو لم تعتمد بعد.');

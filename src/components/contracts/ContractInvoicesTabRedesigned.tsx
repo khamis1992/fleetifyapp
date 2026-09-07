@@ -1,3 +1,4 @@
+import { ContractSectionHeading, ContractMetricStrip } from './contract-details-v3/ContractSection';
 /**
  * مكون تبويب الفواتير - تصميم محسّن V2
  * Professional SaaS design with improved visual hierarchy
@@ -122,6 +123,7 @@ interface ContractInvoicesTabRedesignedProps {
   onGenerateMissingInvoices?: () => void;
   isGeneratingMissingInvoices?: boolean;
   billingGenerationBlocker?: string | null;
+  billingPlanSummary?: string | null;
   contractNumber?: string;
   customerInfo?: CustomerInfo;
   trafficViolations?: TrafficViolation[];
@@ -408,34 +410,7 @@ const InvoiceMetrics = ({
     },
   ];
 
-  return (
-    <motion.div
-      variants={fadeInUp}
-      className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4"
-    >
-      {metricCards.map((metric, idx) => (
-        <motion.div
-          key={idx}
-          variants={scaleIn}
-          className="rounded-2xl border border-[#E5EAF1] bg-white p-4 shadow-[0_10px_30px_-22px_rgba(15,23,42,0.25)]"
-        >
-          <div className="flex items-start justify-between mb-3">
-            <div className={cn("flex h-8 w-8 items-center justify-center rounded-lg", metric.tintBg, metric.iconColor)}>
-              <metric.icon className="h-4 w-4" />
-            </div>
-            <div className={cn("px-2 py-1 rounded-lg text-[11px] font-bold", metric.badgeBg, metric.badgeText)}>
-              {metric.badge ?? metric.subtext.split(' • ')[0]}
-            </div>
-          </div>
-          <p className="text-base font-black text-[#0F172A] mb-1">{metric.value}</p>
-          <p className="text-[11px] font-bold text-slate-500">
-            {metric.title}
-            {metric.subtext.includes(' • ') ? ` — ${metric.subtext.split(' • ')[1]}` : ''}
-          </p>
-        </motion.div>
-      ))}
-    </motion.div>
-  );
+  return <ContractMetricStrip items={metricCards} />;
 };
 
 // ===== Invoice Card Component =====
@@ -533,7 +508,7 @@ const InvoiceCard = ({
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-48">
-            <DropdownMenuItem onClick={onPreview} className="gap-2">
+            <DropdownMenuItem onClick={onPreview} aria-label={`معاينة الفاتورة ${invoice.invoice_number}`} className="gap-2">
               <Eye className="w-4 h-4" />
               <span>معاينة</span>
             </DropdownMenuItem>
@@ -548,7 +523,7 @@ const InvoiceCard = ({
             {showDueStatus && (
               <>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={onCancel} className="gap-2 text-[#BE123C] focus:text-[#BE123C]">
+                <DropdownMenuItem onClick={onCancel} aria-label={`إلغاء الفاتورة ${invoice.invoice_number}`} className="gap-2 text-[#BE123C] focus:text-[#BE123C]">
                   <XCircle className="w-4 h-4" />
                   <span>إلغاء الفاتورة</span>
                 </DropdownMenuItem>
@@ -621,7 +596,7 @@ const InvoiceCard = ({
         <Button
           variant="outline"
           size="sm"
-          onClick={onPreview}
+          onClick={onPreview} aria-label={`معاينة الفاتورة ${invoice.invoice_number}`}
           className="flex-1 gap-2 rounded-xl"
         >
           <Eye className="w-4 h-4" />
@@ -723,7 +698,7 @@ const InvoiceTableRow = ({
       {/* Amount */}
       <td className="py-4 px-4">
         <p className="font-bold text-[#0F172A]">{formatCurrency(invoice.total_amount || 0)}</p>
-        {invoice.tax_amount && invoice.tax_amount > 0 && (
+        {Boolean(invoice.tax_amount && invoice.tax_amount > 0) && (
           <p className="text-xs text-slate-500">ضريبة: {formatCurrency(invoice.tax_amount)}</p>
         )}
       </td>
@@ -765,7 +740,7 @@ const InvoiceTableRow = ({
           <Button
             size="sm"
             variant="outline"
-            onClick={onPreview}
+            onClick={onPreview} aria-label={`معاينة الفاتورة ${invoice.invoice_number}`}
             className="h-8 px-3 rounded-lg"
           >
             <Eye className="w-4 h-4" />
@@ -783,7 +758,7 @@ const InvoiceTableRow = ({
               <Button
                 size="sm"
                 variant="ghost"
-                onClick={onCancel}
+                onClick={onCancel} aria-label={`إلغاء الفاتورة ${invoice.invoice_number}`}
                 disabled={isCancelling}
                 className="h-8 w-8 p-0 rounded-lg text-[#BE123C] hover:text-[#BE123C] hover:bg-[#FFF5F6]"
               >
@@ -813,7 +788,7 @@ const InvoiceFilters = ({
   sortOption: string;
   onSortChange: (value: string) => void;
 }) => (
-  <div className="flex flex-col gap-3 rounded-2xl border border-[#E5EAF1] bg-white p-4 shadow-[0_10px_30px_-22px_rgba(15,23,42,0.25)] sm:flex-row sm:items-center sm:justify-between">
+  <div className="contract-workbench">
     <div className="flex items-center gap-3 flex-1 w-full sm:w-auto">
       <div className="relative flex-1 max-w-md">
         <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
@@ -936,6 +911,7 @@ export const ContractInvoicesTabRedesigned = ({
   isGeneratingMissingInvoices,
   billingGenerationBlocker,
   contractNumber,
+  billingPlanSummary,
   customerInfo,
   trafficViolations = [],
 }: ContractInvoicesTabRedesignedProps) => {
@@ -1072,6 +1048,7 @@ export const ContractInvoicesTabRedesigned = ({
 
   return (
     <div className="space-y-5">
+<ContractSectionHeading number="02.1" title="الفواتير" description="راجع الاستحقاقات، افتح الفاتورة، ثم نفّذ الإجراء المناسب." />
       {/* Metrics Overview */}
       <InvoiceMetrics invoices={invoices} formatCurrency={formatCurrency} />
 
@@ -1079,14 +1056,21 @@ export const ContractInvoicesTabRedesigned = ({
         <div className="flex items-start gap-3 rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900">
           <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0" />
           <div>
-            <p className="font-bold">تعذر إنشاء الفواتير تلقائياً</p>
+            <p className="font-bold">تحتاج خطة الفوترة إلى مراجعة قبل إصدار فواتير جديدة</p>
             <p className="mt-1">{billingGenerationBlocker}</p>
           </div>
         </div>
       )}
 
+      {!billingGenerationBlocker && billingPlanSummary && (
+        <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-900" role="status">
+          <p className="font-bold">خطة الفوترة متطابقة</p>
+          <p className="mt-1">{billingPlanSummary}</p>
+        </div>
+      )}
+
       {/* Header & Actions */}
-      <div className="flex flex-col gap-3 rounded-2xl border border-[#E5EAF1] bg-white p-4 shadow-[0_10px_30px_-22px_rgba(15,23,42,0.25)] sm:flex-row sm:items-center sm:justify-between">
+      <div className="contract-workbench">
         <div>
           <h2 className="mb-1 text-xl font-black text-[#0F172A]">الفواتير</h2>
           <p className="text-slate-500 text-sm">
@@ -1779,22 +1763,26 @@ export const ContractInvoicesTabRedesigned = ({
             <div className="flex items-center gap-2 rounded-xl border border-[#E5EAF1] bg-white p-1">
               <Button
                 size="sm"
-                variant={viewMode === 'grid' ? 'default' : 'ghost'}
-                onClick={() => setViewMode('grid')}
+                variant="ghost"
+                onClick={() => setViewMode('grid')} aria-label="عرض البطاقات" aria-pressed={viewMode === 'grid'}
                 className={cn(
                   "rounded-lg",
-                  viewMode === 'grid' ? "bg-white shadow-sm" : ""
+                  viewMode === 'grid'
+                    ? "bg-teal-700 text-white shadow-sm hover:bg-teal-800 hover:text-white"
+                    : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
                 )}
               >
                 <Receipt className="w-4 h-4" />
               </Button>
               <Button
                 size="sm"
-                variant={viewMode === 'table' ? 'default' : 'ghost'}
-                onClick={() => setViewMode('table')}
+                variant="ghost"
+                onClick={() => setViewMode('table')} aria-label="عرض الجدول" aria-pressed={viewMode === 'table'}
                 className={cn(
                   "rounded-lg",
-                  viewMode === 'table' ? "bg-white shadow-sm" : ""
+                  viewMode === 'table'
+                    ? "bg-teal-700 text-white shadow-sm hover:bg-teal-800 hover:text-white"
+                    : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
                 )}
               >
                 <FileText className="w-4 h-4" />

@@ -323,6 +323,17 @@ describe('contract financial refresh gateway — isolated PostgreSQL', { concurr
 
   describe('local retirement candidate with all five rental-receipt triggers', () => {
     beforeEach(async () => {
+      // The canonical reader also resolves service invoices through schedules.
+      // Keep the fixture aligned with the reader's verified dependency schema.
+      await db.exec(`CREATE TABLE public.contract_payment_schedules(
+        id uuid PRIMARY KEY DEFAULT gen_random_uuid(),company_id uuid,contract_id uuid,
+        due_date date,amount numeric,status text,invoice_id uuid);
+        ALTER TABLE public.customers ADD COLUMN company_id uuid, ADD COLUMN company_name text, ADD COLUMN company_name_ar text;
+        ALTER TABLE public.contracts ADD COLUMN start_date date, ADD COLUMN end_date date, ADD COLUMN status text;
+        ALTER TABLE public.invoices ADD COLUMN customer_id uuid, ADD COLUMN invoice_month date,
+          ADD COLUMN invoice_date date, ADD COLUMN invoice_number text, ADD COLUMN invoice_type text, ADD COLUMN penalty_id uuid;
+        ALTER TABLE public.payments ADD COLUMN customer_id uuid, ADD COLUMN payment_date date;
+        ALTER TABLE public.contract_payment_schedules ENABLE ROW LEVEL SECURITY;`);
       await db.exec(await read('../../supabase/migrations/20260903222544_canonical_rental_month_summary.sql'));
       await db.exec(`ALTER TABLE public.rental_payment_receipts
         ADD COLUMN receipt_number text, ADD COLUMN fiscal_year integer, ADD COLUMN is_late boolean;

@@ -5,35 +5,35 @@
  * @component VehicleDetailsPage
  */
 
-import { type CSSProperties, useState, useMemo, useCallback } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
-import { motion } from 'framer-motion';
+import { useState, useCallback } from 'react';
+import { useParams, useNavigate, useSearchParams, Link } from 'react-router-dom';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import './vehicle-details/vehicle-details.css';
+import { vehicleRentalDecision, vehicleDetailTabs, resolveVehicleTab, fetchVehicleHistory } from './vehicle-details/vehicleDetailsModel';
 import { supabase } from '@/integrations/supabase/client';
 import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
 import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
 import {
-  ArrowRight,
   Edit3,
   Wrench,
   CheckCircle,
   FileText,
-  DollarSign,
-  Gauge,
-  Info,
   Settings,
   Tag,
-  Folder,
   AlertTriangle,
   Plus,
   Car,
   ChevronLeft,
+  RefreshCw,
+  ShieldCheck,
+  MapPin,
+  CalendarDays,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Dialog, DialogContent } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { useToast } from '@/components/ui/use-toast';
 import { PageSkeletonFallback } from '@/components/common/LazyPageWrapper';
 import { VehiclePricingPanel } from './VehiclePricingPanel';
@@ -48,37 +48,23 @@ import { VehicleStatusChangeDialog } from './VehicleStatusChangeDialog';
 import { ImagePreviewDialog } from '@/components/common/ImagePreviewDialog';
 import { FeatureTourButton, FeatureTourDialog, type FeatureTourContent } from '@/components/common/FeatureTourGuide';
 import { cn } from '@/lib/utils';
-import { systemColorPattern } from '@/lib/design-system/systemColorPattern';
+
 import { format, differenceInDays } from 'date-fns';
 import { ar } from 'date-fns/locale';
 import type { Vehicle } from '@/hooks/useVehicles';
-import { useQueryClient } from '@tanstack/react-query';
 import {
-  isContractInCurrentPeriod,
   isContractOccupyingVehicle,
 } from '@/utils/vehicleOperationalStatus';
-
-const vehicleTheme = {
-  text: systemColorPattern.colors.text,
-  surface: systemColorPattern.colors.surface,
-  inner: systemColorPattern.colors.innerSurface,
-  muted: systemColorPattern.colors.secondaryText,
-  border: systemColorPattern.colors.border,
-  water: systemColorPattern.colors.info,
-  alert: systemColorPattern.colors.alert,
-  focus: systemColorPattern.colors.focus,
-  success: systemColorPattern.colors.success,
-};
 
 const vehicleDetailsTours = {
   page: {
     title: 'جولة صفحة تفاصيل المركبة',
     description: 'شرح سريع لطريقة قراءة ملف المركبة واتخاذ القرار التشغيلي من نفس الصفحة.',
     steps: [
-      'ابدأ من بطاقة المركبة الجانبية: الصورة، اللوحة، الحالة، والعداد تعطيك ملخصاً سريعاً.',
+      'ابدأ من هوية المركبة في الأعلى: الصورة واللوحة والحالة والموقع.',
       'استخدم أزرار عقد، الحالة، صيانة، ومخالفة لتنفيذ الإجراءات اليومية المرتبطة بهذه المركبة.',
       'راجع ملخص التشغيل لمعرفة العقد الحالي والصيانة المفتوحة والمخالفات غير المدفوعة وانتهاء الاستمارة.',
-      'لوحة القرار التشغيلي تعرض نسبة الجاهزية وتساعدك على تحديد هل المركبة جاهزة للتأجير أو تحتاج متابعة.',
+      'لوحة التشغيل توضح إشغال المركبة وتتيح فتح العقد المرتبط مباشرة.',
       'استخدم التبويبات للوصول للتسعير، العقود، الصيانة، المخالفات، التأمين، والوثائق بدون مغادرة الصفحة.',
     ],
   },
@@ -125,14 +111,20 @@ const VehicleDetailsPage = () => {
   const { formatCurrency } = useCurrencyFormatter();
 
   // الحالة المحلية
-  const [activeTab, setActiveTab] = useState('overview');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const selectedTab = resolveVehicleTab(searchParams.get('tab'));
+  const activeTab = selectedTab.value;
+  const setActiveTab = (value: string) => setSearchParams((previous) => {
+    const next = new URLSearchParams(previous);
+    next.set('tab', resolveVehicleTab(value).value);
+    return next;
+  });
   const [showEditForm, setShowEditForm] = useState(false);
   const [showMaintenanceForm, setShowMaintenanceForm] = useState(false);
   const [showViolationForm, setShowViolationForm] = useState(false);
   const [showReportDialog, setShowReportDialog] = useState(false);
   const [showStatusDialog, setShowStatusDialog] = useState(false);
   const [showImagePreview, setShowImagePreview] = useState(false);
-  const [activeFeatureTour, setActiveFeatureTour] = useState<FeatureTourContent | null>(null);
   const queryClient = useQueryClient();
 
   // جلب بيانات المركبة من قاعدة البيانات
@@ -154,15 +146,17 @@ const VehicleDetailsPage = () => {
       return data as Vehicle;
     },
     enabled: !!vehicleId && !!companyId,
+    refetchInterval: 30_000,
+    refetchOnWindowFocus: true,
   });
 
   // جلب عقود المركبة
-  const { data: contracts = [], isLoading: loadingContracts } = useQuery({
+  const { data: contracts = [], isLoading: loadingContracts, error: contractsError } = useQuery({
     queryKey: ['vehicle-contracts', vehicleId, companyId],
     queryFn: async () => {
       if (!vehicleId || !companyId) return [];
 
-      const { data, error } = await supabase
+      return fetchVehicleHistory((from, to) => supabase
         .from('contracts')
         .select(`
           *,
@@ -179,55 +173,39 @@ const VehicleDetailsPage = () => {
         `)
         .eq('vehicle_id', vehicleId)
         .eq('company_id', companyId)
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-      return data || [];
+        .order('created_at', { ascending: false }).order('id').range(from, to));
     },
     enabled: !!vehicleId && !!companyId,
+    refetchInterval: 30_000,
+    refetchOnWindowFocus: true,
   });
 
   // جلب سجل الصيانة
-  const { data: maintenanceRecords = [], isLoading: loadingMaintenance } = useQuery({
+  const { data: maintenanceRecords = [], isLoading: loadingMaintenance, error: maintenanceError } = useQuery({
     queryKey: ['vehicle-maintenance', vehicleId, companyId],
     queryFn: async () => {
       if (!vehicleId || !companyId) return [];
 
-      const { data, error } = await supabase
-        .from('vehicle_maintenance')
-        .select('*')
-        .eq('vehicle_id', vehicleId)
-        .eq('company_id', companyId)
-        .order('created_at', { ascending: false })
-        .limit(10);
-
-      if (error) {
-        console.error('Error fetching maintenance:', error);
-        throw error; // إعادة رمي الخطأ للمعالجة الصحيحة
-      }
-      return data || [];
+      return fetchVehicleHistory((from, to) => supabase
+        .from('vehicle_maintenance').select('*')
+        .eq('vehicle_id', vehicleId).eq('company_id', companyId)
+        .order('created_at', { ascending: false }).order('id').range(from, to));
     },
     enabled: !!vehicleId && !!companyId,
+    refetchInterval: 30_000,
+    refetchOnWindowFocus: true,
   });
 
   // جلب المخالفات المرورية
-  const { data: violations = [], isLoading: loadingViolations } = useQuery({
+  const { data: violations = [], isLoading: loadingViolations, error: violationsError } = useQuery({
     queryKey: ['vehicle-violations', vehicleId, companyId],
     queryFn: async () => {
       if (!vehicleId || !companyId) return [];
 
-      const { data, error } = await supabase
-        .from('penalties')
-        .select('*')
-        .eq('vehicle_id', vehicleId)
-        .eq('company_id', companyId)
-        .order('penalty_date', { ascending: false })
-        .limit(10);
-
-      if (error) {
-        console.error('Error fetching violations:', error);
-        return [];
-      }
+      const data = await fetchVehicleHistory((from, to) => supabase
+        .from('penalties').select('*')
+        .eq('vehicle_id', vehicleId).eq('company_id', companyId)
+        .order('penalty_date', { ascending: false }).order('id').range(from, to));
       return (data || []).map((violation) => ({
         ...violation,
         violation_number: violation.penalty_number,
@@ -238,48 +216,21 @@ const VehicleDetailsPage = () => {
       }));
     },
     enabled: !!vehicleId && !!companyId,
+    refetchInterval: 30_000,
+    refetchOnWindowFocus: true,
   });
 
-  // حساب إحصائيات المركبة
-  const vehicleStats = useMemo(() => {
-    if (!vehicle) return null;
-
-    const activeContracts = contracts.filter(
-      (contract) => contract.status === 'active' && isContractInCurrentPeriod(contract),
-    ).length;
-    const totalRevenue = contracts.reduce((sum, c) => sum + (c.total_paid || 0), 0);
-
-    return {
-      status: vehicle.status || 'available',
-      activeContracts,
-      totalRevenue,
-      currentMileage: vehicle.current_mileage || 0,
-    };
-  }, [vehicle, contracts]);
+  const operation = vehicleRentalDecision(vehicle || {}, contracts, maintenanceRecords, !!(vehicleError || contractsError || maintenanceError));
+  const refresh = useCallback(async () => {
+    await Promise.all(['vehicle-details', 'vehicle-contracts', 'vehicle-maintenance', 'vehicle-violations', 'vehicles'].map((key) =>
+      queryClient.invalidateQueries({ queryKey: [key] })));
+  }, [queryClient]);
 
   // معالجات الأحداث
-  const handleBack = useCallback(() => {
-    navigate('/fleet');
-  }, [navigate]);
-
   const handleEdit = useCallback(() => {
-    console.log('🔧 [VehicleDetailsPage] Edit button clicked, vehicle:', vehicle);
-    console.log('🔧 [VehicleDetailsPage] loadingVehicle:', loadingVehicle);
-    console.log('🔧 [VehicleDetailsPage] vehicleId:', vehicleId);
-    
-    if (!vehicle) {
-      console.warn('⚠️ [VehicleDetailsPage] Cannot edit: vehicle not loaded yet');
-      toast({
-        title: 'خطأ',
-        description: 'لم يتم تحميل بيانات المركبة بعد. يرجى المحاولة مرة أخرى.',
-        variant: 'destructive'
-      });
-      return;
-    }
-    
-    console.log('✅ [VehicleDetailsPage] Opening edit form for vehicle:', vehicle.id);
+    if (!vehicle) return;
     setShowEditForm(true);
-  }, [vehicle, loadingVehicle, vehicleId, toast]);
+  }, [vehicle]);
 
   const handleNewContract = useCallback(() => {
     if (!vehicleId) {
@@ -290,17 +241,12 @@ const VehicleDetailsPage = () => {
       });
       return;
     }
-    navigate(`/contracts?vehicle=${vehicleId}`);
-  }, [navigate, vehicleId, toast]);
-
-  const handleMaintenanceSuccess = useCallback(() => {
-    queryClient.invalidateQueries({ queryKey: ['vehicle-maintenance', vehicleId] });
-    setShowMaintenanceForm(false);
-    toast({
-      title: 'نجاح',
-      description: 'تم تسجيل الصيانة بنجاح',
-    });
-  }, [queryClient, vehicleId, toast]);
+    if (!operation.canRent || loadingContracts || loadingMaintenance) {
+      toast({ title: operation.label, description: operation.reason, variant: 'destructive' });
+      return;
+    }
+    navigate('/contracts?vehicle=' + vehicleId);
+  }, [navigate, vehicleId, toast, operation.canRent, operation.label, operation.reason, loadingContracts, loadingMaintenance]);
 
   const handleViolationSuccess = useCallback(() => {
     queryClient.invalidateQueries({ queryKey: ['vehicle-violations', vehicleId] });
@@ -324,22 +270,6 @@ const VehicleDetailsPage = () => {
   }, [vehicleId, toast]);
 
   // دوال مساعدة
-  const getStatusColor = (status: string): string => {
-    const colors: Record<string, string> = {
-      available: 'status-available',
-      rented: 'status-rented',
-      maintenance: 'status-maintenance',
-      out_of_service: 'status-out-of-service',
-      reserved: 'status-reserved',
-      accident: 'bg-red-100 text-red-800',
-      stolen: 'bg-slate-100 text-slate-800',
-      police_station: 'bg-amber-100 text-amber-800',
-      municipality: 'bg-green-100 text-green-800',
-      street_52: 'bg-purple-100 text-purple-800',
-    };
-    return colors[status] || 'bg-slate-100 text-slate-800';
-  };
-
   const getStatusText = (status?: string): string => {
     const texts: Record<string, string> = {
       available: 'متاحة',
@@ -360,10 +290,10 @@ const VehicleDetailsPage = () => {
   const getCustomerName = (customer: any): string => {
     if (!customer) return 'غير محدد';
     if (customer.customer_type === 'corporate') {
-      return customer.company_name || customer.company_name_ar || 'شركة';
+      return customer.company_name_ar || customer.company_name || 'شركة';
     }
-    const firstName = customer.first_name || customer.first_name_ar || '';
-    const lastName = customer.last_name || customer.last_name_ar || '';
+    const firstName = customer.first_name_ar || customer.first_name || '';
+    const lastName = customer.last_name_ar || customer.last_name || '';
     return `${firstName} ${lastName}`.trim();
   };
 
@@ -399,300 +329,63 @@ const VehicleDetailsPage = () => {
     ? (typeof vehicle.images[0] === 'string' ? vehicle.images[0] : (vehicle.images[0] as any)?.url || '')
     : '';
 
-  const statusAccent = vehicle.status === 'available'
-    ? vehicleTheme.success
-    : vehicle.status === 'rented'
-    ? vehicleTheme.focus
-    : vehicle.status === 'maintenance'
-    ? vehicleTheme.alert
-    : vehicleTheme.water;
-
-  const vehicleDetailsSystemStyle = {
-    '--vehicle-details-text': vehicleTheme.text,
-    '--vehicle-details-surface': vehicleTheme.surface,
-    '--vehicle-details-inner': vehicleTheme.inner,
-    '--vehicle-details-muted': vehicleTheme.muted,
-    '--vehicle-details-border': vehicleTheme.border,
-    '--vehicle-details-info': vehicleTheme.water,
-    '--vehicle-details-alert': vehicleTheme.alert,
-    '--vehicle-details-focus': vehicleTheme.focus,
-    '--vehicle-details-success': vehicleTheme.success,
-  } as CSSProperties;
-
   const primaryContract = contracts.find((contract) => isContractOccupyingVehicle(contract));
   const pendingViolations = violations.filter((violation) => {
     const status = violation.payment_status || violation.status;
     return status !== 'paid' && status !== 'settled';
   });
-  const openMaintenance = maintenanceRecords.filter((record) => record.status !== 'completed');
+  const openMaintenance = maintenanceRecords.filter((record) => !['completed', 'cancelled', 'canceled'].includes(record.status || ''));
   const totalPendingViolations = pendingViolations.reduce((sum, violation) => sum + Number(violation.total_amount || violation.fine_amount || 0), 0);
   const registrationDaysRemaining = vehicle.registration_expiry
     ? differenceInDays(new Date(vehicle.registration_expiry), new Date())
     : null;
-  const readinessScore = Math.max(
-    35,
-    100
-      - (vehicle.status === 'available' ? 0 : 18)
-      - (openMaintenance.length > 0 ? 14 : 0)
-      - (pendingViolations.length > 0 ? 12 : 0)
-      - (registrationDaysRemaining !== null && registrationDaysRemaining < 30 ? 16 : 0)
-  );
-  const readinessState = readinessScore >= 85
-    ? { label: 'جاهزية عالية', helper: 'المركبة جاهزة للتشغيل بدون عوائق مهمة', color: vehicleTheme.success }
-    : readinessScore >= 65
-    ? { label: 'تحتاج متابعة', helper: 'يوجد عناصر تشغيلية تحتاج مراجعة قبل القرار', color: vehicleTheme.alert }
-    : { label: 'مخاطر تشغيلية', helper: 'يفضل إغلاق الملاحظات قبل التأجير أو التمديد', color: '#E11D48' };
-
-  const metricCards = [
-    {
-      label: 'حالة التشغيل',
-      value: getStatusText(vehicle.status),
-      helper: vehicle.status === 'available' ? 'جاهزة للتأجير الفوري' : 'تحتاج متابعة تشغيلية',
-      icon: CheckCircle,
-      color: statusAccent,
-    },
-    {
-      label: 'العقود النشطة',
-      value: vehicleStats?.activeContracts || 0,
-      helper: 'عقود مرتبطة بالمركبة',
-      icon: FileText,
-      color: vehicleTheme.focus,
-    },
-    {
-      label: 'إجمالي الإيرادات',
-      value: formatCurrency(vehicleStats?.totalRevenue || 0),
-      helper: 'مدفوعات محصلة',
-      icon: DollarSign,
-      color: vehicleTheme.alert,
-    },
-    {
-      label: 'قراءة العداد',
-      value: vehicle.current_mileage?.toLocaleString('en-US') || 0,
-      helper: 'كيلومتر',
-      icon: Gauge,
-      color: vehicleTheme.water,
-    },
-  ];
-
-  const tabs = [
-    { value: 'overview', label: 'نظرة عامة', icon: Info },
-    { value: 'technical', label: 'تقنية', icon: Settings },
-    { value: 'financial', label: 'مالية', icon: DollarSign },
-    { value: 'pricing', label: 'التسعير', icon: Tag },
-    { value: 'contracts', label: 'العقود', icon: FileText },
-    { value: 'maintenance', label: 'الصيانة', icon: Wrench },
-    { value: 'violations', label: 'المخالفات', icon: AlertTriangle },
-    { value: 'insurance', label: 'التأمين', icon: DollarSign },
-    { value: 'documents', label: 'الوثائق', icon: Folder },
-  ];
-
   return (
-    <div className="vehicle-details-system min-h-screen" style={vehicleDetailsSystemStyle}>
-      <header className="sticky top-0 z-40 border-b bg-white/95 backdrop-blur" style={{ borderColor: vehicleTheme.border }}>
-        <div className="flex min-h-[68px] w-full items-center justify-between gap-3 px-4 sm:px-6 lg:px-8">
-          <div className="flex min-w-0 items-center gap-3">
-            <Button variant="ghost" size="icon" onClick={handleBack} className="h-10 w-10 rounded-[8px] border bg-white" style={{ borderColor: vehicleTheme.border }}>
-              <ArrowRight className="h-5 w-5" />
-            </Button>
-            <div className="min-w-0">
-              <p className="text-xs font-semibold" style={{ color: vehicleTheme.muted }}>ملف المركبة</p>
-              <h1 className="truncate text-lg font-bold sm:text-2xl" style={{ color: vehicleTheme.text }}>{vehicleName}</h1>
-            </div>
-          </div>
-
-          <div className="flex shrink-0 items-center gap-2">
-            <FeatureTourButton
-              tour={vehicleDetailsTours.page}
-              onStart={setActiveFeatureTour}
-              className="hidden h-10 gap-2 rounded-[8px] border bg-white lg:inline-flex"
-            />
-            <Button variant="outline" className="hidden h-10 gap-2 rounded-[8px] border bg-white sm:inline-flex" style={{ borderColor: vehicleTheme.border }} onClick={() => setShowReportDialog(true)}>
-              <FileText className="h-4 w-4" style={{ color: vehicleTheme.focus }} />
-              تقرير
-            </Button>
-            <Button type="button" onClick={handleEdit} disabled={!vehicle || loadingVehicle} className="h-10 gap-2 rounded-[8px] text-white" style={{ backgroundColor: vehicleTheme.success }}>
-              <Edit3 className="h-4 w-4" />
-              تعديل
-            </Button>
-          </div>
+    <div className="vehicle-workspace" dir="rtl">
+      <header className="vehicle-toolbar">
+        <nav aria-label="مسار ملف المركبة"><Link to="/fleet">الأسطول</Link><ChevronLeft size={14} /><span>ملف المركبة</span><ChevronLeft size={14} /><strong dir="ltr">{vehicle.plate_number}</strong></nav>
+        <div className="vehicle-actions">
+          <Button variant="ghost" size="icon" aria-label="تحديث بيانات المركبة" onClick={refresh}><RefreshCw size={17} /></Button>
+          <Button variant="outline" onClick={() => setShowReportDialog(true)}><FileText size={16} />التقرير الشامل</Button>
+          <Button variant="outline" onClick={handleEdit}><Edit3 size={16} />تعديل البيانات</Button>
         </div>
       </header>
-
-      <main className="w-full px-4 py-6 sm:px-6 lg:px-8">
-        <div className="vehicle-command-grid grid gap-5 xl:grid-cols-[360px_minmax(0,1fr)]">
-          <motion.aside
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.25 }}
-            className="space-y-4 xl:sticky xl:top-[88px] xl:self-start"
-          >
-            <Card className="overflow-hidden rounded-[8px] border bg-white shadow-sm" style={{ borderColor: vehicleTheme.border }}>
-              <CardContent className="p-0">
-                <button
-                  type="button"
-                  className="group relative block aspect-[4/3] w-full overflow-hidden bg-slate-50 text-right"
-                  onClick={() => vehicleImage && setShowImagePreview(true)}
-                >
-                  {vehicleImage ? (
-                    <img src={vehicleImage} alt={vehicleName} className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.03]" />
-                  ) : (
-                    <span className="flex h-full w-full items-center justify-center" style={{ backgroundColor: vehicleTheme.inner }}>
-                      <Car className="h-20 w-20" style={{ color: vehicleTheme.muted }} />
-                    </span>
-                  )}
-                  <span className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/75 to-transparent p-4 text-white">
-                    <span className="block text-xs opacity-80">رقم اللوحة</span>
-                    <span className="block font-mono text-2xl font-bold tracking-normal">{vehicle.plate_number}</span>
-                  </span>
-                </button>
-
-                <div className="space-y-4 p-5">
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="min-w-0">
-                      <h2 className="text-2xl font-bold leading-tight" style={{ color: vehicleTheme.text }}>{vehicleName}</h2>
-                      <p className="mt-1 truncate text-sm" style={{ color: vehicleTheme.muted }}>{vehicle.vin || 'لا يوجد رقم هيكل مسجل'}</p>
-                    </div>
-                    <Badge className="shrink-0 rounded-[8px] border px-3 py-1 text-xs font-semibold" style={{ backgroundColor: `${statusAccent}16`, borderColor: `${statusAccent}44`, color: statusAccent }}>
-                      {getStatusText(vehicle.status)}
-                    </Badge>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-3">
-                    <VehicleChip label="العداد" value={`${vehicle.current_mileage?.toLocaleString('en-US') || 0} كم`} color={vehicleTheme.water} />
-                    <VehicleChip label="العقود النشطة" value={vehicleStats?.activeContracts || 0} color={vehicleTheme.focus} />
-                    {vehicle.color && <VehicleChip label="اللون" value={vehicle.color} color={vehicleTheme.success} />}
-                    {vehicle.location && <VehicleChip label="الموقع" value={vehicle.location} color={vehicleTheme.alert} />}
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-2">
-                    <FeatureTourButton
-                      tour={vehicleDetailsTours.page}
-                      onStart={setActiveFeatureTour}
-                      className="col-span-2 h-10 gap-2 rounded-[8px] border bg-white lg:hidden"
-                    />
-                    <Button onClick={handleNewContract} className="h-10 gap-2 rounded-[8px] text-white" style={{ backgroundColor: vehicleTheme.success }}>
-                      <Plus className="h-4 w-4" />
-                      عقد
-                    </Button>
-                    <Button onClick={() => setShowStatusDialog(true)} variant="outline" className="h-10 gap-2 rounded-[8px] border bg-white" style={{ borderColor: vehicleTheme.border }}>
-                      <CheckCircle className="h-4 w-4" style={{ color: statusAccent }} />
-                      الحالة
-                    </Button>
-                    <Button onClick={() => setShowMaintenanceForm(true)} variant="outline" className="h-10 gap-2 rounded-[8px] border bg-white" style={{ borderColor: vehicleTheme.border }}>
-                      <Wrench className="h-4 w-4" style={{ color: vehicleTheme.focus }} />
-                      صيانة
-                    </Button>
-                    <Button onClick={handleNewViolation} variant="outline" className="h-10 gap-2 rounded-[8px] border bg-white" style={{ borderColor: vehicleTheme.border }}>
-                      <AlertTriangle className="h-4 w-4" style={{ color: vehicleTheme.alert }} />
-                      مخالفة
-                    </Button>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="rounded-[8px] border bg-white shadow-sm" style={{ borderColor: vehicleTheme.border }}>
-              <CardContent className="space-y-3 p-5">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-bold" style={{ color: vehicleTheme.text }}>ملخص التشغيل</span>
-                  <span className="text-xs font-semibold" style={{ color: readinessState.color }}>{readinessState.label}</span>
-                </div>
-                <div className="h-2 overflow-hidden rounded-full" style={{ backgroundColor: vehicleTheme.inner }}>
-                  <div className="h-full rounded-full" style={{ width: `${readinessScore}%`, backgroundColor: readinessState.color }} />
-                </div>
-                <div className="grid gap-2 text-sm">
-                  <InfoRow label="العقد الحالي" value={primaryContract ? getCustomerName(primaryContract.customer) : 'لا يوجد عقد نشط'} />
-                  <InfoRow label="الصيانة المفتوحة" value={`${openMaintenance.length} طلب`} />
-                  <InfoRow label="مخالفات غير مدفوعة" value={formatCurrency(totalPendingViolations)} />
-                  <InfoRow label="انتهاء الاستمارة" value={registrationDaysRemaining === null ? 'غير محدد' : registrationDaysRemaining < 0 ? 'منتهية' : `بعد ${registrationDaysRemaining} يوم`} />
-                </div>
-              </CardContent>
-            </Card>
-          </motion.aside>
-
-          <section className="min-w-0 space-y-5">
-            <Card className="rounded-[8px] border bg-white shadow-sm" style={{ borderColor: vehicleTheme.border }}>
-              <CardContent className="grid gap-5 p-5 lg:grid-cols-[minmax(0,1fr)_280px]">
-                <div className="min-w-0">
-                  <p className="text-sm font-semibold" style={{ color: vehicleTheme.muted }}>لوحة القرار التشغيلي</p>
-                  <h2 className="mt-2 text-2xl font-bold sm:text-3xl" style={{ color: vehicleTheme.text }}>{readinessState.label}</h2>
-                  <p className="mt-2 max-w-2xl text-sm leading-7" style={{ color: vehicleTheme.muted }}>{readinessState.helper}</p>
-                  <div className="mt-4 flex flex-wrap gap-2">
-                    <Button onClick={() => setShowReportDialog(true)} variant="outline" className="h-10 gap-2 rounded-[8px] border bg-white" style={{ borderColor: vehicleTheme.border }}>
-                      <FileText className="h-4 w-4" style={{ color: vehicleTheme.focus }} />
-                      تقرير شامل
-                    </Button>
-                    <FeatureTourButton
-                      tour={vehicleDetailsTours.contract}
-                      onStart={setActiveFeatureTour}
-                      className="h-10 gap-2 rounded-[8px] border bg-white"
-                    />
-                    <Button onClick={handleNewContract} className="h-10 gap-2 rounded-[8px] text-white" style={{ backgroundColor: vehicleTheme.success }}>
-                      <Plus className="h-4 w-4" />
-                      إنشاء عقد
-                    </Button>
-                  </div>
-                </div>
-                <div className="rounded-[8px] border p-4" style={{ borderColor: vehicleTheme.border, backgroundColor: vehicleTheme.inner }}>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-semibold" style={{ color: vehicleTheme.muted }}>نسبة الجاهزية</span>
-                    <span className="font-mono text-3xl font-bold" style={{ color: readinessState.color }}>{readinessScore}%</span>
-                  </div>
-                  <div className="mt-4 space-y-2 text-sm">
-                    <InfoRow label="حالة التشغيل" value={getStatusText(vehicle.status)} />
-                    <InfoRow label="الإيرادات المحصلة" value={formatCurrency(vehicleStats?.totalRevenue || 0)} />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
-              {metricCards.map((metric) => {
-                const Icon = metric.icon;
-                return (
-                  <Card key={metric.label} className="rounded-[8px] border bg-white shadow-sm" style={{ borderColor: vehicleTheme.border }}>
-                    <CardContent className="p-4">
-                      <div className="flex items-center justify-between gap-3">
-                        <div className="flex h-10 w-10 items-center justify-center rounded-[8px]" style={{ backgroundColor: `${metric.color}14` }}>
-                          <Icon className="h-5 w-5" style={{ color: metric.color }} />
-                        </div>
-                        <span className="text-xs font-semibold" style={{ color: vehicleTheme.muted }}>{metric.label}</span>
-                      </div>
-                      <p className="mt-4 truncate text-2xl font-bold" style={{ color: metric.color }}>{metric.value}</p>
-                      <p className="mt-1 truncate text-sm" style={{ color: vehicleTheme.muted }}>{metric.helper}</p>
-                    </CardContent>
-                  </Card>
-                );
-              })}
-            </div>
-
-            <Card className="rounded-[8px] border bg-white shadow-sm" style={{ borderColor: vehicleTheme.border }}>
-              <Tabs value={activeTab} onValueChange={setActiveTab} className="grid min-h-[640px] lg:grid-cols-[230px_minmax(0,1fr)]">
-                <div className="border-b p-3 lg:border-b-0 lg:border-l" style={{ borderColor: vehicleTheme.border }}>
-                  <TabsList className="flex h-auto w-full justify-start gap-2 overflow-x-auto rounded-none bg-transparent p-0 lg:flex-col lg:overflow-visible">
-                    {tabs.map((tab) => {
-                      const Icon = tab.icon;
-                      const active = activeTab === tab.value;
-                      return (
-                        <TabsTrigger
-                          key={tab.value}
-                          value={tab.value}
-                          className="vehicle-tab-trigger h-11 w-auto shrink-0 justify-start gap-2 rounded-[8px] border px-3 text-sm font-semibold shadow-none transition data-[state=active]:shadow-none lg:w-full"
-                          style={{
-                            backgroundColor: active ? vehicleTheme.text : vehicleTheme.surface,
-                            borderColor: active ? vehicleTheme.text : vehicleTheme.border,
-                            color: active ? '#FFFFFF' : vehicleTheme.text,
-                          }}
-                        >
-                          <Icon className="h-4 w-4" />
-                          <span>{tab.label}</span>
-                        </TabsTrigger>
-                      );
-                    })}
-                  </TabsList>
-                </div>
-
-                <div className="min-w-0 p-4 sm:p-5">
+      <main className="vehicle-canvas">
+        <section className="vehicle-identity" aria-label="هوية المركبة">
+          <div className="vehicle-identity-copy">
+            <span className="vehicle-eyebrow">إدارة الأسطول <span>/</span> ملف المركبة</span>
+            <h1>{vehicle.make} <span>{vehicle.model}</span></h1>
+            <div className="vehicle-identity-meta"><span>{vehicle.year || 'السنة غير مسجلة'}</span><span>{vehicle.color_ar || vehicle.color || 'اللون غير مسجل'}</span><span><MapPin size={14} />{vehicle.current_location || vehicle.location || 'الموقع غير مسجل'}</span></div>
+            <div className="vehicle-plate-row"><div className="vehicle-plate"><span>قطر<small>QATAR</small></span><strong dir="ltr">{vehicle.plate_number}</strong></div><Badge className="vehicle-status" data-status={vehicle.status}>{getStatusText(vehicle.status)}</Badge></div>
+            <p className="vehicle-vin">رقم الهيكل <span dir="ltr">{vehicle.vin || vehicle.vin_number || 'غير مسجل'}</span></p>
+          </div>
+          <div className="vehicle-image-area">
+            {vehicleImage ? <button type="button" aria-label="معاينة صورة المركبة" onClick={() => setShowImagePreview(true)}><img src={vehicleImage} alt={vehicleName} /></button> : <div className="vehicle-image-placeholder"><Car strokeWidth={1} /><span>صورة المركبة غير مضافة</span><Button variant="ghost" size="sm" onClick={handleEdit}>إضافة صورة <Plus size={14} /></Button></div>}
+            <span className="vehicle-image-caption">{vehicle.make} · {vehicle.model} · {vehicle.year}</span>
+          </div>
+        </section>
+        <section className="vehicle-operation" data-available={operation.canRent} aria-label="الحالة التشغيلية">
+          <div className="vehicle-operation-icon">{operation.canRent ? <ShieldCheck /> : <FileText />}</div>
+          <div className="vehicle-operation-copy"><span className="vehicle-eyebrow">التشغيل والعقود</span><h2>{operation.label}</h2><p>{operation.reason}</p>
+            {vehicle.status === 'available' && operation.occupying.length > 0 && <p role="alert">الحالة المسجلة «متاحة» تتعارض مع إشغال العقد؛ يلزم مراجعة التشغيل.</p>}
+          </div>
+          <div className="vehicle-actions">
+            {primaryContract && <Button asChild className="vehicle-primary"><Link to={'/contracts/' + encodeURIComponent(primaryContract.contract_number || primaryContract.id)}>فتح العقد {primaryContract.contract_number}<ChevronLeft size={16} /></Link></Button>}
+            {operation.canRent && <Button className="vehicle-primary" onClick={handleNewContract}><Plus size={17} />إنشاء عقد</Button>}
+            <Button variant="outline" onClick={() => setShowStatusDialog(true)}>إدارة الحالة</Button>
+          </div>
+        </section>
+        <div className="vehicle-pulse">
+          <button onClick={() => setActiveTab('contracts')}><FileText /><span>عقود تشغل المركبة<strong>{contractsError ? '—' : operation.occupying.length}</strong><small>{contractsError ? 'تعذر التحقق من العقود' : primaryContract ? getCustomerName(primaryContract.customer) : 'لا يوجد إشغال حالي'}</small></span><ChevronLeft size={16} /></button>
+          <button onClick={() => setActiveTab('maintenance')}><Wrench /><span>صيانة مفتوحة<strong>{maintenanceError ? '—' : openMaintenance.length}</strong><small>طلبات تحتاج متابعة</small></span><ChevronLeft size={16} /></button>
+          <button onClick={() => setActiveTab('violations')}><AlertTriangle /><span>مخالفات غير مسددة<strong>{violationsError ? '—' : formatCurrency(totalPendingViolations)}</strong><small>{violationsError ? 'تعذر تحميل المخالفات' : pendingViolations.length + ' مخالفة مسجلة'}</small></span><ChevronLeft size={16} /></button>
+          <button onClick={() => setActiveTab('insurance')}><CalendarDays /><span>انتهاء الاستمارة<strong>{registrationDaysRemaining === null ? 'غير مسجل' : registrationDaysRemaining < 0 ? 'منتهية' : registrationDaysRemaining + ' يوم'}</strong><small>{vehicle.registration_expiry || 'أضف بيانات التسجيل'}</small></span><ChevronLeft size={16} /></button>
+        </div>
+        <Tabs value={activeTab} onValueChange={setActiveTab} dir="rtl" className="vehicle-sections">
+          <TabsList className="vehicle-section-nav" aria-label="أقسام ملف المركبة">
+            {vehicleDetailTabs.map((tab) => <TabsTrigger key={tab.value} value={tab.value}>{tab.label}{tab.value === 'contracts' && !contractsError && <span>{contracts.length}</span>}</TabsTrigger>)}
+          </TabsList>
+          <div className="vehicle-section-heading"><div><span className="vehicle-eyebrow">ملف {vehicle.plate_number}</span><h2>{selectedTab.label}</h2><p>{selectedTab.description}</p></div><span className="vehicle-section-index">{String(vehicleDetailTabs.findIndex(tab => tab.value === activeTab) + 1).padStart(2, '0')} <small>/ 09</small></span></div>
+          <div className="vehicle-section-body">
                   <TabsContent value="overview" className="mt-0">
                     <OverviewTab vehicle={vehicle} formatCurrency={formatCurrency} />
                   </TabsContent>
@@ -703,28 +396,31 @@ const VehicleDetailsPage = () => {
                     <FinancialTab vehicle={vehicle} formatCurrency={formatCurrency} />
                   </TabsContent>
                   <TabsContent value="pricing" className="mt-0">
+                    <div className="vehicle-base-rates">
+                      <div><span>التعرفة اليومية الأساسية</span><strong>{vehicle.daily_rate != null ? formatCurrency(vehicle.daily_rate) : 'غير مسجلة'}</strong></div>
+                      <div><span>التعرفة الأسبوعية الأساسية</span><strong>{vehicle.weekly_rate != null ? formatCurrency(vehicle.weekly_rate) : 'غير مسجلة'}</strong></div>
+                      <div><span>التعرفة الشهرية الأساسية</span><strong>{vehicle.monthly_rate != null ? formatCurrency(vehicle.monthly_rate) : 'غير مسجلة'}</strong></div>
+                    </div>
                     <VehiclePricingPanel vehicleId={vehicle.id} />
                   </TabsContent>
                   <TabsContent value="insurance" className="mt-0">
                     <VehicleInsurancePanel vehicleId={vehicle.id} />
                   </TabsContent>
                   <TabsContent value="contracts" className="mt-0">
-                    <ContractsTab contracts={contracts} getCustomerName={getCustomerName} formatCurrency={formatCurrency} vehicleId={vehicleId} onNewContract={handleNewContract} />
+                    {contractsError ? <HistoryError error={contractsError} onRetry={refresh} /> : <ContractsTab contracts={contracts} getCustomerName={getCustomerName} formatCurrency={formatCurrency} vehicleId={vehicleId} onNewContract={handleNewContract} canRent={operation.canRent} />}
                   </TabsContent>
                   <TabsContent value="maintenance" className="mt-0">
-                    <MaintenanceTab maintenanceRecords={maintenanceRecords} formatCurrency={formatCurrency} vehicleId={vehicleId} onNewMaintenance={() => setShowMaintenanceForm(true)} />
+                    {maintenanceError ? <HistoryError error={maintenanceError} onRetry={refresh} /> : <MaintenanceTab maintenanceRecords={maintenanceRecords} formatCurrency={formatCurrency} vehicleId={vehicleId} onNewMaintenance={() => setShowMaintenanceForm(true)} />}
                   </TabsContent>
                   <TabsContent value="violations" className="mt-0">
-                    <ViolationsTab violations={violations} formatCurrency={formatCurrency} onNewViolation={handleNewViolation} vehicleId={vehicleId} />
+                    {violationsError ? <HistoryError error={violationsError} onRetry={refresh} /> : <ViolationsTab violations={violations} formatCurrency={formatCurrency} onNewViolation={handleNewViolation} vehicleId={vehicleId} />}
                   </TabsContent>
                   <TabsContent value="documents" className="mt-0">
                     <VehicleDocumentsPanel vehicleId={vehicle.id} onDocumentAdd={() => {}} />
                   </TabsContent>
-                </div>
-              </Tabs>
-            </Card>
-          </section>
-        </div>
+          </div>
+        </Tabs>
+        <footer className="vehicle-footer"><span>آخر تحديث للبيانات المسجلة: {vehicle.updated_at ? format(new Date(vehicle.updated_at), 'dd/MM/yyyy HH:mm') : 'غير متوفر'}</span><span>جميع المبالغ بالعملة المعتمدة للشركة</span></footer>
       </main>
       {/* Vehicle Form Dialog */}
       <VehicleForm 
@@ -734,7 +430,7 @@ const VehicleDetailsPage = () => {
           setShowEditForm(open);
           if (!open) {
             // Invalidate queries when dialog closes to refresh vehicle data
-            queryClient.invalidateQueries({ queryKey: ['vehicle-details', vehicleId, companyId] });
+            void refresh();
             queryClient.invalidateQueries({ queryKey: ['vehicles'] });
           }
         }}
@@ -748,7 +444,7 @@ const VehicleDetailsPage = () => {
           setShowMaintenanceForm(open);
           if (!open) {
             // Invalidate queries when dialog closes
-            queryClient.invalidateQueries({ queryKey: ['vehicle-maintenance', vehicleId] });
+            void refresh();
           }
         }}
       />
@@ -756,6 +452,8 @@ const VehicleDetailsPage = () => {
       {/* Traffic Violation Form Dialog */}
       <Dialog open={showViolationForm} onOpenChange={setShowViolationForm}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogTitle>تسجيل مخالفة للمركبة {vehicle.plate_number}</DialogTitle>
+          <DialogDescription>أدخل تفاصيل المخالفة لربطها بالمركبة والعقد المسؤول.</DialogDescription>
           <TrafficViolationForm onSuccess={handleViolationSuccess} vehicleId={vehicleId} />
         </DialogContent>
       </Dialog>
@@ -777,8 +475,9 @@ const VehicleDetailsPage = () => {
           vehicleId={vehicle.id}
           currentStatus={vehicle.status}
           currentNotes={vehicle.notes}
+          occupancyNotice={operation.reason}
           onSuccess={() => {
-            queryClient.invalidateQueries({ queryKey: ['vehicle-details', vehicleId, companyId] });
+            void refresh();
             queryClient.invalidateQueries({ queryKey: ['vehicles'] });
           }}
         />
@@ -791,7 +490,6 @@ const VehicleDetailsPage = () => {
         imageUrl={vehicleImage}
         alt={vehicleName}
       />
-      <FeatureTourDialog tour={activeFeatureTour} onOpenChange={(open) => !open && setActiveFeatureTour(null)} />
     </div>
   );
 };
@@ -803,25 +501,6 @@ interface OverviewTabProps {
   vehicle: Vehicle;
   formatCurrency: (amount: number) => string;
 }
-
-interface VehicleChipProps {
-  label: string;
-  value?: string | number;
-  color: string;
-}
-
-const VehicleChip = ({ label, value, color }: VehicleChipProps) => (
-  <div
-    className="rounded-[8px] border px-3 py-2"
-    style={{ backgroundColor: vehicleTheme.inner, borderColor: vehicleTheme.border }}
-  >
-    <div className="mb-1 flex items-center gap-2">
-      <span className="h-2 w-2 rounded-full" style={{ backgroundColor: color }} />
-      <span className="text-xs font-semibold" style={{ color: vehicleTheme.muted }}>{label}</span>
-    </div>
-    <p className="truncate text-sm font-bold" style={{ color: vehicleTheme.text }}>{value || '-'}</p>
-  </div>
-);
 
 const OverviewTab = ({ vehicle, formatCurrency }: OverviewTabProps) => (
   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -855,17 +534,17 @@ const OverviewTab = ({ vehicle, formatCurrency }: OverviewTabProps) => (
         <InfoRow label="رقم المحرك" value={vehicle.engine_number} mono />
         <InfoRow
           label="ناقل الحركة"
-          value={vehicle.transmission_type === 'automatic' ? 'أوتوماتيك' : 'يدوي'}
+          value={vehicle.transmission_type === 'automatic' ? 'أوتوماتيك' : vehicle.transmission_type === 'manual' ? 'يدوي' : undefined}
         />
         <InfoRow
           label="نوع الوقود"
           value={
-            vehicle.fuel_type === 'gasoline' ? 'بنزين' :
+            ['gasoline', 'petrol'].includes(vehicle.fuel_type || '') ? 'بنزين' :
             vehicle.fuel_type === 'diesel' ? 'ديزل' :
-            vehicle.fuel_type === 'hybrid' ? 'هجين' : 'كهربائي'
+            vehicle.fuel_type === 'hybrid' ? 'هجين' : vehicle.fuel_type === 'electric' ? 'كهربائي' : undefined
           }
         />
-        <InfoRow label="المسافة المقطوعة" value={vehicle.current_mileage ? `${vehicle.current_mileage.toLocaleString('en-US')} كم` : undefined} />
+        <InfoRow label="المسافة المقطوعة" value={vehicle.current_mileage != null ? `${vehicle.current_mileage.toLocaleString('en-US')} كم` : undefined} />
       </CardContent>
     </Card>
 
@@ -894,7 +573,7 @@ interface InfoRowProps {
 }
 
 const InfoRow = ({ label, value, mono }: InfoRowProps) => (
-  <div className="flex justify-between items-center">
+  <div className="vehicle-info-row">
     <span className="text-slate-600">{label}</span>
     <span className={cn('font-semibold', mono && 'font-mono text-sm')}>
       {value || '-'}
@@ -929,7 +608,7 @@ const TechnicalTab = ({ vehicle }: TechnicalTabProps) => (
             vehicle.vehicle_condition === 'excellent' ? 'ممتازة' :
             vehicle.vehicle_condition === 'very_good' ? 'جيدة جداً' :
             vehicle.vehicle_condition === 'good' ? 'جيدة' :
-            vehicle.vehicle_condition === 'fair' ? 'مقبولة' : 'ضعيفة'
+            vehicle.vehicle_condition === 'fair' ? 'مقبولة' : vehicle.vehicle_condition === 'poor' ? 'ضعيفة' : undefined
           }
         />
       </CardContent>
@@ -1012,9 +691,10 @@ interface ContractsTabProps {
   formatCurrency: (amount: number) => string;
   vehicleId?: string;
   onNewContract?: () => void;
+  canRent: boolean;
 }
 
-const ContractsTab = ({ contracts, getCustomerName, formatCurrency, vehicleId, onNewContract }: ContractsTabProps) => {
+const ContractsTab = ({ contracts, getCustomerName, formatCurrency, vehicleId, onNewContract, canRent }: ContractsTabProps) => {
   const navigate = useNavigate();
   const [activeTour, setActiveTour] = useState<FeatureTourContent | null>(null);
 
@@ -1034,7 +714,7 @@ const ContractsTab = ({ contracts, getCustomerName, formatCurrency, vehicleId, o
         <h3 className="text-lg font-semibold text-slate-900">العقود المرتبطة بالمركبة</h3>
         <div className="flex flex-wrap justify-end gap-2">
           <FeatureTourButton tour={vehicleDetailsTours.contract} onStart={setActiveTour} />
-          <Button className="gap-2 bg-[#00A896] hover:bg-[#007D6D]" onClick={handleClick}>
+          <Button className="gap-2 bg-[#00A896] hover:bg-[#007D6D]" onClick={handleClick} disabled={!canRent}>
             <Plus className="w-4 h-4" />
             عقد جديد
           </Button>
@@ -1057,22 +737,21 @@ const ContractsTab = ({ contracts, getCustomerName, formatCurrency, vehicleId, o
             return (
               <Card 
                 key={contract.id} 
-                className="transition-all hover:border-red-400 hover:shadow-lg cursor-pointer hover:scale-[1.01] active:scale-[0.99]"
-                onClick={() => navigate(`/contracts/${contract.contract_number}`)}
+                className="vehicle-contract-record"
               >
                 <CardContent className="p-4">
                   <div className="flex items-start justify-between mb-3">
                     <div className="flex-1">
                       <div className="flex items-center gap-2">
-                        <h4 className="font-semibold text-slate-900 mb-1">
-                          عقد #{contract.contract_number}
-                        </h4>
+                        <Link className="vehicle-contract-link" to={"/contracts/" + encodeURIComponent(contract.contract_number || contract.id)}>عقد #{contract.contract_number}</Link>
+                        {isContractOccupyingVehicle(contract) && <Badge className="vehicle-occupancy-badge">يشغل المركبة الآن</Badge>}
+                        {contract.vehicle_returned && <Badge variant="outline">تم إرجاع المركبة</Badge>}
                         <ChevronLeft className="w-4 h-4 text-slate-400" />
                       </div>
                       <p className="text-sm text-slate-600">العميل: {customerName}</p>
                     </div>
                     <Badge className={contract.status === 'active' ? 'status-available' : 'bg-slate-100'}>
-                      {contract.status === 'active' ? 'نشط' : contract.status === 'completed' ? 'مكتمل' : contract.status === 'cancelled' ? 'ملغي' : contract.status === 'pending' ? 'قيد الانتظار' : contract.status === 'expired' ? 'منتهي' : contract.status}
+                      {contract.status === 'active' ? 'نشط' : contract.status === 'completed' ? 'مكتمل' : contract.status === 'cancelled' ? 'ملغي' : contract.status === 'pending' ? 'قيد الانتظار' : contract.status === 'expired' ? 'منتهي' : contract.status === 'under_legal_procedure' ? 'إجراء قانوني' : contract.status === 'suspended' ? 'معلق' : contract.status}
                     </Badge>
                   </div>
 
@@ -1271,8 +950,8 @@ const ViolationsTab = ({ violations, formatCurrency, onNewViolation, vehicleId }
                       رقم المخالفة: #{violation.violation_number || violation.id.substring(0, 8)}
                     </p>
                   </div>
-                  <Badge className={violation.payment_status === 'paid' ? 'bg-[#E6F7F4] text-[#00A896]' : 'bg-[#E6F7F4] text-[#00A896]'}>
-                    {violation.payment_status === 'paid' ? 'مدفوعة' : 'معلقة'}
+                  <Badge className={['paid', 'settled'].includes(violation.payment_status) ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-800'}>
+                    {['paid', 'settled'].includes(violation.payment_status) ? 'مدفوعة' : 'معلقة'}
                   </Badge>
                 </div>
 
@@ -1292,7 +971,7 @@ const ViolationsTab = ({ violations, formatCurrency, onNewViolation, vehicleId }
                   <div>
                     <div className="text-slate-500">الحالة</div>
                     <div className="font-semibold">
-                      {violation.payment_status === 'paid' ? 'مدفوعة' : 'غير مدفوعة'}
+                      {['paid', 'settled'].includes(violation.payment_status) ? 'مدفوعة' : 'غير مدفوعة'}
                     </div>
                   </div>
                   <div>
@@ -1312,9 +991,11 @@ const ViolationsTab = ({ violations, formatCurrency, onNewViolation, vehicleId }
   );
 };
 
+function HistoryError({ error, onRetry }: { error: unknown; onRetry: () => void }) {
+  return error ? <div role="alert" className="vehicle-history-error">تعذر تحميل هذا السجل. قد تكون البيانات المعروضة غير مكتملة.<Button variant="outline" onClick={onRetry}>إعادة المحاولة</Button></div> : null;
+}
+
 export default VehicleDetailsPage;
-
-
 
 
 

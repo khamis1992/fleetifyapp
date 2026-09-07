@@ -1,14 +1,15 @@
+import { LegalPageState } from '@/components/legal/workspace/LegalPageState';
+import { LegalPageHeader } from '@/components/legal/workspace/LegalPageHeader';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { AlertTriangle, FileText, Scale, Search } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 
 interface ContractWithoutSignedLease {
@@ -36,7 +37,7 @@ type UntypedViewQueryResult = {
   error: unknown;
 };
 
-const queryUntypedView = supabase.from as unknown as (
+const queryUntypedView = supabase.from.bind(supabase) as unknown as (
   relation: string,
 ) => {
   select: (columns: string) => {
@@ -54,7 +55,7 @@ export default function ContractsWithoutSignedLease() {
   const { companyId } = useUnifiedCompanyAccess();
   const [searchTerm, setSearchTerm] = useState('');
 
-  const { data: contracts, isLoading, error } = useQuery({
+  const { data: contracts, isLoading, error, refetch } = useQuery({
     queryKey: ['legal-contracts-without-signed-lease', companyId],
     queryFn: async () => {
       if (!companyId) return [];
@@ -105,48 +106,17 @@ export default function ContractsWithoutSignedLease() {
   };
 
   const handleViewContract = (contractId: string) => {
-    navigate(`/legal/lawsuit-preparation/${contractId}`);
+    navigate(`/legal/lawsuit/prepare/${contractId}`);
   };
 
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <LoadingSpinner size="lg" />
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <Alert variant="destructive">
-        <AlertTriangle className="h-4 w-4" />
-        <AlertDescription>
-          حدث خطأ في تحميل البيانات: {(error as Error).message}
-        </AlertDescription>
-      </Alert>
-    );
-  }
+  if (isLoading || error) return <LegalPageState title="العقود غير الموقّعة" loading={isLoading} message="قائمة العقود غير متاحة حاليًا. يلزم التحقق من إعداد خدمة العقود غير الموقّعة لإظهار الملفات." onRetry={() => { void refetch(); }} />;
 
   return (
     <div className="container mx-auto p-6 space-y-6">
+      <LegalPageHeader title="العقود غير الموقّعة" icon={AlertTriangle} description="عقود محالة إلى الشؤون القانونية وتحتاج نسخة موقّعة مطابقة لاستكمال ملف الدعوى." aside={<Badge variant="outline">{filteredContracts?.length || 0} عقد</Badge>} />
       <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div className="space-y-1">
-              <CardTitle className="text-2xl flex items-center gap-2">
-                <AlertTriangle className="h-6 w-6 text-orange-500" />
-                عقود تحت القانوني بلا عقد موقّع مطابق
-              </CardTitle>
-              <CardDescription>
-                قائمة العقود في الإجراءات القانونية التي تفتقد إلى نسخة العقد الموقع
-              </CardDescription>
-            </div>
-            <Badge variant="outline" className="text-lg px-4 py-2">
-              {filteredContracts?.length || 0} عقد
-            </Badge>
-          </div>
-        </CardHeader>
-        <CardContent className="space-y-4">
+
+        <CardContent className="space-y-4 pt-6">
           <div className="flex items-center gap-2">
             <Search className="h-4 w-4 text-gray-400" />
             <Input

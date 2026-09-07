@@ -717,7 +717,7 @@ const MonthlyObligations = () => {
   return (
     <div className="min-h-screen bg-[#F6F8FB]" dir="rtl">
       <div className="space-y-5 p-4 md:p-6">
-        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+        <div data-finance-heading="" className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div>
             <div className="flex items-center gap-2 text-sm text-slate-500">
               <Button

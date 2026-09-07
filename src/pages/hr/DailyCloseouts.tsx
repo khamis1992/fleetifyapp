@@ -16,7 +16,8 @@ import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
 import { supabase } from '@/integrations/supabase/client';
 import { useCompanyFilter } from '@/hooks/useCompanyScope';
-import { HRMetricCard, HRPageHeader, HRPageShell, HRSectionCard, hrFieldClassName } from '@/components/hr/HRDesignSystem';
+import { OperationsWorkspace, OperationsMetric, OperationsEmpty } from '@/components/operations/OperationsWorkspace';
+import { HRSectionCard, hrFieldClassName } from '@/components/hr/HRDesignSystem';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
@@ -512,16 +513,11 @@ export default function DailyCloseouts() {
   };
 
   const isLoading = logsQuery.isLoading || employeesQuery.isLoading;
+  const statsUnavailable = isLoading || hasInvalidDateRange || logsQuery.isError || employeesQuery.isError;
 
   return (
-    <HRPageShell>
-      <HRPageHeader
-        title="إقفالات الموظفين اليومية"
-        description="متابعة من أقفل يوم العمل، نتائج التحصيل، المعوقات، والموظفين الذين لم يرسلوا ملخص نهاية اليوم."
-        icon={ClipboardCheck}
-        badge="متابعة الإدارة"
-        action={(
-          <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
+    <OperationsWorkspace section="closeouts" actions={<Button className="opw-secondary" variant="outline" onClick={() => { logsQuery.refetch(); employeesQuery.refetch(); }} disabled={hasInvalidDateRange || logsQuery.isFetching || employeesQuery.isFetching}><RefreshCw size={16} className={logsQuery.isFetching ? 'animate-spin' : ''} />تحديث الإقفالات</Button>}>
+      <div className="ad-date-toolbar">
             <label className="space-y-1 text-xs font-bold text-[#64748B]">
               <span>من تاريخ</span>
               <Input
@@ -544,50 +540,17 @@ export default function DailyCloseouts() {
                 className={cn(hrFieldClassName, 'w-full sm:w-44')}
               />
             </label>
-            <Button
-              variant="outline"
-              className="h-11 rounded-xl border-slate-200"
-              onClick={() => logsQuery.refetch()}
-              disabled={hasInvalidDateRange}
-            >
-              <RefreshCw className={cn('ml-2 h-4 w-4', logsQuery.isFetching && 'animate-spin')} />
-              تحديث
-            </Button>
-          </div>
-        )}
-      />
-
-      <div className="grid grid-cols-1 gap-3 md:grid-cols-4">
-        {isDailyOverview ? (
-          <>
-            <HRMetricCard title="أقفلوا اليوم" value={`${stats.closed}/${stats.totalEmployees || '-'}`} subtitle="من موظفي مساحة العمل" icon={CheckCircle2} tone="success" />
-            <HRMetricCard title="لم يقفلوا" value={stats.missing} subtitle="يحتاج متابعة قبل نهاية الدوام" icon={UserX} tone={stats.missing > 0 ? 'danger' : 'neutral'} />
-            <HRMetricCard title="إجمالي التحصيل" value={formatCurrency(stats.collected)} subtitle={`${stats.exported} تقرير جاهز للطباعة`} icon={WalletCards} tone="focus" />
-            <HRMetricCard title="نشاط اليوم" value={`${stats.calls} مكالمة`} subtitle={`${stats.incomplete} إقفال غير مكتمل`} icon={Clock} tone="info" />
-          </>
-        ) : (
-          <>
-            <HRMetricCard
-              title="عدد الإقفالات"
-              value={stats.totalCloseouts}
-              subtitle={filteredEmployee ? getEmployeeName(filteredEmployee) : 'جميع الموظفين'}
-              icon={ClipboardCheck}
-              tone="success"
-            />
-            <HRMetricCard
-              title="الإقفالات المكتملة"
-              value={stats.completed}
-              subtitle={`${stats.incomplete} إقفال غير مكتمل`}
-              icon={CheckCircle2}
-              tone={stats.incomplete > 0 ? 'info' : 'success'}
-            />
-            <HRMetricCard title="إجمالي التحصيل" value={formatCurrency(stats.collected)} subtitle="ضمن الفترة المحددة" icon={WalletCards} tone="focus" />
-            <HRMetricCard title="نشاط الفترة" value={`${stats.calls} مكالمة`} subtitle={`${stats.exported} تقرير جاهز للطباعة`} icon={Clock} tone="info" />
-          </>
-        )}
+        <p>اختر يومًا لمتابعة الإقفال، أو فترة لمراجعة السجل.</p>
       </div>
+      <div className="opw-metrics" aria-busy={isLoading}>
+        <OperationsMetric label={isDailyOverview ? 'أقفلوا اليوم' : 'عدد الإقفالات'} value={statsUnavailable ? '—' : isDailyOverview ? stats.closed + '/' + stats.totalEmployees : stats.totalCloseouts} hint={filteredEmployee ? getEmployeeName(filteredEmployee) : 'من موظفي مساحة العمل'} icon={ClipboardCheck} />
+        <OperationsMetric label={isDailyOverview ? 'لم يقفلوا اليوم' : 'إقفالات مكتملة'} value={statsUnavailable ? '—' : isDailyOverview ? stats.missing : stats.completed} hint={isDailyOverview ? 'بحاجة إلى متابعة الإقفال' : statsUnavailable ? 'ضمن الفترة المحددة' : stats.incomplete + ' إقفال غير مكتمل'} icon={isDailyOverview ? UserX : CheckCircle2} tone={isDailyOverview ? 'warning' : 'default'} />
+        <OperationsMetric label="إجمالي التحصيل" value={statsUnavailable ? '—' : <bdi className="ad-money">{formatCurrency(stats.collected)}</bdi>} hint="المبالغ الموثقة في إقفالات الفترة" icon={WalletCards} />
+        <OperationsMetric label="المكالمات الموثقة" value={statsUnavailable ? '—' : stats.calls} hint={statsUnavailable ? 'ضمن الفترة المحددة' : stats.exported + ' تقرير جاهز للطباعة'} icon={Clock} />
+      </div>
+      {employeesQuery.isError && <div role="alert" className="ad-notice">تعذر تحميل قائمة الموظفين. أعد التحديث لاستكمال مؤشرات المتابعة.</div>}
 
-      <HRSectionCard>
+      <HRSectionCard className="ad-register overflow-hidden">
         <div className="flex flex-col gap-3 border-b border-slate-200 p-4 lg:flex-row lg:items-center lg:justify-between">
           <div>
             <h2 className="text-lg font-black text-[#020617]">سجل الإقفالات</h2>
@@ -601,7 +564,7 @@ export default function DailyCloseouts() {
           </div>
           <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
             <Select value={selectedEmployeeId} onValueChange={setSelectedEmployeeId}>
-              <SelectTrigger className={cn(hrFieldClassName, 'sm:w-64')}>
+              <SelectTrigger aria-label="تصفية الإقفالات حسب الموظف" className={cn(hrFieldClassName, 'sm:w-64')}>
                 <SelectValue placeholder="اختر الموظف" />
               </SelectTrigger>
               <SelectContent dir="rtl">
@@ -619,7 +582,7 @@ export default function DailyCloseouts() {
               <Input
                 value={search}
                 onChange={(event) => setSearch(event.target.value)}
-                placeholder="ابحث باسم الموظف أو المعوقات..."
+                aria-label="البحث في سجل الإقفالات" placeholder="ابحث باسم الموظف أو المعوقات..."
                 className={cn(hrFieldClassName, 'pr-9 sm:w-72')}
               />
             </div>
@@ -627,7 +590,7 @@ export default function DailyCloseouts() {
               variant="outline"
               className="h-11 rounded-xl border-slate-200"
               onClick={exportCsv}
-              disabled={hasInvalidDateRange || filteredLogs.length === 0}
+              disabled={statsUnavailable || filteredLogs.length === 0}
             >
               <Download className="ml-2 h-4 w-4" />
               تصدير
@@ -649,6 +612,8 @@ export default function DailyCloseouts() {
           <div className="p-10">
             <LoadingSpinner />
           </div>
+        ) : filteredLogs.length === 0 ? (
+          <OperationsEmpty title="لا توجد إقفالات مطابقة" description="لا توجد إقفالات محفوظة ضمن الموظف والفترة المحددين. يمكنك تغيير الفترة أو معايير البحث." />
         ) : (
           <div className="overflow-x-auto">
             <Table>
@@ -667,13 +632,7 @@ export default function DailyCloseouts() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredLogs.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={10} className="h-32 text-center text-[#64748B]">
-                      لا توجد إقفالات محفوظة ضمن الموظف والفترة المحددين.
-                    </TableCell>
-                  </TableRow>
-                ) : filteredLogs.map((log) => (
+                {filteredLogs.map((log) => (
                   <TableRow key={log.id} className="hover:bg-[#F6F8FB]/70">
                     <TableCell>
                       <div>
@@ -705,7 +664,7 @@ export default function DailyCloseouts() {
                     <TableCell className="max-w-xs truncate">{log.blockers || 'لا توجد'}</TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">
-                        <Button size="sm" variant="outline" className="rounded-xl border-slate-200" onClick={() => setSelectedLog(log)}>
+                        <Button size="sm" variant="outline" className="rounded-xl border-slate-200" aria-label={`عرض إقفال ${log.employee_name} بتاريخ ${log.log_date}`} onClick={() => setSelectedLog(log)}>
                           عرض التفاصيل
                         </Button>
                         <AgentReviewVerdictBadge agentType="daily_closeout" entityId={log.id} />
@@ -719,7 +678,7 @@ export default function DailyCloseouts() {
         )}
       </HRSectionCard>
 
-      {isDailyOverview && missingEmployees.length > 0 && (
+      {!statsUnavailable && isDailyOverview && missingEmployees.length > 0 && (
         <HRSectionCard className="border-amber-200 bg-amber-50/40">
           <div className="flex items-start gap-3 p-4">
             <div className="mt-1 flex h-10 w-10 items-center justify-center rounded-2xl bg-amber-100 text-amber-700">
@@ -772,7 +731,7 @@ export default function DailyCloseouts() {
           )}
         </DialogContent>
       </Dialog>
-    </HRPageShell>
+    </OperationsWorkspace>
   );
 }
 
@@ -820,13 +779,13 @@ function DailyCloseoutReport({
   ];
 
   return (
-    <div className="max-h-[78vh] overflow-y-auto bg-[#F3F6FA] px-4 py-5">
+    <div className="ad-closeout-report max-h-[78vh] overflow-y-auto bg-[#F3F6FA] px-4 py-5">
       <article className="mx-auto min-h-[920px] max-w-[820px] overflow-hidden bg-white px-8 pb-8 text-[#142033] shadow-sm">
         <div className="-mx-8 mb-5 h-2 bg-[#11A37F]" />
 
         <header className="grid grid-cols-1 items-center gap-4 border-b-2 border-[#CFD8E3] pb-4 md:grid-cols-[1fr_2fr_1fr]">
           <div className="text-right">
-            <p className="text-lg font-black text-[#11A37F]">Fleetify</p>
+            <p className="text-lg font-black text-[#11A37F]">فليتيفاي</p>
             <p className="mt-2 text-xs font-bold text-[#8A97AA]">العراف لتأجير السيارات</p>
           </div>
           <div className="text-center">

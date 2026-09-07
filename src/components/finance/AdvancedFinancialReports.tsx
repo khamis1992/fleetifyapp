@@ -21,6 +21,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useFinancialOverview } from "@/hooks/useFinancialOverview";
 import { useAdvancedFinancialAnalytics } from "@/hooks/useAdvancedFinancialAnalytics";
 import { useActiveContracts } from "@/hooks/useContracts";
+import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
 import { useAuth } from "@/contexts/AuthContext";
 import { useReportingAccounts } from "@/hooks/useReportingAccounts";
 import { AccountLevelBadge } from "@/components/finance/AccountLevelBadge";
@@ -43,11 +44,11 @@ export function AdvancedFinancialReports() {
     costCenter: 'all'
   });
 
-  const companyId = user?.profile?.company_id || user?.company?.id || '';
-  const { data: financialOverview, isLoading: isOverviewLoading } = useFinancialOverview();
-  const { data: analytics, isLoading: isAnalyticsLoading } = useAdvancedFinancialAnalytics();
-  const { data: contracts } = useActiveContracts(undefined, undefined, companyId);
-  const { data: reportingAccounts } = useReportingAccounts();
+  const { companyId } = useUnifiedCompanyAccess();
+  const { data: financialOverview, isLoading: isOverviewLoading, error: overviewError } = useFinancialOverview();
+  const { data: analytics, isLoading: isAnalyticsLoading, error: analyticsError } = useAdvancedFinancialAnalytics();
+  const { data: contracts, isLoading: contractsLoading, error: contractsError } = useActiveContracts(undefined, undefined, companyId || undefined);
+  const { data: reportingAccounts, isLoading: accountsLoading, error: accountsError } = useReportingAccounts();
 
   const { formatCurrency } = useCurrencyFormatter();
 
@@ -74,7 +75,7 @@ export function AdvancedFinancialReports() {
         currency: "QAR",
         asOfDate: reportDate,
         sourceFingerprint: `advanced-financial:${reportType}:${reportDate}`,
-        status: "published",
+        status: "draft",
         generatedBy: user?.email || user?.id || null,
       },
       bodyHtml,
@@ -114,7 +115,10 @@ export function AdvancedFinancialReports() {
     }
   ];
 
-  if (isOverviewLoading || isAnalyticsLoading) {
+  if (overviewError || analyticsError || contractsError || accountsError) return <div role="alert" className="rounded-xl border p-6">
+    تعذر تحميل بيانات التقرير كاملة. أعد تحميل الصفحة قبل التصدير.
+  </div>;
+  if (isOverviewLoading || isAnalyticsLoading || contractsLoading || accountsLoading) {
     return (
       <div className="space-y-6">
         <div className="h-8 bg-slate-200 rounded animate-pulse"></div>

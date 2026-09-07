@@ -10,6 +10,7 @@ import {
   PointerSensor,
   useSensor,
   useSensors,
+  useDroppable,
 } from '@dnd-kit/core';
 import {
   SortableContext,
@@ -22,10 +23,10 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Task, useUpdateTaskStatus } from '@/hooks/useTasks';
-import { format, isPast, isToday, isTomorrow } from 'date-fns';
+import { format, isToday, isTomorrow, isValid } from 'date-fns';
 import { ar } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
-import { systemColorPattern } from '@/lib/design-system/systemColorPattern';
+import { taskIsOverdue } from './workspace/model';
 import {
   Clock,
   AlertTriangle,
@@ -60,7 +61,7 @@ interface Column {
   bgColor: string;
 }
 
-const taskTheme = systemColorPattern.colors;
+const taskTheme = {info:'#2F7966',success:'#36805A',alert:'#B74B43',border:'#E1E6DE'};
 
 const columns: Column[] = [
   {
@@ -131,7 +132,8 @@ const TaskCard: React.FC<{
   const dueDateInfo = React.useMemo(() => {
     if (!task.due_date) return null;
     const dueDate = new Date(task.due_date);
-    const isPastDue = isPast(dueDate) && task.status !== 'completed';
+    if (!isValid(dueDate)) return null;
+    const isPastDue = taskIsOverdue(task);
     const isDueToday = isToday(dueDate);
     const isDueTomorrow = isTomorrow(dueDate);
 
@@ -146,7 +148,7 @@ const TaskCard: React.FC<{
         ? 'غدًا'
         : format(dueDate, 'd MMM', { locale: ar }),
     };
-  }, [task.due_date, task.status]);
+  }, [task]);
 
   return (
     <motion.div
@@ -163,7 +165,7 @@ const TaskCard: React.FC<{
     >
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0 flex-1">
-          <h4 className="truncate font-bold text-[#020617]">{task.title}</h4>
+          <h4 className="font-bold text-[#203D34]"><button className="text-start" onClick={event=>{event.stopPropagation();onClick();}}>{task.title}</button></h4>
           {task.description && (
             <p className="mt-1 line-clamp-2 text-sm text-slate-500">{task.description}</p>
           )}
@@ -254,7 +256,7 @@ const SortableTaskCard = React.forwardRef<HTMLDivElement, {
   onClick: () => void;
   onEdit: () => void;
   onDelete: () => void;
-}>(({ task, onClick, onEdit, onDelete }, _ref) => {
+}>(({ task, onClick, onEdit, onDelete }) => {
   const {
     attributes,
     listeners,
@@ -290,10 +292,12 @@ const KanbanColumn: React.FC<{
   onEditTask: (task: Task) => void;
   onDeleteTask: (taskId: string) => void;
 }> = ({ column, tasks, onTaskClick, onEditTask, onDeleteTask }) => {
+  const {setNodeRef,isOver}=useDroppable({id:column.id});
   return (
     <div
+      ref={setNodeRef}
       className="flex h-full min-w-[300px] max-w-[300px] flex-col overflow-hidden rounded-lg border bg-white"
-      style={{ borderColor: taskTheme.border }}
+      style={{ borderColor: isOver ? taskTheme.info : taskTheme.border }}
     >
       <div className="flex items-center justify-between border-b border-[#E5EAF1] px-3 py-3">
         <div className="flex items-center gap-2 font-bold" style={{ color: column.color }}>
@@ -373,13 +377,13 @@ export const TaskKanbanBoard: React.FC<TaskKanbanBoardProps> = ({
     const overColumn = columns.find((column) => column.id === overId);
 
     if (overColumn) {
-      updateTaskStatus.mutate({ taskId, status: overColumn.id });
+      if (tasks.find(task=>task.id===taskId)?.status !== overColumn.id && !updateTaskStatus.isPending) updateTaskStatus.mutate({ taskId, status: overColumn.id });
       return;
     }
 
     const overTask = tasks.find((task) => task.id === overId);
     const activeTaskStatus = tasks.find((task) => task.id === taskId)?.status;
-    if (overTask && overTask.status !== activeTaskStatus) {
+    if (overTask && overTask.status !== activeTaskStatus && !updateTaskStatus.isPending) {
       updateTaskStatus.mutate({ taskId, status: overTask.status });
     }
   };
@@ -390,6 +394,7 @@ export const TaskKanbanBoard: React.FC<TaskKanbanBoardProps> = ({
       collisionDetection={closestCorners}
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
+      onDragCancel={()=>setActiveTask(null)}
     >
       <div className="flex min-h-[560px] gap-3 overflow-x-auto pb-2">
         {columns.map((column) => (

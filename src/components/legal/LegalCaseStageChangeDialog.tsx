@@ -221,7 +221,7 @@ export function LegalCaseStageChangeDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent dir="rtl" className="max-h-[92vh] overflow-hidden border-0 bg-[#F8FAF9] p-0 shadow-2xl sm:max-w-2xl">
+      <DialogContent dir="rtl" className="lw-stage-dialog max-h-[92vh] overflow-hidden border-0 bg-[#F8FAF9] p-0 shadow-2xl sm:max-w-2xl">
         <div className="relative overflow-hidden bg-gradient-to-l from-[#0E3437] via-[#164E52] to-[#123F42] px-6 pb-6 pt-5 text-white">
           <div className="pointer-events-none absolute -left-12 -top-20 h-48 w-48 rounded-full border border-white/10 bg-white/[0.03]" />
           <div className="pointer-events-none absolute -bottom-16 right-10 h-32 w-32 rounded-full border border-[#E8C96A]/15" />
@@ -308,7 +308,7 @@ export function LegalCaseStageChangeDialog({
                       if (target !== 'closed') setOverrideUnsettled(false);
                     }}
                     className={cn(
-                      'group flex min-h-20 items-center gap-3 rounded-2xl border bg-white p-3 text-right shadow-sm transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0F766E] focus-visible:ring-offset-2',
+                      'lw-stage-choice group flex min-h-20 items-center gap-3 rounded-2xl border bg-white p-3 text-right shadow-sm transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0F766E] focus-visible:ring-offset-2',
                       selected
                         ? 'border-[#14B8A6] bg-[#F0FDFA] shadow-[0_8px_24px_rgba(15,118,110,0.10)]'
                         : terminal

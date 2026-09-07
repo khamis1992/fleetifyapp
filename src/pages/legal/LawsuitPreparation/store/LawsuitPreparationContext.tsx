@@ -784,7 +784,7 @@ export function LawsuitPreparationProvider({
       
       const idType = inferTaqadiIdType(
         state.customer.national_id,
-        state.customer.nationality || state.customer.country,
+        state.customer.nationality,
       );
       
       // معلومات السيارة
@@ -811,7 +811,7 @@ export function LawsuitPreparationProvider({
             lastName: lastName,
             idNumber: state.customer.national_id,
             idType: idType,
-            nationality: state.customer.nationality || state.customer.country,
+            nationality: state.customer.nationality,
             phone: state.customer.phone,
             email: defendantContact.email,
             address: defendantContact.address,
@@ -1904,7 +1904,7 @@ export function LawsuitPreparationProvider({
         defendant_first_name: nameParts[0] || '',
         defendant_middle_name: nameParts.length > 2 ? nameParts.slice(1, -1).join(' ') : null,
         defendant_last_name: nameParts.length > 1 ? nameParts[nameParts.length - 1] : '',
-        defendant_nationality: customer?.nationality || customer?.country || null,
+        defendant_nationality: customer?.nationality || null,
         defendant_id_number: customer?.national_id || null,
         defendant_address: defendantContact.address || null,
         defendant_phone: customer?.phone || null,

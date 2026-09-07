@@ -1,3 +1,5 @@
+import { OperationsWorkspace, OperationsMetric, OperationsPanel } from '@/components/operations/OperationsWorkspace';
+import { pageNumbers } from '@/components/operations/operationsPresentation';
 /**
  * صفحة إدارة علاقات العملاء - CRM Redesigned
  * تصميم SaaS احترافي مع جميع الميزات الحالية
@@ -5,47 +7,26 @@
  * @component CustomerCRMRedesigned
  */
 
+/**
+ * صفحة إدارة علاقات العملاء - CRM Redesigned
+ * تصميم SaaS احترافي مع جميع الميزات الحالية
+ *
+ * @component CustomerCRMRedesigned
+ */
 import { useState, useMemo, useCallback, useRef, useEffect } from 'react';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQueryClient } from '@tanstack/react-query';
 import { useSearchParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useCurrentCompanyId } from '@/hooks/useUnifiedCompanyAccess';
 import { useToast } from '@/components/ui/use-toast';
 import { differenceInDays, format } from 'date-fns';
-import { motion, AnimatePresence } from 'framer-motion';
-import {
-  Search,
-  Phone,
-  MessageCircle,
-  Plus,
-  ChevronDown,
-  RefreshCw,
-  Clock,
-  MoreHorizontal,
-  X,
-  Save,
-  ArrowLeft,
-  ArrowRight,
-  Filter,
-  Hash,
-  Printer,
-  Download,
-  Users,
-  TrendingUp,
-  CheckCircle,
-  AlertCircle,
-  Calendar,
-  Activity,
-  Bell,
-  PhoneCall,
-  FileText,
-  ChevronDown as ChevronDownIcon,
-} from 'lucide-react';
+import { motion } from 'framer-motion';
+import { Search, Phone, MessageCircle, Plus, ChevronDown, RefreshCw, Clock, X, Save, ArrowLeft, ArrowRight, Hash, Printer, Download, Users, AlertCircle, PhoneCall, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { CallDialog } from '@/components/customers/CallDialog';
 import { ScheduledFollowupsPanel } from '@/components/crm/ScheduledFollowupsPanel';
 import { CRMActivityPanel } from '@/components/customers/CRMActivityPanel';
@@ -101,57 +82,6 @@ const StatusBadge = ({ status }: { status: string }) => {
   );
 };
 
-// Stat Card Component
-const StatCard = ({
-  title,
-  value,
-  icon: Icon,
-  color,
-  trend,
-  onClick,
-}: {
-  title: string;
-  value: number | string;
-  icon: React.ElementType;
-  color: 'coral' | 'green' | 'blue' | 'amber' | 'purple' | 'slate';
-  trend?: string;
-  onClick?: () => void;
-}) => {
-  const colorStyles = {
-    coral: { bg: 'bg-rose-50', text: 'text-rose-600', iconBg: 'bg-rose-500' },
-    green: { bg: 'bg-emerald-50', text: 'text-emerald-600', iconBg: 'bg-emerald-500' },
-    blue: { bg: 'bg-[#EEF5FB]', text: 'text-[#173A63]', iconBg: 'bg-[#173A63]' },
-    amber: { bg: 'bg-amber-50', text: 'text-amber-600', iconBg: 'bg-amber-500' },
-    purple: { bg: 'bg-[#EEF5FB]', text: 'text-[#173A63]', iconBg: 'bg-[#173A63]' },
-    slate: { bg: 'bg-[#EEF5FB]', text: 'text-[#173A63]', iconBg: 'bg-[#173A63]' },
-  };
-
-  const style = colorStyles[color];
-
-  return (
-    <motion.button
-      onClick={onClick}
-      className={cn('min-h-[132px] rounded-lg border border-[#DDE5EF] bg-white p-5 text-right shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:border-[#173A63] hover:shadow-md', onClick && 'cursor-pointer group')}
-      whileHover={{ y: -2 }}
-    >
-      <div className="flex items-start justify-between mb-3">
-        <div className={cn('w-11 h-11 rounded-lg flex items-center justify-center', style.iconBg)}>
-          <Icon className="w-5 h-5 text-white" />
-        </div>
-        {trend && (
-          <span className="rounded-lg bg-[#F8FAFC] px-2 py-1 text-xs font-bold text-[#6A7688]">
-            {trend}
-          </span>
-        )}
-      </div>
-      <p className="mb-1 text-sm font-bold text-[#6A7688]">{title}</p>
-      <p className="text-2xl font-black text-[#142033]">
-        {typeof value === 'number' ? value.toLocaleString() : value}
-      </p>
-    </motion.button>
-  );
-};
-
 // Customer Table Row Component (New Modern Design)
 const CustomerTableRow = ({
   customer,
@@ -175,12 +105,8 @@ const CustomerTableRow = ({
   onViewDetails: () => void;
 }) => {
   const getNameAr = () => {
-    if (customer.first_name || customer.last_name) {
-      return `${customer.first_name || ''} ${customer.last_name || ''}`.trim();
-    }
-    if (customer.first_name_ar || customer.last_name_ar) {
-      return `${customer.first_name_ar || ''} ${customer.last_name_ar || ''}`.trim();
-    }
+    if (customer.first_name_ar || customer.last_name_ar) return [customer.first_name_ar, customer.last_name_ar].filter(Boolean).join(' ');
+    if (customer.first_name || customer.last_name) return [customer.first_name, customer.last_name].filter(Boolean).join(' ');
     return customer.customer_code || 'عميل غير معرف';
   };
 
@@ -199,25 +125,15 @@ const CustomerTableRow = ({
       {/* Customer Info */}
       <td className="py-4 px-4">
         <div className="flex items-center gap-3">
-          <div className={cn(
-            "relative w-11 h-11 rounded-lg flex items-center justify-center text-sm font-bold flex-shrink-0 ring-2 ring-offset-2 transition-all duration-300",
-            isNew
-              ? 'bg-amber-500 text-white ring-amber-100 group-hover:ring-amber-300 group-hover:scale-105'
-              : 'bg-[#173A63] text-white ring-[#EEF5FB] group-hover:ring-[#B8C6D8] group-hover:scale-105'
-          )}>
+          <div className="opw-avatar" aria-hidden="true">
             {initials}
-            {isNew && (
-              <span className="absolute -top-1 -right-1 w-4 h-4 bg-rose-500 rounded-full border-2 border-white flex items-center justify-center">
-                <span className="text-white text-[8px]">!</span>
-              </span>
-            )}
           </div>
           <div className="min-w-0">
             <div className="flex items-center gap-2 mb-0.5">
-              <h3 className="font-semibold text-slate-900 text-sm truncate">{nameAr}</h3>
+              <h3 className="font-semibold text-sm truncate"><button onClick={onViewDetails} className="text-start hover:underline">{nameAr}</button></h3>
               {isNew && (
                 <span className="rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-[10px] font-bold text-amber-700 whitespace-nowrap">
-                  جديد
+                  بلا تواصل
                 </span>
               )}
             </div>
@@ -275,29 +191,29 @@ const CustomerTableRow = ({
         <div className="flex items-center gap-1.5 opacity-90 group-hover:opacity-100 transition-opacity">
           <Button
             size="sm"
-            onClick={onCall}
+            aria-label={'اتصال بالعميل ' + nameAr} onClick={onCall}
             className="h-8 w-8 rounded-lg bg-emerald-600 p-0 text-white transition-all duration-300 hover:scale-105 hover:bg-emerald-700"
           >
             <Phone size={14} />
           </Button>
           <Button
             size="sm"
-            onClick={onWhatsApp}
+            aria-label={'واتساب ' + nameAr} onClick={onWhatsApp}
             className="h-8 w-8 rounded-lg bg-[#173A63] p-0 text-white transition-all duration-300 hover:scale-105 hover:bg-[#142033]"
           >
             <MessageCircle size={14} />
           </Button>
           <Button
             size="sm"
-            onClick={onNote}
+            aria-label={'إضافة ملاحظة للعميل ' + nameAr} onClick={onNote}
             className="h-8 w-8 rounded-lg border border-[#DDE5EF] bg-white p-0 text-[#536173] transition-all duration-300 hover:scale-105 hover:border-[#173A63] hover:bg-[#EEF5FB] hover:text-[#173A63]"
           >
             <Plus size={14} />
           </Button>
           <Button
             size="sm"
-            onClick={onViewDetails}
-            className="h-8 w-8 rounded-lg bg-rose-500 p-0 text-white transition-all duration-300 hover:scale-105 hover:bg-rose-600"
+            aria-label={'فتح متابعة العميل ' + nameAr} onClick={onViewDetails}
+            className="h-8 w-8 rounded-lg bg-[#173A63] p-0 text-white transition-colors"
           >
             <ChevronDown size={14} className="transform -rotate-90" />
           </Button>
@@ -328,12 +244,8 @@ const CustomerCard = ({
   onViewDetails: () => void;
 }) => {
   const getNameAr = () => {
-    if (customer.first_name || customer.last_name) {
-      return `${customer.first_name || ''} ${customer.last_name || ''}`.trim();
-    }
-    if (customer.first_name_ar || customer.last_name_ar) {
-      return `${customer.first_name_ar || ''} ${customer.last_name_ar || ''}`.trim();
-    }
+    if (customer.first_name_ar || customer.last_name_ar) return [customer.first_name_ar, customer.last_name_ar].filter(Boolean).join(' ');
+    if (customer.first_name || customer.last_name) return [customer.first_name, customer.last_name].filter(Boolean).join(' ');
     return customer.customer_code || 'عميل غير معرف';
   };
 
@@ -345,7 +257,7 @@ const CustomerCard = ({
     <motion.div
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      className="rounded-lg border border-[#DDE5EF] bg-white p-5 shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:border-[#173A63] hover:shadow-md"
+      className="opw-customer-card"
     >
       {/* Header */}
       <div className="flex items-start gap-4 mb-4">
@@ -403,7 +315,7 @@ const CustomerCard = ({
       <div className="flex items-center gap-2">
         <Button
           size="sm"
-          onClick={onCall}
+          aria-label={'اتصال بالعميل ' + nameAr} onClick={onCall}
           className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white"
         >
           <Phone size={14} className="ml-1" />
@@ -412,7 +324,7 @@ const CustomerCard = ({
         <Button
           size="sm"
           variant="outline"
-          onClick={onWhatsApp}
+          aria-label={'واتساب ' + nameAr} onClick={onWhatsApp}
           className="flex-1 border-[#DDE5EF] text-[#173A63] hover:bg-[#EEF5FB]"
         >
           <MessageCircle size={14} className="ml-1" />
@@ -421,14 +333,14 @@ const CustomerCard = ({
         <Button
           size="sm"
           variant="outline"
-          onClick={onNote}
+          aria-label={'إضافة ملاحظة للعميل ' + nameAr} onClick={onNote}
           className="border-[#DDE5EF] px-3 text-[#536173] hover:bg-[#F8FAFC]"
         >
           <Plus size={14} />
         </Button>
         <Button
           size="sm"
-          onClick={onViewDetails}
+          aria-label={'فتح متابعة العميل ' + nameAr} onClick={onViewDetails}
           className="px-3 bg-[#173A63] hover:bg-[#142033] text-white"
         >
           <ChevronDown size={14} className="transform -rotate-90" />
@@ -467,7 +379,7 @@ export default function CustomerCRMRedesigned() {
   const [selectedLateReportCustomerIds, setSelectedLateReportCustomerIds] = useState<string[]>([]);
 
   // Use optimized CRM hook
-  const { data: crmCustomers = [], isLoading, refetch } = useCRMCustomersOptimized(companyId ?? null);
+  const { data: crmCustomers = [], isLoading, error: crmError, refetch } = useCRMCustomersOptimized(companyId ?? null);
 
   // Transform CRM data
   const customers = useMemo(() => {
@@ -558,7 +470,9 @@ export default function CustomerCRMRedesigned() {
   // Keyboard shortcut for search
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === '/' && document.activeElement !== searchInputRef.current) {
+      const target = e.target as HTMLElement | null;
+      const editing = target?.closest('input,textarea,select,[contenteditable="true"],[role="textbox"]');
+      if (e.key === '/' && !e.ctrlKey && !e.metaKey && !e.altKey && !editing) {
         e.preventDefault();
         searchInputRef.current?.focus();
       }
@@ -1321,159 +1235,39 @@ export default function CustomerCRMRedesigned() {
   }, [filteredData, crmCustomers, getCustomerContract, toast]);
 
   // --- Render ---
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-[#F6F8FB] p-6">
-        <div className="flex flex-col items-center justify-center py-20 text-slate-400 gap-3">
-          <RefreshCw className="animate-spin" size={24} />
-          <p>جاري تحميل البيانات...</p>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <CRMErrorBoundary>
-      <div className="min-h-screen bg-[#F6F8FB]" dir="rtl">
-
-        {/* Header */}
-        <div className="sticky top-0 z-30 border-b border-[#DDE5EF] bg-white/95 backdrop-blur">
-          <div className="w-full max-w-none px-4 py-4 sm:px-6 lg:px-8">
-            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-              {/* Title & Description */}
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 bg-[#173A63] rounded-lg flex items-center justify-center shadow-sm">
-                  <Users className="w-6 h-6 text-white" />
-                </div>
-                <div>
-                  <h1 className="text-xl font-black text-[#142033]">إدارة علاقات العملاء</h1>
-                  <p className="text-sm font-semibold text-[#6A7688]">متابعة العملاء والاتصالات</p>
-                </div>
-              </div>
-
-              {/* Actions */}
-              <div className="flex items-center gap-3">
-                {/* Search */}
-                <div className="relative flex-1 lg:w-80">
-                  <Input
-                    ref={searchInputRef}
-                    type="text"
-                    placeholder="بحث باسم العميل، الهاتف، أو الرمز..."
-                    value={searchTerm}
-                    onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }}
-                    className="w-full rounded-lg border-[#DDE5EF] bg-[#F8FAFC] py-2.5 pl-4 pr-10 text-sm transition-all focus:border-[#173A63] focus:bg-white focus:ring-2 focus:ring-[#173A63]/20"
-                  />
-                  <Search className="absolute right-3 top-2.5 text-slate-400" size={18} />
-                  <kbd className="absolute left-3 top-2.5 hidden rounded border border-[#DDE5EF] bg-[#F8FAFC] px-1.5 py-0.5 text-[10px] text-[#9AA6B6] lg:block">/</kbd>
-                </div>
-
-                {/* View Toggle */}
-                <div className="hidden md:flex items-center rounded-lg border border-[#DDE5EF] bg-[#F8FAFC] p-1">
-                  <button
-                    onClick={() => setViewMode('list')}
-                    className={cn(
-                      "px-3 py-2 rounded-lg text-sm font-medium transition-all",
-                      viewMode === 'list' ? 'bg-[#173A63] text-white shadow-sm' : 'text-[#536173] hover:text-[#142033]'
-                    )}
-                  >
-                    قائمة
-                  </button>
-                  <button
-                    onClick={() => setViewMode('grid')}
-                    className={cn(
-                      "px-3 py-2 rounded-lg text-sm font-medium transition-all",
-                      viewMode === 'grid' ? 'bg-[#173A63] text-white shadow-sm' : 'text-[#536173] hover:text-[#142033]'
-                    )}
-                  >
-                    شبكة
-                  </button>
-                </div>
-
-                {/* Refresh */}
-                <Button
-                  variant="outline"
-                  size="icon"
-                  onClick={() => refetch()}
-                  className="rounded-lg border-[#DDE5EF] text-[#536173] hover:bg-[#F8FAFC]"
-                >
-                  <RefreshCw size={18} />
-                </Button>
-
-                {/* Export */}
-                <Button
-                  variant="outline"
-                  onClick={handleExportExcel}
-                  className="rounded-lg gap-2 border-[#DDE5EF] text-[#536173] hover:bg-[#F8FAFC]"
-                >
-                  <Download size={18} />
-                  <span className="hidden sm:inline">تقرير Excel</span>
-                </Button>
-
-                {/* Print Report */}
-                <Button
-                  onClick={handleOpenLateReportDialog}
-                  className="rounded-lg bg-[#173A63] hover:bg-[#142033] gap-2"
-                >
-                  <Printer size={18} />
-                  <span className="hidden sm:inline">تقرير المتأخرين</span>
-                </Button>
-              </div>
-            </div>
-          </div>
+      <OperationsWorkspace section="crm" actions={<>
+        <Button className="opw-primary" onClick={() => { setActiveFilter('needs_contact'); setCurrentPage(1); }} disabled={isLoading || !!crmError}><PhoneCall size={17}/>ابدأ قائمة التواصل</Button>
+        <Button className="opw-secondary" variant="outline" onClick={handleExportExcel} disabled={isLoading || !!crmError}><Download size={16}/>تصدير Excel</Button>
+        <Button className="opw-secondary" variant="outline" onClick={handleOpenLateReportDialog} disabled={isLoading || !!crmError}><Printer size={16}/>تقرير المتأخرين</Button>
+        <Button className="opw-secondary" variant="outline" onClick={() => { void refetch(); }} disabled={isLoading} aria-label="تحديث علاقات العملاء"><RefreshCw size={16}/></Button>
+      </>}>
+        <div className="opw-metrics">
+          <OperationsMetric label="عملاء قائمة المتابعة" value={isLoading || crmError ? '—' : stats.total} hint="بحسب بيانات قائمة CRM المحمّلة" icon={Users} onClick={() => {setActiveFilter('all');setCurrentPage(1);}}/>
+          <OperationsMetric label="آخر تواصل هاتفي اليوم" value={isLoading || crmError ? '—' : stats.callsToday} hint="عملاء آخر نشاط لهم مكالمة اليوم" icon={PhoneCall}/>
+          <OperationsMetric label="متأخرون بالدفع" value={isLoading || crmError ? '—' : stats.late} hint="بحسب حالة الدفع في سجل المتابعة" icon={AlertCircle} tone="danger" onClick={() => {setActiveFilter('late');setCurrentPage(1);}}/>
+          <OperationsMetric label="بحاجة إلى تواصل" value={isLoading || crmError ? '—' : stats.needsContact} hint="بلا تواصل مسجل أو مضى أكثر من 7 أيام" icon={Phone} tone="warning" onClick={() => {setActiveFilter('needs_contact');setCurrentPage(1);}}/>
         </div>
-
-        <div className="w-full max-w-none space-y-6 px-4 py-6 sm:px-6 lg:px-8">
-
-          {/* Stats Grid */}
-          <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-            <StatCard
-              title="إجمالي العملاء"
-              value={stats.total}
-              icon={Users}
-              color="slate"
-              onClick={() => { setActiveFilter('all'); setCurrentPage(1); }}
-            />
-            <StatCard
-              title="مكالمات اليوم"
-              value={stats.callsToday}
-              icon={PhoneCall}
-              color="green"
-              trend={stats.callsToday > 10 ? 'نشط' : undefined}
-              onClick={() => { setActiveFilter('all'); setCurrentPage(1); }}
-            />
-            <StatCard
-              title="متأخر بالدفع"
-              value={stats.late}
-              icon={AlertCircle}
-              color="coral"
-              onClick={() => { setActiveFilter('late'); setCurrentPage(1); }}
-            />
-            <StatCard
-              title="يحتاج اتصال"
-              value={stats.needsContact}
-              icon={Phone}
-              color="amber"
-              onClick={() => { setActiveFilter('needs_contact'); setCurrentPage(1); }}
-            />
-          </div>
-
-          {/* Scheduled Follow-ups */}
-          <ScheduledFollowupsPanel />
-
-          {/* Filters & Content */}
-          <div className="overflow-hidden rounded-lg border border-[#DDE5EF] bg-white shadow-sm">
+        <div className="opw-toolbar"><div><h2>قائمة المتابعة</h2><p>اختر العميل لفتح سجل التواصل، أو أضف ملاحظة من صفه.</p></div><div className="opw-view-toggle" role="group" aria-label="طريقة عرض المتابعة">
+          <button aria-pressed={viewMode === 'list'} onClick={() => setViewMode('list')}><FileText size={15}/>جدول</button><button aria-pressed={viewMode === 'grid'} onClick={() => setViewMode('grid')}><Users size={15}/>بطاقات</button>
+        </div></div>
+        <div className="opw-searchbar"><div className="opw-search"><Search size={18}/><Input ref={searchInputRef} aria-label="البحث في علاقات العملاء" placeholder="اسم العميل، رقم الهاتف، أو رمز العميل…" value={searchTerm} onChange={e => {setSearchTerm(e.target.value);setCurrentPage(1);}}/>{searchTerm && <button aria-label="مسح البحث" onClick={() => {setSearchTerm('');setCurrentPage(1);}}><X size={15}/></button>}</div><span className="opw-page-note">{isLoading ? 'جارٍ التحميل…' : crmError ? 'البيانات غير متاحة' : filteredData.length + ' عميل ضمن النتائج'}</span></div>
+        {isLoading || crmError ? <div className="opw-panel opw-empty" role={crmError ? 'alert' : 'status'}><RefreshCw className={isLoading ? 'animate-spin' : ''}/><h3>{crmError ? 'تعذّر تحميل قائمة المتابعة' : 'جارٍ تحميل بيانات العملاء…'}</h3><p>{crmError ? 'أعد المحاولة للتحقق من البيانات؛ تعذّر القراءة لا يعني عدم وجود مستحقات.' : 'تظهر الإجراءات بعد اكتمال القراءة.'}</p>{crmError && <Button variant="outline" onClick={() => {void refetch();}}>إعادة المحاولة</Button>}</div> : <div className="opw-crm-layout">
+          <div className="opw-crm-register">
             {/* Filter Tabs */}
-            <div className="overflow-x-auto border-b border-[#DDE5EF] bg-[#F8FAFC] px-5 py-4">
-              <div className="flex gap-2">
+            <div>
+              <div className="opw-crm-filters" role="group" aria-label="تصنيف قائمة المتابعة">
                 {[
                   { id: 'all', label: 'جميع العملاء', count: stats.total },
                   { id: 'late', label: 'متأخر بالدفع', count: stats.late },
-                  { id: 'needs_contact', label: 'لم يتم الاتصال (7 أيام)', count: stats.needsContact },
+                  { id: 'needs_contact', label: 'يحتاج تواصل' , count: stats.needsContact },
                   { id: 'new', label: 'عملاء جدد', count: stats.newCustomers },
                   { id: 'expiring', label: 'عقود قريبة الانتهاء', count: stats.expiring },
                 ].map(filter => (
                   <button
                     key={filter.id}
+                    aria-pressed={activeFilter === filter.id}
                     onClick={() => { setActiveFilter(filter.id); setCurrentPage(1); }}
                     className={cn(
                       "flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-bold transition-all whitespace-nowrap",
@@ -1591,7 +1385,7 @@ export default function CustomerCRMRedesigned() {
 
             {/* Pagination */}
             {filteredData.length > 0 && (
-              <div className="flex items-center justify-between border-t border-[#DDE5EF] bg-[#F8FAFC] px-6 py-4">
+              <div className="opw-pagination">
                 <span className="text-sm text-slate-500">
                   عرض {((currentPage - 1) * ITEMS_PER_PAGE) + 1} إلى {Math.min(currentPage * ITEMS_PER_PAGE, filteredData.length)} من أصل {filteredData.length} عميل
                 </span>
@@ -1600,26 +1394,26 @@ export default function CustomerCRMRedesigned() {
                     variant="outline"
                     size="icon"
                     disabled={currentPage === 1}
-                    onClick={() => setCurrentPage(p => p - 1)}
+                    aria-label="الصفحة السابقة" onClick={() => setCurrentPage(p => p - 1)}
                     className="rounded-lg"
                   >
                     <ArrowRight size={16} />
                   </Button>
-                  {Array.from({ length: Math.min(totalPages, 5) }).map((_, idx) => (
+                  {pageNumbers(currentPage, totalPages).map(page => (
                     <Button
-                      key={idx + 1}
-                      variant={currentPage === idx + 1 ? "default" : "outline"}
-                      onClick={() => setCurrentPage(idx + 1)}
-                      className={cn("w-9 h-9 rounded-lg", currentPage === idx + 1 && "bg-[#173A63] hover:bg-[#142033]")}
+                      key={page}
+                      variant={currentPage === page ? "default" : "outline"}
+                      onClick={() => setCurrentPage(page)}
+                      className={cn("w-9 h-9 rounded-lg", currentPage === page && "bg-[#173A63] hover:bg-[#142033]")}
                     >
-                      {idx + 1}
+                      {page}
                     </Button>
                   ))}
                   <Button
                     variant="outline"
                     size="icon"
                     disabled={currentPage === totalPages}
-                    onClick={() => setCurrentPage(p => p + 1)}
+                    aria-label="الصفحة التالية" onClick={() => setCurrentPage(p => p + 1)}
                     className="rounded-lg"
                   >
                     <ArrowLeft size={16} />
@@ -1628,7 +1422,8 @@ export default function CustomerCRMRedesigned() {
               </div>
             )}
           </div>
-        </div>
+          <aside className="opw-crm-followups"><ScheduledFollowupsPanel showEmpty/><OperationsPanel title="خطوة متابعة واضحة" description="احفظ نتيجة التواصل لتظهر للفريق."><ol className="opw-followup-guide"><li>افتح سجل العميل وراجع آخر تواصل.</li><li>سجّل نتيجة المكالمة أو الملاحظة.</li><li>حدد المتابعة القادمة عند الحاجة.</li></ol></OperationsPanel></aside>
+        </div>}
 
         <Dialog open={lateReportDialogOpen} onOpenChange={setLateReportDialogOpen}>
           <DialogContent className="max-w-2xl" dir="rtl">
@@ -1719,84 +1514,13 @@ export default function CustomerCRMRedesigned() {
           </DialogContent>
         </Dialog>
 
-        {/* Add Interaction Dialog */}
-        <AnimatePresence>
-          {dialogOpen && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm">
-              <motion.div
-                initial={{ scale: 0.95, opacity: 0, y: 20 }}
-                animate={{ scale: 1, opacity: 1, y: 0 }}
-                exit={{ scale: 0.95, opacity: 0, y: 20 }}
-                className="w-full max-w-lg overflow-hidden rounded-xl border border-[#DDE5EF] bg-white shadow-2xl"
-              >
-                <div className="flex items-center justify-between border-b border-[#DDE5EF] p-6">
-                  <div className="flex items-center gap-3">
-                    <div className={cn("rounded-lg p-2.5", dialogOpen === 'call' ? 'bg-[#EEF5FB] text-[#173A63]' : 'bg-[#EEF5FB] text-[#173A63]')}>
-                      {dialogOpen === 'call' ? <Phone size={20} /> : <FileText size={20} />}
-                    </div>
-                    <div>
-                      <h3 className="font-semibold text-slate-900 text-lg">
-                        {dialogOpen === 'call' ? 'تسجيل مكالمة جديدة' : 'إضافة ملاحظة'}
-                      </h3>
-                      <p className="text-sm text-slate-500">
-                        {dialogOpen === 'call' ? 'تسجيل تفاصيل المكالمة' : 'إضافة ملاحظة متابعة'}
-                      </p>
-                    </div>
-                  </div>
-                  <button onClick={() => setDialogOpen(null)} className="rounded-lg p-2 text-[#9AA6B6] transition hover:bg-[#F8FAFC]">
-                    <X size={20} />
-                  </button>
-                </div>
-
-                <div className="p-6 space-y-5">
-                  {dialogOpen === 'call' && (
-                    <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-3">حالة المكالمة</label>
-                      <div className="grid grid-cols-3 gap-3">
-                        {[
-                          { id: 'answered', label: 'تم الرد', color: 'emerald' },
-                          { id: 'busy', label: 'مشغول', color: 'amber' },
-                          { id: 'no_answer', label: 'لم يرد', color: 'rose' }
-                        ].map(opt => (
-                          <button
-                            key={opt.id}
-                            onClick={() => setDialogData({ ...dialogData, outcome: opt.id })}
-                            className={cn(
-                              "py-3 text-sm rounded-xl border-2 transition-all font-medium",
-                              dialogData.outcome === opt.id
-                                ? `bg-${opt.color}-50 border-${opt.color}-500 text-${opt.color}-700`
-                                : 'border-[#DDE5EF] text-[#536173] hover:bg-[#F8FAFC]'
-                            )}
-                          >
-                            {opt.label}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-3">التفاصيل</label>
-                    <Textarea
-                      value={dialogData.content}
-                      onChange={(e) => setDialogData({ ...dialogData, content: e.target.value })}
-                      className="min-h-[120px] w-full resize-none rounded-xl border-[#DDE5EF] bg-[#F8FAFC] p-4 text-sm outline-none transition-all focus:border-[#173A63] focus:bg-white focus:ring-2 focus:ring-[#173A63]/20"
-                      placeholder="اكتب التفاصيل هنا..."
-                    />
-                  </div>
-
-                  <Button
-                    onClick={handleSaveInteraction}
-                    className="w-full gap-2 rounded-xl bg-[#173A63] py-3.5 font-medium text-white hover:bg-[#142033]"
-                  >
-                    <Save size={18} />
-                    حفظ السجل
-                  </Button>
-                </div>
-              </motion.div>
-            </div>
-          )}
-        </AnimatePresence>
+        <Dialog open={!!dialogOpen} onOpenChange={open => {if(!open)setDialogOpen(null);}}>
+          <DialogContent className="opw-note-dialog max-w-lg" dir="rtl"><DialogHeader><DialogTitle>{dialogOpen === 'call' ? 'تسجيل مكالمة' : 'إضافة ملاحظة متابعة'}</DialogTitle><DialogDescription>سجّل التفاصيل التي يحتاجها الفريق في المتابعة القادمة.</DialogDescription></DialogHeader>
+            <div className="space-y-5 py-4">{dialogOpen === 'call' && <div><label>نتيجة المكالمة</label><div className="opw-view-toggle">{[{id:'answered',label:'تم الرد'},{id:'busy',label:'مشغول'},{id:'no_answer',label:'لم يرد'}].map(option => <button key={option.id} aria-pressed={dialogData.outcome === option.id} onClick={() => setDialogData({...dialogData,outcome:option.id})}>{option.label}</button>)}</div></div>}
+              <div><label htmlFor="crm-interaction-content">التفاصيل</label><Textarea id="crm-interaction-content" value={dialogData.content} onChange={e => setDialogData({...dialogData,content:e.target.value})} className="min-h-[150px]" placeholder="اكتب ملخص التواصل أو الخطوة القادمة…"/></div>
+            </div><DialogFooter className="gap-2"><Button variant="outline" onClick={() => setDialogOpen(null)}>إلغاء</Button><Button onClick={handleSaveInteraction}><Save size={16}/>حفظ الملاحظة</Button></DialogFooter>
+          </DialogContent>
+        </Dialog>
 
         {/* Call Dialog */}
         {callingCustomer && (
@@ -1848,7 +1572,7 @@ export default function CustomerCRMRedesigned() {
           onWhatsApp={handleWhatsApp}
         />
 
-      </div>
+      </OperationsWorkspace>
     </CRMErrorBoundary>
   );
 }

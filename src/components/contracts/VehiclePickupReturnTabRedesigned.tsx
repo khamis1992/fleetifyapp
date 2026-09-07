@@ -447,7 +447,7 @@ const EmptyState = ({ type, onCreate }: { type: 'pickup' | 'return'; onCreate: (
   const isPickup = type === 'pickup';
 
   return (
-    <div className="grid gap-6 p-6 md:grid-cols-[0.9fr_1.1fr] md:items-center">
+    <div className="grid gap-6 bg-[#f6faf7] p-6 xl:grid-cols-[0.9fr_1.1fr] xl:items-center">
       <motion.div
         initial={{ scale: 0.9, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
@@ -539,7 +539,7 @@ export const VehiclePickupReturnTabRedesigned = ({
   return (
     <div className="overflow-hidden rounded-2xl border border-[#E5EAF1] bg-white shadow-[0_10px_30px_-22px_rgba(15,23,42,0.25)]">
       {/* Header */}
-      <div className="flex flex-col gap-4 border-b border-[#E5EAF1] bg-[#F6F8FB] p-5 lg:flex-row lg:items-center lg:justify-between">
+      <div className="flex flex-col gap-5 border-b border-[#dce5e1] bg-white p-6 xl:flex-row xl:items-center xl:justify-between">
         <div>
           <p className="mb-1 text-sm font-black text-[#0E9E7E]">دورة المركبة</p>
           <h2 className="text-2xl font-black text-[#0F172A]">استلام وتسليم المركبة</h2>

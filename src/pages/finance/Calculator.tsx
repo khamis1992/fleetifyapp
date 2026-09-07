@@ -644,7 +644,7 @@ const FinancialCalculator: React.FC = () => {
                   </div>
                   <Button onClick={calculateROI} className="w-full">
                     <Calculator size={16} className="ml-2" />
-                    احسب ROI
+                    احسب العائد على الاستثمار
                   </Button>
                 </CardContent>
               </Card>
@@ -656,7 +656,7 @@ const FinancialCalculator: React.FC = () => {
                 <CardContent className="space-y-4">
                   <div className="grid grid-cols-2 gap-4">
                     <div className="text-center p-4 bg-indigo-50 rounded-lg">
-                      <p className="text-sm text-muted-foreground">ROI الإجمالي</p>
+                      <p className="text-sm text-muted-foreground">العائد الإجمالي على الاستثمار</p>
                        <p className="text-xl font-bold text-indigo-700">
                          {roiResult.roi.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}%
                        </p>

@@ -480,7 +480,7 @@ function ProposalRow({
   );
 }
 
-export function CustomerDataReviewCenter() {
+export function CustomerDataReviewCenter({ includeMerge = true }: { includeMerge?: boolean } = {}) {
   const {
     data: proposals = [],
     error: proposalsError,
@@ -532,7 +532,7 @@ export function CustomerDataReviewCenter() {
 
   return (
     <div className="space-y-4" dir="rtl">
-      <CustomerMergeProposalsPanel />
+      {includeMerge && <CustomerMergeProposalsPanel />}
 
       {/* Header */}
       <div className="rounded-xl border border-[#DDE5EF] bg-white p-5 shadow-sm">

@@ -1,158 +1,35 @@
-import { useState } from "react";
-import { Plus, FileText, Filter, BarChart3, AlertCircle } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-
-import { DispatchPermitForm } from "@/components/fleet/DispatchPermitForm";
-import { DispatchPermitsList } from "@/components/fleet/DispatchPermitsList";
-import { useDispatchPermits } from "@/hooks/useDispatchPermits";
-import { ResponsivePageActions } from "@/components/ui/responsive-page-actions";
-import { LoadingSpinner } from "@/components/ui/loading-spinner";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { PageHelp } from "@/components/help";
-import { DispatchPermitsPageHelpContent } from "@/components/help/content";
+import { useState } from 'react';
+import { CheckCircle2, Clock, FileText, Plus, RefreshCw, Truck } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { DispatchPermitForm } from '@/components/fleet/DispatchPermitForm';
+import { DispatchPermitsList } from '@/components/fleet/DispatchPermitsList';
+import { useDispatchPermits } from '@/hooks/useDispatchPermits';
+import { LoadingSpinner } from '@/components/ui/loading-spinner';
+import { OperationsMetric, OperationsPanel, OperationsWorkspace } from '@/components/operations/OperationsWorkspace';
+import { PageHelp } from '@/components/help';
+import { DispatchPermitsPageHelpContent } from '@/components/help/content';
 
 export default function DispatchPermits() {
   const [showPermitForm, setShowPermitForm] = useState(false);
   const [editingPermitId, setEditingPermitId] = useState<string | null>(null);
-  const { data: permits, isLoading, error } = useDispatchPermits();
+  const { data: permits, isLoading, isFetching, error, refetch } = useDispatchPermits();
+  const count = (status: string) => permits?.filter(permit => permit.status === status).length ?? 0;
+  const unavailable = isLoading || !!error;
 
-  // Calculate statistics
-  const stats = {
-    total: permits?.length || 0,
-    pending: permits?.filter(p => p.status === 'pending').length || 0,
-    approved: permits?.filter(p => p.status === 'approved').length || 0,
-    in_progress: permits?.filter(p => p.status === 'in_progress').length || 0,
-    completed: permits?.filter(p => p.status === 'completed').length || 0,
-    rejected: permits?.filter(p => p.status === 'rejected').length || 0,
-  };
-
-  // Show loading state
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px]" dir="rtl">
-        <LoadingSpinner size="lg" />
-      </div>
-    );
-  }
-
-  // Show error state
-  if (error) {
-    return (
-      <div className="space-y-6" dir="rtl">
-        <ResponsivePageActions
-          title="تصاريح الحركة الداخلية"
-          subtitle="إدارة تصاريح حركة المركبات والموافقات"
-        />
-        <Alert variant="destructive">
-          <AlertCircle className="h-4 w-4" />
-          <AlertTitle>خطأ في تحميل البيانات</AlertTitle>
-          <AlertDescription>
-            حدث خطأ أثناء تحميل تصاريح الحركة. يرجى المحاولة مرة أخرى.
-            {error instanceof Error && ` ${error.message}`}
-          </AlertDescription>
-        </Alert>
-      </div>
-    );
-  }
-
-  return (
-    <div className="space-y-6" dir="rtl">
-      {/* Header */}
-      <ResponsivePageActions
-        title="تصاريح الحركة الداخلية"
-        subtitle="إدارة تصاريح حركة المركبات والموافقات"
-        primaryAction={{
-          id: 'new-permit',
-          label: 'طلب تصريح جديد',
-          icon: <Plus className="h-4 w-4 mr-2" />,
-          onClick: () => setShowPermitForm(true)
-        }}
-      />
-
-      {/* Statistics Cards */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-6">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">إجمالي التصاريح</CardTitle>
-            <FileText className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.total}</div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">قيد الانتظار</CardTitle>
-            <Filter className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-yellow-600">{stats.pending}</div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">موافق عليها</CardTitle>
-            <BarChart3 className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-green-600">{stats.approved}</div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">قيد التنفيذ</CardTitle>
-            <BarChart3 className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-blue-600">{stats.in_progress}</div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">مكتملة</CardTitle>
-            <BarChart3 className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-emerald-600">{stats.completed}</div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">مرفوضة</CardTitle>
-            <BarChart3 className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-red-600">{stats.rejected}</div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Main Content */}
-      <DispatchPermitsList onEditPermit={setEditingPermitId} />
-
-      {/* Permit Form Dialog */}
-      {(showPermitForm || editingPermitId) && (
-        <DispatchPermitForm 
-          open={showPermitForm || !!editingPermitId} 
-          onOpenChange={(open) => {
-            if (!open) {
-              setShowPermitForm(false);
-              setEditingPermitId(null);
-            }
-          }}
-          editingPermitId={editingPermitId}
-        />
-      )}
-    <PageHelp title="مساعدة تصاريح التحرك">
-      <DispatchPermitsPageHelpContent />
-    </PageHelp>
-
+  return <OperationsWorkspace section="dispatch" actions={<>
+    <Button className="opw-primary" onClick={() => setShowPermitForm(true)}><Plus size={16} />طلب تصريح جديد</Button>
+    <Button className="opw-secondary" variant="outline" onClick={() => refetch()} disabled={isFetching}><RefreshCw size={16} className={isFetching ? 'animate-spin' : ''} />تحديث السجل</Button>
+  </>}>
+    <div className="opw-metrics" aria-busy={isLoading}>
+      <OperationsMetric label="إجمالي التصاريح" value={unavailable ? '—' : permits?.length ?? 0} hint="جميع طلبات حركة المركبات" icon={FileText} />
+      <OperationsMetric label="بانتظار الموافقة" value={unavailable ? '—' : count('pending')} hint="طلبات تحتاج إلى مراجعة" icon={Clock} tone="warning" />
+      <OperationsMetric label="حركات قيد التنفيذ" value={unavailable ? '—' : count('in_progress')} hint={unavailable ? 'جارٍ تحميل الحالات' : count('approved') + ' تصريحًا تمت الموافقة عليه ولم يبدأ'} icon={Truck} />
+      <OperationsMetric label="حركات مكتملة" value={unavailable ? '—' : count('completed')} hint={unavailable ? 'جارٍ تحميل الحالات' : count('rejected') + ' مرفوض · ' + count('cancelled') + ' ملغي'} icon={CheckCircle2} />
     </div>
-  );
+    {isLoading ? <OperationsPanel title="سجل الحركة"><div className="opw-empty" role="status"><LoadingSpinner /><p>جارٍ تحميل تصاريح الحركة...</p></div></OperationsPanel>
+      : error ? <div className="ad-notice" role="alert"><div><strong>تعذر تحميل تصاريح الحركة</strong>أعد المحاولة باستخدام زر تحديث السجل.</div></div>
+      : <DispatchPermitsList onEditPermit={setEditingPermitId} />}
+    {(showPermitForm || editingPermitId) && <DispatchPermitForm open={showPermitForm || !!editingPermitId} onOpenChange={open => { if (!open) { setShowPermitForm(false); setEditingPermitId(null); } }} editingPermitId={editingPermitId} />}
+    <PageHelp title="مساعدة تصاريح التحرك"><DispatchPermitsPageHelpContent /></PageHelp>
+  </OperationsWorkspace>;
 }

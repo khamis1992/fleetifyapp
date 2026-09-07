@@ -1,3 +1,4 @@
+import { contractRegisterSearchFilter, contractSearchPattern } from "@/utils/contractRegisterSearch";
 import { useCallback, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -99,7 +100,7 @@ export const useContractsData = (filters: ContractsDataFilters = {}) => {
   }
 
   // Fetch statistics separately (all contracts for accurate counts)
-  const { data: allContractsForStats, refetch: refetchStatistics } = useQuery({
+  const { data: allContractsForStats, error: statisticsError, isLoading: statisticsLoading, refetch: refetchStatistics } = useQuery({
     queryKey: [...queryKeys.contracts.lists(), 'all-for-stats-v2', filter?.company_id],
     queryFn: async ({ signal }: { signal?: AbortSignal }) => {
       try {
@@ -135,14 +136,14 @@ export const useContractsData = (filters: ContractsDataFilters = {}) => {
 
         if (error) {
           console.error('❌ [CONTRACTS_STATS] Error fetching stats:', error);
-          return [];
+          throw error;
         }
 
         console.log('✅ [CONTRACTS_STATS] Fetched contracts for stats:', data?.length || 0);
         return data || [];
       } catch (err) {
         console.error('❌ [CONTRACTS_STATS] Exception in stats fetch:', err);
-        return [];
+        throw err;
       }
     },
     enabled: !!user?.id && !!filter?.company_id && filter?.company_id !== '__loading__',
@@ -153,7 +154,7 @@ export const useContractsData = (filters: ContractsDataFilters = {}) => {
 
   // Fetch contracts with customer data (paginated)
   // استخدام getQueryKey مثل useCustomers لضمان إعادة الجلب عند تغير البحث
-  const { data: contractsResponse, isLoading, isFetching, refetch: refetchContracts } = useQuery({
+  const { data: contractsResponse, isLoading, isFetching, error, refetch: refetchContracts } = useQuery({
     queryKey: getQueryKey(['contracts'], [
       filters?.page,
       filters?.pageSize,
@@ -191,6 +192,7 @@ export const useContractsData = (filters: ContractsDataFilters = {}) => {
       // البحث في قاعدة البيانات - إذا كان هناك نص بحث
       const searchTerm = filters?.search?.trim() || '';
       let customerIds: string[] = [];
+      let matchingVehicleIds: string[] = [];
       
       // إذا كان هناك نص بحث، نبحث أولاً عن العملاء المطابقين
       if (searchTerm) {
@@ -203,33 +205,39 @@ export const useContractsData = (filters: ContractsDataFilters = {}) => {
         
         // Search each word in first_name, last_name, phone, and national_id fields
         for (const word of searchWords) {
-          customerSearchConditions.push(`first_name.ilike.%${word}%`);
-          customerSearchConditions.push(`last_name.ilike.%${word}%`);
-          customerSearchConditions.push(`first_name_ar.ilike.%${word}%`);
-          customerSearchConditions.push(`last_name_ar.ilike.%${word}%`);
-          customerSearchConditions.push(`company_name.ilike.%${word}%`);
-          customerSearchConditions.push(`company_name_ar.ilike.%${word}%`);
-          customerSearchConditions.push(`phone.ilike.%${word}%`);
-          customerSearchConditions.push(`national_id.ilike.%${word}%`);
+          customerSearchConditions.push(`first_name.ilike.${contractSearchPattern(word)}`);
+          customerSearchConditions.push(`last_name.ilike.${contractSearchPattern(word)}`);
+          customerSearchConditions.push(`first_name_ar.ilike.${contractSearchPattern(word)}`);
+          customerSearchConditions.push(`last_name_ar.ilike.${contractSearchPattern(word)}`);
+          customerSearchConditions.push(`company_name.ilike.${contractSearchPattern(word)}`);
+          customerSearchConditions.push(`company_name_ar.ilike.${contractSearchPattern(word)}`);
+          customerSearchConditions.push(`phone.ilike.${contractSearchPattern(word)}`);
+          customerSearchConditions.push(`national_id.ilike.${contractSearchPattern(word)}`);
         }
         
         // Also search the full term
-        customerSearchConditions.push(`first_name.ilike.%${searchTerm}%`);
-        customerSearchConditions.push(`last_name.ilike.%${searchTerm}%`);
-        customerSearchConditions.push(`first_name_ar.ilike.%${searchTerm}%`);
-        customerSearchConditions.push(`last_name_ar.ilike.%${searchTerm}%`);
-        customerSearchConditions.push(`company_name.ilike.%${searchTerm}%`);
-        customerSearchConditions.push(`company_name_ar.ilike.%${searchTerm}%`);
-        customerSearchConditions.push(`phone.ilike.%${searchTerm}%`);
-        customerSearchConditions.push(`national_id.ilike.%${searchTerm}%`);
+        customerSearchConditions.push(`first_name.ilike.${contractSearchPattern(searchTerm)}`);
+        customerSearchConditions.push(`last_name.ilike.${contractSearchPattern(searchTerm)}`);
+        customerSearchConditions.push(`first_name_ar.ilike.${contractSearchPattern(searchTerm)}`);
+        customerSearchConditions.push(`last_name_ar.ilike.${contractSearchPattern(searchTerm)}`);
+        customerSearchConditions.push(`company_name.ilike.${contractSearchPattern(searchTerm)}`);
+        customerSearchConditions.push(`company_name_ar.ilike.${contractSearchPattern(searchTerm)}`);
+        customerSearchConditions.push(`phone.ilike.${contractSearchPattern(searchTerm)}`);
+        customerSearchConditions.push(`national_id.ilike.${contractSearchPattern(searchTerm)}`);
         
-        const { data: matchingCustomers } = await supabase
+        const { data: matchingCustomers, error: customerSearchError } = await supabase
           .from('customers')
           .select('id, first_name, last_name, first_name_ar, last_name_ar, company_name, company_name_ar, phone, national_id')
           .eq('company_id', companyId)
           .or(customerSearchConditions.join(','))
           .abortSignal(signal!);
         
+        if (customerSearchError) throw customerSearchError;
+        const { data: matchingVehicles, error: vehicleSearchError } = await supabase
+          .from('vehicles').select('id').eq('company_id', companyId)
+          .ilike('plate_number', '%' + searchTerm + '%').abortSignal(signal!);
+        if (vehicleSearchError) throw vehicleSearchError;
+        matchingVehicleIds = (matchingVehicles || []).map(vehicle => vehicle.id);
         if (matchingCustomers && matchingCustomers.length > 0) {
           const normalizedWords = searchWords.map(normalizeSearchText).filter(Boolean);
           customerIds = matchingCustomers
@@ -274,18 +282,12 @@ export const useContractsData = (filters: ContractsDataFilters = {}) => {
           countQuery = countQuery.or(legalActionFilter);
         }
 
-        // Apply search filter to count query
-        if (searchTerm) {
-          if (customerIds.length > 0) {
-            countQuery = countQuery.or(`contract_number.ilike.%${searchTerm}%,description.ilike.%${searchTerm}%,terms.ilike.%${searchTerm}%,license_plate.ilike.%${searchTerm}%,customer_id.in.(${customerIds.join(',')})`);
-          } else {
-            countQuery = countQuery.or(`contract_number.ilike.%${searchTerm}%,description.ilike.%${searchTerm}%,terms.ilike.%${searchTerm}%,license_plate.ilike.%${searchTerm}%`);
-          }
-        }
+        if (searchTerm) countQuery = countQuery.or(contractRegisterSearchFilter(searchTerm, customerIds, matchingVehicleIds));
 
         const { count, error: countError } = await countQuery;
         if (countError) {
           console.error('❌ [CONTRACTS_QUERY] Error fetching count:', countError);
+          throw countError;
         } else {
           totalCount = count || 0;
         }
@@ -355,14 +357,7 @@ export const useContractsData = (filters: ContractsDataFilters = {}) => {
         query = query.or(legalActionFilter);
       }
 
-      // Apply search filter at database level
-      if (searchTerm) {
-        if (customerIds.length > 0) {
-          query = query.or(`contract_number.ilike.%${searchTerm}%,description.ilike.%${searchTerm}%,terms.ilike.%${searchTerm}%,license_plate.ilike.%${searchTerm}%,customer_id.in.(${customerIds.join(',')})`);
-        } else {
-          query = query.or(`contract_number.ilike.%${searchTerm}%,description.ilike.%${searchTerm}%,terms.ilike.%${searchTerm}%,license_plate.ilike.%${searchTerm}%`);
-        }
-      }
+      if (searchTerm) query = query.or(contractRegisterSearchFilter(searchTerm, customerIds, matchingVehicleIds));
 
       // Apply pagination
       if (filters?.page || filters?.pageSize) {
@@ -402,6 +397,7 @@ export const useContractsData = (filters: ContractsDataFilters = {}) => {
             .from('vehicles')
             .select('id, plate_number, make, model, year, status')
             .in('id', vehicleIds)
+            .eq('company_id', companyId)
             .abortSignal(signal!);
           
           if (!vehiclesError && vehiclesData) {
@@ -443,7 +439,7 @@ export const useContractsData = (filters: ContractsDataFilters = {}) => {
         return contractsWithVehicles;
       } catch (err) {
         console.error('❌ [CONTRACTS_QUERY] Exception in contracts fetch:', err);
-        return [];
+        throw err;
       }
     },
     enabled: !!user?.id && !!filter?.company_id && filter?.company_id !== '__loading__',
@@ -773,6 +769,9 @@ export const useContractsData = (filters: ContractsDataFilters = {}) => {
     filteredContracts,
     isLoading,
     isFetching,
+    error,
+    statisticsError,
+    statisticsLoading,
     refetch,
     statistics,
     pagination: paginationInfo
