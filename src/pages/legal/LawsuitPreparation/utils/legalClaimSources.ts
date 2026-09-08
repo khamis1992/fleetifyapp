@@ -32,6 +32,10 @@ export interface LegalClaimBreakdown {
   legal_extension_rent_amount?: number | string | null;
   extension_start_date?: string | null;
   rent_cutoff_date?: string | null;
+  /** v4 wraps the amounts instead of returning the v3 breakdown directly. */
+  cutoff_date?: string | null;
+  components?: { legal_extension_rent?: number | string | null };
+  _breakdown?: LegalClaimBreakdown;
 }
 
 export interface LegalClaimProjection {
@@ -183,7 +187,7 @@ export function resolveLegalClaimCutoffDate(
   asOfDate: string,
   breakdown: LegalClaimBreakdown | null,
 ): string {
-  const cutoff = breakdown?.rent_cutoff_date;
+  const cutoff = breakdown?.cutoff_date ?? breakdown?.rent_cutoff_date;
   return typeof cutoff === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(cutoff)
     ? (cutoff < asOfDate ? cutoff : asOfDate)
     : asOfDate;
@@ -195,11 +199,15 @@ export function appendLegalAccrualToProjection(
   breakdown: LegalClaimBreakdown | null,
   asOfDate: string,
 ): LegalClaimProjection {
-  const amount = Math.max(0, Number(breakdown?.legal_extension_rent_amount || 0));
+  const amount = Math.max(0, Number(breakdown?.components?.legal_extension_rent
+    ?? breakdown?.legal_extension_rent_amount ?? 0));
   if (amount <= 0) return projection;
 
-  const startDate = breakdown?.extension_start_date || asOfDate;
-  const cutoffDate = breakdown?.rent_cutoff_date || asOfDate;
+  const startDate = breakdown?.extension_start_date || breakdown?._breakdown?.extension_start_date;
+  if (!startDate) {
+    throw new Error('تعذر تحديد بداية فترة الأجرة الممتدة؛ يلزم استكمال مصدر الحساب قبل اعتماد المطالبة');
+  }
+  const cutoffDate = breakdown?.cutoff_date || breakdown?.rent_cutoff_date || asOfDate;
   const accrualRow: OverdueInvoice = {
     id: `legal-accrual:${startDate}:${cutoffDate}`,
     invoice_number: `أجرة تعاقدية مستمرة حتى ${cutoffDate}`,
@@ -209,6 +217,8 @@ export function appendLegalAccrualToProjection(
     source: 'legal_accrual',
     source_reference: 'calculate_legal_claim_breakdown_v3',
     invoice_month: startDate,
+    service_period_start: startDate,
+    service_period_end: cutoffDate,
   };
   const rows = [...projection.rows, accrualRow]
     .sort((left, right) => left.due_date.localeCompare(right.due_date));
@@ -274,7 +284,27 @@ export async function loadLegalClaimProjection(
       p_claim_scope: '',
       p_excluded_invoice_ids: [],
     });
-    if (!v4.error || !isMissingRpcError(v4.error.message)) return v4;
+    if (!v4.error) {
+      const statement = v4.data as LegalClaimBreakdown | null;
+      if (Number(statement?.components?.legal_extension_rent || 0) > 0
+        && !statement?.extension_start_date && !statement?._breakdown?.extension_start_date) {
+        // Older deployed v4 exposes the amount but omits its period. Read v3
+        // at exactly v4's cutoff and verify agreement before borrowing metadata.
+        const detail = await callLegalClaimBreakdown('calculate_legal_claim_breakdown_v3', {
+          ...args,
+          p_as_of_date: resolveLegalClaimCutoffDate(asOfDate, statement),
+        });
+        if (detail.error) return detail;
+        const breakdown = detail.data as LegalClaimBreakdown | null;
+        if (roundCurrency(Number(breakdown?.legal_extension_rent_amount || 0))
+          !== roundCurrency(Number(statement?.components?.legal_extension_rent || 0))) {
+          throw new Error('تغير حساب الأجرة الممتدة أثناء التحميل؛ أعد تحديث المطالبة');
+        }
+        return { data: { ...statement, _breakdown: breakdown }, error: null };
+      }
+      return v4;
+    }
+    if (!isMissingRpcError(v4.error.message)) return v4;
     const v3 = await callLegalClaimBreakdown('calculate_legal_claim_breakdown_v3', args);
     if (!v3.error || !isMissingRpcError(v3.error.message)) return v3;
     return callLegalClaimBreakdown('calculate_legal_claim_breakdown_v2', args);

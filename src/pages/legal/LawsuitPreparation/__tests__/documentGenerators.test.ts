@@ -1,6 +1,8 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   buildMemoDocumentData,
+  buildClaimsStatementData,
+  getFrozenMemoDocumentData,
   buildViolationEvidenceDocumentEntries,
   getMemoDocumentDataForGeneration,
   isMemoSnapshotCurrent,
@@ -132,7 +134,7 @@ describe('buildMemoDocumentData', () => {
     // من 01/05/2026 إلى 25/08/2026 = 116 يوماً (وليس منذ بداية العقد 2024)
     expect(data.customer.days_overdue).toBe(116);
     expect(data.unpaidPeriodFrom).toBe('01/05/2026');
-    expect(data.unpaidPeriodTo).toBe('01/06/2026');
+    expect(data.unpaidPeriodTo).toBe('30/06/2026');
     expect(data.grossInvoicesTotal).toBe(6000);
     expect(data.paidTotal).toBe(1000);
   });
@@ -149,6 +151,23 @@ describe('buildMemoDocumentData', () => {
     expect(data.reminders?.count).toBe(3);
     // لا توجد أضرار مثبتة بمستندات — لا تُمرر أي قيمة افتراضية
     expect(data.damages).toBeUndefined();
+  });
+
+  it('keeps service dates and evidence-backed damages consistent in the claims statement', () => {
+    const state = { ...baseState, damageCosts: [
+      { verified: true, evidence_document_id: null, amount: 900, description: 'بلا سند' },
+      { verified: true, evidence_document_id: 'proof', amount: 500, insurance_recovery: 100, description: 'موثق' },
+    ] } as unknown as LawsuitPreparationState;
+    const claim = buildClaimsStatementData(state);
+    expect(claim.invoices[1]).toMatchObject({ dueDate: '2026-06-01', servicePeriodTo: '2026-06-30' });
+    expect(claim.damageCosts).toEqual([{ description: 'موثق', amount: 400 }]);
+  });
+
+  it('keeps the historical memo date when an older payload has no memoDate', () => {
+    const payload = { ...buildMemoDocumentData(baseState), memoDate: undefined };
+    const snapshot = { payload, facts_as_of_date: '2026-08-26', created_at: '2026-08-27T00:00:00Z' } as unknown as LawsuitPreparationState['memoSnapshots'][number];
+    expect(getFrozenMemoDocumentData(snapshot).memoDate).toBe('26/08/2026');
+    expect(snapshot.payload.memoDate).toBeUndefined();
   });
 
   it('treats a returned vehicle as recovered and skips period data without invoices', () => {

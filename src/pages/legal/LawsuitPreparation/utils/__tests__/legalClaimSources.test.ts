@@ -230,4 +230,28 @@ describe('resolveLegalClaimProjection', () => {
       legal_extension_rent_amount: 0,
     }, '2026-08-30')).toBe(base);
   });
+
+  it('preserves v4 continuation and its actual service period', () => {
+    const base = resolveLegalClaimProjection([], [], '2026-09-08');
+    const result = appendLegalAccrualToProjection(base, {
+      cutoff_date: '2026-08-20',
+      components: { legal_extension_rent: 1100 },
+      _breakdown: { extension_start_date: '2026-08-01' },
+    }, '2026-09-08');
+    expect(result.rows[0]).toMatchObject({
+      total_amount: 1100,
+      service_period_start: '2026-08-01',
+      service_period_end: '2026-08-20',
+    });
+    expect(result.summary.outstandingTotal).toBe(1100);
+    expect(resolveLegalClaimCutoffDate('2026-09-08', { cutoff_date: '2026-08-20' })).toBe('2026-08-20');
+  });
+
+  it('does not invent a continuation period when its metadata is missing', () => {
+    expect(() => appendLegalAccrualToProjection(
+      resolveLegalClaimProjection([], [], '2026-09-08'),
+      { components: { legal_extension_rent: 1700 } },
+      '2026-09-08',
+    )).toThrow('بداية فترة الأجرة');
+  });
 });

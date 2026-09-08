@@ -28,11 +28,12 @@ import { calculateDelinquencyAmounts } from '@/utils/calculateDelinquencyAmounts
 import { normalizeLegalIdentityMatchStatus } from '@/services/legalContractIdentityVerifier';
 import { createInitialState } from '../store/reducer';
 import { getLawsuitClaimAmounts } from './claimAmounts';
+import { assertRentClaimConsistent, summarizeRentClaim } from './rentClaimSummary';
 import {
   getEffectiveLegalIdentityMatchStatus,
   selectLegalContractDocument,
 } from './contractDocumentSelection';
-import { loadLegalClaimProjection } from './legalClaimSources';
+import { getQatarBusinessDate, loadLegalClaimProjection } from './legalClaimSources';
 import type {
   LawsuitPreparationState,
   DocumentsState,
@@ -108,26 +109,15 @@ export function buildMemoDocumentData(
     datedInvoices.length > 0
       ? datedInvoices.reduce((oldest, item) => (item.time < oldest.time ? item : oldest))
       : null;
-  const newestInvoice =
-    datedInvoices.length > 0
-      ? datedInvoices.reduce((newest, item) => (item.time > newest.time ? item : newest))
-      : null;
-
-  const unpaidPeriodFrom = oldestInvoice
-    ? formatDateForDocument(oldestInvoice.raw)
+  const rentSummary = summarizeRentClaim(remainingInvoices, contract);
+  const unpaidPeriodFrom = rentSummary.periodFrom
+    ? formatDateForDocument(rentSummary.periodFrom)
     : undefined;
-  const unpaidPeriodTo = newestInvoice
-    ? formatDateForDocument(newestInvoice.raw)
+  const unpaidPeriodTo = rentSummary.periodTo
+    ? formatDateForDocument(rentSummary.periodTo)
     : undefined;
-
-  const grossInvoicesTotal = remainingInvoices.reduce(
-    (sum, inv) => sum + (inv.total_amount || 0),
-    0
-  );
-  const paidTotal = remainingInvoices.reduce(
-    (sum, inv) => sum + Number(inv.paid_amount || 0),
-    0
-  );
+  const grossInvoicesTotal = rentSummary.grossRent;
+  const paidTotal = rentSummary.countedPayments;
 
   // أيام التأخير = من أقدم فاتورة متأخرة حتى اليوم (وليس من بداية العقد)
   const daysOverdue =
@@ -150,6 +140,7 @@ export function buildMemoDocumentData(
 
   return {
     caseNumber: state.legalCase?.case_number || undefined,
+    memoDate: formatDateForDocument(getQatarBusinessDate()),
     filingDate: state.legalCase?.filing_date
       ? formatDateForDocument(state.legalCase.filing_date)
       : undefined,
@@ -318,7 +309,7 @@ export function isMemoSnapshotCurrent(
   try {
     const current = JSON.parse(JSON.stringify(buildMemoDocumentData(state))) as Record<string, unknown>;
     const frozen = JSON.parse(JSON.stringify(snapshot.payload)) as Record<string, unknown>;
-    for (const key of ['documentReference', 'caseNumber', 'filingDate']) {
+    for (const key of ['documentReference', 'caseNumber', 'filingDate', 'memoDate']) {
       delete current[key];
       delete frozen[key];
     }
@@ -336,9 +327,18 @@ export function getMemoDocumentDataForGeneration(
     (snapshot) => snapshot.readiness_status === 'approved',
   );
   if (approvedSnapshot && isMemoSnapshotCurrent(state, approvedSnapshot)) {
-    return approvedSnapshot.payload as unknown as LegalDocumentData;
+    return getFrozenMemoDocumentData(approvedSnapshot);
   }
   return buildMemoDocumentData(state);
+}
+
+/** Historical exports retain the snapshot's date, never today's preview date. */
+export function getFrozenMemoDocumentData(snapshot: LegalMemoSnapshot): LegalDocumentData {
+  const payload = snapshot.payload as unknown as LegalDocumentData;
+  return {
+    ...payload,
+    memoDate: payload.memoDate || formatDateForDocument(snapshot.facts_as_of_date || snapshot.created_at),
+  };
 }
 
 // ==========================================
@@ -685,6 +685,7 @@ export function buildClaimsStatementData(
   const trafficOnlyClaim = isTrafficViolationsOnlyScope(state.legalCase?.claim_scope);
 
   const invoicesData = (trafficOnlyClaim ? [] : state.overdueInvoices).map((inv) => {
+    const servicePeriod = summarizeRentClaim([inv], contract);
     const daysLate = Math.floor(
       (new Date().getTime() - new Date(inv.due_date).getTime()) / (1000 * 60 * 60 * 24)
     );
@@ -695,6 +696,9 @@ export function buildClaimsStatementData(
     return {
       invoiceNumber: inv.invoice_number || '-',
       dueDate: inv.due_date,
+      source: inv.source,
+      servicePeriodFrom: servicePeriod.periodFrom,
+      servicePeriodTo: servicePeriod.periodTo,
       totalAmount: inv.total_amount || 0,
       paidAmount: inv.paid_amount || 0,
       daysLate,
@@ -713,7 +717,9 @@ export function buildClaimsStatementData(
   }));
 
   // مصاريف الأضرار: المتحقق منه بسند مستند فقط (متطابق مع المذكرة)
-  const verifiedCosts = (trafficOnlyClaim ? [] : state.damageCosts).filter((cost) => cost.verified);
+  const verifiedCosts = (trafficOnlyClaim ? [] : state.damageCosts).filter(
+    (cost) => cost.verified && Boolean(cost.evidence_document_id),
+  );
   const damageCosts = verifiedCosts.map((cost) => ({
     description: cost.description,
     amount: Math.max(
@@ -1111,6 +1117,7 @@ export async function generateDocument(
   docId: keyof DocumentsState,
   state: LawsuitPreparationState
 ): Promise<{ url: string; html: string }> {
+  if (['memo', 'claims', 'docsList'].includes(docId)) assertRentClaimConsistent(state);
   switch (docId) {
     case 'memo':
       return generateExplanatoryMemo(state);
@@ -1137,6 +1144,7 @@ export async function generateDocument(
 export async function prepareCurrentFilingState(
   state: LawsuitPreparationState,
 ): Promise<LawsuitPreparationState> {
+  assertRentClaimConsistent(state);
   const filingState: LawsuitPreparationState = {
     ...state,
     documents: Object.fromEntries(

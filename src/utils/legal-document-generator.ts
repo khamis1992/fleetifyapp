@@ -16,6 +16,8 @@ export interface LegalDocumentData {
   claimScope?: LegalClaimScope;
   /** رقم الدعوى بعد القيد؛ يبقى فارغاً في مرحلة التجهيز */
   caseNumber?: string;
+  /** تاريخ إعداد المذكرة مستقل عن تاريخ إيداع الدعوى. */
+  memoDate?: string;
   filingDate?: string;
   /** مرجع ثابت محفوظ مع لقطة المذكرة؛ لا يُولد عشوائياً */
   documentReference?: string;
@@ -154,6 +156,14 @@ function formatQar(value: number): string {
   return value.toLocaleString('en-US');
 }
 
+function formatMemoDate(value: string): string {
+  const normalized = toEnglishDigits(value);
+  const iso = /^(\d{4})-(\d{2})-(\d{2})/.exec(normalized);
+  if (iso) return `${iso[3]}/${iso[2]}/${iso[1]}`;
+  // Memo payloads already use DD/MM/YYYY; Date(string) would parse MM/DD or throw.
+  return normalized;
+}
+
 function damageCostLabel(type: string): string {
   switch (type) {
     case 'monetary_delay_damage':
@@ -200,6 +210,7 @@ function sanitizeLegalDocumentData(data: LegalDocumentData): LegalDocumentData {
   return {
     ...data,
     caseNumber: text(data.caseNumber) || undefined,
+    memoDate: text(data.memoDate) || undefined,
     filingDate: text(data.filingDate) || undefined,
     documentReference: text(data.documentReference) || undefined,
     customer: {
@@ -295,6 +306,19 @@ export function generateLegalComplaint(data: LegalDocumentData): string {
     .trim();
 }
 
+/** Use the same evidenced facts in the filing form and the memorandum. */
+export function buildLegalMemoFactsText(data: LegalDocumentData): string {
+  const html = generateLegalComplaintHTML(data);
+  const facts = html.split('<!-- Section 1: Facts -->')[1]
+    .split('<!-- Section 2: Financial Claims -->')[0];
+  return facts.replace(/<\/p>/g, '\n\n')
+    .replace(/<[^>]+>/g, '')
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&lt;/g, '<').replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"').replace(/&#039;/g, "'").replace(/&amp;/g, '&')
+    .split('\n').map(line => line.trim()).filter(Boolean).join('\n\n');
+}
+
 /**
  * Generate HTML version of the legal complaint for printing
  * Professional formal legal document style - matching claims statement design
@@ -305,14 +329,12 @@ export function generateLegalComplaintHTML(data: LegalDocumentData): string {
   data = sanitizeLegalDocumentData(data);
   const { customer, companyInfo, vehicleInfo, contractInfo, damages = 0, additionalNotes, breachDetails } = data;
 
-  const filingDateValue = data.filingDate ? new Date(data.filingDate) : null;
-  const memoDate = filingDateValue && !Number.isNaN(filingDateValue.getTime())
-    ? filingDateValue
-    : new Date();
-  const today = format(memoDate, 'dd/MM/yyyy');
+  const today = data.memoDate || format(new Date(), 'dd/MM/yyyy');
   const currentDate = today;
 
   const refNumber = data.documentReference || `DRAFT-${contractInfo.contract_number}`;
+  const courtCaseNumber = data.caseNumber && !/^(CASE|LC)-/i.test(data.caseNumber)
+    ? data.caseNumber : 'لم تقيد بعد';
   const trafficOnlyClaim = isTrafficViolationsOnlyScope(data.claimScope);
 
   // المكونات الموثقة فقط — لا توجد مبالغ ثابتة أو نسب افتراضية
@@ -402,7 +424,7 @@ export function generateLegalComplaintHTML(data: LegalDocumentData): string {
     .filter((method, index, all) => all.indexOf(method) === index);
   const reminderCount = data.reminders?.count || 0;
   const reminderLastDate = data.reminders?.lastSentDate
-    ? toEnglishDigits(format(new Date(data.reminders.lastSentDate), 'dd/MM/yyyy'))
+    ? formatMemoDate(data.reminders.lastSentDate)
     : null;
 
   // Company info constants
@@ -865,20 +887,22 @@ export function generateLegalComplaintHTML(data: LegalDocumentData): string {
     <!-- التاريخ والرقم المرجعي -->
     <div class="ref-date">
       <div><strong>الرقم المرجعي:</strong> ${refNumber}</div>
-      <div><strong>التاريخ:</strong> ${currentDate}</div>
+      <div><strong>تاريخ المذكرة:</strong> ${currentDate}</div>
+      <div><strong>الدعوى رقم:</strong> ${courtCaseNumber}</div>
     </div>
 
     <!-- الموضوع -->
     <div class="subject-box">
-      <strong>مذكرة شارحة مقدمة إلى محكمة الاستثمار والتجارة الموقرة</strong><br>
-      <span style="font-size: 12px;">الدائرة الابتدائية المختصة بعقود إيجار السيارات وخدمات الليموزين</span><br>
+      <strong>مذكرة شارحة</strong><br>
+      <span>مقدمة إلى محكمة الاستثمار والتجارة الموقرة</span><br>
+      <span style="font-size: 12px;">الدائرة الابتدائية المختصة</span><br>
       <span style="font-size: 11px;">${trafficOnlyClaim
         ? 'مطالبة مالية بقيمة المخالفات المرورية فقط'
         : effectiveTerminationPath === 'natural_expiry'
         ? 'طلب ثبوت انتهاء عقد إيجار مركبة'
         : effectiveTerminationPath === 'documented'
           ? 'طلب ثبوت انفساخ عقد إيجار مركبة'
-          : 'طلب فسخ عقد إيجار مركبة'}</span>
+          : 'بطلب فسخ عقد إيجار مركبة وردها والمطالبة بالأجرة والمخالفات والتعويضات'}</span>
     </div>
 
     <!-- معلومات الأطراف -->
@@ -972,7 +996,7 @@ export function generateLegalComplaintHTML(data: LegalDocumentData): string {
       <div class="section-title">أولاً: الاختصاص القضائي</div>
       <div class="section-content">
         <p>
-          تختص محكمة الاستثمار والتجارة بنظر هذه الدعوى عملاً بالمادة (7) من قانون رقم (21) لسنة 2021 بإصدار قانون إنشاء محكمة الاستثمار والتجارة، باعتبار النزاع ناشئاً عن عقد تجاري يتعلق بتأجير مركبة، وينعقد الاختصاص المكاني لمحاكم دولة قطر وفقاً للعقد والقواعد المقررة قانوناً.
+          تتمسك المدعية باختصاص محكمة الاستثمار والتجارة بنظر الدعوى، عملاً بالمادة (7) من القانون رقم (21) لسنة 2021 بإنشاء محكمة الاستثمار والتجارة، باعتبار النزاع ناشئاً عن عقد إيجار مركبة أبرمته المدعية في إطار نشاطها التجاري.
         </p>
       </div>
     </div>
@@ -982,17 +1006,17 @@ export function generateLegalComplaintHTML(data: LegalDocumentData): string {
       <div class="section-title">ثانياً: الوقائع</div>
       <div class="section-content">
         <p>
-          1. أبرمت المدعية مع المدعى عليه عقد إيجار المركبة رقم <strong>(${contractInfo.contract_number})</strong> بتاريخ <strong>${contractStartDate}</strong>${contractEndDate ? `، لمدة تنتهي اتفاقًا بتاريخ <strong>${contractEndDate}</strong>` : ''}، وبأجرة شهرية مقدارها <strong>(${formatQar(contractInfo.monthly_rent)})</strong> ريال قطري، وذلك وفق عقد الإيجار المرفق.
+          أبرمت المدعية مع المدعى عليه عقد إيجار المركبة المبينة أعلاه، لقاء أجرة شهرية مقدارها <strong>${formatQar(contractInfo.monthly_rent)}</strong> ريال قطري، والتزم المدعى عليه بأداء الأجرة في مواعيد استحقاقها والوفاء بالالتزامات المقررة عليه بموجب العقد.
         </p>
         <p>
           ${data.handoverInfo?.documented
-            ? `2. تسلم المدعى عليه المركبة المبينة بياناتها أعلاه بموجب محضر التسليم المؤرخ <strong>${toEnglishDigits(data.handoverInfo.date)}</strong> والمرفق بحافظة المستندات، وانتفع بها تنفيذاً للعقد.`
-            : '2. تتعلق العلاقة الإيجارية بالمركبة المبينة بياناتها أعلاه وفق عقد الإيجار المرفق، ولا تنسب هذه المذكرة واقعة تسليم فعلي ما لم يؤيدها محضر أو سجل مستقل.'}
+            ? `وتستند المدعية في بيان تسليم المركبة وفترة حيازتها وحالة ردها إلى محضر التسليم المؤرخ <strong>${toEnglishDigits(data.handoverInfo.date)}</strong> والمرفق بحافظة المستندات، وإلى مستندات الحيازة والرد المبينة في هذه المذكرة بحسب المتوفر منها.`
+            : 'وتستند المدعية في بيان تسليم المركبة وفترة حيازتها وحالة ردها إلى عقد الإيجار والمستندات المرفقة. ولا تنسب هذه المذكرة واقعة تسليم فعلي أو رد موثق ما لم يؤيدها محضر أو سجل مستقل.'}
         </p>
         <p>
           ${trafficOnlyClaim
-            ? `3. التزم المدعى عليه بتحمل المخالفات والالتزامات الناتجة عن استعمال المركبة${data.contractClauses?.violations ? ' وفق البند المثبت بالعقد' : ''}.`
-            : `3. التزم المدعى عليه بموجب العقد بسداد الأجرة في مواعيد استحقاقها${data.contractClauses?.return ? '، ورد المركبة وفق البند المثبت بالعقد' : ''}${data.contractClauses?.violations ? '، وتحمل المخالفات وفق البند المثبت بالعقد' : ''}.`}
+            ? `التزم المدعى عليه بتحمل المخالفات والالتزامات الناتجة عن استعمال المركبة${data.contractClauses?.violations ? ' وفق البند المثبت بالعقد' : ''}.`
+            : `التزم المدعى عليه بموجب العقد بسداد الأجرة في مواعيد استحقاقها${data.contractClauses?.return ? '، ورد المركبة وفق البند المثبت بالعقد' : ''}${data.contractClauses?.violations ? '، وتحمل المخالفات وفق البند المثبت بالعقد' : ''}.`}
         </p>
         ${!trafficOnlyClaim && breachDetails?.unpaidMonthsDescription ? `
         <p>
@@ -1006,7 +1030,7 @@ export function generateLegalComplaintHTML(data: LegalDocumentData): string {
         </p>
         ${overdueRent > 0 ? `
         <p>
-          5. بلغ إجمالي قيمة الفواتير المستحقة خلال تلك الفترة مبلغ <strong>(${formatQar(hasDeductions ? grossInvoicesTotal : overdueRent + paidTotal)})</strong> ريال قطري${hasDeductions ? `، سدد المدعى عليه منه مبلغ <strong>(${formatQar(paidTotal)})</strong> ريال قطري` : ''}، ليصبح صافي الإيجارات غير المسددة مبلغ <strong>(${formatQar(overdueRent)})</strong> ريال قطري حتى تاريخ إعداد كشف المطالبة، وفق كشف الحساب والفواتير وإيصالات السداد المرفقة.
+          وقد أخل المدعى عليه بالتزامه بسداد الأجرة، فترتب في ذمته عن الفترة <strong>${unpaidPeriodLabel}</strong> مبلغ إجمالي قدره <strong>${formatQar(grossInvoicesTotal || overdueRent + paidTotal)}</strong> ريال قطري، سدد منه مبلغ <strong>${formatQar(paidTotal)}</strong> ريال قطري، ليبقى صافي الأجرة غير المسددة مبلغ <strong>${formatQar(overdueRent)}</strong> ريال قطري، وفق كشف المطالبة ومصادر الاستحقاق وإيصالات السداد المرفقة.
         </p>
         ${hasDeductions ? `
         <p>
@@ -1022,8 +1046,8 @@ export function generateLegalComplaintHTML(data: LegalDocumentData): string {
         ${!trafficOnlyClaim && deliveredNotices.length > 0 ? `
         <p>
           ${deliveredNotices.map((notice, index) => {
-            const sentDate = toEnglishDigits(format(new Date(notice.sentOn), 'dd/MM/yyyy'));
-            const deliveredDate = notice.deliveredOn ? toEnglishDigits(format(new Date(notice.deliveredOn), 'dd/MM/yyyy')) : null;
+            const sentDate = formatMemoDate(notice.sentOn);
+            const deliveredDate = notice.deliveredOn ? formatMemoDate(notice.deliveredOn) : null;
             const graceText = notice.graceDays ? ` ومنحته مهلة (${notice.graceDays}) يومًا` : '';
             const typeLabel = notice.noticeType === 'termination_notice'
               ? 'إنذارًا كتابيًا بإنهاء العقد ورد المركبة'
@@ -1045,7 +1069,7 @@ export function generateLegalComplaintHTML(data: LegalDocumentData): string {
         ` : ''}
         ${!trafficOnlyClaim && ['returned', 'recovered_by_company'].includes(custody) ? `
         <p>
-          ${data.returnDocumented ? 'وثبت من محضر الرد أو الاسترداد المرفق أن' : 'وتفيد بيانات ملف القضية، مع خضوع الواقعة للإثبات، أن'} المدعية استردت المركبة محل العقد${data.vehicleReturnedAt ? ` بتاريخ <strong>${toEnglishDigits(format(new Date(data.vehicleReturnedAt), 'dd/MM/yyyy'))}</strong>` : ''}، ومن ثم لا تطلب ردها مرة أخرى.
+          ${data.returnDocumented ? 'وثبت من محضر الرد أو الاسترداد المرفق أن' : 'وتفيد بيانات ملف القضية، مع خضوع الواقعة للإثبات، أن'} المدعية استردت المركبة محل العقد${data.vehicleReturnedAt ? ` بتاريخ <strong>${formatMemoDate(data.vehicleReturnedAt)}</strong>` : ''}، ومن ثم لا تطلب ردها مرة أخرى.
         </p>
         ` : ''}
         ${customer.violations_count > 0 ? `
@@ -1090,11 +1114,11 @@ export function generateLegalComplaintHTML(data: LegalDocumentData): string {
           </tr>
         </thead>
         <tbody>
-          ${!trafficOnlyClaim && hasDeductions ? `
+          ${!trafficOnlyClaim ? `
           <tr>
             <td>إجمالي الفواتير المستحقة عن فترة التخلف</td>
             <td>${unpaidPeriodLabel}</td>
-            <td class="amount">${formatQar(grossInvoicesTotal)}</td>
+            <td class="amount">${formatQar(grossInvoicesTotal || overdueRent + paidTotal)}</td>
           </tr>
           <tr>
             <td>يخصم: المبالغ المسددة</td>
@@ -1105,12 +1129,6 @@ export function generateLegalComplaintHTML(data: LegalDocumentData): string {
             <td><strong>صافي الإيجارات غير المسددة</strong></td>
             <td>حتى تاريخ إعداد كشف المطالبة</td>
             <td class="amount"><strong>${formatQar(overdueRent)}</strong></td>
-          </tr>
-          ` : !trafficOnlyClaim ? `
-          <tr>
-            <td>الإيجارات المستحقة غير المسددة</td>
-            <td>${unpaidPeriodLabel}</td>
-            <td class="amount">${formatQar(overdueRent)}</td>
           </tr>
           ` : ''}
           ${!trafficOnlyClaim && latePenalty > 0 ? `

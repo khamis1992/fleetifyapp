@@ -67,6 +67,9 @@ export interface OverdueInvoice {
   source?: 'invoice' | 'payment_schedule' | 'legal_accrual';
   source_reference?: string | null;
   invoice_month?: string | null;
+  /** فترة الخدمة مستقلة عن تاريخ الاستحقاق المقدم. */
+  service_period_start?: string | null;
+  service_period_end?: string | null;
 }
 
 export interface FinancialClaimSourceSummary {

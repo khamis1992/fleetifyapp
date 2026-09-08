@@ -44,6 +44,7 @@ import {
   type LegalEvidenceAnalysis,
 } from '../utils/legalEvidenceAutomation';
 import { generateLegalComplaintHTML, type LegalDocumentData } from '@/utils/legal-document-generator';
+import { getFrozenMemoDocumentData } from '../utils/documentGenerators';
 
 const fieldClass = 'h-11 w-full rounded-md border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-800';
 
@@ -749,7 +750,7 @@ export function LegalEvidence() {
                   <td className="p-2">{snapshot.legal_path}</td>
                   <td className="p-2"><Badge variant="outline">{snapshot.readiness_status}</Badge></td>
                   <td className="p-2">{new Date(snapshot.created_at).toLocaleDateString('en-GB')}</td>
-                  <td className="p-2"><Button type="button" size="icon" variant="ghost" onClick={() => viewSnapshot(snapshot.payload)} aria-label="عرض التفاصيل" title="عرض التفاصيل"><Eye className="h-4 w-4" /></Button></td>
+                  <td className="p-2"><Button type="button" size="icon" variant="ghost" onClick={() => viewSnapshot(getFrozenMemoDocumentData(snapshot) as unknown as Record<string, unknown>)} aria-label="عرض التفاصيل" title="عرض التفاصيل"><Eye className="h-4 w-4" /></Button></td>
                 </tr>
               ))}</tbody>
             </table>

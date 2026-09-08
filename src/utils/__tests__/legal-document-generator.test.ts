@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   generateLegalComplaint,
   generateLegalComplaintHTML,
+  buildLegalMemoFactsText,
   type LegalDocumentData,
 } from '../legal-document-generator';
 import { buildLegalMemoClaimsText } from '../legal-memo-requests';
@@ -46,6 +47,26 @@ const lawsuitData: LegalDocumentData = {
 };
 
 describe('legal complaint claim total', () => {
+  it('uses memorandum facts with service coverage and preserves day-first return dates', () => {
+    const facts = buildLegalMemoFactsText({ ...lawsuitData,
+      unpaidPeriodFrom: '01/06/2026', unpaidPeriodTo: '30/06/2026',
+      grossInvoicesTotal: 51000, paidTotal: 500,
+      vehicleCustody: 'returned', vehicleReturnedAt: '23/08/2026', returnDocumented: true,
+    });
+    expect(facts).toContain('من 01/06/2026 إلى 30/06/2026');
+    expect(facts).toContain('سدد منه مبلغ 500');
+    expect(facts).toContain('23/08/2026');
+    expect(facts).toContain('لا تطلب ردها مرة أخرى');
+    expect(facts).not.toContain('<strong>');
+    expect(facts).not.toContain('سادساً: الطلبات');
+  });
+  it('keeps the memo date independent of filing and renders an actual court number', () => {
+    const memo = generateLegalComplaintHTML({ ...lawsuitData,
+      memoDate: '08/09/2026', filingDate: '01/02/2025', caseNumber: '123/2026',
+    });
+    expect(memo).toContain('تاريخ المذكرة:</strong> 08/09/2026');
+    expect(memo).toContain('الدعوى رقم:</strong> 123/2026');
+  });
   it.each([
     ['text', generateLegalComplaint],
     ['html', generateLegalComplaintHTML],
@@ -131,8 +152,8 @@ describe('explanatory memo structure (approved template)', () => {
     });
 
     expect(memo).toContain('محكمة الاستثمار والتجارة');
-    expect(memo).toContain('الدائرة الابتدائية المختصة بعقود إيجار السيارات وخدمات الليموزين');
-    expect(memo).toContain('>طلب فسخ عقد إيجار مركبة</span>');
+    expect(memo).toContain('الدائرة الابتدائية المختصة');
+    expect(memo).toContain('بطلب فسخ عقد إيجار مركبة وردها والمطالبة بالأجرة والمخالفات والتعويضات');
     expect(memo).not.toContain('طلب فسخ عقد إيجار مركبة قضائياً لإخلال المدعى عليه بالتزاماته');
     expect(memo).not.toContain('في الدعوى رقم');
     expect(memo).not.toContain('CASE-26-0034');
@@ -228,7 +249,7 @@ describe('explanatory memo structure (approved template)', () => {
     const memo = generateLegalComplaintHTML(lawsuitData);
 
     expect(memo).toContain('أولاً: الاختصاص القضائي');
-    expect(memo).toContain('المادة (7) من قانون رقم (21) لسنة 2021');
+    expect(memo).toContain('المادة (7) من القانون رقم (21) لسنة 2021');
     expect(memo).toContain('خامساً: الإثبات والرد على الدفوع');
     expect(memo).toContain('سادساً: الطلبات');
   });

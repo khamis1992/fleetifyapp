@@ -1,3 +1,4 @@
+import { buildLegalMemoFactsText } from '@/utils/legal-document-generator';
 /**
  * Batch Filing Service — خدمة الرفع الجماعي للدعاوى
  *
@@ -44,9 +45,7 @@ import {
   TERMINAL_TAQADI_STATUSES,
 } from './taqadiAutomation';
 import {
-  buildFactsAdditions,
   inferTaqadiIdType,
-  type TaqadiNarrativeInput,
 } from './taqadiNarrative';
 import { buildLegalMemoClaimsText } from '@/utils/legal-memo-requests';
 import { getLawsuitClaimAmounts } from './claimAmounts';
@@ -502,6 +501,7 @@ async function loadBatchContractState(
       due_date: invoice.due_date,
       total_amount: invoice.total_amount || 0,
       paid_amount: invoice.paid_amount || 0,
+      source: invoice.source,
     })),
     (evidenceDocuments.length > 0 ? trafficViolations : []).map((violation) => ({
       id: violation.id,
@@ -536,57 +536,7 @@ async function loadBatchContractState(
     const customerName = formatCustomerName(state.customer, { preferArabic: true }) || 'غير محدد';
     const { taqadiClaimAmount } = getLawsuitClaimAmounts(state.calculations!);
 
-    let factsText = lawsuitService.generateFactsText(
-      customerName,
-      state.contract.start_date,
-      `${vehicle?.make || ''} ${vehicle?.model || ''} ${vehicle?.year || ''}`,
-      taqadiClaimAmount,
-      state.legalCase?.claim_scope,
-    );
-
-    const narrativeInput: TaqadiNarrativeInput = {
-      claimAmount: taqadiClaimAmount,
-      violationsCount: state.calculations!.violationsCount,
-      violationsFines: state.calculations!.violationsFines,
-      paidTotal: (trafficOnlyClaim ? [] : overdueInvoices).reduce(
-        (sum, invoice) => sum + Number(invoice.paid_amount || 0),
-        0,
-      ),
-      reminders: trafficOnlyClaim
-        ? { count: 0, lastSentDate: null, sendMethods: [] }
-        : state.paymentReminders,
-      vehicleStatus: vehicle?.status ?? null,
-      vehicleCustody: trafficOnlyClaim
-        ? 'unknown'
-        : profile?.vehicle_custody === 'with_defendant'
-          ? 'with_defendant'
-          : profile?.vehicle_custody === 'returned' || profile?.vehicle_custody === 'recovered_by_company'
-            ? 'returned'
-            : 'unknown',
-      contractEndDate: trafficOnlyClaim ? null : state.contract.end_date,
-      contractStatus: trafficOnlyClaim ? null : state.contract.status ?? null,
-      legalPath: trafficOnlyClaim ? undefined : readiness.legalPath.effectivePath,
-      terminationDate: trafficOnlyClaim ? null : readiness.legalPath.effectiveTerminationDate,
-      formalNoticeCount: (trafficOnlyClaim ? [] : state.formalNotices).filter(
-        (notice) => notice.delivery_confirmed && notice.proof_document_id,
-      ).length,
-      retentionCompensation: retention.amount,
-      documentedDamages: calculations.damagesFee,
-      monetaryDelayDamage: (trafficOnlyClaim ? [] : state.damageCosts)
-        .filter((cost) => cost.verified && cost.cost_type === 'monetary_delay_damage')
-        .reduce((sum, cost) => sum + Math.max(
-          0,
-          Number(cost.amount || 0)
-            - Number(cost.depreciation_deduction || 0)
-            - Number(cost.insurance_recovery || 0),
-        ), 0),
-      contractualCompensation: calculations.lateFees,
-    };
-
-    const additions = buildFactsAdditions(narrativeInput);
-    if (additions.length > 0) {
-      factsText += `\n\n${additions.join('\n\n')}`;
-    }
+    const factsText = buildLegalMemoFactsText(buildMemoDocumentData(state));
 
     const fullName = customerName;
     const defendantContact = getDefendantContact(state);

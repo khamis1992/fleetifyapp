@@ -29,6 +29,8 @@ function sanitizeClaimsStatementData(data: ClaimsStatementData): ClaimsStatement
       ...invoice,
       invoiceNumber: escapeHtml(invoice.invoiceNumber),
       dueDate: escapeHtml(invoice.dueDate),
+      servicePeriodFrom: invoice.servicePeriodFrom ? escapeHtml(invoice.servicePeriodFrom) : undefined,
+      servicePeriodTo: invoice.servicePeriodTo ? escapeHtml(invoice.servicePeriodTo) : undefined,
     })),
     violations: data.violations?.map((violation) => ({
       ...violation,
@@ -68,6 +70,7 @@ function generateActualInvoice(
   const penalty = inv.penalty || 0;
   const total = remaining + penalty;
   const invoiceDate = formatDateEn(inv.dueDate);
+  const isAccountingInvoice = !inv.source || inv.source === 'invoice';
   
   return `
     <div class="invoice-page" style="page-break-before: always; page-break-inside: avoid;">
@@ -107,7 +110,7 @@ function generateActualInvoice(
         <!-- عنوان الفاتورة -->
         <div style="text-align: center; margin-bottom: 12px;">
           <div style="display: inline-block; padding: 5px 28px; border: 2px solid #1e3a8a; border-radius: 8px; background-color: #eff6ff;">
-            <div style="font-size: 18px; font-weight: bold; color: #1e3a8a; margin: 0;">فاتورة مستحقة</div>
+            <div style="font-size: 18px; font-weight: bold; color: #1e3a8a; margin: 0;">${isAccountingInvoice ? 'فاتورة مستحقة' : 'بيان استحقاق أجرة'}</div>
             <div style="font-size: 11px; font-weight: bold; color: #4b5563; letter-spacing: 2px; margin: 0;">DUE INVOICE</div>
           </div>
         </div>
@@ -531,8 +534,8 @@ export function generateClaimsStatementHtml(data: ClaimsStatementData): string {
         <thead>
           <tr>
             <th style="width: 25px;">م</th>
-            <th>رقم الفاتورة</th>
-            <th>تاريخ الاستحقاق</th>
+            <th>مرجع الاستحقاق</th>
+            <th>الاستحقاق وفترة الخدمة</th>
             <th>مبلغ الإيجار</th>
             <th>تعويض اتفاقي</th>
             <th>المدفوع</th>
@@ -549,7 +552,10 @@ export function generateClaimsStatementHtml(data: ClaimsStatementData): string {
               <tr>
                 <td>${i + 1}</td>
                 <td>${inv.invoiceNumber || '-'}</td>
-                <td style="direction: ltr; unicode-bidi: embed;">${formatDateEn(inv.dueDate)}</td>
+                <td>
+                  <div>الاستحقاق: <span dir="ltr">${formatDateEn(inv.dueDate)}</span></div>
+                  ${inv.servicePeriodFrom && inv.servicePeriodTo ? `<div>الخدمة: <span dir="ltr">${formatDateEn(inv.servicePeriodFrom)} – ${formatDateEn(inv.servicePeriodTo)}</span></div>` : ''}
+                </td>
                 <td style="direction: ltr; unicode-bidi: embed;">${formatNumberEn(inv.totalAmount)}</td>
                 <td style="direction: ltr; unicode-bidi: embed;">${formatNumberEn(penalty)}</td>
                 <td style="direction: ltr; unicode-bidi: embed;">${formatNumberEn(inv.paidAmount)}</td>

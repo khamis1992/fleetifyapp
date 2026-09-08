@@ -25,6 +25,9 @@ export interface ClaimsStatementData {
   invoices: {
     invoiceNumber: string;
     dueDate: string;
+    source?: 'invoice' | 'payment_schedule' | 'legal_accrual';
+    servicePeriodFrom?: string;
+    servicePeriodTo?: string;
     totalAmount: number;
     paidAmount: number;
     daysLate: number;

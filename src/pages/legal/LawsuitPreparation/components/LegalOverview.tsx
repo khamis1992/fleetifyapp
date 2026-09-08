@@ -4,12 +4,15 @@ import { Badge } from '@/components/ui/badge';
 import { formatCustomerName } from '@/utils/formatCustomerName';
 import { hasKnownTaqadiNationality } from '@/utils/taqadiNationality';
 import { useLawsuitPreparationContext } from '../store';
+import { summarizeRentClaim } from '../utils/rentClaimSummary';
+import { isTrafficViolationsOnlyScope } from '@/types/legalClaimScope';
 
 function formatQar(amount?: number | null) {
   return new Intl.NumberFormat('ar-QA', {
     style: 'currency',
     currency: 'QAR',
-    maximumFractionDigits: 0,
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
   }).format(Number(amount || 0));
 }
 
@@ -52,6 +55,10 @@ export function LegalOverview() {
   const customerName = formatCustomerName(customer) || 'غير محدد';
   const vehicleName = vehicle ? [vehicle.make, vehicle.model, vehicle.year].filter(Boolean).join(' ') : 'غير محدد';
   const plateNumber = vehicle?.plate_number || contract.license_plate || 'غير محدد';
+  const rentSummary = summarizeRentClaim(
+    isTrafficViolationsOnlyScope(state.legalCase?.claim_scope) ? [] : overdueInvoices,
+    contract,
+  );
 
   return (
     <motion.div className="lawsuit-overview-redesign" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}>
@@ -126,12 +133,20 @@ export function LegalOverview() {
         </div>
 
         <div className="lawsuit-amount-grid">
+          <AmountTile label="إجمالي الأجرة قبل السداد" value={rentSummary.grossRent} />
+          <AmountTile label="المدفوعات المحتسبة لهذه الأجرة" value={rentSummary.countedPayments} />
           <AmountTile label="الإيجار المتأخر" value={calculations.overdueRent} tone="danger" />
           <AmountTile label="تعويض اتفاقي موثق" value={calculations.lateFees} tone="warning" />
           <AmountTile label="أضرار ومصاريف مثبتة" value={calculations.damagesFee} />
           <AmountTile label="المخالفات المرورية" value={calculations.violationsFines} tone="danger" />
+          <AmountTile label="تعويض الاحتباس المثبت" value={calculations.retentionCompensation} />
+          <AmountTile label="وديعة الضمان المخصومة" value={calculations.securityDepositDeduction} />
           <AmountTile label="الإجمالي" value={calculations.total} tone="total" />
         </div>
+        <p className="mt-4 text-sm leading-6 text-muted-foreground">
+          فترة الخدمة المغطاة بالمطالبة: {formatDate(rentSummary.periodFrom)} إلى {formatDate(rentSummary.periodTo)}.
+          {' '}تاريخ استحقاق الفاتورة أول الشهر مستقل عن نهاية فترة الخدمة؛ المدفوعات أعلاه تخص الأجرة الداخلة في هذه المطالبة.
+        </p>
       </section>
 
       <section className="lawsuit-signal-grid">
