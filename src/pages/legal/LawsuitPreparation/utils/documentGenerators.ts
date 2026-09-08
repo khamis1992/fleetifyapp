@@ -130,7 +130,7 @@ export function buildMemoDocumentData(
   const vehicleCustody = profile?.vehicle_custody ?? 'unknown';
   const readiness = evaluateLegalCaseReadiness(state);
   const defendantContact = getDefendantContact(state);
-  const retentionClaim = calculateRetentionClaim(profile, readiness.legalPath);
+  const retentionClaim = state.financialClaimSource?.authoritativeRetention ?? calculateRetentionClaim(profile, readiness.legalPath);
 
   // مصاريف الأضرار: المتحقق منه بسند مستند فقط
   const verifiedCosts = (trafficOnlyClaim ? [] : state.damageCosts ?? []).filter(
@@ -552,7 +552,8 @@ export async function loadCanonicalLawsuitState(
   state.vehicle = vehicle as typeof state.vehicle;
   state.overdueInvoices = claimProjection.rows;
   state.financialClaimSource = claimProjection.summary;
-  state.trafficViolations = (violationsResult.data || []).map((violation) => ({
+  state.financialClaimError = null;
+  state.trafficViolations = claimProjection.trafficViolations ?? (violationsResult.data || []).map((violation) => ({
     id: violation.id,
     violation_number: violation.penalty_number,
     violation_date: violation.penalty_date,
@@ -645,6 +646,12 @@ export async function loadCanonicalLawsuitState(
     total,
     amountInWords: lawsuitService.convertAmountToWords(total),
   };
+  if (claimProjection.summary.authoritativeAmounts) {
+    const authoritative = claimProjection.summary.authoritativeAmounts;
+    state.calculations = { ...state.calculations, ...authoritative,
+      contractualCompensationUnits: claimProjection.summary.authoritativeCompensationUnits,
+      amountInWords: lawsuitService.convertAmountToWords(authoritative.total) };
+  }
 
   return state;
 }

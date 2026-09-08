@@ -924,6 +924,7 @@ export function generateLegalComplaintHTML(data: LegalDocumentData): string {
         <span>${COMPANY_INFO.authorized_signatory} – ${COMPANY_INFO.authorized_title}</span>
       </div>
       <div class="info-row" style="margin-top: 8px; border-top: 1px solid #ccc; padding-top: 8px;">
+        <strong style="grid-column: 1 / -1; text-align: center; margin-bottom: 8px;">ضد</strong>
         <span class="info-label">المدعى عليه:</span>
         <span>${customer.customer_name}</span>
       </div>
@@ -952,6 +953,7 @@ export function generateLegalComplaintHTML(data: LegalDocumentData): string {
       </div>
       ` : ''}
       <div class="info-row" style="margin-top: 8px; border-top: 1px solid #ccc; padding-top: 8px;">
+        <h3 style="grid-column: 1 / -1; margin: 0 0 8px;">بيانات العقد والمركبة</h3>
         <span class="info-label">رقم عقد الإيجار:</span>
         <span>${contractInfo.contract_number}</span>
       </div>
@@ -961,7 +963,7 @@ export function generateLegalComplaintHTML(data: LegalDocumentData): string {
       </div>
       ${contractEndDate ? `
       <div class="info-row">
-        <span class="info-label">تاريخ نهاية مدته الاتفاقية:</span>
+        <span class="info-label">تاريخ نهاية المدة الاتفاقية:</span>
         <span>${contractEndDate}</span>
       </div>
       ` : ''}
@@ -1023,24 +1025,22 @@ export function generateLegalComplaintHTML(data: LegalDocumentData): string {
           ${breachDetails.unpaidMonthsDescription}
         </p>
         ` : ''}
-        <p>
-          ${trafficOnlyClaim
-            ? `4. ترتب على استعمال المدعى عليه للمركبة عدد (${customer.violations_count}) مخالفة مرورية غير مسددة بقيمة إجمالية (${formatQar(violationsAmount)}) ريال قطري، وفق الكشف الرسمي والمستندات المرفقة. وتقتصر المطالبة الراهنة على هذه المخالفات فقط.`
-            : `${overdueRent > 0 ? '4.' : ''} إلا أن المدعى عليه أخل بالتزامه الأساسي بسداد الأجرة، إذ تخلف عن سداد الفواتير المستحقة${overdueRent > 0 ? ` عن الفترة <strong>${unpaidPeriodLabel}</strong>` : ''}${customer.violations_count > 0 ? `، كما ترتبت على استعماله للمركبة (${customer.violations_count}) مخالفة مرورية بقيمة إجمالية (${formatQar(violationsAmount)}) ريال قطري` : ''}.`}
-        </p>
+        ${trafficOnlyClaim ? `
+        <p>ترتب على استعمال المدعى عليه للمركبة عدد (${customer.violations_count}) مخالفة مرورية غير مسددة بقيمة إجمالية (${formatQar(violationsAmount)}) ريال قطري، وفق الكشف الرسمي والمستندات المرفقة. وتقتصر المطالبة الراهنة على هذه المخالفات فقط.</p>
+        ` : ''}
         ${overdueRent > 0 ? `
         <p>
           وقد أخل المدعى عليه بالتزامه بسداد الأجرة، فترتب في ذمته عن الفترة <strong>${unpaidPeriodLabel}</strong> مبلغ إجمالي قدره <strong>${formatQar(grossInvoicesTotal || overdueRent + paidTotal)}</strong> ريال قطري، سدد منه مبلغ <strong>${formatQar(paidTotal)}</strong> ريال قطري، ليبقى صافي الأجرة غير المسددة مبلغ <strong>${formatQar(overdueRent)}</strong> ريال قطري، وفق كشف المطالبة ومصادر الاستحقاق وإيصالات السداد المرفقة.
         </p>
         ${hasDeductions ? `
         <p>
-          6. وقد روعي في احتساب المطالبة إثبات جميع المبالغ التي سبق سدادها، وعدم مطالبة المدعى عليه إلا بالرصيد المتبقي فعليًا في ذمته.
+          وقد روعي في احتساب المطالبة إثبات جميع المبالغ التي سبق سدادها، وعدم مطالبة المدعى عليه إلا بالرصيد المتبقي فعليًا في ذمته.
         </p>
         ` : ''}
         ` : ''}
         ${!trafficOnlyClaim && reminderCount > 0 ? `
         <p>
-          7. أرسلت المدعية إلى المدعى عليه عدد <strong>(${reminderCount})</strong> من رسائل المتابعة بالسداد${reminderMethods.length > 0 ? ` عبر ${reminderMethods.join(' و')}` : ''}${reminderLastDate ? `، وكان آخرها بتاريخ <strong>${reminderLastDate}</strong>` : ''}، وذلك دون وصفها بإنذار رسمي ما لم يثبت وصول إنذار مستقل بالمستندات.
+          أرسلت المدعية إلى المدعى عليه عدد <strong>(${reminderCount})</strong> من رسائل المتابعة بالسداد${reminderMethods.length > 0 ? ` عبر ${reminderMethods.join(' و')}` : ''}${reminderLastDate ? `، وكان آخرها بتاريخ <strong>${reminderLastDate}</strong>` : ''}، وذلك دون وصفها بإنذار رسمي ما لم يثبت وصول إنذار مستقل بالمستندات.
         </p>
         ` : ''}
         ${!trafficOnlyClaim && deliveredNotices.length > 0 ? `

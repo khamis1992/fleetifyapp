@@ -11,6 +11,8 @@ describe('rent claim service coverage and settlement', () => {
     expect(() => assertRentClaimConsistent(state)).toThrow('لا تتطابق الأجرة');
     state.calculations!.overdueRent = 1200;
     expect(() => assertRentClaimConsistent(state)).not.toThrow();
+    state.financialClaimError = 'تحتاج الأقساط إلى مطابقة';
+    expect(() => assertRentClaimConsistent(state)).toThrow('تحتاج الأقساط إلى مطابقة');
   });
   it('covers a prepaid month through its last day and preserves partial payments', () => {
     expect(summarizeRentClaim([

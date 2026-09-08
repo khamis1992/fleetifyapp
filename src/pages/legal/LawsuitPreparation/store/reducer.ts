@@ -247,6 +247,12 @@ export function lawsuitPreparationReducer(
       };
     }
 
+    case 'SET_FINANCIAL_CLAIM_ERROR': {
+      return { ...state, financialClaimError: action.payload,
+        calculations: action.payload ? null : state.calculations,
+        taqadiData: action.payload ? null : state.taqadiData };
+    }
+
     case 'SET_FINANCIAL_CLAIM_SOURCE': {
       return {
         ...state,
@@ -365,6 +371,7 @@ export function lawsuitPreparationReducer(
     // ==========================================
     
     case 'UPDATE_CALCULATIONS': {
+      if (state.financialClaimError) return state;
       return {
         ...state,
         calculations: action.payload,
@@ -372,6 +379,7 @@ export function lawsuitPreparationReducer(
     }
     
     case 'UPDATE_TAQADI_DATA': {
+      if (state.financialClaimError) return state;
       return {
         ...state,
         taqadiData: action.payload,

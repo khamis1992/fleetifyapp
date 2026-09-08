@@ -228,7 +228,7 @@ export function LawsuitPreparationProvider({
   }, [contractData]);
   
   // Fetch the canonical legal claim: invoices first, then legacy due schedules
-  const { data: claimProjection, isLoading: invoicesLoading } = useQuery({
+  const { data: claimProjection, error: claimProjectionError, isLoading: invoicesLoading } = useQuery({
     queryKey: ['legal-claim-projection', contractId, companyId],
     staleTime: 0,
     refetchOnWindowFocus: true,
@@ -241,10 +241,11 @@ export function LawsuitPreparationProvider({
   });
 
   useEffect(() => {
-    if (!claimProjection) return;
+    dispatch({ type: 'SET_FINANCIAL_CLAIM_ERROR', payload: claimProjectionError ? (claimProjectionError instanceof Error ? claimProjectionError.message : (claimProjectionError as { message?: string }).message || 'تعذر تحميل المطالبة المالية؛ راجع الفواتير وتخصيصات السداد') : null });
+    if (!claimProjection || claimProjectionError) return;
     dispatch({ type: 'SET_INVOICES', payload: claimProjection.rows });
     dispatch({ type: 'SET_FINANCIAL_CLAIM_SOURCE', payload: claimProjection.summary });
-  }, [claimProjection]);
+  }, [claimProjection, claimProjectionError]);
   
   // Fetch reminder history (سجل الإعذار القانوني) for this contract
   useQuery({
@@ -275,7 +276,7 @@ export function LawsuitPreparationProvider({
   });
 
   // Fetch traffic violations
-  const { isLoading: violationsLoading } = useQuery({
+  const { data: legacyViolations, isLoading: violationsLoading } = useQuery({
     queryKey: ['contract-traffic-violations', contractId, companyId],
     queryFn: async () => {
       if (!contractId || !companyId) return [];
@@ -302,12 +303,17 @@ export function LawsuitPreparationProvider({
         status: violation.status || 'pending',
       }));
 
-      dispatch({ type: 'SET_VIOLATIONS', payload: normalizedViolations });
+
       return normalizedViolations;
     },
     enabled: !!contractId && !!companyId,
   });
   
+  useEffect(() => {
+    const violations = claimProjection?.trafficViolations ?? legacyViolations;
+    if (violations) dispatch({ type: 'SET_VIOLATIONS', payload: violations });
+  }, [claimProjection, legacyViolations]);
+
   // Fetch company legal documents
   const { isLoading: companyDocumentsLoading } = useQuery({
     queryKey: ['company-legal-documents', companyId],
@@ -632,7 +638,7 @@ export function LawsuitPreparationProvider({
   }, [state.contract?.end_date, state.damageCosts, state.formalNotices, state.litigationProfile, trafficOnlyClaim]);
 
   useEffect(() => {
-    if (claimProjection) {
+    if (claimProjection && !claimProjectionError && !state.financialClaimError) {
       const contractualCompensation = !trafficOnlyClaim
         && state.litigationProfile?.contractual_compensation_enabled
         && state.litigationProfile.contractual_compensation_method
@@ -670,6 +676,13 @@ export function LawsuitPreparationProvider({
         }
       );
 
+      if (claimProjection.summary.authoritativeAmounts) {
+        const authoritative = claimProjection.summary.authoritativeAmounts;
+        dispatch({ type: 'UPDATE_CALCULATIONS', payload: { ...calculations, ...authoritative,
+          contractualCompensationUnits: claimProjection.summary.authoritativeCompensationUnits,
+          amountInWords: lawsuitService.convertAmountToWords(authoritative.total) } });
+        return;
+      }
       dispatch({
         type: 'UPDATE_CALCULATIONS',
         payload: {
@@ -696,6 +709,8 @@ export function LawsuitPreparationProvider({
     }
   }, [
     claimProjection,
+    claimProjectionError,
+    state.financialClaimError,
     claimExtras.retentionCompensation,
     claimExtras.securityDepositDeduction,
     claimExtras.verifiedDamages,

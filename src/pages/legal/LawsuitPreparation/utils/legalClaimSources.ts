@@ -2,6 +2,7 @@ import { supabase } from '@/integrations/supabase/client';
 import type {
   FinancialClaimSourceSummary,
   OverdueInvoice,
+  TrafficViolation,
 } from '../store/types';
 
 interface InvoiceClaimRow {
@@ -28,18 +29,41 @@ interface PaymentScheduleClaimRow {
   status: string;
 }
 
+interface StatementRentRow {
+  id: string;
+  invoice_number?: string | null;
+  installment_number?: number;
+  due_date: string;
+  invoice_month?: string | null;
+  total_amount: number;
+  paid_amount: number;
+  amount: number;
+}
+
 export interface LegalClaimBreakdown {
+  settlement_source?: string;
+  calculation_details?: { retention_start_date?: string | null; retention_end_date?: string | null;
+    retention_daily_rate?: number | null; contractual_compensation_units?: number | null };
+  traffic_settlement?: { requires_review: boolean; proof_ready: boolean; claim_amount: number; rows: {
+    penalty_id: string | null; violation_number: string | null; penalty_date: string | null;
+    violation_type?: string | null; location?: string | null;
+    disposition: string; outstanding_amount: number | null;
+  }[] };
+  included_invoices?: StatementRentRow[];
+  included_schedules?: StatementRentRow[];
   legal_extension_rent_amount?: number | string | null;
   extension_start_date?: string | null;
   rent_cutoff_date?: string | null;
   /** v4 wraps the amounts instead of returning the v3 breakdown directly. */
   cutoff_date?: string | null;
-  components?: { legal_extension_rent?: number | string | null };
+  total?: number | string | null;
+  components?: Partial<Record<'rent_due' | 'legal_extension_rent' | 'contractual_compensation' | 'damages' | 'traffic_violations' | 'retention' | 'security_deposit_deduction', number | string | null>>;
   _breakdown?: LegalClaimBreakdown;
 }
 
 export interface LegalClaimProjection {
   rows: OverdueInvoice[];
+  trafficViolations?: TrafficViolation[];
   summary: FinancialClaimSourceSummary;
 }
 
@@ -236,6 +260,54 @@ export function appendLegalAccrualToProjection(
   };
 }
 
+export function resolveStatementAmounts(statement: LegalClaimBreakdown): NonNullable<FinancialClaimSourceSummary['authoritativeAmounts']> {
+  const cents = (value: number | string | null | undefined) => {
+    const amount = Number(value), result = Math.round(amount * 100);
+    if (value == null || value === '' || !Number.isFinite(amount) || amount < 0 || !Number.isSafeInteger(result)
+      || Math.abs(amount * 100 - result) > 0.00001) throw new Error('تعذر التحقق من بنود مبلغ المطالبة');
+    return result;
+  };
+  const c = statement.components;
+  const rent = cents(c?.rent_due) + cents(c?.legal_extension_rent);
+  const fees = cents(c?.contractual_compensation), damages = cents(c?.damages), traffic = cents(c?.traffic_violations);
+  const retention = cents(c?.retention), deposit = cents(c?.security_deposit_deduction), total = cents(statement.total);
+  if (Math.max(0,rent + fees + damages + traffic + retention - deposit) !== total) {
+    throw new Error('إجمالي المطالبة لا يطابق الأجرة والتعويضات والمخالفات بعد خصم الوديعة');
+  }
+  return { overdueRent: rent / 100, lateFees: fees / 100, damagesFee: damages / 100, violationsFines: traffic / 100,
+    retentionCompensation: retention / 100, securityDepositDeduction: deposit / 100, total: total / 100 };
+}
+
+/** Consume one database snapshot; never mix its totals with invoice caches. */
+export function resolveStatementRentProjection(statement: LegalClaimBreakdown, asOfDate: string): LegalClaimProjection {
+  const fail = () => new Error('تعذر مطابقة تفاصيل الأجرة مع إجمالي المطالبة؛ أعد التحميل أو راجع مصادر السداد');
+  if (!Array.isArray(statement.included_invoices) || !Array.isArray(statement.included_schedules)) throw fail();
+  const cutoff = resolveLegalClaimCutoffDate(asOfDate, statement);
+  const seen = new Set<string>();
+  const mapRows = (items: StatementRentRow[], source: 'invoice' | 'payment_schedule'): OverdueInvoice[] => items.map(item => {
+    const total = Number(item.total_amount), paid = Number(item.paid_amount), amount = Number(item.amount);
+    const id = source + ':' + item.id;
+    if (!item.id || seen.has(id) || !/^\d{4}-\d{2}-\d{2}$/.test(item.due_date) || item.due_date > cutoff
+      || [item.total_amount, item.paid_amount, item.amount].some(value => value == null)
+      || ![total, paid, amount].every(Number.isFinite) || total < 0 || paid < 0 || paid > total || amount <= 0
+      || Math.round(total * 100) - Math.round(paid * 100) !== Math.round(amount * 100)) throw fail();
+    seen.add(id);
+    return { id: source === 'invoice' ? item.id : 'schedule:' + item.id,
+      invoice_number: source === 'invoice' ? item.invoice_number ?? null : 'استحقاق تعاقدي رقم ' + (item.installment_number ?? ''),
+      due_date: item.due_date, invoice_month: item.invoice_month || item.due_date,
+      total_amount: total, paid_amount: paid, source, source_reference: item.id };
+  });
+  const rows = [...mapRows(statement.included_invoices, 'invoice'), ...mapRows(statement.included_schedules, 'payment_schedule')]
+    .sort((a,b) => a.due_date.localeCompare(b.due_date));
+  const cents = rows.reduce((sum,row) => sum + Math.round(Number(row.total_amount) * 100) - Math.round(Number(row.paid_amount) * 100),0);
+  if (statement.components?.rent_due == null || !Number.isFinite(Number(statement.components.rent_due))
+    || cents !== Math.round(Number(statement.components.rent_due) * 100)) throw fail();
+  const invoiceCount = statement.included_invoices.length, scheduleCount = statement.included_schedules.length;
+  return { rows, summary: { mode: invoiceCount && scheduleCount ? 'hybrid' : invoiceCount ? 'invoices' : scheduleCount ? 'payment_schedules' : 'none',
+    invoiceCount, scheduleCount, legalAccrualCount: 0, legalAccrualAmount: 0, totalCount: rows.length,
+    outstandingTotal: cents / 100, asOfDate: cutoff } };
+}
+
 interface LegalClaimBreakdownRpcResult {
   data: unknown;
   error: { message: string } | null;
@@ -251,6 +323,13 @@ type LegalClaimBreakdownRpc = (
     p_excluded_invoice_ids?: string[];
   },
 ) => PromiseLike<LegalClaimBreakdownRpcResult>;
+
+const financialLoadError = (error: { message: string }): Error => new Error(
+  /[\u0600-\u06ff]/.test(error.message) ? error.message
+    : /reconcil/i.test(error.message) ? 'تحتاج الفواتير وتخصيصات الدفعات إلى مطابقة قبل اعتماد المطالبة'
+      : 'تعذر تحميل الحساب المالي المعتمد؛ أعد المحاولة أو راجع مالية العقد',
+  { cause: error },
+);
 
 const isMissingRpcError = (message: string) => {
   const normalized = message.toLowerCase();
@@ -309,7 +388,54 @@ export async function loadLegalClaimProjection(
     if (!v3.error || !isMissingRpcError(v3.error.message)) return v3;
     return callLegalClaimBreakdown('calculate_legal_claim_breakdown_v2', args);
   };
-  const [invoiceResult, scheduleResult, breakdownResult] = await Promise.all([
+  const breakdownResult = await loadBreakdown();
+  if (breakdownResult.error) throw financialLoadError(breakdownResult.error);
+  const statement = breakdownResult.data as LegalClaimBreakdown | null;
+  if (statement?.settlement_source === 'completed_receipt_allocations_v1') {
+    const projection = appendLegalAccrualToProjection(resolveStatementRentProjection(statement, asOfDate), statement, asOfDate);
+    const traffic = statement.traffic_settlement;
+    if (!traffic || traffic.requires_review || !Array.isArray(traffic.rows)) {
+      throw new Error('تعذر مطابقة تفاصيل المخالفات مع مطالبة العميل');
+    }
+    projection.trafficViolations = traffic.rows.filter(row => row.disposition === 'included').map(row => {
+      const amount = Number(row.outstanding_amount);
+      if (!row.penalty_id || row.outstanding_amount == null || !Number.isFinite(amount) || amount <= 0) {
+        throw new Error('تعذر مطابقة مبلغ المخالفة بعد احتساب السداد');
+      }
+      return { id: row.penalty_id, violation_number: row.violation_number, violation_date: row.penalty_date,
+        violation_type: row.violation_type ?? null, location: row.location ?? null, fine_amount: amount, total_amount: amount, status: 'pending' };
+    });
+    const trafficCents = traffic.proof_ready ? projection.trafficViolations.reduce((sum,row) => sum + Math.round(Number(row.total_amount) * 100),0) : 0;
+    if (!Number.isFinite(Number(traffic.claim_amount)) || trafficCents !== Math.round(Number(traffic.claim_amount) * 100)) {
+      throw new Error('تفاصيل المخالفات لا تتطابق مع إجمالي المطالبة');
+    }
+    projection.summary.authoritativeAmounts = resolveStatementAmounts(statement);
+    if (Math.round(projection.summary.authoritativeAmounts.overdueRent * 100) !== Math.round(projection.summary.outstandingTotal * 100)
+      || Math.round(projection.summary.authoritativeAmounts.violationsFines * 100) !== trafficCents) {
+      throw new Error('تفاصيل الأجرة والمخالفات لا تطابق بنود المطالبة المعتمدة');
+    }
+    const details = statement.calculation_details;
+    const units = Number(details?.contractual_compensation_units ?? 0);
+    if (!Number.isSafeInteger(units) || units < 0 || (projection.summary.authoritativeAmounts.lateFees > 0 && units <= 0)) {
+      throw new Error('تعذر التحقق من وحدات التعويض الاتفاقي');
+    }
+    projection.summary.authoritativeCompensationUnits = units;
+    const retentionAmount = projection.summary.authoritativeAmounts.retentionCompensation;
+    projection.summary.authoritativeRetention = { days: 0, amount: 0, from: null, to: null };
+    if (retentionAmount > 0) {
+      const from = details?.retention_start_date, to = details?.retention_end_date;
+      const days = from && to ? (Date.parse(to) - Date.parse(from)) / 86400000 + 1 : NaN;
+      const rate = Number(details?.retention_daily_rate);
+      if (!from || !to || !/^\d{4}-\d{2}-\d{2}$/.test(from) || !/^\d{4}-\d{2}-\d{2}$/.test(to)
+        || !Number.isSafeInteger(days) || days <= 0 || !Number.isFinite(rate) || rate <= 0
+        || Math.round(days * rate * 100) !== Math.round(retentionAmount * 100)) {
+        throw new Error('تعويض الاحتباس لا يطابق الفترة والسعر اليومي المثبتين');
+      }
+      projection.summary.authoritativeRetention = { days, amount: retentionAmount, from, to };
+    }
+    return projection;
+  }
+  const [invoiceResult, scheduleResult] = await Promise.all([
     supabase
       .from('invoices')
       .select('id, invoice_number, due_date, invoice_month, total_amount, paid_amount, balance_due, payment_status, status, invoice_type, penalty_id')
@@ -322,12 +448,11 @@ export async function loadLegalClaimProjection(
       .eq('contract_id', contractId)
       .eq('company_id', companyId)
       .lte('due_date', asOfDate),
-    loadBreakdown(),
   ]);
 
-  if (invoiceResult.error) throw invoiceResult.error;
-  if (scheduleResult.error) throw scheduleResult.error;
-  if (breakdownResult.error) throw breakdownResult.error;
+  if (invoiceResult.error) throw financialLoadError(invoiceResult.error);
+  if (scheduleResult.error) throw financialLoadError(scheduleResult.error);
+  if (breakdownResult.error) throw financialLoadError(breakdownResult.error);
 
   const breakdown = (breakdownResult.data || null) as LegalClaimBreakdown | null;
   const claimCutoffDate = resolveLegalClaimCutoffDate(asOfDate, breakdown);

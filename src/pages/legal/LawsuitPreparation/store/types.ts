@@ -73,6 +73,9 @@ export interface OverdueInvoice {
 }
 
 export interface FinancialClaimSourceSummary {
+  authoritativeRetention?: { days: number; amount: number; from: string | null; to: string | null };
+  authoritativeCompensationUnits?: number;
+  authoritativeAmounts?: Pick<FinancialCalculations, 'overdueRent' | 'lateFees' | 'damagesFee' | 'violationsFines' | 'retentionCompensation' | 'securityDepositDeduction' | 'total'>;
   mode: 'none' | 'invoices' | 'payment_schedules' | 'hybrid' | 'legal_accrual' | 'composite';
   invoiceCount: number;
   scheduleCount: number;
@@ -489,6 +492,7 @@ export interface LawsuitPreparationState {
   vehicle: Vehicle | null;
   overdueInvoices: OverdueInvoice[];
   financialClaimSource: FinancialClaimSourceSummary;
+  financialClaimError?: string | null;
   paymentReminders: PaymentReminderSummary;
   /** الملف التقاضي الموثق (استراتيجية الفسخ، الإنهاء، التسليم، الحيازة، وديعة الضمان، أجر المثل) */
   litigationProfile: LitigationProfile | null;
@@ -522,6 +526,7 @@ export type LawsuitPreparationAction =
   | { type: 'SET_CONTRACT_DATA'; payload: { contract: Contract; customer: Customer | null; vehicle: Vehicle | null } }
   | { type: 'SET_INVOICES'; payload: OverdueInvoice[] }
   | { type: 'SET_FINANCIAL_CLAIM_SOURCE'; payload: FinancialClaimSourceSummary }
+  | { type: 'SET_FINANCIAL_CLAIM_ERROR'; payload: string | null }
   | { type: 'SET_PAYMENT_REMINDERS'; payload: PaymentReminderSummary }
   | { type: 'SET_LITIGATION_PROFILE'; payload: LitigationProfile | null }
   | { type: 'SET_FORMAL_NOTICES'; payload: FormalNotice[] }

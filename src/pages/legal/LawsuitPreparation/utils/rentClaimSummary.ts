@@ -50,7 +50,16 @@ export function summarizeRentClaim(
 
 /** Called at export/filing boundaries, not during transient React calculations. */
 export function assertRentClaimConsistent(state: LawsuitPreparationState): void {
+  if (state.financialClaimError) throw new Error(state.financialClaimError);
   if (!state.calculations) throw new Error('لم يكتمل حساب المطالبة بعد');
+  const authoritative = state.financialClaimSource?.authoritativeAmounts;
+  if (authoritative) {
+    for (const key of Object.keys(authoritative) as (keyof typeof authoritative)[]) {
+      if (Math.round(state.calculations[key] * 100) !== Math.round(authoritative[key] * 100)) {
+        throw new Error('تغيرت مكونات المطالبة؛ حدّث الحساب قبل اعتماد المذكرة');
+      }
+    }
+  }
   const trafficOnly = isTrafficViolationsOnlyScope(state.legalCase?.claim_scope);
   const summary = summarizeRentClaim(trafficOnly ? [] : state.overdueInvoices, state.contract || undefined);
   const expected = trafficOnly ? 0 : Math.round(state.calculations.overdueRent * 100);

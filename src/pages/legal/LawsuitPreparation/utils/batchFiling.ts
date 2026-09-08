@@ -324,7 +324,7 @@ async function loadBatchContractState(
     .neq('status', 'cancelled')
     .order('penalty_date', { ascending: false });
   if (penaltiesError) throw penaltiesError;
-  const trafficViolations: TrafficViolation[] = (penaltyRows ?? []).map((violation) => ({
+  const trafficViolations: TrafficViolation[] = claimProjection.trafficViolations ?? (penaltyRows ?? []).map((violation) => ({
     id: violation.id,
     violation_number: violation.penalty_number,
     violation_date: violation.penalty_date,
@@ -530,6 +530,12 @@ async function loadBatchContractState(
     total,
     amountInWords: lawsuitService.convertAmountToWords(total),
   };
+  if (claimProjection.summary.authoritativeAmounts) {
+    const authoritative = claimProjection.summary.authoritativeAmounts;
+    state.calculations = { ...state.calculations, ...authoritative,
+      contractualCompensationUnits: claimProjection.summary.authoritativeCompensationUnits,
+      amountInWords: lawsuitService.convertAmountToWords(authoritative.total) };
+  }
 
   // بيانات التقاضي (نفس منطق صفحة التجهيز)
   if (state.contract && state.customer) {

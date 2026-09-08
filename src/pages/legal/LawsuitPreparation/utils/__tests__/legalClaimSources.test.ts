@@ -4,6 +4,8 @@ import {
   getQatarBusinessDate,
   resolveLegalClaimCutoffDate,
   resolveLegalClaimProjection,
+  resolveStatementRentProjection,
+  resolveStatementAmounts,
 } from '../legalClaimSources';
 
 describe('resolveLegalClaimProjection', () => {
@@ -253,5 +255,53 @@ describe('resolveLegalClaimProjection', () => {
       { components: { legal_extension_rent: 1700 } },
       '2026-09-08',
     )).toThrow('بداية فترة الأجرة');
+  });
+});
+
+
+describe('statement settlement projection', () => {
+  const invoice = { id: 'i1', invoice_number: 'INV', due_date: '2026-08-01', total_amount: 1700, paid_amount: 500, amount: 1200 };
+  const statement = { cutoff_date: '2026-09-08', components: { rent_due: 1200 }, included_invoices: [invoice], included_schedules: [] };
+  it('uses disclosed gross and counted receipts without consulting caches', () => {
+    expect(resolveStatementRentProjection(statement,'2026-09-08')).toMatchObject({ rows: [{ total_amount: 1700, paid_amount: 500, source: 'invoice' }], summary: { outstandingTotal: 1200 } });
+  });
+  it('preserves unbilled schedule details in the same snapshot', () => {
+    const result = resolveStatementRentProjection({ ...statement, components: { rent_due: 1400 }, included_schedules: [{ ...invoice, id: 's1', total_amount: 300, paid_amount: 100, amount: 200 }] }, '2026-09-08');
+    expect(result.rows[1]).toMatchObject({ id: 'schedule:s1', source: 'payment_schedule', total_amount: 300, paid_amount: 100 });
+    expect(result.summary).toMatchObject({ mode: 'hybrid', outstandingTotal: 1400 });
+  });
+  it('accepts an empty scoped or excluded claim without restoring old invoices', () => {
+    expect(resolveStatementRentProjection({ ...statement, components: { rent_due: 0 }, included_invoices: [] },'2026-09-08').rows).toEqual([]);
+  });
+  it('rejects totals that disagree with rows and missing schedule metadata', () => {
+    expect(() => resolveStatementRentProjection({ ...statement, components: { rent_due: 1700 } },'2026-09-08')).toThrow('مطابقة');
+    expect(() => resolveStatementRentProjection({ ...statement, included_schedules: undefined },'2026-09-08')).toThrow('مطابقة');
+  });
+  it.each([
+    { paid_amount: 1800 }, { paid_amount: -1 }, { amount: 1400 }, { total_amount: NaN }, { due_date: '2026-10-01' },
+  ])('rejects invalid settlement or future rows: %j', invalid => {
+    expect(() => resolveStatementRentProjection({ ...statement, included_invoices: [{ ...invoice, ...invalid }] },'2026-09-08')).toThrow('مطابقة');
+  });
+  it('rejects duplicate invoice rows', () => {
+    expect(() => resolveStatementRentProjection({ ...statement, included_invoices: [invoice, invoice], components: { rent_due: 2400 } },'2026-09-08')).toThrow('مطابقة');
+  });
+});
+
+
+describe('authoritative claim components', () => {
+  const components = { rent_due: 1200, legal_extension_rent: 100, contractual_compensation: 50, damages: 25,
+    traffic_violations: 300, retention: 75, security_deposit_deduction: 200 };
+  it('maps all components from one statement and deducts the deposit once', () => {
+    expect(resolveStatementAmounts({ components, total: 1550 })).toEqual({ overdueRent: 1300, lateFees: 50,
+      damagesFee: 25, violationsFines: 300, retentionCompensation: 75, securityDepositDeduction: 200, total: 1550 });
+  });
+  it('limits the cash claim to zero when the deposit exceeds the claim', () => {
+    expect(resolveStatementAmounts({ components: { ...components, security_deposit_deduction: 5000 }, total: 0 }).total).toBe(0);
+  });
+  it('rejects a statement total inconsistent with its components', () => {
+    expect(() => resolveStatementAmounts({ components, total: 1750 })).toThrow('إجمالي المطالبة');
+  });
+  it.each([null, undefined, -1, NaN, Infinity, 0.001])('rejects an unverified or invalid component %s', amount => {
+    expect(() => resolveStatementAmounts({ components: { ...components, damages: amount }, total: 1550 })).toThrow('بنود');
   });
 });

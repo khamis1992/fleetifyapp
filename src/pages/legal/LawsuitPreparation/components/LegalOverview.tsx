@@ -1,3 +1,6 @@
+import { Link } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
+import { Button } from '@/components/ui/button';
 import { motion } from 'framer-motion';
 import { AlertTriangle, Car, Coins, FileText, Receipt, ShieldAlert, UserRound } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
@@ -41,6 +44,7 @@ function AmountTile({ label, value, tone = 'default' }: { label: string; value?:
 
 export function LegalOverview() {
   const { state } = useLawsuitPreparationContext();
+  const queryClient = useQueryClient();
   const { calculations, contract, customer, financialClaimSource, overdueInvoices, trafficViolations, vehicle } = state;
 
   if (!contract) {
@@ -112,7 +116,16 @@ export function LegalOverview() {
         </div>
       </section>
 
-      {calculations ? <>
+      {state.financialClaimError && <section className="lawsuit-section-panel border-amber-300 bg-amber-50" role="alert">
+        <h2 className="font-bold text-amber-950">المطالبة المالية تحتاج مراجعة</h2>
+        <p className="mt-2 text-amber-950">{state.financialClaimError}</p>
+        <p className="mt-2 text-sm text-amber-900">راجع ربط الأقساط بالفواتير وتخصيص الدفعات المكتملة في ملف العقد، ثم أعد تحميل المطالبة. يتوقف اعتماد المذكرة حتى نجاح المطابقة.</p>
+        <div className="mt-4 flex flex-wrap gap-2">
+          <Button asChild variant="outline"><Link to={'/contracts/' + (contract.contract_number || contract.id)}>مراجعة مالية العقد</Link></Button>
+          <Button variant="outline" onClick={() => queryClient.invalidateQueries({ queryKey: ['legal-claim-projection', state.contractId, state.companyId] })}>إعادة تحميل المطالبة</Button>
+        </div>
+      </section>}
+      {calculations && !state.financialClaimError ? <>
       <section className="lawsuit-section-panel">
         <div className="lawsuit-section-heading compact">
           <div>
