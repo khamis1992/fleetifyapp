@@ -274,6 +274,16 @@ describe('buildMemoDocumentData', () => {
     expect(isMemoSnapshotCurrent(changed, snapshot)).toBe(false);
   });
 
+  it('refreshes the live memorandum when the court assigns a number without altering historical exports', () => {
+    const payload = { ...buildMemoDocumentData(baseState), caseNumber: 'CASE-26-0059', memoDate: '26/08/2026' };
+    const snapshot = { payload, readiness_status: 'approved' } as LawsuitPreparationState['memoSnapshots'][number];
+    const changed = { ...baseState, legalCase: { ...baseState.legalCase, case_number: '123/2026' },
+      memoSnapshots: [snapshot] } as LawsuitPreparationState;
+    expect(isMemoSnapshotCurrent(changed, snapshot)).toBe(false);
+    expect(getMemoDocumentDataForGeneration(changed).caseNumber).toBe('123/2026');
+    expect(getFrozenMemoDocumentData(snapshot)).toMatchObject({caseNumber:'CASE-26-0059',memoDate:'26/08/2026'});
+  });
+
   it('treats an approved snapshot as not current while live memo data is incomplete', () => {
     const snapshot = {
       readiness_status: 'approved',

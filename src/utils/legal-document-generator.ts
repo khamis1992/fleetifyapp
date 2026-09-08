@@ -11,6 +11,12 @@ import {
   type LegalClaimScope,
 } from '@/types/legalClaimScope';
 
+/** Internal preparation references are not official court case numbers. */
+export function getOfficialCourtCaseNumber(value?: string | null): string | undefined {
+  const number = value?.trim();
+  return number && !/^(CASE|LC)-/i.test(number) ? number : undefined;
+}
+
 export interface LegalDocumentData {
   /** النطاق المالي المثبت على القضية ويجب أن يحكم كل النصوص والمبالغ. */
   claimScope?: LegalClaimScope;
@@ -333,8 +339,7 @@ export function generateLegalComplaintHTML(data: LegalDocumentData): string {
   const currentDate = today;
 
   const refNumber = data.documentReference || `DRAFT-${contractInfo.contract_number}`;
-  const courtCaseNumber = data.caseNumber && !/^(CASE|LC)-/i.test(data.caseNumber)
-    ? data.caseNumber : 'لم تقيد بعد';
+  const courtCaseNumber = getOfficialCourtCaseNumber(data.caseNumber) || 'لم تقيد بعد';
   const trafficOnlyClaim = isTrafficViolationsOnlyScope(data.claimScope);
 
   // المكونات الموثقة فقط — لا توجد مبالغ ثابتة أو نسب افتراضية

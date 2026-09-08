@@ -6,6 +6,7 @@
 import { supabase } from '@/integrations/supabase/client';
 import {
   generateLegalComplaintHTML,
+  getOfficialCourtCaseNumber,
   type LegalDocumentData,
 } from '@/utils/legal-document-generator';
 import {
@@ -309,6 +310,10 @@ export function isMemoSnapshotCurrent(
   try {
     const current = JSON.parse(JSON.stringify(buildMemoDocumentData(state))) as Record<string, unknown>;
     const frozen = JSON.parse(JSON.stringify(snapshot.payload)) as Record<string, unknown>;
+    // A newly assigned/corrected court number requires a new live memorandum.
+    // Historical exports keep the original immutable payload and date.
+    if (getOfficialCourtCaseNumber(current.caseNumber as string | undefined)
+      !== getOfficialCourtCaseNumber(frozen.caseNumber as string | undefined)) return false;
     for (const key of ['documentReference', 'caseNumber', 'filingDate', 'memoDate']) {
       delete current[key];
       delete frozen[key];
@@ -660,20 +665,18 @@ export async function loadCanonicalMemoDocumentData(
   companyId: string,
   contractId: string,
 ): Promise<LegalDocumentData> {
-  return buildMemoDocumentData(
-    await loadCanonicalLawsuitState(companyId, contractId),
-  );
+  const state = await loadCanonicalLawsuitState(companyId, contractId);
+  assertRentClaimConsistent(state);
+  return buildMemoDocumentData(state);
 }
 
 export async function generateCanonicalMemoHtml(
   companyId: string,
   contractId: string,
 ): Promise<string> {
-  return generateLegalComplaintHTML(
-    getMemoDocumentDataForGeneration(
-      await loadCanonicalLawsuitState(companyId, contractId),
-    ),
-  );
+  const state = await loadCanonicalLawsuitState(companyId, contractId);
+  assertRentClaimConsistent(state);
+  return generateLegalComplaintHTML(getMemoDocumentDataForGeneration(state));
 }
 
 /**

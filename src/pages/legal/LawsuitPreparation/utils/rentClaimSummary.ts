@@ -1,4 +1,5 @@
 import type { LawsuitPreparationState, OverdueInvoice } from '../store/types';
+import { getVerifiedDamageNetFromCosts } from './legalCaseWorkflow';
 import { isTrafficViolationsOnlyScope } from '@/types/legalClaimScope';
 
 const isoDate = (value?: string | null) => value?.match(/^\d{4}-\d{2}-\d{2}/)?.[0];
@@ -31,8 +32,8 @@ export function summarizeRentClaim(
         .toISOString().slice(0, 10);
       const contractStart = isoDate(contract?.start_date);
       const contractEnd = isoDate(contract?.end_date);
-      if (contractStart && start < contractStart) start = contractStart;
-      if (contractEnd && end > contractEnd) end = contractEnd;
+      if (!row.service_period_start && contractStart && start < contractStart) start = contractStart;
+      if (!row.service_period_end && contractEnd && end > contractEnd) end = contractEnd;
     }
     if (start && end && start <= end) {
       starts.push(start);
@@ -61,6 +62,19 @@ export function assertRentClaimConsistent(state: LawsuitPreparationState): void 
     }
   }
   const trafficOnly = isTrafficViolationsOnlyScope(state.legalCase?.claim_scope);
+  if (authoritative) {
+    const damageDetail = trafficOnly ? 0 : getVerifiedDamageNetFromCosts(state.damageCosts ?? []);
+    const depositDetail = !trafficOnly && state.litigationProfile?.apply_security_deposit
+      ? Math.max(0, Number(state.litigationProfile.security_deposit_amount || 0)) : 0;
+    if (!Number.isFinite(damageDetail)
+      || Math.round(damageDetail * 100) !== Math.round(authoritative.damagesFee * 100)) {
+      throw new Error('تغيرت تفاصيل الأضرار عن المبلغ المعتمد؛ حدّث بيانات المطالبة قبل إعداد المذكرة');
+    }
+    if (!Number.isFinite(depositDetail)
+      || Math.round(depositDetail * 100) !== Math.round(authoritative.securityDepositDeduction * 100)) {
+      throw new Error('تغيرت تفاصيل وديعة الضمان عن المبلغ المعتمد؛ حدّث بيانات المطالبة قبل إعداد المذكرة');
+    }
+  }
   const summary = summarizeRentClaim(trafficOnly ? [] : state.overdueInvoices, state.contract || undefined);
   const expected = trafficOnly ? 0 : Math.round(state.calculations.overdueRent * 100);
   if (!Number.isSafeInteger(expected) || expected !== Math.round(summary.netRent * 100)) {

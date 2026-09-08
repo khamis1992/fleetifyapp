@@ -5,7 +5,7 @@ import { PGlite } from '@electric-sql/pglite';
 const company='22222222-2222-4222-8222-222222222222', customer='33333333-3333-4333-8333-333333333333';
 const contract='55555555-5555-4555-8555-555555555555', invoice='11111111-1111-4111-8111-111111111111';
 const other='77777777-7777-4777-8777-777777777777';
-const migration='20260908210347_legal_memo_receipt_settlement';
+const migration='20260908221229_legal_memo_receipt_settlement';
 const read=async path=>(await readFile(new URL(path,import.meta.url),'utf8')).replace(/\r\n/g,'\n');
 let db;
 const rows=async(sql,args=[]) => (await db.query(sql,args)).rows;
@@ -36,6 +36,8 @@ describe('memo receipt settlement against reviewed deployed claim bodies',()=>{
     await db.exec(amountMigration.slice(amountStart,amountMigration.indexOf('$;',amountStart)+3));
     await db.exec(await read('../../supabase/migrations/20260906223503_align_legal_claim_service_rent_classification.sql'));
     await db.exec(await read(`../../supabase/migrations/${migration}.sql`));
+    await db.exec(await read("../../supabase/migrations/20260908221719_align_legal_recorded_rent_cutoff.sql"));
+    await db.exec(await read("../../supabase/migrations/20260908223651_disclose_legal_invoice_service_periods.sql"));
   });
   after(async()=>db?.close());
   beforeEach(async()=>{
@@ -169,6 +171,55 @@ describe('memo receipt settlement against reviewed deployed claim bodies',()=>{
     assert.equal(result.components.contractual_compensation,50);
     assert.deepEqual(result.calculation_details,{ retention_start_date:'2026-09-02',retention_end_date:'2026-09-08',retention_daily_rate:20,contractual_compensation_units:1 });
     assert.equal(result.total,1890);
+  });
+  it('excludes rent after return while preserving receipt settlement before return',async()=>{
+    await pay(500);
+    await rows("INSERT INTO legal_case_litigation_profile(company_id,contract_id,vehicle_returned_at) VALUES($1,$2,'2026-08-31')",[company,contract]);
+    await rows("INSERT INTO invoices VALUES(gen_random_uuid(),$1,$2,$3,'2026-09-01','2026-09-01','2026-09-01','RENT-SEP','sales',null,1700,0,1700,'unpaid','sent')",[company,contract,customer]);
+    const value=await claim();
+    assert.equal(value.total,1200);
+    assert.equal(value.included_invoices.length,1);
+    assert.equal(value.excluded_amounts.future_rent,1700);
+    assert.equal(value.cutoff_date,'2026-08-31');
+    assert.equal(Number((await rows('SELECT calculate_legal_claim_amount_v1($1,$2,$3) amount',[company,contract,'2026-09-08']))[0].amount),1200);
+  });
+  it('discloses prepaid month coverage beyond the review day without prorating the recorded amount',async()=>{
+    await db.exec("UPDATE invoices SET invoice_month='2026-09-01',due_date='2026-09-01'; UPDATE contract_payment_schedules SET due_date='2026-09-01'");
+    const value=await claim();
+    assert.equal(value.included_invoices[0].service_period_end,'2026-09-30');
+    assert.equal(value.service_end_event_date,null);
+    assert.equal(value.total,1700);
+  });
+  it('uses the earliest actual ending event and the partial initial service month',async()=>{
+    await db.exec("UPDATE contracts SET start_date='2026-08-10'");
+    await rows("INSERT INTO legal_case_litigation_profile(company_id,contract_id,vehicle_returned_at,termination_date,termination_date_status) VALUES($1,$2,'2026-08-25','2026-08-20','confirmed')",[company,contract]);
+    const value=await claim();
+    assert.equal(value.cutoff_source,'confirmed_termination');
+    assert.equal(value.included_invoices[0].service_period_start,'2026-08-10');
+    assert.equal(value.included_invoices[0].service_period_end,'2026-08-20');
+  });
+  it('discloses a multi-month invoice only when its linked monthly obligations reconcile',async()=>{
+    await db.exec("UPDATE invoices SET invoice_type='sales',invoice_month='2026-06-01',due_date='2026-06-01',total_amount=5100");
+    await rows("INSERT INTO contract_payment_schedules(company_id,contract_id,due_date,amount,paid_amount,status,invoice_id) VALUES($1,$2,'2026-06-01',1700,0,'pending',$3),($1,$2,'2026-07-01',1700,0,'pending',$3)",[company,contract,invoice]);
+    const value=await claim();
+    assert.equal(value.included_invoices[0].service_period_start,'2026-06-01');
+    assert.equal(value.included_invoices[0].service_period_end,'2026-08-31');
+    assert.equal(value.included_invoices[0].service_period_basis,'linked_schedule_months');
+    assert.equal(value.total,5100);
+  });
+  it('rejects duplicated schedule months instead of inventing an invoice service period',async()=>{
+    await db.exec("UPDATE invoices SET invoice_type='sales'");
+    await rows("INSERT INTO contract_payment_schedules(company_id,contract_id,due_date,amount,paid_amount,status,invoice_id) VALUES($1,$2,'2026-08-01',1700,0,'pending',$3)",[company,contract,invoice]);
+    await assert.rejects(claim(),/أقساط متعددة/);
+  });
+  it('restores the exact gateway on service-period rollback',async()=>{
+    await db.exec((await read('../../supabase/rollbacks/20260908223651_disclose_legal_invoice_service_periods.rollback.sql')).replace(/^BEGIN;/m,'').replace(/^COMMIT;/m,''));
+    assert.equal((await rows("SELECT md5(prosrc) hash FROM pg_proc WHERE oid='legal_memo_calc_private.read_statement(uuid,uuid,date,text,uuid[])'::regprocedure"))[0].hash,'cd04eee7737a3e0cf52695d0350e2594');
+  });
+  it('restores the exact receipt-settlement bodies when rolling back cutoff alignment',async()=>{
+    await db.exec((await read('../../supabase/rollbacks/20260908221719_align_legal_recorded_rent_cutoff.rollback.sql')).replace(/^BEGIN;/m,'').replace(/^COMMIT;/m,''));
+    const hashes=await rows("SELECT proname,md5(prosrc) hash FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname='legal_memo_calc_private' AND proname IN ('calculate_legal_claim_breakdown_v3','calculate_legal_claim_statement_v4') ORDER BY proname");
+    assert.deepEqual(hashes.map(row=>row.hash),['e7624daa5cf7c757e8f053f9714003fe','da1c4e9c91285bd1521697634666b487']);
   });
   it('restores the exact original engine bodies on rollback',async()=>{
     const rollback=await read(`../../supabase/rollbacks/${migration}.rollback.sql`);

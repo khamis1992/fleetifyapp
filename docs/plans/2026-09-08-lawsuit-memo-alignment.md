@@ -20,7 +20,7 @@ Apply the user's Arabic template to the explanatory memorandum and align all rel
 - [ ] Determine documented service coverage dates separately from payment due dates, including partial months and legal extensions.
 - [ ] Gross rent minus counted completed allocations equals net rent; distinguish deposits, credits, extension rent, traffic, documented compensation and damages without double counting.
 - [ ] Align live calculation, overview, invoices, claims statement, facts/requests, snapshots, bulk exports and worker payload.
-- [ ] Inspect live schema and data and implement reversible database changes if required; do not silently deploy old migrations with unknown dependencies.
+- [x] Inspect live schema and data and implement reversible database changes if required; do not silently deploy old migrations with unknown dependencies. (Applied/retested 2026-09-09, see rollout entry below.)
 - [ ] Regression tests for partial payments, cancellations, partial periods, extensions, deposits, traffic-only scope, unknown custody and snapshots.
 - [ ] Type check, relevant financial checks, rendered memo and browser verification.
 
@@ -116,3 +116,55 @@ Do not mark complete: allocation-backed amounts and all consumers are not aligne
 - Loader integration suite 5 passed: single RPC/no cached table reads; reconciliation errors never fall back; retention period mismatch, traffic component/detail mismatch and invalid units rejected.
 - finance:ci reached live controls after passing source integrity, permissions, finance types, finance Vitest suites (72+53+49), PGlite lifecycle suites (70), and finance:integrity. It failed on journal_entries fetch in checkCancellationReversals. HTTPS unauthenticated connectivity to the expected Supabase host returned401, but a targeted finance:controls retry failed at the same fetch. Do not claim live controls/reconciliation/health snapshot completed. No indefinite polling; both CI and retry are terminal.
 - Verified traffic violation_type/location columns exist in both source tables; need carry them through private traffic reader rather than discarding descriptions.
+
+
+### Documentary detail export guards — 2026-09-09
+
+- Pushed prior work to origin/feature/traffic-penalty-rental-guards at af78e1602 on explicit user request. No database migration applied.
+- Direct canonical memo data/HTML entry points now run the same financial consistency gate as document generation and filing preparation.
+- Export gate compares evidenced net damage detail and applied deposit profile against authoritative components, preventing internally matching calculation totals from concealing stale documentary detail. Traffic-only scope excludes these components.
+- Validation: type-check passed; 29 tests passed across rent summary, document generators and batch filing, including changed damage recovery and deposit applicability. diff-check passed.
+- Located actual ZIP HTML-to-PDF path: zipExport.ts htmlToPdfBlob captures one tall canvas then slices by page height, with a 20-page hard limit and no semantic page breaks. Actual PDF pagination still unverified; investigate clipping/row splitting and prevent silent truncation before completion. No actual case submission performed.
+
+
+### Actual PDF export and page boundaries — 2026-09-09
+
+- Replaced ZIP export's 20-page truncation with complete pagination; crops each PDF page rather than shifting one oversized image across arbitrary boundaries. Fits ordinary rows, paragraphs, legal/request blocks and sections intact; headings stay with first content. Oversized blocks may split to guarantee progress.
+- Waits for iframe load, fonts and images; measures blocks in html2canvas's actual clone (original DOM measurements proved inaccurate in rendered output). Adds 8mm page margins, preserves footer/signature, removes only explicitly non-printable controls. iframe cleanup now runs even on conversion failure.
+- Added pdfPagination.ts plus 4 behavioral tests covering row and overlap boundaries, contiguous coverage beyond20pages, oversized block progress.
+- Real application htmlToPdfBlob exercised through local synthetic harness at .tmp/memo-review/pdf-review.html using IAB tab4. Downloaded actual jsPDF output and rendered ALL final4 A4pages with bundled Poppler. Inspected title/parties/contract, gross5100-paid500=net4600 +traffic300=total4900, table, complete requests, signature/footer. Final output746917bytes, no observed clipping or orphan section heading. Test artifact tmp/pdfs/memo-pagination-review.pdf; images memo-approved-1..4.png; never stage artifacts or synthetic harness.
+- Final type-check passed and29tests across pagination/ZIP/rent/document generation passed; diff-check passed. PDF artifact marker ran successfully once before first generation this turn. No new PDF marker needed for continued review.
+- Remaining: database rollout/schema audit and live amount agreement; compensation/retention documentary detail audit, service periods/frozen paths, broader final checks. Migration remains unapplied. Prior finance:controls fetch failure remains unresolved. Single-canvas rendering still depends on browser canvas limits for very long documents; no arbitrary20page cutoff remains, but unit coverage does not prove arbitrarily large runtime rendering.
+
+
+### Live rollout and recorded-rent cutoff — 2026-09-09
+
+- Applied receipt settlement via Supabase MCP successfully. Verified public facades are invoker; authenticated users can call only authorized gateways, anon denied and raw invoice_paid denied to authenticated. Live engine hashes matched reviewed baseline before deployment.
+- MCP records deployment timestamps independently of local creation. Renamed local migration/rollback pairs to ACTUAL deployed versions: 20260908221229_legal_memo_receipt_settlement and 20260908221719_align_legal_recorded_rent_cutoff. Tests now reference those versions; earlier paths in this log are historical. No migration-history table edits.
+- Live authenticated preparation for LTO2024276 exposed mismatch: engine disclosed return cutoff2026-08-31 but included Sep2026 invoice in rent. Added/tested/applied reversible cutoff patch: recorded invoice/schedule rent and v4 audit/future amount follow existing return/confirmed termination/judgment cutoff; retention still computes at original as-of date. Preserves source classification and receipt settlement. No invoice/payment/cancellation DML.
+- Browser page now loads normally and shows23invoices: gross34500-paid1000=net33500, period2024-10-01..2026-08-31. Separate same-session RPC comparison confirms save-time amount33500 matches projection total. Opening page triggered application's existing automatic memo-draft snapshot notifications; no external filing action initiated.
+- Authenticated comparison: LTO202437 and C-ALF-0058 return traffic review; C-ALF-0099 returns12unlinked schedules. Detailed RPC evidence: traffic source records have cancelled historical invoices, not missing standalone penalties. Reviewed two sample invoice notes: one manual cancellation2026-09-02; another explicitly retired invoice billing2026-08-30 while traffic remains separately managed. Keep ambiguous waiver intent unresolved; do not create or erase liabilities. Known-retirement behavior still needs deliberate review to avoid unnecessary blocking of valid standalone obligations.
+- Loader now renders actionable Arabic explanation for cancelled/mislinked traffic invoices, missing customer receipt evidence, and duplicate/conflicting traffic records, without exposing raw JSON diagnostics.
+- Tests after rollout/cutoff:21PGlite passed including post-return exclusion, independent retention and exact both-stage rollback.44Vitest passed for loader/source; type-check passed. Current production build launched with log .tmp/memo-build-post-rollout.log (record terminal result next).
+- Remaining acceptance gaps: partial month service coverage evidence; snapshot/worker/delinquency and all export consumer audit; compensation/retention detail beyond total consistency; review historical traffic invoice retirement policy; final build/financial checks and complete requirement audit. Prior finance:controls fetch failure unresolved. Do not reapply already installed receipt migration.
+
+- Post-rollout build completed successfully (2m7s), terminal session46442 exit0; no pending process remains. Existing chunk-size/dynamic-import warnings only. Full goal completion is still unproven for the acceptance gaps above.
+
+
+### Court reference freshness and explicit service bounds — 2026-09-09
+
+- Found snapshot equivalence ignored caseNumber entirely, allowing an approved pre-filing snapshot to hide a newly assigned official court number. Shared getOfficialCourtCaseNumber now normalizes internal CASE-/LC- versus official references; equivalence requires matching official numbers. Current generation refreshes while explicit historical snapshot export retains original payload/date. Regression covers both paths.
+- summarizeRentClaim no longer clamps an explicitly supplied invoice service_period_start/end to the original contract term. Explicit documented periods can cover continued possession after contractual expiry; only inferred month boundaries receive legacy contract clamping. Regression preserves explicit Aug1..12 service after Jul31 contractual end and600-100=500 without re-prorating money.
+- Type-check passed and26tests passed across rent summary/document generation/template rendering. These changes occurred after the previous successful build; final build needed when remaining integration is complete.
+- New evidence for next service-period task: v4 cutoff_source currently only labels initial_judgment/vehicle_return/as_of_date, even when v3 rent_cutoff_date came from confirmed termination. Classification labels can prioritize judgment over an earlier return. Do not blindly use this label to truncate prepaid month coverage. Need expose/consume exact service periods (including multiple linked schedule months) and distinguish as-of date from a factual end-of-service event. No migration or financial data edit this turn.
+
+
+### Canonical invoice service-period rollout — 2026-09-09
+
+- Verified live contract/schedule/profile date and amount columns and original read_statement body hash cd04eee7737a3e0cf52695d0350e2594. Applied reversible migration disclose_legal_invoice_service_periods, actual MCP version20260908223651; local migration/rollback renamed to match deployed history, tests updated. No invoice/payment DML.
+- Authorized statement gateway enriches included/excluded invoice rows with service_period_start/end/basis and service_period_version=invoice_coverage_v1. Invoice month and contract start form monthly coverage; multiple linked monthly schedules must be contiguous, unique, start at invoice month and sum to invoice gross before extending coverage. Actual earliest return/confirmed termination/judgment event can end coverage. Review/as-of day alone does not truncate a prepaid current-month invoice. Recorded amounts are not silently prorated again.
+- cutoff_source now reports the earliest effective event rather than preferentially labeling a later judgment or missing a confirmed termination. Synthetic extension/retention periods retain their existing calculation paths.
+- Loader strictly validates disclosed service dates, propagates them into OverdueInvoice rows shared directly by context, canonical refresh and batch; summarizeRentClaim supplies the same dates to overview, memo and per-row claims statement. Missing disclosed fields are errors instead of fallback guesses.
+- Tests:26PGlite passed including partial initial/end period, current-month prepayment through month end, supported multi-month invoice, duplicate schedule rejection and exact gateway rollback.71Vitest passed across loader/source/document-generation/rent summary. Type-check passed.
+- Live authenticated harness on LTO2024276:23rows with firstPeriod2024-10-01,lastPeriod2026-08-31; rent,total,saveAmount all33500. Existing traffic/schedule review cases remain explicitly blocked; no filing initiated. Old ephemeral IAB tabs were absent, so created fresh diagnostic tab7; do not rely on earlier tab5/6 handles.
+- Next concrete cross-page gap confirmed in source: FinancialDelinquency.tsx fetchLegalQueue still independently sums cached invoices and penalties (lines~396..593), omits damage/deposit/retention and can disagree with preparation. Replace its monetary source with canonical statement summaries and explicit per-contract review states, without making one problematic contract fail all queue results. Consider batched authorized RPC to avoid47sequential network requests. Candidate search and batch preselection estimations also require labeling/alignment audit. Final build and overall acceptance audit still pending.

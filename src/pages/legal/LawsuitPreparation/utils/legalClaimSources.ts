@@ -30,6 +30,9 @@ interface PaymentScheduleClaimRow {
 }
 
 interface StatementRentRow {
+  service_period_start?: string | null;
+  service_period_end?: string | null;
+  service_period_basis?: string | null;
   id: string;
   invoice_number?: string | null;
   installment_number?: number;
@@ -41,6 +44,7 @@ interface StatementRentRow {
 }
 
 export interface LegalClaimBreakdown {
+  service_period_version?: string;
   settlement_source?: string;
   calculation_details?: { retention_start_date?: string | null; retention_end_date?: string | null;
     retention_daily_rate?: number | null; contractual_compensation_units?: number | null };
@@ -283,6 +287,13 @@ export function resolveStatementRentProjection(statement: LegalClaimBreakdown, a
   const fail = () => new Error('تعذر مطابقة تفاصيل الأجرة مع إجمالي المطالبة؛ أعد التحميل أو راجع مصادر السداد');
   if (!Array.isArray(statement.included_invoices) || !Array.isArray(statement.included_schedules)) throw fail();
   const cutoff = resolveLegalClaimCutoffDate(asOfDate, statement);
+  const hasServiceCoverage = statement.service_period_version === 'invoice_coverage_v1';
+  if (statement.service_period_version && !hasServiceCoverage) throw fail();
+  const validDate = (value?: string | null): value is string => {
+    if (!value || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+    const parsed = new Date(value + 'T00:00:00Z');
+    return Number.isFinite(parsed.getTime()) && parsed.toISOString().slice(0, 10) === value;
+  };
   const seen = new Set<string>();
   const mapRows = (items: StatementRentRow[], source: 'invoice' | 'payment_schedule'): OverdueInvoice[] => items.map(item => {
     const total = Number(item.total_amount), paid = Number(item.paid_amount), amount = Number(item.amount);
@@ -291,8 +302,13 @@ export function resolveStatementRentProjection(statement: LegalClaimBreakdown, a
       || [item.total_amount, item.paid_amount, item.amount].some(value => value == null)
       || ![total, paid, amount].every(Number.isFinite) || total < 0 || paid < 0 || paid > total || amount <= 0
       || Math.round(total * 100) - Math.round(paid * 100) !== Math.round(amount * 100)) throw fail();
+    if (hasServiceCoverage && source === 'invoice'
+      && (!validDate(item.service_period_start) || !validDate(item.service_period_end)
+        || item.service_period_start > item.service_period_end)) throw fail();
     seen.add(id);
-    return { id: source === 'invoice' ? item.id : 'schedule:' + item.id,
+    return { ...(hasServiceCoverage && source === 'invoice' ? {
+      service_period_start: item.service_period_start!, service_period_end: item.service_period_end!,
+    } : {}), id: source === 'invoice' ? item.id : 'schedule:' + item.id,
       invoice_number: source === 'invoice' ? item.invoice_number ?? null : 'استحقاق تعاقدي رقم ' + (item.installment_number ?? ''),
       due_date: item.due_date, invoice_month: item.invoice_month || item.due_date,
       total_amount: total, paid_amount: paid, source, source_reference: item.id };
@@ -310,7 +326,7 @@ export function resolveStatementRentProjection(statement: LegalClaimBreakdown, a
 
 interface LegalClaimBreakdownRpcResult {
   data: unknown;
-  error: { message: string } | null;
+  error: { message: string; details?: string; hint?: string } | null;
 }
 
 type LegalClaimBreakdownRpc = (
@@ -324,12 +340,28 @@ type LegalClaimBreakdownRpc = (
   },
 ) => PromiseLike<LegalClaimBreakdownRpcResult>;
 
-const financialLoadError = (error: { message: string }): Error => new Error(
-  /[\u0600-\u06ff]/.test(error.message) ? error.message
+const financialLoadError = (error: { message: string; details?: string; hint?: string }): Error => {
+  let message = /[؀-ۿ]/.test(error.message) ? error.message
     : /reconcil/i.test(error.message) ? 'تحتاج الفواتير وتخصيصات الدفعات إلى مطابقة قبل اعتماد المطالبة'
-      : 'تعذر تحميل الحساب المالي المعتمد؛ أعد المحاولة أو راجع مالية العقد',
-  { cause: error },
-);
+      : 'تعذر تحميل الحساب المالي المعتمد؛ أعد المحاولة أو راجع مالية العقد';
+  if (error.hint === 'LEGAL_TRAFFIC_RECONCILIATION_REQUIRED' && error.details) {
+    try {
+      const detail = JSON.parse(error.details) as { rows?: { disposition?: string; review_reasons?: string[] }[] };
+      const reviewRows = Array.isArray(detail.rows) ? detail.rows.filter(row => row.disposition === 'review') : [];
+      const reasons = new Set(reviewRows.flatMap(row => Array.isArray(row.review_reasons) ? row.review_reasons : []));
+      if (reasons.has('missing_or_mislinked_active_traffic_invoice')) {
+        message += ' توجد فواتير مخالفات سابقة ملغاة أو مرتبطة بغير هذا العقد. راجع سبب إلغائها وحدد هل أُلغي استحقاق العميل أم نُقلت إدارة المخالفة إلى قسم المخالفات؛ إلغاء الفاتورة وحده لا يثبت إسقاط المخالفة.';
+      }
+      if (reasons.has('missing_customer_receipt_evidence')) {
+        message += ' توجد مخالفة مسجلة كمسددة أو مسددة جزئياً دون سند قبض مرتبط؛ طابق دفعة العميل قبل اعتماد صافي المخالفة.';
+      }
+      if (reasons.has('cross_source_violation_conflict') || reasons.has('duplicate_penalty_reference')) {
+        message += ' توجد سجلات للمخالفة نفسها تحتاج مطابقة المسؤولية والمبلغ لتجنب التكرار.';
+      }
+    } catch { /* Keep the original Arabic message if diagnostic details are malformed. */ }
+  }
+  return new Error(message, { cause: error });
+};
 
 const isMissingRpcError = (message: string) => {
   const normalized = message.toLowerCase();
