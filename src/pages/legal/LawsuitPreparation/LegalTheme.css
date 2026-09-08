@@ -1319,6 +1319,15 @@
   font-weight: 800;
 }
 
+.lawsuit-document-main .lawsuit-document-review-message,
+.lawsuit-document-main .lawsuit-document-review-copy {
+  white-space: normal;
+  overflow: visible;
+  overflow-wrap: anywhere;
+  line-height: 1.8;
+  margin-top: 0.3rem;
+}
+
 .lawsuit-doc-status {
   justify-content: center;
   gap: 0.35rem;
@@ -1337,6 +1346,16 @@
   border-color: #bed8ee;
   background: #eaf2f9;
   color: #173a63;
+}
+
+.lawsuit-document-row.is-review .lawsuit-document-review-message {
+  color: #92400e;
+}
+
+.lawsuit-doc-status.is-review {
+  border-color: #f5d89b;
+  background: #fffbeb;
+  color: #92400e;
 }
 
 .lawsuit-doc-status.is-error,

@@ -24,7 +24,7 @@ const dataDir = path.resolve(
 );
 
 export const agentConfig = {
-  version: '1.8.3',
+  version: '1.8.4',
   workerId: process.env.TAQADI_WORKER_ID
     || `${os.hostname()}-taqadi`,
   hostname: os.hostname(),

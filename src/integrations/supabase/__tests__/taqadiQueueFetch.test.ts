@@ -43,4 +43,35 @@ describe('Taqadi queue transport', () => {
       .rejects.toThrow('connection lost');
     expect(fetchMock).toHaveBeenCalledOnce();
   });
+
+  it('allows external filing to finish after the former ten-second limit', async () => {
+    const fetchMock = vi.fn((_url: unknown, options: RequestInit) => new Promise<Response>((resolve, reject) => {
+      options.signal?.addEventListener('abort', () => reject(new DOMException('aborted', 'AbortError')));
+      setTimeout(() => resolve(new Response('{}', { status: 200 })), 25_000);
+    }));
+    vi.stubGlobal('fetch', fetchMock);
+    const request = clientOptions.fetch!('https://fixture.supabase.co/rest/v1/rpc/record_external_legal_filing_v2', { method: 'POST' });
+    await vi.advanceTimersByTimeAsync(25_000);
+    expect((await request).status).toBe(200);
+    expect(fetchMock).toHaveBeenCalledOnce();
+  });
+
+  it('bounds external filing at sixty seconds without replaying an uncertain write', async () => {
+    const fetchMock = vi.fn((_url: unknown, options: RequestInit) => new Promise<Response>((_resolve, reject) => {
+      options.signal?.addEventListener('abort', () => reject(new DOMException('signal is aborted without reason', 'AbortError')));
+    }));
+    vi.stubGlobal('fetch', fetchMock);
+    const request = clientOptions.fetch!('https://fixture.supabase.co/rest/v1/rpc/record_external_legal_filing_v2', { method: 'POST' });
+    const result = expect(request).rejects.toThrow('signal is aborted');
+    await vi.advanceTimersByTimeAsync(60_000);
+    await result;
+    expect(fetchMock).toHaveBeenCalledOnce();
+  });
+
+  it('does not replay external filing after an HTTP gateway error', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(new Response('{}', { status: 504 }));
+    vi.stubGlobal('fetch', fetchMock);
+    expect((await clientOptions.fetch!('https://fixture.supabase.co/rest/v1/rpc/record_external_legal_filing_v2', { method: 'POST' })).status).toBe(504);
+    expect(fetchMock).toHaveBeenCalledOnce();
+  });
 });

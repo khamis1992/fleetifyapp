@@ -1,5 +1,6 @@
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { notifyRecordChange } from "@/services/recordQuerySynchronization";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
@@ -587,29 +588,8 @@ export const useUpdateCustomer = () => {
       Sentry.addBreadcrumb({ category: "customers", message: "Updated customer successfully", level: "info" });
       console.log('🎉 Customer update successful:', data);
       
-      // Update cache immediately with optimistic update
-      queryClient.setQueriesData(
-        { queryKey: queryKeys.customers.lists() },
-        (oldData: unknown) => {
-          if (!oldData) return [data];
+      await notifyRecordChange(queryClient, { entity: 'customer', companyId: data.company_id, recordId: data.id });
 
-          // Type guard: check if oldData is an array
-          if (!Array.isArray(oldData)) return [data];
-
-          // Update the existing customer in the list
-          return (oldData as Customer[]).map((customer: Customer) =>
-            customer.id === data.id ? { ...customer, ...data } : customer
-          );
-        }
-      );
-      
-      // Update individual customer cache
-      queryClient.setQueryData(['customer', data.id], data);
-      
-      // Also trigger refetch as a backup (but don't wait for it)
-      queryClient.refetchQueries({ queryKey: ['customers'], type: 'active' });
-      queryClient.refetchQueries({ queryKey: queryKeys.customers.detail(data.id), type: 'active' });
-      
       const customerName = data.customer_type === 'individual' 
         ? `${data.first_name} ${data.last_name}`
         : data.company_name;

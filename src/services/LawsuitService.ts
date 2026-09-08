@@ -153,11 +153,11 @@ class LawsuitService {
     uploadedBy?: string,
   ): Promise<CompanyLegalDocument> {
     // رفع الملف إلى Storage
-    const safeFileName = file.name
-      .normalize('NFKC')
-      .replace(/[^\p{L}\p{N}._-]+/gu, '_')
-      .replace(/^[_\.]+|[_\.]+$/g, '') || 'document';
-    const fileName = `${companyId}/${documentType}/${Date.now()}-${crypto.randomUUID()}-${safeFileName}`;
+    // Storage keys must not contain user-supplied Unicode or path characters.
+    // Keep the original display name in document_name below.
+    const extension = file.name.normalize('NFKC').match(/\.([a-zA-Z0-9]{1,10})$/)?.[1].toLowerCase()
+      || (file.type === 'application/pdf' ? 'pdf' : undefined);
+    const fileName = `${companyId}/${documentType}/${Date.now()}-${crypto.randomUUID()}${extension ? `.${extension}` : ''}`;
     const { data: uploadData, error: uploadError } = await supabase.storage
       .from('legal-documents')
       .upload(fileName, file, {

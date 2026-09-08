@@ -118,6 +118,10 @@ export interface ProgressUpdate {
   errorMessage?: string;
 }
 
+export class ManualStopRequestedError extends Error {
+  constructor() { super('طلب المستخدم إيقاف الوكيل'); this.name = 'ManualStopRequestedError'; }
+}
+
 export class HumanInterventionError extends Error {
   constructor(
     message: string,

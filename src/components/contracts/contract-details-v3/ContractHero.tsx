@@ -62,7 +62,9 @@ export function ContractHero({ contract, customerName, vehicleName, plateNumber,
       </div>
       <div className="grid gap-3 p-5 sm:p-7 lg:grid-cols-3">
         <button type="button" onClick={onCustomerClick} className="group flex min-w-0 items-start gap-3 rounded-xl border border-slate-200 p-4 text-right transition hover:border-teal-400 hover:bg-teal-50/40">
-          <UserRound className="mt-1 h-5 w-5 shrink-0 text-teal-700" /><div className="min-w-0"><p className="text-xs text-slate-500">العميل</p><p className="mt-1 font-semibold leading-6 text-slate-800">{customerName}</p><p className="mt-1 text-xs text-slate-500"><bdi>{contract.customer?.phone || 'لا يوجد رقم اتصال'}</bdi></p></div><ChevronLeft className="ms-auto mt-1 h-4 w-4 shrink-0 text-slate-400" />
+          <UserRound className="mt-1 h-5 w-5 shrink-0 text-teal-700" /><div className="min-w-0"><p className="text-xs text-slate-500">العميل</p><p className="mt-1 font-semibold leading-6 text-slate-800">{customerName}</p><p className="mt-1 text-xs text-slate-500"><bdi>{contract.customer?.phone || 'لا يوجد رقم اتصال'}</bdi></p>
+            {contract.customer?.customer_type === 'individual' && <p className="mt-1 text-xs text-slate-600">الجنسية: {contract.customer.nationality || 'غير مسجلة'}</p>}
+          </div><ChevronLeft className="ms-auto mt-1 h-4 w-4 shrink-0 text-slate-400" />
         </button>
         <button type="button" onClick={onVehicleClick} className="group flex min-w-0 items-start gap-3 rounded-xl border border-slate-200 p-4 text-right transition hover:border-teal-400 hover:bg-teal-50/40">
           <Car className="mt-1 h-5 w-5 shrink-0 text-teal-700" /><div className="min-w-0"><p className="text-xs text-slate-500">المركبة</p><p className="mt-1 font-semibold leading-6 text-slate-800">{vehicleName}</p><p className="mt-1 text-xs text-slate-500">اللوحة <bdi className="font-mono font-semibold">{plateNumber || 'غير محددة'}</bdi></p></div><ChevronLeft className="ms-auto mt-1 h-4 w-4 shrink-0 text-slate-400" />

@@ -6,6 +6,7 @@
 import React, { createContext, useContext, useReducer, useCallback, useEffect, useMemo, useRef } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { invalidateContractDocumentDependents } from '@/utils/contractDocumentQueries';
+import { notifyRecordChange } from '@/services/recordQuerySynchronization';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -21,6 +22,7 @@ import { openLegalCase, registerLegalCase } from '../utils/caseRegistration';
 import { exportDocumentsAsZip } from '../utils/zipExport';
 import {
   getEffectiveLegalIdentityMatchStatus,
+  getContractDocumentReview,
   selectContractDocumentForIdentityScan,
   selectLegalContractDocument,
 } from '../utils/contractDocumentSelection';
@@ -41,6 +43,7 @@ import {
   selectAutoAcceptable,
 } from '../utils/legalEvidenceAutomation';
 import { getFilingReadiness } from '../utils/filingReadiness';
+import { taqadiErrorMessage } from '../utils/taqadiErrorMessage';
 import { getLawsuitClaimAmounts } from '../utils/claimAmounts';
 import { loadLegalClaimProjection } from '../utils/legalClaimSources';
 import {
@@ -358,6 +361,7 @@ export function LawsuitPreparationProvider({
           ),
           legal_identity_expected_id: document.legal_identity_expected_id,
           legal_identity_extracted_id: document.legal_identity_extracted_id,
+          legal_identity_match_reason: document.legal_identity_match_reason,
           legal_evidence_state: normalizeLegalEvidenceState(
             document.legal_evidence_state,
           ),
@@ -388,11 +392,12 @@ export function LawsuitPreparationProvider({
 
       if (!contractDocument) {
         console.warn('[Contract Document] No identity-matched contract document found');
+        dispatch({ type: 'RESET_DOCUMENT', payload: { docId: 'contract' } });
         dispatch({
           type: 'UPLOAD_DOCUMENT_ERROR',
           payload: {
             docId: 'contract',
-            error: 'لا توجد نسخة عقد مطابقة لهوية المستأجر. سيبقى الرفع القانوني متوقفاً حتى اكتمال المطابقة.',
+            error: getContractDocumentReview(data || []).message,
           }
         });
         return null;
@@ -1169,9 +1174,7 @@ export function LawsuitPreparationProvider({
 
     const saved = data as LitigationProfile;
     dispatch({ type: 'SET_LITIGATION_PROFILE', payload: saved });
-    await queryClient.invalidateQueries({
-      queryKey: ['legal-case-litigation-profile', contractId, companyId],
-    });
+    await notifyRecordChange(queryClient, { entity: 'legal', companyId, recordId: contractId });
     toast.success('تم حفظ الملف القانوني للقضية');
     return saved;
   }, [companyId, contractId, queryClient, state.customer?.address, state.litigationProfile, user?.id]);
@@ -1214,10 +1217,7 @@ export function LawsuitPreparationProvider({
         payload: { ...state.litigationProfile, legal_review_status: 'draft', approved_by: null, approved_at: null, approval_source: null, approval_job_id: null, approval_worker_id: null },
       });
     }
-    await Promise.all([
-      queryClient.invalidateQueries({ queryKey: ['legal-case-formal-notices', contractId, companyId] }),
-      queryClient.invalidateQueries({ queryKey: ['legal-case-litigation-profile', contractId, companyId] }),
-    ]);
+    await notifyRecordChange(queryClient, { entity: 'legal', companyId, recordId: contractId });
     toast.success('تم حفظ الإنذار الموثق');
     return saved;
   }, [companyId, contractId, queryClient, state.formalNotices, state.litigationProfile, user?.id]);
@@ -1238,10 +1238,7 @@ export function LawsuitPreparationProvider({
     if (state.litigationProfile?.legal_review_status === 'approved') {
       dispatch({ type: 'SET_LITIGATION_PROFILE', payload: { ...state.litigationProfile, legal_review_status: 'draft', approved_by: null, approved_at: null, approval_source: null, approval_job_id: null, approval_worker_id: null } });
     }
-    await Promise.all([
-      queryClient.invalidateQueries({ queryKey: ['legal-case-formal-notices', contractId, companyId] }),
-      queryClient.invalidateQueries({ queryKey: ['legal-case-litigation-profile', contractId, companyId] }),
-    ]);
+    await notifyRecordChange(queryClient, { entity: 'legal', companyId, recordId: contractId });
   }, [companyId, contractId, queryClient, state.formalNotices, state.litigationProfile]);
 
   const saveDamageCost = useCallback(async (
@@ -1281,10 +1278,7 @@ export function LawsuitPreparationProvider({
     if (state.litigationProfile?.legal_review_status === 'approved') {
       dispatch({ type: 'SET_LITIGATION_PROFILE', payload: { ...state.litigationProfile, legal_review_status: 'draft', approved_by: null, approved_at: null, approval_source: null, approval_job_id: null, approval_worker_id: null } });
     }
-    await Promise.all([
-      queryClient.invalidateQueries({ queryKey: ['legal-case-damage-costs', contractId, companyId] }),
-      queryClient.invalidateQueries({ queryKey: ['legal-case-litigation-profile', contractId, companyId] }),
-    ]);
+    await notifyRecordChange(queryClient, { entity: 'legal', companyId, recordId: contractId });
     toast.success('تم حفظ بند الضرر والمستند المؤيد');
     return saved;
   }, [companyId, contractId, queryClient, state.damageCosts, state.litigationProfile, user?.id]);
@@ -1305,10 +1299,7 @@ export function LawsuitPreparationProvider({
     if (state.litigationProfile?.legal_review_status === 'approved') {
       dispatch({ type: 'SET_LITIGATION_PROFILE', payload: { ...state.litigationProfile, legal_review_status: 'draft', approved_by: null, approved_at: null, approval_source: null, approval_job_id: null, approval_worker_id: null } });
     }
-    await Promise.all([
-      queryClient.invalidateQueries({ queryKey: ['legal-case-damage-costs', contractId, companyId] }),
-      queryClient.invalidateQueries({ queryKey: ['legal-case-litigation-profile', contractId, companyId] }),
-    ]);
+    await notifyRecordChange(queryClient, { entity: 'legal', companyId, recordId: contractId });
   }, [companyId, contractId, queryClient, state.damageCosts, state.litigationProfile]);
 
   const freezeMemoSnapshot = useCallback(async () => {
@@ -2012,9 +2003,9 @@ export function LawsuitPreparationProvider({
     } catch (error: any) {
       dispatch({
         type: 'TAQADI_AUTOMATION_STATUS',
-        payload: `خطأ: ${error?.message || 'تعذر إضافة الدعوى إلى الطابور'}`,
+        payload: `خطأ: ${taqadiErrorMessage(error) || 'تعذر إضافة الدعوى إلى الطابور'}`,
       });
-      toast.error(error?.message || 'تعذر إضافة الدعوى إلى الطابور');
+      toast.error(taqadiErrorMessage(error) || 'تعذر إضافة الدعوى إلى الطابور');
     } finally {
       dispatch({ type: 'TAQADI_AUTOMATION_STOP' });
     }

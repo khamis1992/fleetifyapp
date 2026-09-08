@@ -7,6 +7,7 @@ export interface InterruptedJobSnapshot {
   heartbeat_at: string | null;
   locked_at: string | null;
   updated_at: string;
+  error_code?: string | null;
 }
 
 export type RestartRecoveryDecision =
@@ -14,6 +15,7 @@ export type RestartRecoveryDecision =
   | 'requeue_login'
   | 'verify_submission'
   | 'attempt_limit'
+  | 'manual_stop'
   | null;
 
 const recoverableStatuses = new Set<FilingStatus>([
@@ -40,6 +42,7 @@ export function decideRestartRecovery(
   }
 
   if (job.status === 'submitting') return 'verify_submission';
+  if (job.error_code === 'MANUAL_STOP_REQUESTED') return 'manual_stop';
   if (job.status === 'waiting_login') return 'requeue_login';
   if (job.attempt_count >= job.max_attempts) return 'attempt_limit';
   return 'requeue';

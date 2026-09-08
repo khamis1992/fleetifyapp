@@ -5,13 +5,13 @@ import {
 } from '../../../supabase/functions/_shared/legal-contract-identity';
 
 describe('legal contract identity assessment', () => {
-  it('blocks a contract issued to a different first name', () => {
+  it('requires review for a different first name without reliable ID evidence', () => {
     const result = assessLegalContractIdentity({
       expectedName: 'أحمد الشيخ الصديق هاشم الوسيلة',
       extractedName: 'محمد الشيخ الصديق هاشم الوسيلة',
     });
 
-    expect(result.status).toBe('mismatch');
+    expect(result.status).toBe('unverified');
     expect(result.expectedName).toContain('احمد');
     expect(result.extractedName).toContain('محمد');
   });
@@ -42,7 +42,7 @@ describe('legal contract identity assessment', () => {
       expectedId: '27773601703',
       extractedId: '27773601703',
       authoritativeName: true,
-    }).status).toBe('mismatch');
+    }).status).toBe('unverified');
   });
 
   it('extracts the named tenant from the rental contract body', () => {
@@ -52,7 +52,7 @@ describe('legal contract identity assessment', () => {
       رقم البطاقة: 28801234567
     `);
 
-    expect(result).toEqual({
+    expect(result).toMatchObject({
       nameArabic: 'محمد الشيخ الصديق هاشم الوسيلة',
       identityNumber: '28801234567',
     });
@@ -67,7 +67,7 @@ describe('legal contract identity assessment', () => {
       رقم البطاقة: 28078801264
     `);
 
-    expect(result).toEqual({
+    expect(result).toMatchObject({
       nameArabic: 'عصام المزوغي',
       identityNumber: '28078801264',
     });
@@ -94,7 +94,7 @@ describe('legal contract identity assessment', () => {
     });
 
     expect(result.status).toBe('unverified');
-    expect(result.reason).toContain('not an exact identity match');
+    expect(result.reasonCode).toBe('tenant_name_conflict');
   });
 
   it('requires exact tenant evidence even when an attached identity number matches', () => {

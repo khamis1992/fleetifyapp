@@ -2,6 +2,8 @@ import type { DocumentsState, LawsuitPreparationState } from '../store/types';
 import { isMemoSnapshotCurrent } from './documentGenerators';
 import { evaluateLegalCaseReadiness, getDefendantContact } from './legalCaseWorkflow';
 import { hasKnownTaqadiNationality, DEFENDANT_NATIONALITY_REQUIRED_MESSAGE } from '@/utils/taqadiNationality';
+import { requiresViolationDocuments } from './violationDocumentRequirements';
+import { getContractDocumentReview } from './contractDocumentSelection';
 
 export const BASE_FILING_DOCUMENT_IDS = [
   'memo',
@@ -37,6 +39,12 @@ export interface FilingReadiness {
   profileApproved: boolean;
   snapshotApprovedAndCurrent: boolean;
   taqadiComplete: boolean;
+  taqadiIssues: TaqadiFieldIssue[];
+}
+
+export interface TaqadiFieldIssue {
+  field: 'nationality' | 'caseTitle' | 'facts' | 'claims' | 'fullName' | 'address' | 'email' | 'plate';
+  message: string;
 }
 
 export function getFilingReadiness(state: LawsuitPreparationState): FilingReadiness {
@@ -45,7 +53,7 @@ export function getFilingReadiness(state: LawsuitPreparationState): FilingReadin
 
   // المخالفات التي لا يساندها مستخرج رسمي مستبعدة مالياً، ولذلك لا تجعل
   // حافظة مطالبة الإيجار الصحيحة رهينة مستند غير موجود.
-  if (Number(state.calculations?.violationsCount || 0) > 0) {
+  if (requiresViolationDocuments(state)) {
     requiredDocumentIds.push('violations', 'violationsEvidence');
   }
 
@@ -74,6 +82,10 @@ export function getFilingReadiness(state: LawsuitPreparationState): FilingReadin
   } else if (!hasIdentityMatch) {
     signedLeaseBlockingReason = 'الهوية غير متحققة';
   }
+  if (!signedLeaseComplete) {
+    const review = getContractDocumentReview(state.contractEvidenceDocuments || []);
+    if (review.kind === 'review' || review.kind === 'conflict') signedLeaseBlockingReason = review.message;
+  }
   const defendantContact = getDefendantContact(state);
   const latestSnapshot = state.memoSnapshots[0];
   const profileApproved = state.litigationProfile?.legal_review_status === 'approved';
@@ -81,16 +93,23 @@ export function getFilingReadiness(state: LawsuitPreparationState): FilingReadin
     latestSnapshot?.readiness_status === 'approved'
       && isMemoSnapshotCurrent(state, latestSnapshot),
   );
-  const nationalityComplete = hasKnownTaqadiNationality(state.taqadiData?.defendant?.nationality);
-  const taqadiComplete = nationalityComplete && Boolean(
-    state.taqadiData?.caseTitle?.trim()
-      && state.taqadiData?.facts?.trim()
-      && state.taqadiData?.claims?.trim()
-      && state.taqadiData?.defendant?.fullName?.trim()
-      && defendantContact.address
-      && defendantContact.email
-      && (state.vehicle?.plate_number || state.contract?.license_plate),
-  );
+  const taqadiIssues: TaqadiFieldIssue[] = [];
+  if (!hasKnownTaqadiNationality(state.taqadiData?.defendant?.nationality)) {
+    taqadiIssues.push({ field: 'nationality', message: DEFENDANT_NATIONALITY_REQUIRED_MESSAGE });
+  }
+  const requiredFields: [TaqadiFieldIssue['field'], string | null | undefined, string][] = [
+    ['caseTitle', state.taqadiData?.caseTitle, 'عنوان الدعوى غير مكتمل.'],
+    ['facts', state.taqadiData?.facts, 'نص وقائع الدعوى غير مكتمل.'],
+    ['claims', state.taqadiData?.claims, 'طلبات الدعوى غير مكتملة.'],
+    ['fullName', state.taqadiData?.defendant?.fullName, 'اسم المدعى عليه غير مكتمل.'],
+    ['address', defendantContact.address, 'عنوان تبليغ المدعى عليه غير مكتمل.'],
+    ['email', defendantContact.email, 'بريد المدعى عليه المتحقق منه غير مكتمل.'],
+    ['plate', state.vehicle?.plate_number || state.contract?.license_plate, 'رقم لوحة المركبة غير مكتمل.'],
+  ];
+  for (const [field, value, message] of requiredFields) {
+    if (!value?.trim()) taqadiIssues.push({ field, message });
+  }
+  const taqadiComplete = taqadiIssues.length === 0;
 
   // These are the only conditions the user must complete before starting the
   // filing procedure. Legal approval belongs to the Taqadi worker after it
@@ -101,8 +120,7 @@ export function getFilingReadiness(state: LawsuitPreparationState): FilingReadin
   if (!signedLeaseComplete && signedLeaseBlockingReason) {
     missingReasons.push(signedLeaseBlockingReason);
   }
-  if (!taqadiComplete) missingReasons.push('بيانات تقاضي النهائية غير مكتملة.');
-  if (!nationalityComplete) missingReasons.push(DEFENDANT_NATIONALITY_REQUIRED_MESSAGE);
+  missingReasons.push(...taqadiIssues.map((issue) => issue.message));
 
   const finalizationReasons: string[] = [];
   if (!profileApproved) finalizationReasons.push('مراجعة الوكيل لم تبدأ أو لم تعتمد بعد.');
@@ -143,6 +161,7 @@ export function getFilingReadiness(state: LawsuitPreparationState): FilingReadin
     profileApproved,
     snapshotApprovedAndCurrent,
     taqadiComplete,
+    taqadiIssues,
   };
 }
 

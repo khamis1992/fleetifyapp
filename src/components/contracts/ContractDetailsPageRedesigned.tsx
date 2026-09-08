@@ -461,7 +461,10 @@ const ContractDetailsPageRedesigned = () => {
             customer_type,
             phone,
             email,
-            national_id
+            national_id,
+            nationality,
+            address,
+            country
           ),
           vehicle:vehicles!vehicle_id(
             id,

@@ -3,7 +3,7 @@ import { hasKnownTaqadiNationality, DEFENDANT_NATIONALITY_REQUIRED_MESSAGE } fro
 import { agentConfig } from './config';
 import type { SavedReceipt } from './receipt-outbox';
 import { workerErrorDetails } from './error-details';
-import { HumanInterventionError } from './types';
+import { HumanInterventionError, ManualStopRequestedError } from './types';
 import {
   decideRestartRecovery,
   type InterruptedJobSnapshot,
@@ -71,7 +71,7 @@ export class TaqadiQueue {
     const { data, error } = await this.client
       .from('taqadi_filing_jobs')
       .select(
-        'id,company_id,status,attempt_count,max_attempts,heartbeat_at,locked_at,updated_at',
+        'id,company_id,status,attempt_count,max_attempts,heartbeat_at,locked_at,updated_at,error_code',
       )
       .eq('locked_by', agentConfig.workerId)
       .in('status', activeStatuses);
@@ -87,6 +87,7 @@ export class TaqadiQueue {
       const shouldRequeue = decision === 'requeue' || refundsLoginAttempt;
       const needsSubmissionVerification = decision === 'verify_submission';
       const hitAttemptLimit = decision === 'attempt_limit';
+      const manuallyStopped = decision === 'manual_stop';
       const nextStatus = shouldRequeue ? 'queued' : 'needs_human';
       const nextStep = needsSubmissionVerification
         ? 'submission_verification'
@@ -94,12 +95,14 @@ export class TaqadiQueue {
           ? 'restart_recovery'
           : 'restart_recovery';
       const errorCode = needsSubmissionVerification
-        ? 'SUBMISSION_UNCERTAIN_AFTER_RESTART'
+        ? 'SUBMISSION_UNCERTAIN'
+        : manuallyStopped ? 'MANUALLY_STOPPED'
         : hitAttemptLimit
           ? 'RESTART_RECOVERY_LIMIT'
           : null;
       const errorMessage = needsSubmissionVerification
         ? 'أعيد تشغيل الوكيل أثناء الاعتماد النهائي؛ يجب التحقق من تقاضي قبل إعادة المحاولة.'
+        : manuallyStopped ? 'تم حفظ طلب الإيقاف بعد إعادة تشغيل الوكيل. يمكنك متابعة المسودة الموجودة يدويًا.'
         : hitAttemptLimit
           ? 'توقفت المهمة بعد بلوغ الحد الأقصى للمحاولات؛ راجعها قبل إعادة المحاولة.'
           : null;
@@ -133,6 +136,7 @@ export class TaqadiQueue {
 
       const message = needsSubmissionVerification
         ? 'توقف الجهاز أثناء الاعتماد النهائي؛ لم تتم إعادة الإرسال لحماية الدعوى من التكرار.'
+        : manuallyStopped ? 'توقف الوكيل بناءً على طلب المستخدم؛ لم تتم إعادة تشغيل المهمة تلقائيًا.'
         : hitAttemptLimit
           ? 'تعذر استئناف المهمة تلقائيًا بعد إعادة التشغيل بسبب بلوغ حد المحاولات.'
           : refundsLoginAttempt
@@ -203,6 +207,7 @@ export class TaqadiQueue {
   }
 
   async update(jobId: string, update: ProgressUpdate) {
+    await this.assertCanContinue(jobId);
     const progress = Math.max(this.progressByJob.get(jobId) || 0, update.progress);
     const { data, error } = await this.client.rpc(
       'update_taqadi_filing_job_v1',
@@ -221,6 +226,23 @@ export class TaqadiQueue {
     if (error) throw error;
     this.progressByJob.set(jobId, progress);
     return data as FilingJob;
+  }
+
+  async checkControl(jobId: string, acknowledge = false) {
+    const { data, error } = await this.client.rpc('check_taqadi_filing_control_v1', {
+      p_job_id: jobId, p_worker_id: agentConfig.workerId, p_acknowledge: acknowledge,
+    }).abortSignal(AbortSignal.timeout(5_000));
+    if (error) throw error;
+    if (typeof data?.stopRequested !== 'boolean') throw new Error('Worker control state was not confirmed');
+    return data as { stopRequested: boolean; status: FilingStatus; acknowledged?: boolean };
+  }
+
+  async assertCanContinue(jobId: string) {
+    const control = await this.checkControl(jobId);
+    if (control.stopRequested) throw new ManualStopRequestedError();
+    if (['filed', 'cancelled', 'needs_human', 'failed'].includes(control.status)) {
+      throw new Error('Filing job is no longer running');
+    }
   }
 
   async validateBeforePortal(job: FilingJob) {
@@ -378,16 +400,17 @@ export class TaqadiQueue {
     if (eventError) throw eventError;
   }
 
-  async markReceiptSyncPending(receipt: SavedReceipt) {
-    const { error } = await this.client.rpc('update_taqadi_filing_job_v1', {
-      p_job_id: receipt.jobId,
-      p_worker_id: agentConfig.workerId,
-      p_status: 'submitting',
-      p_step: 'receipt_sync_pending',
-      p_progress: 99,
-      p_message: 'تم الإيداع في تقاضي — تحديث النظام قيد الاستكمال',
-      p_details: { referenceNumber: receipt.result.referenceNumber, receiptCapturedAt: receipt.capturedAt },
-    }).abortSignal(AbortSignal.timeout(5_000));
+  async markReceiptSyncPending(receipt: SavedReceipt, message?: string) {
+    // Conditional write: a lost completion response or a lock conflict must
+    // never regress a filed case or a job already handed to an operator.
+    const { error } = await this.client.from('taqadi_filing_jobs').update({
+      current_step: 'receipt_sync_pending', progress: 99,
+      error_code: 'RECEIPT_SYNC_PENDING',
+      error_message: message || 'تم الإيداع في تقاضي — تحديث النظام قيد الاستكمال',
+      updated_at: new Date().toISOString(),
+    }).eq('id', receipt.jobId).eq('company_id', receipt.companyId)
+      .eq('locked_by', agentConfig.workerId).eq('status', 'submitting')
+      .abortSignal(AbortSignal.timeout(5_000));
     if (error) throw error;
   }
 

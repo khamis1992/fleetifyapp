@@ -1,5 +1,96 @@
 # Fleetify Database Reference
 
+## Automatic external filing handoff — deployed (2026-09-08)
+
+Migration `20260908063143` adds `record_external_legal_filing_v2`, an authenticated
+invoker facade over an authorized implementation in `taqadi_private`. It requests
+a cooperative stop for active work and returns a pending state without holding
+locks while the worker stops. On continuation, paused/queued tasks are retired
+with an audit event in the existing external filing transaction. Known receipts
+are checked for conflicts and pending receipt synchronization is preserved.
+No existing data changes merely by installing the migration. The v1 command and
+its active-task guard remain intact; rollback preserves recorded legal evidence.
+Deployed after explicit user approval on 2026-09-08. Live permission checks
+confirm authenticated access, denied anonymous access, and an invoker API facade.
+
+## Manual review of unreadable quarantined contracts — deployed (2026-09-07)
+
+Migration `20260907203102` allows the existing authorized manual identity review
+to inspect a quarantined signed contract only when its persisted status is
+`unverified` and its reason code is `insufficient_identity_evidence`. Preview does
+not change the document. Approval still requires an unchanged revision, a full
+observed identity number matching the current customer, an explicit attestation,
+a reason, authorized company membership and no other active matched copy.
+
+Only after approval does the transaction set evidence active, mark identity
+matched and clear the expired OCR deadline. The original row and human observation
+remain in the private review history; the public audit includes the old/new
+evidence state. No document is approved by the migration itself. Other quarantine
+reasons, mismatches and superseded files remain blocked. Rollback preserves
+completed reviews and restores the previous eligibility rule.
+
+## External filing after acknowledged manual stop — deployed (2026-09-07)
+
+Migration `20260907183505` releases worker ownership when the trusted control
+RPC acknowledges stopping. `record_external_legal_filing_v1` now permits a
+`needs_human` job only when its code is `MANUALLY_STOPPED`, its step is
+`manual_stop`, and both ownership fields are null. Pending stop requests,
+other human pauses and uncertain submissions remain blocked.
+
+Existing stale ownership is released only for manually stopped jobs with a
+matching company/job `stopped` event. The repair emits
+`manual_stop_lock_released`; it does not register a filing or change its reference.
+Existing authentication, company checks and function grants are retained.
+Rollback restores the previous command guards without restoring stale locks or
+discarding legal evidence.
+
+## Taqadi receipt synchronization and manual stop — deployed (2026-09-07)
+
+Migration `20260907135928` synchronizes a preparation-stage legal case value with
+its exact worker-approved job/memo snapshot before approval and receipt replay,
+recording the old/new amounts in `legal_case_activities`. Existing filing
+readiness guards remain active; invoices, payments and filed values are unchanged.
+
+Migration `20260907141007` extends `cancel_taqadi_filing_job_v1` to request a
+cooperative stop during active work. `MANUAL_STOP_REQUESTED` prevents late progress
+writes; worker-only `check_taqadi_filing_control_v1` acknowledges `needs_human` with
+`MANUALLY_STOPPED` before submission or `SUBMISSION_UNCERTAIN` during submission.
+Receipt-sync and uncertain submissions cannot be cancelled through this command.
+`sync_taqadi_approved_case_value_v1` and the control RPC are invoker functions with
+execute granted only to `service_role`; cancellation retains its existing
+authenticated company check. Rollbacks preserve audit and pending-stop safety.
+
+## Manual signed-contract identity review — deployed (2026-09-07)
+
+The 2026-09-08 eligibility fix (`20260908114123`) also permits quarantined,
+unverified signed copies when the OCR reason is `tenant_name_conflict`,
+`low_ocr_confidence` or `incomplete_scan`, alongside `insufficient_identity_evidence`.
+Preview does not activate evidence. Quarantined identity-number conflicts,
+ambiguous multi-person evidence, missing/unknown reasons and superseded copies
+remain blocked. The same full observed QID, attestation, role/scope/revision checks
+and audit are required for approval. Rollback preserves completed reviews.
+
+Migration `20260907133016` adds `review_contract_document_identity_v1`. Omitting
+the revision requests an authorized preview; approval requires its unchanged
+revision, the identity number read by the reviewer, a reason and confirmation.
+Active company administrators, managers and legal staff can use the command.
+The observed full identity number must match the current customer. Foreign,
+inactive, unsigned or ambiguous evidence cannot be approved through this flow.
+
+The invoker facade calls a private authorized command. The private
+`legal_evidence_private.identity_reviews` table has RLS and no browser table
+grants. It preserves the original document/extraction, customer snapshot,
+reviewer, reason and approved values. Public audit logs record the same action.
+`contract_documents.verified_by` refers to the reviewer **profile**, while the
+audit actor is the authenticated user. The effective identity is marked matched
+and its reason starts with `مطابقة يدوية معتمدة:`. Original extracted names remain.
+The manual observation replaces the effective extracted identity number; its
+prior value remains in the immutable review and audit records.
+
+Late OCR updates cannot overwrite a stored manual decision. Existing binding
+and exact-identity guards remain active. Rollback disables new reviews while
+retaining approved evidence, audit history and overwrite protection.
+
 ## Cancelled schedule closure preserving claims — deployed (2026-09-06)
 
 Migration `20260906202626` adds `preview_contract_schedule_closure_v1` and
@@ -229,6 +320,8 @@ all receipts and request evidence. Not deployed. See
 
 ## Legal Memo Evidence Workflow (2026-08-26)
 
+- `validate_taqadi_filing_payload_v1_pre_failure_containment(...)` now derives traffic document requirements from `calculate_legal_claim_statement_v4(...)` and the stored case scope (migration `20260907151151`). Outstanding penalties without proof do not block a full rental claim that excludes them. Included traffic, traffic-only cases, and submitted traffic documents require the generated report plus registered official evidence. New proof source IDs must match the company/contract; the outer validator continues to enforce the signed-contract identity and company scope. The validator is read-only and is also used by the portfolio preflight action.
+
 - `legal_case_litigation_profile`: one editable legal profile per company/contract. It records the selected legal path, confirmed end source, renewal, contract clauses, custody/return evidence, security deposit, documented retention rate, Article 262 exception, contractual-compensation evidence, review approval state, and verified defendant service address/email with their source and evidence document. Contractual compensation supports `fixed`, `daily`, `monthly` (once per distinct unpaid due month), and `per_invoice`, but remains disabled unless its signed clause and source document are linked. `defendant_email_status` distinguishes `unknown`, `verified`, and `unavailable`; when `defendant_contact_source = 'customer_record'`, `customers.email` is the canonical defendant email and the profile does not duplicate it. The claimant/representative email must never be substituted for the defendant. Filing preparation no longer requires the owner to approve this row: the trusted Taqadi worker records `approval_source = 'taqadi_agent'`, `approval_job_id`, and `approval_worker_id` only after the live portal review matches the frozen memo and current claim.
 - `legal_case_formal_notices`: formal written notices only. A confirmed delivery requires both a delivery date and a linked proof document; automated `reminder_history` rows are not treated as formal notices.
 - `legal_notice_agent_jobs`: automatic WhatsApp formal-notice ledger. One `payment_demand` is allowed per contract/delinquency cycle; dispatch is autonomous, while `delivery_confirmed` remains false until an Ultramsg delivered/read acknowledgement is stored as a `formal_notice_proof` contract document.
@@ -246,6 +339,7 @@ all receipts and request evidence. Not deployed. See
 - Manual violations created from contract details use `traffic_violations.manual_request_id` and `create_manual_contract_traffic_violation_v1(...)`; the command validates tenant, contract, vehicle, date, and amount atomically and is safe to retry without duplicate rows or duplicate WhatsApp attempts.
 - Pending migration `20260903181343` adds `revert_contract_from_legal_v2(...)`: atomically cancels unfiled Taqadi jobs/preparations, closes the internal legal case, clears the live delinquency marker, restores the contract and derived vehicle state, and records a retry-safe `contract_operations_log.idempotency_key`. Filed, actively submitting, or submission-uncertain cases fail closed. Active company profiles plus company-scoped administrative roles authorize ordinary callers. Case/job/preparation rows are locked before state checks; conflicting writers fail with `55P03` instead of proceeding with stale state. `guard_taqadi_queue_open_case_v1` prevents enqueue/restart against a closed case. As of the 2026-09-03 audit these objects are tested locally, not deployed.
 - `complete_legal_transfer_readiness_with_scope_v1(...)` freezes the selected scope in the readiness audit and derives traffic-only amounts from unpaid `penalties` rows after requiring a `violations_proof` document. `convert_contract_to_legal_with_scope_v1(...)` rejects a scope that differs from the latest completed review and persists the scope and final amount on the case and conversion audit.
+- `restart_verified_unsubmitted_taqadi_job_v1(...)` restarts a stopped submission-uncertain job only after explicit operator verification that the portal request was not filed. Its public invoker calls a private implementation with tenant/contract authorization, job-version locking, receipt/reference/active-work blockers and idempotency. It rebuilds the existing preparation via `restart_taqadi_filing_job_v2`, resets attempts, and retains verification events and prior artifacts.
 - `complete_taqadi_filing_job_v1(...)` records a proven portal reference, preserves `filed` as an audited filing event, and atomically advances the legal case to `awaiting_acceptance`; court acceptance remains a later explicit workflow event.
 - `calculate_legal_claim_amount_v1(...)` is the database-side canonical claim: for traffic-only cases it returns the evidenced unpaid-penalty total; otherwise due invoices are used first, then due legacy schedule rows only for months with no valid invoice. Cancelled/future rows are excluded and evidenced contractual compensation, damages, violations, retention, and the security-deposit deduction are applied by the same rules as the page.
 - `calculate_legal_claim_statement_v4(...)` is the unified transfer/memo statement. It discloses every included and excluded component, uses `penalties` as the authoritative traffic source, excludes legacy `late_fine_amount` unless an evidenced contractual-compensation profile exists, and caps every component at the initial judgment date. `get_legal_transfer_readiness_v2(...)` and `complete_legal_transfer_readiness_v2(...)` use this statement.
@@ -2601,6 +2695,42 @@ documented in `docs/plans/2026-09-04-legal-claim-source-audit.md` (not deployed)
 
 ### `contract_documents`
 
+Saved PDF orientation (2026-09-07): `contract_document_orientation_revisions` stores
+the manual actor or explicit machine agent/request identity and orientation evidence.
+`contract_document_orientation_checks` stores the last source fingerprint, detector
+version, status, page/review counts, retry time and geometry scores for each document.
+Both tables restrict reads to the current company; only the service writes them.
+`contract_orientation_candidates_v1` selects new/changed/due signed PDFs;
+`process_automatic_contract_orientation_v1` requires a live governed machine lease,
+an enabled policy, an allowed pause state, page consensus and verified upright postchecks. It preserves
+the same filing locks and original-file history as the interactive operation.
+The 2026-09-08 activation stores an explicit document-agent-only exception for
+the existing WhatsApp pause in `agent_safety_policies.evidence_policy.approved_pause`.
+The exact company, reason and pause timestamp must match; a new pause or kill
+switch still blocks corrections. Global controls and other agents are unchanged.
+
+The revision history also stores
+the original/current storage paths, SHA-256 hashes, per-page quarter turns, actor,
+source snapshot and idempotency request. Only the authenticated
+`correct-contract-document-orientation` Edge Function may invoke the service-only
+`process_contract_document_orientation_v1` transaction. It preserves document ID
+and identity/evidence state, checks source revision and actor permissions, and
+blocks changes to filed or queued evidence. Quarantined files may be rotated for
+review without becoming approved. Old and corrected storage objects cannot be
+overwritten or deleted by clients. Rollback disables correction but retains audit
+history and originals. The contract preview downloads the earliest original from
+the correction history; legal preparation uses the current `file_path`.
+
+Identity matching v2 (2026-09-07): `legal_identity_engine_version` (nullable text) and
+`legal_identity_details` (nullable jsonb) store original/normalized values, reason code,
+source page/crop, OCR confidence, file SHA-256 and comparison context revision.
+`contract_identity_assessments` records append-only previous/new decisions with company,
+contract, document, time, actor (when available) and method. Authenticated users can read
+only their company's history; they cannot write history or invoke the automated decision RPC.
+The service-only `contract_identity_revision_v2` and `record_contract_identity_assessment_v2`
+prevent stale results and save the decision plus audit atomically. Customer identity changes
+or contract customer reassignment invalidate previously matched copies for a new review.
+
 **Columns**: 34
 
 #### Required Columns
@@ -3244,6 +3374,13 @@ view exposes `effective_contract_id` without rewriting the original attachment.
 ---
 
 ### `customer_documents`
+
+Manual PDF orientation revisions are stored in `customer_document_orientation_revisions`
+(migration `20260908045230_customer_document_manual_orientation.sql`).
+The service-only `process_customer_document_orientation_v1` RPC retains the customer
+document ID and original file, verifies ownership through a contract, and checks
+filing activity across the customer's contracts before changing its file path.
+History is company-scoped for authenticated reads; only the server writes it.
 
 **Columns**: 14
 

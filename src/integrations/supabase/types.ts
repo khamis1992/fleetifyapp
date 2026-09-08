@@ -4176,6 +4176,12 @@ export type Database = {
         }
         Relationships: []
       }
+      contract_identity_assessments: {
+        Row: { id: string; company_id: string; contract_id: string; document_id: string; recorded_at: string; actor_id: string | null; method: string; previous_result: Json; result: Json }
+        Insert: { id?: string; company_id: string; contract_id: string; document_id: string; recorded_at?: string; actor_id?: string | null; method: string; previous_result: Json; result: Json }
+        Update: { id?: string; company_id?: string; contract_id?: string; document_id?: string; recorded_at?: string; actor_id?: string | null; method?: string; previous_result?: Json; result?: Json }
+        Relationships: []
+      }
       contract_documents: {
         Row: {
           ai_match_confidence: number | null
@@ -4191,6 +4197,8 @@ export type Database = {
           id: string
           id_scan_status: string
           is_required: boolean | null
+          legal_identity_details: Json | null
+          legal_identity_engine_version: string | null
           legal_identity_checked_at: string | null
           legal_identity_expires_at: string | null
           legal_evidence_state: string
@@ -4232,6 +4240,8 @@ export type Database = {
           id?: string
           id_scan_status?: string
           is_required?: boolean | null
+          legal_identity_details?: Json | null
+          legal_identity_engine_version?: string | null
           legal_identity_checked_at?: string | null
           legal_identity_expires_at?: string | null
           legal_evidence_state?: string
@@ -4273,6 +4283,8 @@ export type Database = {
           id?: string
           id_scan_status?: string
           is_required?: boolean | null
+          legal_identity_details?: Json | null
+          legal_identity_engine_version?: string | null
           legal_identity_checked_at?: string | null
           legal_identity_expires_at?: string | null
           legal_evidence_state?: string
@@ -29827,6 +29839,26 @@ export type Database = {
       }
     }
     Functions: {
+      check_taqadi_filing_control_v1: {
+        Args: { p_job_id: string; p_worker_id: string; p_acknowledge?: boolean }
+        Returns: Json
+      }
+      sync_taqadi_approved_case_value_v1: {
+        Args: { p_job_id: string; p_worker_id: string }
+        Returns: undefined
+      }
+      review_contract_document_identity_v1: {
+        Args: {
+          p_company_id: string
+          p_contract_id: string
+          p_document_id: string
+          p_revision?: string
+          p_observed_id?: string
+          p_reason?: string
+          p_confirmed?: boolean
+        }
+        Returns: Json
+      }
       amend_contract_vehicle_and_extension_atomic: {
         Args: {
           p_company_id: string

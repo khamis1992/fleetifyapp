@@ -1,4 +1,6 @@
-import type { ReactNode } from 'react';
+import { requiresViolationDocuments } from '../utils/violationDocumentRequirements';
+import { FilingPackageCheckButton } from './FilingPackageCheckButton';
+import { useState, type ReactNode } from 'react';
 import { motion } from 'framer-motion';
 import {
   AlertCircle,
@@ -30,6 +32,8 @@ import {
 } from '../utils/documentUploadRouting';
 import { getCriminalComplaintEligibility } from '../utils/legalCaseWorkflow';
 import { printHtmlDocumentAsPdf } from '../utils/printHtmlDocument';
+import { getContractDocumentReview } from '../utils/contractDocumentSelection';
+import { ContractMatchingDialog } from './ContractMatchingDialog';
 
 const baseMandatoryDocIds: (keyof DocumentsState)[] = [
   'memo',
@@ -82,16 +86,18 @@ function DocumentUploadControl({
   document,
   onUpload,
   compact = false,
+  hasExistingFile = false,
 }: {
   document: DocumentState;
   onUpload: (file: File) => void | Promise<void>;
   compact?: boolean;
+  hasExistingFile?: boolean;
 }) {
   const isReady = document.status === 'ready';
   const uploadRoute = getLegalDocumentUploadRoute(document.id as keyof DocumentsState);
   const label = isReady
     ? document.id === 'violationsEvidence' ? 'إضافة ملف' : 'تغيير الملف'
-    : 'رفع الملف';
+    : hasExistingFile ? 'رفع نسخة أخرى' : 'رفع الملف';
 
   return (
     <label
@@ -124,6 +130,8 @@ function DocumentLedgerRow({
   onUpload,
   onDownloadPdf,
   onDownloadDocx,
+  contractReview,
+  onReview,
 }: {
   document: DocumentState;
   index: number;
@@ -131,28 +139,40 @@ function DocumentLedgerRow({
   onUpload?: (file: File) => void;
   onDownloadPdf?: () => void;
   onDownloadDocx?: () => void;
+  contractReview?: ReturnType<typeof getContractDocumentReview>;
+  onReview?: () => void;
 }) {
   const { t } = useFleetifyTranslation('ui');
   const isReady = document.status === 'ready';
   const isWorking = document.status === 'generating' || document.isUploading;
   const uploadRoute = getLegalDocumentUploadRoute(document.id as keyof DocumentsState);
+  const needsReview = !isReady && !isWorking && (contractReview?.kind === 'review' || contractReview?.kind === 'conflict');
+  const displayStatus = needsReview ? 'review' : document.status;
 
   return (
-    <div className={`lawsuit-document-row is-${document.status}`}>
+    <div className={`lawsuit-document-row is-${displayStatus}`}>
       <div className="lawsuit-document-index">{String(index + 1).padStart(2, '0')}</div>
       <div className="lawsuit-document-icon">{docIcons[document.id] || <FileText className="h-4 w-4" />}</div>
       <div className="lawsuit-document-main">
         <strong>{document.name}</strong>
         <span>{document.description}</span>
         {uploadRoute && <small className="lawsuit-document-destination">{uploadRoute.scopeLabel}</small>}
-        {(document.error || document.uploadError) && <small>{document.error?.message || document.uploadError}</small>}
+        {contractReview && !isReady && contractReview.copies.length > 0 && (
+          <span className="lawsuit-document-review-copy">النسخة المرفوعة: {contractReview.copies.map((copy) => copy.document_name || 'عقد موقّع').join('، ')}</span>
+        )}
+        {(document.error || document.uploadError || (contractReview && !isReady)) && <small className="lawsuit-document-review-message">{contractReview && !isReady && contractReview.kind !== 'ready' ? contractReview.message : document.error?.message || document.uploadError}</small>}
       </div>
-      <Badge className={`lawsuit-doc-status is-${document.status}`}>
+      <Badge className={`lawsuit-doc-status is-${displayStatus}`}>
         {isReady && <CheckCircle2 className="h-3.5 w-3.5" />}
         {isWorking && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
-        {statusLabel(document.status)}
+        {contractReview && !isReady && !isWorking ? contractReview.kind === 'ready' ? 'موجود — قيد التجهيز' : contractReview.label : statusLabel(document.status)}
       </Badge>
       <div className="lawsuit-document-actions">
+        {onReview && !isReady && (
+          <Button type="button" variant="outline" size="sm" onClick={onReview}>
+            <FileCheck className="h-4 w-4" />مراجعة العقد والمطابقة
+          </Button>
+        )}
         {isReady && document.url && (
           <Button type="button" variant="ghost" size="icon" onClick={() => window.open(document.url || '', '_blank')} aria-label="معاينة المستند">
             <Eye className="h-4 w-4" />
@@ -194,7 +214,7 @@ function DocumentLedgerRow({
           </Button>
         )}
         {onUpload && (
-          <DocumentUploadControl document={document} onUpload={onUpload} />
+          <DocumentUploadControl document={document} onUpload={onUpload} hasExistingFile={Boolean(contractReview?.copies.length)} />
         )}
       </div>
     </div>
@@ -202,10 +222,13 @@ function DocumentLedgerRow({
 }
 
 export function LegalDocuments() {
+  const [reviewOpen, setReviewOpen] = useState(false);
   const { state, actions } = useLawsuitPreparationContext();
   const { documents, overdueInvoices, ui } = state;
-  const hasSupportedViolations = (state.calculations?.violationsCount || 0) > 0;
+  const hasSupportedViolations = requiresViolationDocuments(state);
   const criminalComplaintEligibility = getCriminalComplaintEligibility(state);
+  const contractReview = getContractDocumentReview(state.contractEvidenceDocuments || []);
+  const openContractReview = state.contractId ? () => setReviewOpen(true) : undefined;
 
   const mandatoryDocIds = hasSupportedViolations
     ? [...baseMandatoryDocIds, 'violationsEvidence' as const]
@@ -220,13 +243,14 @@ export function LegalDocuments() {
     });
 
   const readyCount = mandatoryDocs.filter((doc) => doc.status === 'ready').length;
-  const missingDocs = mandatoryDocs.filter((doc) => doc.status !== 'ready');
+  const pendingDocs = mandatoryDocs.filter((doc) => doc.status !== 'ready');
   const readiness = Math.round((readyCount / mandatoryDocs.length) * 100);
   const hasContentForZip = mandatoryDocs.some((doc) => doc.status === 'ready');
 
   return (
     <motion.div className="lawsuit-documents-redesign" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}>
-      <section className="lawsuit-section-panel lawsuit-doc-hero">
+      {reviewOpen && <ContractMatchingDialog key={state.contractId} onClose={() => setReviewOpen(false)} />}
+      <section id="lawsuit-documents" tabIndex={-1} className="lawsuit-section-panel lawsuit-doc-hero">
         <div className="lawsuit-section-heading">
           <div>
             <Badge className="bg-[#EAF2F9] text-[#173A63] hover:bg-[#EAF2F9]">حافظة المستندات</Badge>
@@ -240,6 +264,7 @@ export function LegalDocuments() {
         </div>
 
         <div className="lawsuit-doc-actions-bar">
+          <FilingPackageCheckButton />
           <Button type="button" onClick={actions.downloadInvoicesAsZip} disabled={overdueInvoices.length === 0 || ui.isDownloadingInvoices} variant="outline">
             {ui.isDownloadingInvoices ? <Loader2 className="h-4 w-4 animate-spin" /> : <Package className="h-4 w-4" />}
             تحميل مستندات الاستحقاق ({overdueInvoices.length})
@@ -273,28 +298,34 @@ export function LegalDocuments() {
                 : undefined}
               onDownloadPdf={doc.id === 'memo' ? actions.downloadMemoPdf : undefined}
               onDownloadDocx={doc.id === 'memo' ? actions.downloadMemoDocx : undefined}
+              contractReview={doc.id === 'contract' ? contractReview : undefined}
+              onReview={doc.id === 'contract' ? openContractReview : undefined}
             />
           ))}
         </div>
       </section>
 
-      {missingDocs.length > 0 && (
+      {pendingDocs.length > 0 && (
         <section className="lawsuit-missing-panel">
           <AlertCircle className="h-5 w-5" />
           <div className="lawsuit-missing-content">
-            <strong>النواقص الحالية</strong>
-            <span>أكمل الملفات من هنا، وسيحفظ كل ملف تلقائيًا في الحافظة المرتبطة به.</span>
+            <strong>مستندات تحتاج إجراء</strong>
+            <span>راجع حالة كل مستند: قد يحتاج إلى رفع أو توليد أو اعتماد المطابقة لنسخة موجودة.</span>
             <div className="lawsuit-missing-list">
-              {missingDocs.map((doc) => {
+              {pendingDocs.map((doc) => {
                 const uploadable = isUploadableDocumentId(doc.id as keyof DocumentsState);
                 const route = getLegalDocumentUploadRoute(doc.id as keyof DocumentsState);
                 return (
                   <div className="lawsuit-missing-item" key={doc.id}>
                     <div>
                       <strong>{doc.name}</strong>
-                      <small>{route?.scopeLabel || 'يُنشأ تلقائيًا من بيانات القضية'}</small>
+                      <small>{doc.id === 'contract' ? `حالة النسخة: ${contractReview.kind === 'ready' ? 'موجود — قيد التجهيز' : contractReview.label}` : route?.scopeLabel || 'يُنشأ تلقائيًا من بيانات القضية'}</small>
                     </div>
-                    {uploadable ? (
+                    {doc.id === 'contract' && openContractReview ? (
+                      <Button type="button" size="sm" variant="outline" onClick={openContractReview}>
+                        مراجعة العقد والمطابقة
+                      </Button>
+                    ) : uploadable ? (
                       <DocumentUploadControl
                         document={doc}
                         compact

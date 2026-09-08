@@ -29,6 +29,7 @@ import {
 } from './portal-stage';
 import {
   HumanInterventionError,
+  ManualStopRequestedError,
   SubmissionUncertainError,
   type FilingPayload,
   type FilingResult,
@@ -6642,6 +6643,7 @@ export class TaqadiPortal {
     onBeforeApprovalClick?: () => Promise<void>,
     expected?: FilingPayload,
     timeoutMs = 60_000,
+    checkControl?: (force?: boolean) => Promise<void>,
   ): Promise<FilingResult> {
     if (await this.captchaVisible()) {
       throw new HumanInterventionError('ظهر تحقق بشري قبل الاعتماد النهائي', 'CAPTCHA_REQUIRED', { url: this.page.url() });
@@ -6655,13 +6657,15 @@ export class TaqadiPortal {
     }
     const previousReceipt = await this.visibleReceipt(expected);
     await onBeforeApprovalClick?.();
-    await approval.click();
+    await checkControl?.(true);
+    await approval.click({ timeout: Math.min(timeoutMs, 15_000), noWaitAfter: true });
     let confirmed = false;
     const deadline = Date.now() + timeoutMs;
     try {
       while (Date.now() < deadline) {
         const receipt = await this.visibleReceipt(expected);
         if (receipt && receipt.referenceNumber !== previousReceipt?.referenceNumber) return receipt;
+        await checkControl?.();
         const dialog = await this.firstVisible([
           this.page.locator('.modal.in:visible, .modal.show:visible, [role="dialog"]:visible, .k-window:visible'),
         ]);
@@ -6671,6 +6675,7 @@ export class TaqadiPortal {
             dialog.getByRole('link', { name: /^\s*(?:نعم(?:[،,]?\s*[اإأ]عتماد)?|تأكيد(?:\s+ال[اإأ]عتماد)?|[اإأ]عتماد)\s*$/i }),
           ]);
           if (confirm && await confirm.isEnabled()) {
+            await checkControl?.(true);
             // Mark before clicking: a delayed dialog or lost response must
             // never cause a second confirmation click.
             confirmed = true;
@@ -6686,6 +6691,7 @@ export class TaqadiPortal {
         await this.page.waitForTimeout(Math.min(200, Math.max(1, deadline - Date.now())));
       }
     } catch (error) {
+      if (error instanceof ManualStopRequestedError) throw error;
       throw new SubmissionUncertainError(
         'تم الضغط على الاعتماد لكن تعذر التحقق من النتيجة. يجب مراجعة طلبات تقاضي قبل إعادة المحاولة.',
         { url: this.page.url(), cause: String(error) },

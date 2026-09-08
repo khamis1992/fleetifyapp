@@ -1,5 +1,5 @@
 import { LegalPageHeader } from '@/components/legal/workspace/LegalPageHeader';
-﻿/* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -1309,6 +1309,7 @@ const FinancialDelinquencyPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'queue' | 'search'>('queue');
   const [queueSearch, setQueueSearch] = useState('');
   const [queueSort, setQueueSort] = useState<LegalQueueAmountSort>('amount_desc');
+  const [queueStage, setQueueStage] = useState<LegalWorkflowStage | 'all'>('all');
   const [candidateSearch, setCandidateSearch] = useState('');
   const [candidateType, setCandidateType] = useState<'all' | CandidateSource>('all');
   const [candidateSort, setCandidateSort] = useState<CandidateSort>('amount_desc');
@@ -1390,15 +1391,24 @@ const FinancialDelinquencyPage: React.FC = () => {
 
   const filteredQueue = useMemo(() => {
     const needle = queueSearch.trim().toLowerCase();
-    const matchingItems = !needle ? legalQueue : legalQueue.filter((item) =>
-      item.customerName.toLowerCase().includes(needle) ||
-      item.contract.contract_number.toLowerCase().includes(needle) ||
-      item.phone?.toLowerCase().includes(needle) ||
-      item.vehicleLabel.toLowerCase().includes(needle) ||
-      item.legalCaseNumber?.toLowerCase().includes(needle)
-    );
+    const matchingItems = legalQueue.filter((item) => {
+      const matchesStage = queueStage === 'all' || item.workflowStage === queueStage;
+      const matchesSearch = !needle ||
+        item.customerName.toLowerCase().includes(needle) ||
+        item.contract.contract_number.toLowerCase().includes(needle) ||
+        item.phone?.toLowerCase().includes(needle) ||
+        item.vehicleLabel.toLowerCase().includes(needle) ||
+        item.legalCaseNumber?.toLowerCase().includes(needle);
+      return matchesStage && matchesSearch;
+    });
     return sortLegalQueueByAmount(matchingItems, queueSort);
-  }, [legalQueue, queueSearch, queueSort]);
+  }, [legalQueue, queueSearch, queueSort, queueStage]);
+
+  const hasQueueFilters = queueSearch.trim() !== '' || queueStage !== 'all';
+  const resetQueueFilters = () => {
+    setQueueSearch('');
+    setQueueStage('all');
+  };
 
   const candidates = useMemo(() => {
     const needle = candidateSearch.trim().toLowerCase();
@@ -1941,16 +1951,35 @@ const FinancialDelinquencyPage: React.FC = () => {
 
           <TabsContent value="queue" className="space-y-4">
             <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
-              <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_220px]">
-                <div className="relative">
-                <Search className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#94A3B8]" />
-                <Input
-                  value={queueSearch}
-                  onChange={(event) => setQueueSearch(event.target.value)}
-                  placeholder="ابحث في الملفات المحولة: اسم العميل، رقم العقد، رقم القضية، اللوحة..."
-                  className="h-12 rounded-xl border-slate-200 bg-[#F6F8FB] pr-10"
-                />
+              <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-[minmax(0,1fr)_230px_235px]">
+                <div className="relative sm:col-span-2 xl:col-span-1">
+                  <Search className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#94A3B8]" />
+                  <Input
+                    value={queueSearch}
+                    onChange={(event) => setQueueSearch(event.target.value)}
+                    aria-label="البحث في الملفات المحولة"
+                    placeholder="ابحث في الملفات المحولة: اسم العميل، رقم العقد، رقم القضية، اللوحة..."
+                    className="h-12 rounded-xl border-slate-200 bg-[#F6F8FB] pr-10"
+                  />
                 </div>
+                <Select
+                  dir="rtl"
+                  value={queueStage}
+                  onValueChange={(value) => setQueueStage(value as LegalWorkflowStage | 'all')}
+                >
+                  <SelectTrigger
+                    aria-label="حالة الدعوى"
+                    className="h-12 w-full rounded-xl border-slate-200 bg-[#F6F8FB] text-slate-700"
+                  >
+                    <SelectValue placeholder="جميع حالات الدعوى" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">جميع حالات الدعوى</SelectItem>
+                    {LEGAL_WORKFLOW_STAGES.filter((stage) => activeWorkflowStages.includes(stage.value)).map((stage) => (
+                      <SelectItem key={stage.value} value={stage.value}>{stage.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
                 <Select
                   value={queueSort}
                   onValueChange={(value) => setQueueSort(value as LegalQueueAmountSort)}
@@ -1968,14 +1997,28 @@ const FinancialDelinquencyPage: React.FC = () => {
                   </SelectContent>
                 </Select>
               </div>
+              <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
+                <p role="status" className="text-sm text-slate-500">
+                  عرض {filteredQueue.length} من {legalQueue.length} ملف
+                </p>
+                {hasQueueFilters && (
+                  <Button variant="ghost" size="sm" onClick={resetQueueFilters} className="text-slate-700">
+                    مسح الفلاتر
+                  </Button>
+                )}
+              </div>
             </div>
 
             {filteredQueue.length === 0 ? (
               <div className="rounded-lg border border-dashed border-slate-300 bg-white p-10 text-center shadow-sm">
                 <ShieldCheck className="mx-auto h-12 w-12 text-[#22C7A1]" />
-                <h2 className="mt-4 text-xl font-bold text-[#020617]">لا توجد عقود محولة قانونيًا</h2>
+                <h2 className="mt-4 text-xl font-bold text-[#020617]">
+                  {hasQueueFilters ? 'لا توجد ملفات مطابقة للبحث والفلاتر' : 'لا توجد عقود محولة قانونيًا'}
+                </h2>
                 <p className="mt-2 text-sm text-[#94A3B8]">
-                  عند تحويل عقد من صفحة تفاصيل العقد سيظهر هنا فورًا. لا يتم إدراج المتأخرين تلقائيًا.
+                  {hasQueueFilters
+                    ? 'غيّر حالة الدعوى أو عبارة البحث، أو امسح الفلاتر لعرض جميع الملفات.'
+                    : 'عند تحويل عقد من صفحة تفاصيل العقد سيظهر هنا فورًا. لا يتم إدراج المتأخرين تلقائيًا.'}
                 </p>
               </div>
             ) : (

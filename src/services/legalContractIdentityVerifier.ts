@@ -56,22 +56,23 @@ export const normalizeLegalContractDocumentIdentityRow = (
   },
 ): LegalContractDocumentIdentityRow => ({
   ...document,
-  legal_identity_match_status: normalizeLegalIdentityMatchStatus(
-    document.legal_identity_match_status,
-  ),
+  legal_identity_match_status: normalizeLegalIdentityMatchStatus(document.legal_identity_match_status),
 });
 
 export const toLegalIdentityVerification = (
   document: LegalContractDocumentIdentityRow,
-): LegalContractIdentityVerification => ({
-  status: document.legal_identity_match_status,
-  expectedName: document.legal_identity_expected_name,
-  extractedName: document.legal_identity_extracted_name,
-  expectedId: document.legal_identity_expected_id,
-  extractedId: document.legal_identity_extracted_id,
-  reason: document.legal_identity_match_reason,
-  checkedAt: document.legal_identity_checked_at,
-});
+): LegalContractIdentityVerification => {
+  const normalized = normalizeLegalContractDocumentIdentityRow(document);
+  return {
+    status: normalized.legal_identity_match_status,
+    expectedName: normalized.legal_identity_expected_name,
+    extractedName: normalized.legal_identity_extracted_name,
+    expectedId: normalized.legal_identity_expected_id,
+    extractedId: normalized.legal_identity_extracted_id,
+    reason: normalized.legal_identity_match_reason,
+    checkedAt: normalized.legal_identity_checked_at,
+  };
+};
 
 async function throwEdgeFunctionError(
   error: unknown,
@@ -98,27 +99,18 @@ async function throwEdgeFunctionError(
 export async function verifyLegalContractDocumentIdentity(
   companyId: string,
   document: LegalContractDocumentIdentityRow,
+  options: { force?: boolean } = {},
 ) {
-  if (document.legal_identity_match_status !== 'pending') return document;
+  if (!options.force && document.legal_identity_match_status !== 'pending') return document;
   if (!document.file_path) throw new Error('نسخة العقد لا تحتوي على ملف قابل للفحص');
 
   if (document.mime_type?.startsWith('image/')) {
-    const { error } = await supabase.functions.invoke('contract-id-scanner', {
+    const { data: scanResult, error } = await supabase.functions.invoke('contract-id-scanner', {
       body: { mode: 'document', contractDocumentId: document.id },
     });
     if (error) await throwEdgeFunctionError(error, 'تعذر فحص نسخة العقد');
+    if (scanResult?.outcome === 'failed') throw new Error('تعذر إكمال فحص الهوية؛ راجع حالة الوكيل أو أعد المحاولة.');
   } else if (document.mime_type === 'application/pdf') {
-    const { data: storedOcrResult, error: storedOcrError } = await supabase.functions.invoke(
-      'contract-id-scanner',
-      {
-        body: { mode: 'stored_ocr', contractDocumentId: document.id },
-      },
-    );
-    if (storedOcrError) {
-      await throwEdgeFunctionError(storedOcrError, 'تعذر استخدام نتيجة الفحص المحفوظة');
-    }
-
-    if (storedOcrResult?.outcome === 'stored_ocr_unavailable') {
       const { data: blob, error: downloadError } = await supabase.storage
         .from('contract-documents')
         .download(document.file_path);
@@ -131,12 +123,12 @@ export async function verifyLegalContractDocumentIdentity(
         document.document_name || 'signed-contract.pdf',
         { type: 'application/pdf' },
       );
-      const pageImages = await loadSignedContractPages(file);
+      const pageImages = await loadSignedContractPages(file, { readContractMarkers: false });
       const pages = pageImages.map((page, index) => ({
         pageNumber: index + 1,
         imageBase64: page.image,
       }));
-      const { error } = await supabase.functions.invoke('contract-id-scanner', {
+      const { data: scanResult, error } = await supabase.functions.invoke('contract-id-scanner', {
         body: {
           mode: 'pages',
           contractDocumentId: document.id,
@@ -144,7 +136,7 @@ export async function verifyLegalContractDocumentIdentity(
         },
       });
       if (error) await throwEdgeFunctionError(error, 'تعذر فحص صفحات نسخة العقد');
-    }
+      if (scanResult?.outcome === 'failed') throw new Error('تعذر إكمال فحص الصفحات؛ راجع حالة الوكيل أو أعد المحاولة.');
   } else {
     throw new Error('صيغة نسخة العقد لا تدعم فحص الهوية الآلي');
   }

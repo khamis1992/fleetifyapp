@@ -477,7 +477,7 @@ export function LegalEvidence() {
         ) : null}
       </section>
 
-      <section className="lawsuit-section-panel">
+      <section id="lawsuit-evidence-upload" tabIndex={-1} className="lawsuit-section-panel">
         <div className="lawsuit-section-heading compact">
           <div><h2>رفع مستند إثبات</h2><p>يرتبط المستند بالعقد ثم يصبح متاحاً في جميع الحقول أدناه.</p></div>
           <Badge variant="outline">{evidenceDocuments.length} مستند</Badge>
@@ -501,7 +501,7 @@ export function LegalEvidence() {
         </div>
       </section>
 
-      <section className="lawsuit-section-panel space-y-5">
+      <section id="lawsuit-contact" tabIndex={-1} className="lawsuit-section-panel space-y-5">
         <div className="lawsuit-section-heading compact">
           <div><h2>بيانات تبليغ المدعى عليه</h2><p>يعتمد النظام «الدوحة قطر» عند غياب عنوان أكثر تفصيلاً، ويمكن استبداله بعنوان فعلي موثق.</p></div>
         </div>
@@ -581,7 +581,7 @@ export function LegalEvidence() {
         </div>
       </section>
 
-      <section className="lawsuit-section-panel space-y-5">
+      <section id="lawsuit-legal-path" tabIndex={-1} className="lawsuit-section-panel space-y-5">
         <div className="lawsuit-section-heading compact"><div><h2>المسار القانوني والعقد</h2><p>اختر المسار الذي تثبته وقائع القضية، لا المسار الأعلى قيمة.</p></div></div>
         <div className="grid gap-4 md:grid-cols-3">
           <Field label="مسار القضية">
@@ -634,7 +634,7 @@ export function LegalEvidence() {
         )}
       </section>
 
-      <section className="lawsuit-section-panel space-y-5">
+      <section id="lawsuit-custody" tabIndex={-1} className="lawsuit-section-panel space-y-5">
         <div className="lawsuit-section-heading compact"><div><h2>التسليم والحيازة والرد</h2><p>حالة المركبة التشغيلية لا تستخدم كدليل حيازة.</p></div></div>
         <div className="grid gap-4 md:grid-cols-3">
           <Field label="تاريخ تسليم المركبة"><Input type="date" value={profile.delivery_handover_date || ''} onChange={(event) => updateProfile('delivery_handover_date', event.target.value || null)} /></Field>
@@ -649,7 +649,7 @@ export function LegalEvidence() {
         </div>
       </section>
 
-      <section className="lawsuit-section-panel space-y-5">
+      <section id="lawsuit-compensation" tabIndex={-1} className="lawsuit-section-panel space-y-5">
         <div className="lawsuit-section-heading compact"><div><h2>الخصومات والتعويضات المشروطة</h2><p>جميع القيم تساوي صفراً في المذكرة ما لم يكتمل السند.</p></div></div>
         <div className="grid gap-4 md:grid-cols-3">
           <Field label="وديعة الضمان"><Input type="number" min={0} value={profile.security_deposit_amount ?? ''} onChange={(event) => updateProfile('security_deposit_amount', numberOrNull(event.target.value))} /></Field>
@@ -681,7 +681,7 @@ export function LegalEvidence() {
         </Button>
       </section>
 
-      <section className="lawsuit-section-panel space-y-4">
+      <section id="lawsuit-notices" tabIndex={-1} className="lawsuit-section-panel space-y-4">
         <div className="lawsuit-section-heading compact"><div><h2>الإنذارات الرسمية</h2><p>إشعارات النظام الآلية لا تعد إنذاراً موثقاً هنا.</p></div><Badge variant="outline">{state.formalNotices.length}</Badge></div>
         <form onSubmit={submitNotice} className="grid gap-4 md:grid-cols-3">
           <Field label="نوع الإنذار"><select value={notice.notice_type || 'payment_demand'} onChange={(event) => setNotice((current) => ({ ...current, notice_type: event.target.value as FormalNotice['notice_type'] }))} className={fieldClass}><option value="payment_demand">مطالبة سداد</option><option value="vehicle_return_demand">مطالبة برد المركبة</option><option value="termination_notice">إنذار إنهاء</option></select></Field>

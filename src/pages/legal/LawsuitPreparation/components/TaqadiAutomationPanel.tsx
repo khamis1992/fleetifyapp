@@ -1,3 +1,4 @@
+import { requiresViolationDocuments } from '../utils/violationDocumentRequirements';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
@@ -5,7 +6,6 @@ import {
   Bot,
   CheckCircle2,
   ChevronDown,
-  CircleStop,
   Clock3,
   Download,
   ExternalLink,
@@ -35,13 +35,7 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from '@/components/ui/collapsible';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
+import { DropdownMenuItem } from '@/components/ui/dropdown-menu';
 import { Progress } from '@/components/ui/progress';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
@@ -79,6 +73,11 @@ import { taqadiErrorMessage } from '../utils/taqadiErrorMessage';
 import { TaqadiAgentStartButton } from '@/components/legal/TaqadiAgentStartButton';
 import { getFilingReadiness } from '../utils/filingReadiness';
 import { useTaqadiCompletionRefresh } from '../hooks/useTaqadiCompletionRefresh';
+import { TaqadiStopControl } from './TaqadiStopControl';
+import { TaqadiVerifiedRestartDialog, type VerifiedRestartTarget } from './TaqadiVerifiedRestartDialog';
+import { restartVerifiedUnsubmittedJob, type VerifiedRestartConfirmation } from '../utils/taqadiVerifiedRestart';
+import { isMemoSnapshotCurrent, prepareCurrentFilingState } from '../utils/documentGenerators';
+import { TaqadiJobActionsMenu, TAQADI_PORTAL_URL } from './TaqadiJobActionsMenu';
 
 const activeStatuses = new Set<TaqadiFilingStatus>([
   'queued',
@@ -191,7 +190,8 @@ export function TaqadiAutomationPanel({
   const { state, actions } = useLawsuitPreparationContext();
   const queryClient = useQueryClient();
   const { companyId, contractId, documents, ui } = state;
-  const [reopenDialogOpen, setReopenDialogOpen] = useState(false);
+  const [reopenDialogOpen, setReopenDialogOpen] = useState(false);
+  const [verifiedRestartTarget, setVerifiedRestartTarget] = useState<VerifiedRestartTarget | null>(null);
   const [reopenReason, setReopenReason] = useState('');
   const contractReplacementInputRef = useRef<HTMLInputElement>(null);
   const automaticallyRetriedJobRef = useRef<string | null>(null);
@@ -206,11 +206,11 @@ export function TaqadiAutomationPanel({
       documents.ibanCertificate,
       documents.representativeId,
     ];
-    if (Number(state.calculations?.violationsCount || 0) > 0) {
+    if (requiresViolationDocuments(state)) {
       required.push(documents.violations, documents.violationsEvidence);
     }
     return required.every((document) => document.status === 'ready');
-  }, [documents, state.calculations?.violationsCount]);
+  }, [documents, state.calculations?.violationsCount, state.calculations?.violationsFines, state.legalCase?.claim_scope]);
 
   const filingReadiness = useMemo(() => getFilingReadiness(state), [state]);
 
@@ -357,6 +357,31 @@ export function TaqadiAutomationPanel({
     onError: (error: Error) => toast.error(error.message),
   });
 
+  const verifiedRestartMutation = useMutation({
+    mutationFn: async (confirmation: VerifiedRestartConfirmation) => {
+      if (!companyId || !job || job.id !== confirmation.jobId || job.updated_at !== confirmation.expectedUpdatedAt) {
+        throw new Error('تغيرت حالة العملية؛ حدّث الحالة وراجعها مجددًا');
+      }
+      if (!canConvertToLegal || !filingReadiness.canStartFiling) {
+        throw new Error(blockingReason || filingReadiness.missingReasons.join('، ') || 'ملف الدعوى غير جاهز للإعادة');
+      }
+      let filingBaseState = state;
+      if (!state.memoSnapshots.some((snapshot) => isMemoSnapshotCurrent(state, snapshot))) {
+        const snapshot = await actions.freezeMemoSnapshot();
+        filingBaseState = { ...state, memoSnapshots: [snapshot, ...state.memoSnapshots] };
+      }
+      const filingState = await prepareCurrentFilingState(filingBaseState);
+      const payload = buildTaqadiFilingPayload(filingState, window.location.href);
+      return restartVerifiedUnsubmittedJob(companyId, payload, confirmation);
+    },
+    onSuccess: async () => {
+      setVerifiedRestartTarget(null);
+      toast.success('تم توثيق المراجعة وتحديث الحزمة وإعادة العملية من البداية');
+      await Promise.all([jobQuery.refetch(), eventsQuery.refetch(), legalCaseQuery.refetch()]);
+    },
+    onError: (error: unknown) => toast.error(taqadiErrorMessage(error) || 'تعذرت إعادة البدء'),
+  });
+
   const canAutomaticallyRecoverLegacyReview = useMemo(
     () => isSafeLegacyReviewMismatchRetry(job, eventsQuery.data ?? [], {
       caseTitle: state.taqadiData?.caseTitle,
@@ -434,6 +459,19 @@ export function TaqadiAutomationPanel({
     onError: (error: Error) => toast.error(error.message),
   });
 
+  const refreshStatusMutation = useMutation({
+    mutationFn: async () => {
+      await Promise.all([
+        jobQuery.refetch({ throwOnError: true }),
+        eventsQuery.refetch({ throwOnError: true }),
+        artifactsQuery.refetch({ throwOnError: true }),
+        legalCaseQuery.refetch({ throwOnError: true }),
+      ]);
+    },
+    onSuccess: () => toast.success('تم تحديث حالة العملية وسجل الوكيل والمرفقات'),
+    onError: (error: Error) => toast.error(taqadiErrorMessage(error) || 'تعذر تحديث حالة العملية'),
+  });
+
   const cancelMutation = useMutation({
     mutationFn: async () => {
       if (!companyId || !job) throw new Error('تعذر تحديد عملية الرفع');
@@ -444,8 +482,8 @@ export function TaqadiAutomationPanel({
       );
     },
     onSuccess: async () => {
-      toast.success('تم إلغاء عملية الرفع');
-      await jobQuery.refetch();
+      toast.success('تم تسجيل طلب إيقاف الوكيل');
+      await Promise.all([jobQuery.refetch(), eventsQuery.refetch()]);
     },
     onError: (error: Error) => toast.error(error.message),
   });
@@ -469,13 +507,17 @@ export function TaqadiAutomationPanel({
     onError: (error: Error) => toast.error(error.message),
   });
 
-  const isActive = Boolean(job && activeStatuses.has(job.status));
-  const requiresSubmissionVerification = job?.error_code === 'SUBMISSION_UNCERTAIN';
+  const externalFilingRecorded = job?.error_code === 'EXTERNAL_FILING_RECORDED';
+  const jobStatusLabel = externalFilingRecorded ? 'تم توثيق الإيداع وإقفال مهمة الوكيل'
+    : job?.current_step === 'receipt_sync_pending' ? 'تم الإيداع — تحديث النظام قيد الاستكمال'
+      : job ? TAQADI_STATUS_LABELS[job.status] : '';
+  const isActive = Boolean(job && activeStatuses.has(job.status));
+  const requiresSubmissionVerification = Boolean(job?.error_code?.startsWith('SUBMISSION_UNCERTAIN'));
 
   const reachedAttemptLimit = Boolean(
     job && job.attempt_count >= job.max_attempts,
   );
-  const canExplicitlyRestart = job?.status === 'cancelled';
+  const canExplicitlyRestart = job?.status === 'cancelled' && !externalFilingRecorded;
   const canReopenLegalCase = isLegalCaseReopenable(legalCase);
   const requiresExistingDraftResume = Boolean(job?.status === 'failed' && job.progress >= 44);
   const requiresFreshPackage = Boolean(
@@ -487,7 +529,7 @@ export function TaqadiAutomationPanel({
     ),
   );
   const packageRefreshBlockReason = (() => {
-    if (!requiresFreshPackage) return null;
+    if (!requiresFreshPackage && !requiresSubmissionVerification) return null;
     if (!requiredReady) {
       return filingReadiness.missingReasons[0] || 'أكمل متطلبات الدعوى قبل تحديث الحزمة وإعادة الرفع.';
     }
@@ -628,14 +670,14 @@ export function TaqadiAutomationPanel({
             <div className="flex items-center gap-2">
               {activeStatuses.has(job.status)
                 ? <Loader2 className="h-5 w-5 animate-spin text-sky-600" />
-                : job.status === 'filed'
+                : job.status === 'filed' || externalFilingRecorded
                   ? <CheckCircle2 className="h-5 w-5 text-emerald-600" />
                   : <AlertCircle className="h-5 w-5 text-amber-600" />}
               <div>
                 <strong className="block text-sm text-slate-950">
-                  {job.current_step === 'receipt_sync_pending' ? 'تم الإيداع — تحديث النظام قيد الاستكمال' : TAQADI_STATUS_LABELS[job.status]}
+                  {jobStatusLabel}
                 </strong>
-                <span className="text-xs text-slate-500">{job.current_step}</span>
+                <span className="text-xs text-slate-500">{externalFilingRecorded ? 'الإيداع مسجل في سير عمل القضية' : job.current_step}</span>
               </div>
             </div>
             <Badge variant="outline" className={statusTone[job.status]}>
@@ -643,15 +685,20 @@ export function TaqadiAutomationPanel({
             </Badge>
           </div>
 
-          <div className="space-y-2">
+          {!externalFilingRecorded && <div className="space-y-2">
             <Progress value={job.progress} className="h-2" />
             <div className="flex justify-between text-xs text-slate-500">
-              <span>{job.current_step === 'receipt_sync_pending' ? 'تم الإيداع — تحديث النظام قيد الاستكمال' : TAQADI_STATUS_LABELS[job.status]}</span>
+              <span>{jobStatusLabel}</span>
               <span>{job.progress}%</span>
             </div>
-          </div>
-
-          {job.status === 'waiting_login' && (
+          </div>}
+
+          {externalFilingRecorded && <Alert className="border-emerald-200 bg-emerald-50">
+            <CheckCircle2 className="h-4 w-4 text-emerald-700" />
+            <AlertDescription className="text-emerald-950">تم إقفال مهمة الوكيل تلقائيًا بعد تسجيل الإيداع. تابع القضية من سير العمل أعلاه.</AlertDescription>
+          </Alert>}
+
+          {job.status === 'waiting_login' && (
             <Alert className="border-amber-200 bg-amber-50">
               <Clock3 className="h-4 w-4 text-amber-700" />
               <AlertDescription className="text-amber-950">
@@ -661,7 +708,7 @@ export function TaqadiAutomationPanel({
             </Alert>
           )}
 
-          {(job.error_message || job.status === 'needs_human') && (
+          {!externalFilingRecorded && (job.error_message || job.status === 'needs_human') && (
             <Alert className="border-red-200 bg-red-50">
               <AlertCircle className="h-4 w-4 text-red-700" />
               <AlertDescription className="text-red-950">
@@ -670,7 +717,7 @@ export function TaqadiAutomationPanel({
             </Alert>
           )}
 
-          {job.status === 'needs_human' && (
+          {job.status === 'needs_human' && !requiresSubmissionVerification && (
             <Alert className="border-sky-200 bg-sky-50">
               <ExternalLink className="h-4 w-4 text-sky-700" />
               <AlertDescription className="space-y-2 text-sky-950">
@@ -717,6 +764,7 @@ export function TaqadiAutomationPanel({
             <Alert className="border-amber-300 bg-amber-50">
               <ShieldCheck className="h-4 w-4 text-amber-700" />
               <AlertDescription className="text-amber-950">
+                افتح تقاضي وتحقق من الطلب الحالي ورقمه المرجعي. إذا ظهر إيصال، راجع بياناته في قسم «الإغلاق والتسجيل».
                 لا تُعد المحاولة قبل مراجعة طلبات تقاضي والتأكد من عدم إنشاء الدعوى؛
                 أُوقف زر الإعادة لمنع تسجيل الدعوى مرتين.
               </AlertDescription>
@@ -909,7 +957,7 @@ export function TaqadiAutomationPanel({
           </Button>
         )}
 
-        {job && !isActive && requiresFreshPackage && !requiresSubmissionVerification && (
+        {job && !externalFilingRecorded && !isActive && requiresFreshPackage && !requiresSubmissionVerification && (
           <Button
             type="button"
             size="lg"
@@ -931,7 +979,7 @@ export function TaqadiAutomationPanel({
           </Button>
         )}
 
-        {job && !isActive && resumableStatuses.has(job.status) && !requiresFreshPackage && !requiresSubmissionVerification && (
+        {job && !externalFilingRecorded && !isActive && resumableStatuses.has(job.status) && !requiresFreshPackage && !requiresSubmissionVerification && (
           <Button
             type="button"
             size="lg"
@@ -946,11 +994,13 @@ export function TaqadiAutomationPanel({
           </Button>
         )}
 
-        {job && requiresSubmissionVerification && (
-          <Button type="button" size="lg" disabled className="lawsuit-primary-command">
-            <ShieldCheck className="h-4 w-4" />
-            يتطلب تحققًا يدويًا في تقاضي
-          </Button>
+        {job && requiresSubmissionVerification && (
+          <Button asChild type="button" size="lg" className="lawsuit-primary-command">
+            <a href={TAQADI_PORTAL_URL} target="_blank" rel="noopener noreferrer">
+              <ExternalLink className="h-4 w-4" />
+              فتح تقاضي للتحقق من الطلب
+            </a>
+          </Button>
         )}
 
         {job?.status === 'filed' && (
@@ -961,15 +1011,20 @@ export function TaqadiAutomationPanel({
         )}
 
         {job && (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button type="button" variant="outline">
-                إجراءات إضافية
-                <ChevronDown className="h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="start" className="rounded-lg border-[#E5EAF1]">
-              {retryableStatuses.has(job.status) && !requiresExistingDraftResume && !requiresFreshPackage && !requiresSubmissionVerification && (
+          <TaqadiJobActionsMenu
+            requiresVerification={requiresSubmissionVerification}
+            refreshing={refreshStatusMutation.isPending}
+            onRefresh={() => refreshStatusMutation.mutate()}
+          >
+              {requiresSubmissionVerification && ['needs_human', 'failed'].includes(job.status) && (
+                <DropdownMenuItem onSelect={() => setVerifiedRestartTarget({
+                  jobId: job.id, expectedUpdatedAt: job.updated_at, requestId: crypto.randomUUID(),
+                })} disabled={verifiedRestartMutation.isPending}>
+                  <RotateCcw className="h-4 w-4" />
+                  إعادة من البداية
+                </DropdownMenuItem>
+              )}
+              {!externalFilingRecorded && retryableStatuses.has(job.status) && !requiresExistingDraftResume && !requiresFreshPackage && !requiresSubmissionVerification && (
                 <DropdownMenuItem
                   disabled={
                     retryMutation.isPending
@@ -985,36 +1040,28 @@ export function TaqadiAutomationPanel({
                   {job.status === 'cancelled' ? 'إعادة تشغيل العملية' : 'إعادة من البداية'}
                 </DropdownMenuItem>
               )}
-              {job.status === 'filed' && (
-                <DropdownMenuItem asChild>
-                  <a href="https://taqadi.sjc.gov.qa/itc/login" target="_blank" rel="noreferrer">
-                    <ExternalLink className="h-4 w-4" />
-                    فتح تقاضي
-                  </a>
-                </DropdownMenuItem>
-              )}
-              {['queued', 'waiting_login', 'needs_human', 'failed'].includes(job.status) && (
-                <>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem
-                    disabled={cancelMutation.isPending}
-                    onSelect={() => cancelMutation.mutate()}
-                    className="text-red-700 focus:text-red-700"
-                  >
-                    <CircleStop className="h-4 w-4" />
-                    إلغاء العملية
-                  </DropdownMenuItem>
-                </>
-              )}
-            </DropdownMenuContent>
-          </DropdownMenu>
+          </TaqadiJobActionsMenu>
         )}
+        {job && <TaqadiStopControl job={job} pending={cancelMutation.isPending} onStop={() => cancelMutation.mutate()} />}
       </div>
 
       {ui.taqadiAutomationStatus && (
         <p className="mt-3 text-xs text-slate-500">{ui.taqadiAutomationStatus}</p>
       )}
 
+      {verifiedRestartTarget && (
+        <TaqadiVerifiedRestartDialog
+          key={verifiedRestartTarget.requestId}
+          target={verifiedRestartTarget}
+          contractNumber={state.taqadiData?.contract.contractNumber}
+          stale={job?.id !== verifiedRestartTarget.jobId || job?.updated_at !== verifiedRestartTarget.expectedUpdatedAt}
+          pending={verifiedRestartMutation.isPending}
+          blockReason={!canConvertToLegal ? blockingReason || 'لا تملك صلاحية بدء الرفع' : packageRefreshBlockReason}
+          onClose={() => setVerifiedRestartTarget(null)}
+          onConfirm={(confirmation) => verifiedRestartMutation.mutate(confirmation)}
+        />
+      )}
+
       <Dialog open={reopenDialogOpen} onOpenChange={setReopenDialogOpen}>
         <DialogContent className="max-w-lg" dir="rtl">
           <DialogHeader>

@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   selectContractDocumentForIdentityScan,
   selectLegalContractDocument,
+  getContractDocumentReview,
 } from '../utils/contractDocumentSelection';
 
 const document = (
@@ -19,6 +20,33 @@ const document = (
   mime_type: 'application/pdf',
   legal_identity_match_status: identityStatus,
   legal_evidence_state: evidenceState,
+});
+
+describe('attachment availability diagnostics', () => {
+  it('distinguishes a quarantined unreadable identity from an absent signed contract', () => {
+    const review = getContractDocumentReview([{
+      ...document('existing', 'signed_contract', 'العقد المرفوع.pdf', undefined, 'unverified', 'quarantined'),
+      legal_identity_match_reason: 'لم تتم قراءة الرقم الشخصي كاملاً',
+    }]);
+    expect(review.kind).toBe('review');
+    expect(review.message).toContain('نسخة العقد موجودة');
+    expect(review.message).toContain('لم تتم قراءة الرقم الشخصي كاملاً');
+    expect(review.copies[0].id).toBe('existing');
+    expect(selectLegalContractDocument(review.copies)).toBeNull();
+  });
+  it('explains conflicting approved copies without calling either missing', () => {
+    const review = getContractDocumentReview([
+      document('one', 'signed_contract', 'نسخة 1', undefined, 'matched'),
+      document('two', 'signed_contract', 'نسخة 2', undefined, 'matched'),
+    ]);
+    expect(review.kind).toBe('conflict');
+    expect(review.message).toContain('أكثر من نسخة');
+  });
+  it('requires upload or classification only when no signed attachment exists', () => {
+    const review = getContractDocumentReview([document('other', 'violations_proof', 'مخالفات'), document('no-file', 'signed_contract', 'بدون ملف', null)]);
+    expect(review.kind).toBe('missing');
+    expect(review.copies).toHaveLength(0);
+  });
 });
 
 describe('selectLegalContractDocument', () => {
@@ -40,14 +68,15 @@ describe('selectLegalContractDocument', () => {
     expect(selected).toBeNull();
   });
 
-  it('accepts an exact QID match when legacy OCR misclassified nearby prose as the tenant name', () => {
+  it('requires a persisted recheck before promoting legacy OCR evidence', () => {
     const candidate = {
       ...document('qid-match', 'signed_contract', 'سعيد الحبابي', undefined, 'mismatch'),
       legal_identity_expected_id: '28663402985',
       legal_identity_extracted_id: '28663402985',
     };
 
-    expect(selectLegalContractDocument([candidate])?.id).toBe('qid-match');
+    expect(selectLegalContractDocument([candidate])).toBeNull();
+    expect(selectLegalContractDocument([{ ...candidate, legal_identity_match_status: 'matched' }])?.id).toBe('qid-match');
   });
 
   it('does not override a real QID mismatch', () => {

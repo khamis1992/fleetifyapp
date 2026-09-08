@@ -12,7 +12,7 @@ describe('assessLegalContractIdentity', () => {
     });
 
     expect(result.status).toBe('matched');
-    expect(result.reason).toContain('identity number');
+    expect(result.reasonCode).toBe('exact_identity_number');
   });
 
   it('keeps an identity-number conflict as a hard mismatch', () => {
@@ -25,6 +25,6 @@ describe('assessLegalContractIdentity', () => {
     });
 
     expect(result.status).toBe('mismatch');
-    expect(result.reason).toContain('different person');
+    expect(result.reasonCode).toBe('identity_number_conflict');
   });
 });

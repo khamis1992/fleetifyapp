@@ -8,6 +8,7 @@ import type {
 } from '../store';
 import { getLawsuitClaimAmounts } from './claimAmounts';
 import { getDefendantContact } from './legalCaseWorkflow';
+import { requiresViolationDocuments } from './violationDocumentRequirements';
 
 export type TaqadiFilingStatus =
   | 'queued'
@@ -264,7 +265,7 @@ const serializeViolationEvidence = (
   url: document.url,
   htmlContent: null,
   mimeType: document.mimeType,
-  sourceDocumentId: null,
+  sourceDocumentId: document.id,
 });
 
 export function getLegalContractIdentityBlockReason(document: DocumentState) {
@@ -321,7 +322,10 @@ export function buildTaqadiFilingPayload(
     state.documents.representativeId,
   ].map((document) => serializeDocument(document));
 
-  if (state.calculations.violationsCount > 0) {
+  if (requiresViolationDocuments(state)) {
+    if (state.violationEvidenceDocuments.length === 0) {
+      throw new Error('حافظة الدعوى غير مكتملة: أرفق مستند إثبات المخالفات الرسمي ثم أعد تجهيز الحافظة.');
+    }
     requiredDocuments.push(serializeDocument(state.documents.violations));
     requiredDocuments.push(
       ...state.violationEvidenceDocuments.map(serializeViolationEvidence),
@@ -768,7 +772,12 @@ export async function cancelTaqadiFilingJob(
     },
   );
   if (error) throw error;
-  return data as unknown as TaqadiFilingJob;
+  const stopped = data as unknown as TaqadiFilingJob | null;
+  if (!stopped || stopped.id !== jobId || stopped.company_id !== companyId
+    || !(stopped.status === 'cancelled' || ['MANUAL_STOP_REQUESTED', 'MANUALLY_STOPPED'].includes(stopped.error_code || ''))) {
+    throw new Error('لم يؤكد النظام طلب الإيقاف. حدّث الحالة قبل متابعة الإجراء.');
+  }
+  return stopped;
 }
 
 // Realtime push replaces the panel's 3-second polling. The tables are added

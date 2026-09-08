@@ -7,6 +7,7 @@
  */
 
 import { motion } from 'framer-motion';
+import { useState } from 'react';
 import { 
   Gavel, 
   Copy, 
@@ -25,6 +26,7 @@ import {
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Textarea } from '@/components/ui/textarea';
 import { useLawsuitPreparationContext } from '../store';
 
 // ==========================================
@@ -40,6 +42,7 @@ interface CopyableFieldProps {
   className?: string;
   /** عند تشغيل وكيل تقاضي يصبح الحقل للقراءة فقط (النسخ احتياطي عند تعطل الوكيل) */
   readOnlyMode?: boolean;
+  completionField?: 'caseTitle' | 'facts' | 'claims';
 }
 
 function CopyableField({
@@ -50,13 +53,17 @@ function CopyableField({
   isMultiline = false,
   className = '',
   readOnlyMode = false,
+  completionField,
 }: CopyableFieldProps) {
-  const { state, actions } = useLawsuitPreparationContext();
+  const { state, actions, dispatch } = useLawsuitPreparationContext();
+  const [draft, setDraft] = useState('');
   const isCopied = state.ui.copiedField === fieldId;
   const displayValue = value || 'غير محدد';
 
   return (
     <div
+      id={completionField ? `lawsuit-${completionField}` : undefined}
+      tabIndex={completionField ? -1 : undefined}
       className={`
         group relative p-4 bg-slate-100 rounded-xl
         border border-slate-200 hover:border-slate-300
@@ -79,6 +86,14 @@ function CopyableField({
         >
           {displayValue}
         </p>
+        {completionField && !value?.trim() && (
+          <div className="mt-3 space-y-2">
+            <Textarea aria-label={`استكمال ${label}`} value={draft} disabled={state.ui.isTaqadiAutomating} onChange={(event) => setDraft(event.target.value)} placeholder={`أدخل ${label} وفق وقائع الدعوى ومستنداتها`} />
+            <Button type="button" size="sm" disabled={!draft.trim() || !state.taqadiData || state.ui.isTaqadiAutomating} onClick={() => {
+              if (state.taqadiData) dispatch({ type: 'UPDATE_TAQADI_DATA', payload: { ...state.taqadiData, [completionField]: draft.trim() } });
+            }} className="bg-[#173A63] text-white hover:bg-[#102C4D]">تطبيق النص في بيانات التقاضي</Button>
+          </div>
+        )}
       </div>
 
       {!readOnlyMode && (
@@ -194,6 +209,7 @@ export function LegalTaqadi() {
         <CopyableField
           readOnlyMode={readOnlyMode}
           label="عنوان الدعوى"
+          completionField="caseTitle"
           value={caseTitle}
           fieldId="case-title"
           icon={<Briefcase className="h-4 w-4" />}
@@ -202,6 +218,7 @@ export function LegalTaqadi() {
         <CopyableField
           readOnlyMode={readOnlyMode}
           label="الوقائع"
+          completionField="facts"
           value={facts}
           fieldId="case-facts"
           icon={<FileText className="h-4 w-4" />}
@@ -211,6 +228,7 @@ export function LegalTaqadi() {
         <CopyableField
           readOnlyMode={readOnlyMode}
           label="الطلبات / المطالبات"
+          completionField="claims"
           value={claims}
           fieldId="case-claims"
           icon={<Gavel className="h-4 w-4" />}

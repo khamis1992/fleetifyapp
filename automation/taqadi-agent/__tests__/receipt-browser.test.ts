@@ -2,6 +2,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { chromium, type Browser } from 'playwright';
 import { TaqadiPortal } from '../taqadi-page';
 import type { FilingPayload } from '../types';
+import { ManualStopRequestedError } from '../types';
 
 describe('final submission receipt observation', () => {
   let browser: Browser;
@@ -30,6 +31,29 @@ describe('final submission receipt observation', () => {
         throw new Error('database unavailable');
       }, undefined, 500)).rejects.toThrow('database unavailable');
       expect(await page.evaluate(() => Boolean((window as any).clicked))).toBe(false);
+    } finally { await page.close(); }
+  });
+
+  it('honors a manual stop before the first approval click', async () => {
+    const page = await browser.newPage();
+    try {
+      await page.setContent('<button onclick="window.clicked=true">اعتماد</button>');
+      await expect(new TaqadiPortal(page).submitFinal(undefined, undefined, 500,
+        async () => { throw new ManualStopRequestedError(); })).rejects.toBeInstanceOf(ManualStopRequestedError);
+      expect(await page.evaluate(() => Boolean((window as any).clicked))).toBe(false);
+    } finally { await page.close(); }
+  });
+
+  it('stops before a delayed confirmation without clicking it or repeating approval', async () => {
+    const page = await browser.newPage();
+    let checks = 0;
+    try {
+      await page.setContent(`<button id="approve" onclick="window.clicks=1;document.querySelector('[role=dialog]').style.display='block'">اعتماد</button>
+        <main></main><div role="dialog" style="display:none"><button onclick="window.confirmed=true">تأكيد</button></div>`);
+      await expect(new TaqadiPortal(page).submitFinal(undefined, undefined, 1_000, async () => {
+        if (++checks >= 2) throw new ManualStopRequestedError();
+      })).rejects.toBeInstanceOf(ManualStopRequestedError);
+      expect(await page.evaluate(() => [(window as any).clicks,Boolean((window as any).confirmed)])).toEqual([1,false]);
     } finally { await page.close(); }
   });
 

@@ -7,6 +7,7 @@ import { useSystemLogger } from "@/hooks/useSystemLogger";
 import { useCompanyIdWithInit, useCurrentCompanyId } from "./useUnifiedCompanyAccess";
 import { createAuditLog } from "@/hooks/useAuditLog";
 import { queryKeys } from "@/utils/queryKeys";
+import { notifyRecordChange } from '@/services/recordQuerySynchronization';
 import type { Database } from '@/integrations/supabase/types';
 import type {
   Vehicle,
@@ -311,9 +312,7 @@ export const useUpdateVehicle = () => {
       return { data, oldData }
     },
     onSuccess: async (result) => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.vehicles.all })
-      queryClient.invalidateQueries({ queryKey: queryKeys.vehicles.all })
-      queryClient.invalidateQueries({ queryKey: queryKeys.vehicles.paginated() })
+      await notifyRecordChange(queryClient, { entity: 'vehicle', companyId: result.data.company_id, recordId: result.data.id });
       
       // Log audit trail
       await createAuditLog(
@@ -446,7 +445,7 @@ export const useChangeVehiclePlateFromTrafficAuthority = () => {
 
       if (updateError) throw updateError;
 
-      return { vehicleId: params.vehicleId, oldPlate, newPlate };
+      return { companyId, vehicleId: params.vehicleId, oldPlate, newPlate };
     },
     onSuccess: async (result) => {
       queryClient.invalidateQueries({ queryKey: queryKeys.vehicles.all });
@@ -454,6 +453,7 @@ export const useChangeVehiclePlateFromTrafficAuthority = () => {
       queryClient.invalidateQueries({ queryKey: ['traffic-violations'] });
       queryClient.invalidateQueries({ queryKey: ['contracts'] });
 
+      await notifyRecordChange(queryClient, { entity: 'vehicle', companyId: result.companyId, recordId: result.vehicleId });
       await createAuditLog(
         'UPDATE',
         'vehicle',

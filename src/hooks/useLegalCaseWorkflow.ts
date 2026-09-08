@@ -1,6 +1,8 @@
+import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useCompanyFilter } from '@/hooks/useCompanyScope';
+import { recordExternalLegalFiling, verifyExternalLegalFiling, type ExternalFilingProgress } from '@/services/externalLegalFiling';
 
 export type LegalWorkflowStage =
   | 'preparation'
@@ -57,6 +59,7 @@ export const useLegalCaseWorkflow = (caseId?: string) => {
   const queryClient = useQueryClient();
   const companyId = companyFilter.company_id;
   const db = supabase as any;
+  const [filingProgress, setFilingProgress] = useState<ExternalFilingProgress | null>(null);
 
   const query = useQuery({
     queryKey: ['legal-case-workflow', companyId, caseId],
@@ -86,17 +89,37 @@ export const useLegalCaseWorkflow = (caseId?: string) => {
     staleTime: 10_000,
   });
 
+  const publishSavedCase = (data: unknown) => {
+    if (data && typeof data === 'object' && 'id' in data && data.id === caseId) {
+      queryClient.setQueryData<LegalCaseWorkflowData>(['legal-case-workflow', companyId, caseId],
+        (previous) => previous ? { ...previous, legalCase: data } : previous);
+    }
+  };
+
   const mutation = useMutation({
+    retry: false,
     mutationFn: async ({ name, args }: RpcInput) => {
       if (!companyId || !caseId) throw new Error('تعذر تحديد الشركة أو القضية');
+      if (name === 'record_external_legal_filing_v1') {
+        try {
+          return await recordExternalLegalFiling({ companyId, caseId, reference: String(args.p_reference), date: String(args.p_filing_date) }, setFilingProgress);
+        } finally {
+          setFilingProgress(null);
+        }
+      }
       const { data, error } = await db.rpc(name, { p_company_id: companyId, p_case_id: caseId, ...args });
       if (error) throw error;
       return data;
     },
-    onSuccess: async () => {
-      await Promise.all([
+    onSuccess: (data) => {
+      publishSavedCase(data);
+      // The command result confirms saving. Background list refreshes must not
+      // keep the save button spinning or turn a committed write into a failure.
+      void Promise.allSettled([
         queryClient.invalidateQueries({ queryKey: ['legal-case-workflow', companyId, caseId] }),
         queryClient.invalidateQueries({ queryKey: ['legal-cases'] }),
+        queryClient.invalidateQueries({ queryKey: ['taqadi-filing-job', companyId, caseId] }),
+        queryClient.invalidateQueries({ queryKey: ['taqadi-filing-job-events', companyId] }),
         queryClient.invalidateQueries({ queryKey: ['legal-case', caseId] }),
         queryClient.invalidateQueries({ queryKey: ['legal-case-stats'] }),
         queryClient.invalidateQueries({ queryKey: ['lawsuit-legal-case', companyId] }),
@@ -115,7 +138,14 @@ export const useLegalCaseWorkflow = (caseId?: string) => {
   return {
     ...query,
     isSaving: mutation.isPending,
+    filingProgress,
     recordExternalFiling: (reference: string, date: string) => run('record_external_legal_filing_v1', { p_reference: reference, p_filing_date: date }),
+    verifyExternalFiling: async (reference: string, date: string) => {
+      if (!companyId || !caseId) throw new Error('تعذر تحديد الشركة أو القضية');
+      const recorded = await verifyExternalLegalFiling({ companyId, caseId, reference, date });
+      if (recorded) publishSavedCase(recorded);
+      return recorded;
+    },
     transition: (target: LegalWorkflowStage, reason?: string) => run('transition_legal_case_workflow_v1', { p_target_stage: target, p_reason: reason || null }),
     correctUnfiled: (reason: string) => {
       const normalizedReason = reason.trim();

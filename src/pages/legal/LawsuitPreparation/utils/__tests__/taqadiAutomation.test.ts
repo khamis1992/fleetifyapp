@@ -178,6 +178,27 @@ function createState(withViolations = false): LawsuitPreparationState {
 }
 
 describe('buildTaqadiFilingPayload', () => {
+  it('keeps outstanding but unsupported penalties out of the rental filing package', () => {
+    const state = createState(true);
+    state.violationEvidenceDocuments = [];
+    state.calculations!.violationsCount = 0;
+    state.calculations!.violationsFines = 0;
+    const payload = buildTaqadiFilingPayload(state, 'https://app.test/prepare');
+    expect(payload.case.amount).toBe(3000);
+    expect(payload.documents).toHaveLength(7);
+    expect(payload.documents.some((d) => d.key.startsWith('violations'))).toBe(false);
+  });
+  it('rejects positive violation claims with an empty evidence array', () => {
+    const state = createState(true);
+    state.violationEvidenceDocuments = [];
+    expect(() => buildTaqadiFilingPayload(state, 'https://app.test/prepare')).toThrow(/إثبات المخالفات/);
+    state.calculations!.violationsCount = 0;
+    expect(() => buildTaqadiFilingPayload(state, 'https://app.test/prepare')).toThrow(/إثبات المخالفات/);
+  });
+  it('carries the exact registered official proof ID to the server', () => {
+    const payload = buildTaqadiFilingPayload(createState(true), 'https://app.test/prepare');
+    expect(payload.documents.find((d) => d.key === 'violationsEvidence')?.sourceDocumentId).toBe('proof-1');
+  });
 
   it('never substitutes the claimant email when the defendant email is unavailable', () => {
 

@@ -60,15 +60,15 @@ describe('durable receipt synchronization', () => {
     expect(complete.mock.calls[0]).toEqual(complete.mock.calls[1]);
   });
 
-  it('retains a lock/reference conflict without sending another progress update', async () => {
+  it('retains a persistent failure and publishes it through the conditional pending writer', async () => {
     await outbox.save(job, 'worker-1', result);
     const complete = vi.fn().mockRejectedValue({ code: 'P0001', message: 'Filing job lock was lost' });
-    const markReceiptSyncPending = vi.fn();
+    const markReceiptSyncPending = vi.fn().mockResolvedValue(undefined);
     const sync = new ReceiptSynchronizer(outbox, { complete, markReceiptSyncPending }, 'worker-1', () => 0);
     expect((await sync.flush()).pending).toBe(1);
     await sync.flush();
     expect(complete).toHaveBeenCalledTimes(1);
-    expect(markReceiptSyncPending).not.toHaveBeenCalled();
+    expect(markReceiptSyncPending).toHaveBeenCalledWith(expect.objectContaining({ jobId: job.id }), 'Filing job lock was lost');
   });
 
   it('rejects conflicting evidence and corrupt records instead of silently skipping them', async () => {

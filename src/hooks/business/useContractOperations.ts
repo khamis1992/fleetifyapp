@@ -5,6 +5,7 @@ import { usePermissions } from '@/hooks/usePermissions';
 import { supabase } from '@/integrations/supabase/client';
 import type { Database } from '@/integrations/supabase/types';
 import { assertRentalEligible } from '@/services/rentalEligibilityGuard';
+import { notifyRecordChange } from '@/services/recordQuerySynchronization';
 
 type Contract = Database['public']['Tables']['contracts']['Row'];
 type ContractInsert = Database['public']['Tables']['contracts']['Insert'];
@@ -380,13 +381,14 @@ export const useContractOperations = (options: ContractOperationsOptions = {}) =
 
       return updatedContract;
     },
-    onSuccess: (contract) => {
+    onSuccess: async (contract) => {
       queryClient.invalidateQueries({ queryKey: ['contracts'] });
       queryClient.invalidateQueries({ queryKey: ['contract', contract.id] });
       queryClient.invalidateQueries({ queryKey: ['vehicles'] });
       queryClient.invalidateQueries({ queryKey: ['payments'] });
       queryClient.invalidateQueries({ queryKey: ['invoices'] });
 
+      await notifyRecordChange(queryClient, { entity: 'contract', companyId: contract.company_id, recordId: contract.id });
       toast.success('تم تحديث العقد بنجاح');
     },
     onError: (error: unknown) => {

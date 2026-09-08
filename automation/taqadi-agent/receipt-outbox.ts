@@ -136,7 +136,7 @@ export class ReceiptOutbox {
 
 interface CompletionQueue {
   complete(jobId: string, result: FilingResult, receipt: SavedReceipt): Promise<unknown>;
-  markReceiptSyncPending(receipt: SavedReceipt): Promise<unknown>;
+  markReceiptSyncPending(receipt: SavedReceipt, error?: string): Promise<unknown>;
 }
 
 export class ReceiptSynchronizer {
@@ -168,7 +168,9 @@ export class ReceiptSynchronizer {
           attempts, retryAt: this.now() + delay, error: describeError(error),
         });
         // Best effort only. Never overwrite a terminal state after a lost response.
-        if (transient) await this.queue.markReceiptSyncPending(receipt).catch(() => undefined);
+        if (receipt.workerId === this.workerId) {
+          await this.queue.markReceiptSyncPending(receipt, describeError(error)).catch(() => undefined);
+        }
         console.warn(`[TaqadiAgent] receipt sync ${transient ? 'pending' : 'requires verification'} for ${receipt.jobId}: ${describeError(error)}`);
       }
     }

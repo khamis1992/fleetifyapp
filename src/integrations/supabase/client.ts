@@ -49,13 +49,16 @@ export const supabase = createClient<Database>(supabaseConfig.url, supabaseConfi
       const isAuthRequest = requestUrl.includes('/auth/v1/');
       const isContractIdScanner = requestUrl.includes('/functions/v1/contract-id-scanner');
       const isTaqadiQueueMutation = /\/rest\/v1\/rpc\/(?:resume|restart)_taqadi_filing_job_v2(?:\?|$)/.test(requestUrl);
+      const isExternalLegalFiling = /\/rest\/v1\/rpc\/record_external_legal_filing_v[12](?:\?|$)/.test(requestUrl);
       // Auth refresh tokens are single-use and rotated. Retrying the same auth
       // request after an interrupted response can invalidate session recovery.
       // Contract identity scans can transmit multiple document pages and write
       // an assessment, so an HTTP-level retry would duplicate the whole scan.
       // A queue mutation can commit before its response arrives. Replaying it
       // after a timeout races the worker that has already claimed the job.
-      const maxRetries = isAuthRequest || isContractIdScanner || isTaqadiQueueMutation ? 0 : retries;
+      // External filing may also commit before the response is lost. Its caller
+      // verifies the saved case instead of blindly replaying the attestation.
+      const maxRetries = isAuthRequest || isContractIdScanner || isTaqadiQueueMutation || isExternalLegalFiling ? 0 : retries;
 
       // Add timeout to prevent hanging requests with retry logic
       for (let attempt = 0; attempt <= maxRetries; attempt++) {
@@ -63,7 +66,7 @@ export const supabase = createClient<Database>(supabaseConfig.url, supabaseConfi
         try {
           const timeoutMs = isAuthRequest
             ? 30000
-            : isTaqadiQueueMutation
+            : isTaqadiQueueMutation || isExternalLegalFiling
               ? 60000
             : requestUrl.includes('/functions/v1/excel-import-ai-review')
               ? 90000

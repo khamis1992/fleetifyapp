@@ -1,0 +1,45 @@
+.lawsuit-issues-panel {
+  margin-block: 1.25rem;
+  overflow: hidden;
+  border: 1px solid #dce6eb;
+  border-radius: 20px;
+  background: #fff;
+}
+.lawsuit-issues-heading { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: 1.25rem; border-bottom: 1px solid #e7edef; }
+.lawsuit-issues-icon { display: grid; place-items: center; flex-shrink: 0; width: 44px; height: 44px; color: #173a63; background: #edf3f7; border-radius: 12px; }
+.lawsuit-issues-heading h2 { margin: 0; color: #163443; font-size: 1.1rem; font-weight: 800; }
+.lawsuit-issues-heading p { margin-top: .35rem; color: #526679; font-size: .8rem; line-height: 1.8; }
+.lawsuit-issues-counts { display: flex; flex-wrap: wrap; gap: .45rem; flex-shrink: 0; }
+.lawsuit-issues-counts span { padding: .4rem .7rem; border-radius: 7px; font-size: .75rem; font-weight: 700; }
+.lawsuit-issues-counts .is-blocking { color: #a22e24; background: #fff0ed; }
+.lawsuit-issues-counts .is-warning { color: #785319; background: #fff5df; }
+.lawsuit-issues-counts .is-ready { color: #176b57; background: #eaf7f1; }
+.lawsuit-issues-columns { display: grid; grid-template-columns: 1fr 1fr; }
+.lawsuit-issues-group { padding: 1.1rem 1.25rem; min-width: 0; }
+.lawsuit-issues-group + .lawsuit-issues-group { border-inline-start: 1px solid #e7edef; background: #fcfcf9; }
+.lawsuit-issues-group > h3 { display: flex; align-items: center; gap: .5rem; margin: 0 0 .8rem; font-size: .85rem; font-weight: 800; color: #923626; }
+.lawsuit-issues-group.is-advisory > h3 { color: #785319; }
+.lawsuit-issues-help, .lawsuit-issues-empty { font-size: .75rem; color: #586878; line-height: 1.8; margin-bottom: .85rem; }
+.lawsuit-issues-clear { display: flex; gap: .5rem; color: #176b57; font-size: .85rem; line-height: 1.9; }
+.lawsuit-issue-row { display: flex; flex-wrap: wrap; gap: .85rem; align-items: center; padding: 1rem; border: 1px solid #eddbd6; border-inline-start: 3px solid #bc6251; border-radius: 10px; background: #fffaf8; }
+.lawsuit-issue-row + .lawsuit-issue-row { margin-top: .65rem; }
+.lawsuit-issue-row.is-warning { border-color: #e8e0cc; border-inline-start-color: #b08d44; background: #fff; }
+.lawsuit-issue-row h4 { display: flex; gap: .4rem; align-items: center; color: #293f4c; font-size: .85rem; font-weight: 800; line-height: 1.8; }
+.lawsuit-issue-row p { color: #586572; margin-top: .25rem; font-size: .78rem; line-height: 1.9; overflow-wrap: anywhere; }
+.legal-system .lawsuit-issue-action { display: inline-flex; gap: .4rem; height: auto; min-height: 36px; white-space: normal; color: #173a63; border: 1px solid #b8c8d4; background: #fff; font-size: .75rem; font-weight: 700; }
+.legal-system .lawsuit-issue-action:hover { color: #102c4d; background: #edf3f7; border-color: #173a63; }
+[id^="lawsuit-"][tabindex="-1"] { scroll-margin-top: 24px; }
+[id^="lawsuit-"][tabindex="-1"]:focus { outline: 3px solid #147d73; outline-offset: 5px; }
+@media (max-width: 1100px) {
+  .lawsuit-issues-heading { align-items: flex-start; flex-direction: column; }
+  .lawsuit-issues-columns { grid-template-columns: 1fr; }
+  .lawsuit-issues-group + .lawsuit-issues-group { border-inline-start: 0; border-top: 1px solid #e7edef; }
+}
+@media (max-width: 520px) {
+  .lawsuit-issues-heading, .lawsuit-issues-group { padding: 1rem; }
+  .lawsuit-issue-row { flex-direction: column; align-items: stretch; }
+  .legal-system .lawsuit-issue-action { justify-content: space-between; width: 100%; }
+}
+@media (prefers-reduced-motion: reduce) {
+  [id^="lawsuit-"][tabindex="-1"] { scroll-behavior: auto; }
+}

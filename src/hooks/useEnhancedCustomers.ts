@@ -6,6 +6,7 @@ import { toast } from 'sonner';
 import { Customer, CustomerFilters, type CustomerFormData } from '@/types/customer';
 import { useCustomerViewContext } from '@/contexts/CustomerViewContext';
 import { getCustomerDataIssues } from '@/utils/formatCustomerName';
+import { notifyRecordChange } from '@/services/recordQuerySynchronization';
 
 export type EnhancedCustomer = Customer;
 
@@ -780,16 +781,19 @@ export const useUpdateCustomer = () => {
         throw new Error('رخصة القيادة منتهية الصلاحية. يجب تجديدها قبل تحديث العميل');
       }
 
-      const { error } = await supabase
+      const { data: savedCustomer, error } = await supabase
         .from('customers')
         .update(cleanData)
         .eq('id', id)
-        .eq('company_id', companyId);
+        .eq('company_id', companyId)
+        .select('id, company_id')
+        .single();
 
       if (error) throw error;
+      return savedCustomer;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['customers'] });
+    onSuccess: async (customer) => {
+      await notifyRecordChange(queryClient, { entity: 'customer', companyId: customer.company_id, recordId: customer.id });
       toast.success('تم تحديث بيانات العميل بنجاح');
     },
     onError: (error) => {

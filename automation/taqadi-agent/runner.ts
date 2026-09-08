@@ -637,6 +637,7 @@ export class TaqadiWorker {
     console.log(
       `[TaqadiAgent] advisor navigation for job ${job.id}: ${targetText}`,
     );
+    await this.queue.assertCanContinue(job.id);
     await target.click();
     await this.page.waitForTimeout(1_200);
     return true;
@@ -1067,6 +1068,7 @@ export class TaqadiWorker {
         expectedClaimAmount: job.payload.case.amount,
       });
 
+      let lastControlCheck = 0;
       const result = await portal.submitFinal(async () => {
         await this.queue.update(job.id, {
           status: 'submitting',
@@ -1075,10 +1077,23 @@ export class TaqadiWorker {
           message: 'جاري الاعتماد النهائي في تقاضي',
         });
         submissionStarted = true;
-      }, job.payload);
+      }, job.payload, 60_000, async (force = false) => {
+        if (force || Date.now() - lastControlCheck >= 1_000) {
+          await this.queue.assertCanContinue(job.id);
+          lastControlCheck = Date.now();
+        }
+      });
 
       await this.finishProvenSubmission(job, result);
     } catch (error) {
+      // Acknowledge only after the current portal operation has returned. The
+      // operator must not be told the agent stopped while it can still click.
+      const control = await this.queue.checkControl(job.id, true);
+      if (control.stopRequested) {
+        await this.diagnostics.discardTracing().catch(() => undefined);
+        this.setRuntime('idle', null, null);
+        return;
+      }
       await this.queue.flushObservations();
       error = classifyPortalSessionFailure(error, this.page?.url() || '', {
         submissionStarted,

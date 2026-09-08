@@ -3,7 +3,9 @@ import { Button } from '@/components/ui/button';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
-import { ContractIdentityBadge } from './ContractIdentityBadge';
+import { ContractIdentityDetails } from './ContractIdentityDetails';
+import { ManualContractIdentityReview } from './ManualContractIdentityReview';
+import { CustomerContractAttachment } from './CustomerContractAttachment';
 import { Plus, Download, Trash2, FileText, Upload, Eye, Car, CheckCircle, AlertCircle, AlertTriangle, FileImage, RefreshCw, PlayCircle, ScanLine, IdCard, FileSpreadsheet, ShieldCheck, CreditCard, Receipt, FileSignature } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
@@ -25,6 +27,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { LazyImage } from '@/components/common/LazyImage';
 import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
 import { invalidateContractDocumentDependents } from '@/utils/contractDocumentQueries';
+import { contractDocumentTypes as documentTypes, getContractDocumentTypeSelection } from '@/utils/contractDocumentTypes';
 import { motion, type Variants } from 'framer-motion';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
@@ -46,21 +49,7 @@ interface ContractDocumentsProps {
   vehicleId?: string;
 }
 
-const documentTypes = [
-  { value: 'general', label: 'عام' },
-  { value: 'contract', label: 'عقد' },
-  { value: 'signed_contract', label: 'عقد موقع' },
-  { value: 'signed_contract_image', label: 'صورة عقد موقع' },
-  { value: 'draft_contract', label: 'مسودة عقد' },
-  { value: 'condition_report', label: 'تقرير حالة المركبة' },
-  { value: 'signature', label: 'توقيع' },
-  { value: 'insurance', label: 'تأمين' },
-  { value: 'identity', label: 'هوية' },
-  { value: 'license', label: 'رخصة' },
-  { value: 'receipt', label: 'إيصال' },
-  { value: 'violations_proof', label: 'إثبات مخالفات مرورية' },
-  { value: 'other', label: 'أخرى' }
-];
+const DocumentOrientationDialog = React.lazy(() => import('./DocumentOrientationDialog'));
 
 const scaleIn: Variants = {
   hidden: { opacity: 0, scale: 0.95 },
@@ -154,6 +143,7 @@ const getFileTypeMeta = (document: any): { icon: React.ReactNode; tint: string }
 };
 
 export function ContractDocuments({ contractId, customerId, vehicleId }: ContractDocumentsProps) {
+  const [orientationDocument, setOrientationDocument] = React.useState<ContractDocument | null>(null);
   const { startTour } = useTourGuide();
   const [isDialogOpen, setIsDialogOpen] = React.useState(false);
   const [isScannerOpen, setIsScannerOpen] = React.useState(false);
@@ -477,7 +467,7 @@ export function ContractDocuments({ contractId, customerId, vehicleId }: Contrac
   };
 
   const getDocumentTypeLabel = (type: string) => {
-    return documentTypes.find(dt => dt.value === type)?.label || type;
+    return documentTypes.find(dt => dt.value === getContractDocumentTypeSelection(type))?.label || type;
   };
 
   const queryClient = useQueryClient();
@@ -804,7 +794,7 @@ export function ContractDocuments({ contractId, customerId, vehicleId }: Contrac
                                   <p className="break-all text-sm font-semibold text-[#193731]" title={document.document_name}>
                                     {document.document_name}
                                   </p>
-<ContractIdentityBadge type={document.document_type} status={document.legal_identity_match_status} reason={document.legal_identity_match_reason} />
+<ContractIdentityDetails document={document} />
                                   {document.is_required && (
                                     <Badge variant="destructive" className="h-5 shrink-0 px-1.5 text-[10px]">
                                       مطلوب
@@ -821,7 +811,7 @@ export function ContractDocuments({ contractId, customerId, vehicleId }: Contrac
 
                             <div className="mt-3">
                               <Select
-                                value={document.document_type}
+                                value={getContractDocumentTypeSelection(document.document_type)}
                                 onValueChange={(value) => {
                                   handleChangeDocumentType(document, value);
                                 }}
@@ -843,7 +833,9 @@ export function ContractDocuments({ contractId, customerId, vehicleId }: Contrac
                             </div>
 
                             {/* Actions — always visible (touch-friendly) */}
-                            <div className="mt-3 flex items-center gap-2 border-t border-[#E5EAF1] pt-2">
+                            <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-[#E5EAF1] pt-2">
+                              <CustomerContractAttachment document={document} contractId={contractId} documents={documents} />
+                              <ManualContractIdentityReview document={document} />
                               <Button
                                 size="sm"
                                 variant="outline"
@@ -939,7 +931,7 @@ export function ContractDocuments({ contractId, customerId, vehicleId }: Contrac
                   <p className="truncate text-xs font-black text-[#0F172A]" title={document.document_name}>
                     {document.document_name}
                   </p>
-<ContractIdentityBadge type={document.document_type} status={document.legal_identity_match_status} reason={document.legal_identity_match_reason} />
+<ContractIdentityDetails document={document} />
                   <div className="mt-1 flex items-center gap-2 text-[10px] text-slate-400">
                     <span className="flex items-center gap-1">
                       <span className="h-1.5 w-1.5 rounded-full bg-[#22C7A1]" />
@@ -1157,6 +1149,11 @@ export function ContractDocuments({ contractId, customerId, vehicleId }: Contrac
       </Dialog>
 
       {/* Dialog لمعاينة المستندات */}
+      {orientationDocument && <React.Suspense fallback={null}>
+        <DocumentOrientationDialog document={orientationDocument}
+          onClose={() => setOrientationDocument(null)}
+          onSaved={(path) => { void handlePreviewDocument({ ...orientationDocument, file_path: path, mime_type: 'application/pdf', preview_url: null }); }} />
+      </React.Suspense>}
       <Dialog open={isDocumentPreviewOpen} onOpenChange={setIsDocumentPreviewOpen}>
         <DialogContent className="max-w-5xl max-h-[90vh] overflow-auto">
           <DialogHeader>
@@ -1168,6 +1165,11 @@ export function ContractDocuments({ contractId, customerId, vehicleId }: Contrac
           
           {selectedDocumentForPreview && (
             <div className="space-y-4">
+              {['contract', 'customer'].includes(selectedDocumentForPreview.sourceType || 'contract')
+                && selectedDocumentForPreview.file_path
+                && (selectedDocumentForPreview.mime_type === 'application/pdf' || /\.pdf$/i.test(selectedDocumentForPreview.file_path))
+                && <Button variant="outline" className="border-emerald-200 bg-emerald-50 text-emerald-800"
+                  onClick={() => setOrientationDocument(selectedDocumentForPreview)}>تصحيح اتجاه الصفحات</Button>}
               {/* معلومات المستند */}
               <div className="bg-muted/50 p-4 rounded-lg">
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">

@@ -2,6 +2,7 @@ import { motion } from 'framer-motion';
 import { AlertTriangle, Car, Coins, FileText, Receipt, ShieldAlert, UserRound } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { formatCustomerName } from '@/utils/formatCustomerName';
+import { hasKnownTaqadiNationality } from '@/utils/taqadiNationality';
 import { useLawsuitPreparationContext } from '../store';
 
 function formatQar(amount?: number | null) {
@@ -76,7 +77,8 @@ export function LegalOverview() {
             <InfoRow label="الاسم" value={customerName} />
             <InfoRow label="الرقم الشخصي" value={customer?.national_id} />
             <InfoRow label="الهاتف" value={customer?.phone} />
-            <InfoRow label="الجنسية" value={customer?.nationality || customer?.country} />
+            <InfoRow label="الجنسية" value={hasKnownTaqadiNationality(customer?.nationality) ? customer?.nationality : 'غير مسجلة — يلزم استكمالها'} />
+            <InfoRow label="بلد الإقامة" value={customer?.country} />
           </article>
 
           <article className="lawsuit-data-card">

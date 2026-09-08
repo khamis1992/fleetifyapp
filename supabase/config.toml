@@ -172,6 +172,9 @@ verify_jwt = false
 [functions.contract-terms-scanner]
 verify_jwt = true
 
+[functions.correct-contract-document-orientation]
+verify_jwt = true
+
 # Microsoft Graph poller. Scheduled calls use the shared per-agent Vault
 # identity; interactive calls require an authenticated company administrator.
 [functions.ingest-traffic-mail]

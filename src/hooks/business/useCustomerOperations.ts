@@ -4,6 +4,7 @@ import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
 import { supabase } from '@/integrations/supabase/client';
 import { useCustomerDuplicateCheck } from '@/hooks/useCustomerDuplicateCheck';
 import { auditLogger } from '@/lib/auditLogger';
+import { notifyRecordChange } from '@/services/recordQuerySynchronization';
 import type { Database } from '@/integrations/supabase/types';
 import { getCustomerDataIssues } from '@/utils/formatCustomerName';
 import { 
@@ -229,74 +230,8 @@ export const useCustomerOperations = (options: CustomerOperationsOptions = {}) =
       
       return updatedCustomer;
     },
-    onSuccess: (customer) => {
-      console.log('✅ Customer update successful:', customer.id);
-      
-      // Immediate cache update - update customer in existing list
-      queryClient.setQueriesData(
-        { queryKey: ['customers'] },
-        (oldData: unknown) => {
-          if (!oldData) return oldData;
-          
-          // Handle both array and object with data property
-          if (Array.isArray(oldData)) {
-            return oldData.map((c: Customer) =>
-              c.id === customer.id ? { ...c, ...customer } : c
-            );
-          }
-          
-          // If oldData is an object with customers array (e.g., paginated response)
-          if (typeof oldData === 'object' && oldData !== null) {
-            const dataObj = oldData as Record<string, unknown>;
-            if (Array.isArray(dataObj.data)) {
-              return {
-                ...dataObj,
-                data: dataObj.data.map((c: Customer) =>
-                  c.id === customer.id ? { ...c, ...customer } : c
-                ),
-              };
-            }
-            if (Array.isArray(dataObj.customers)) {
-              return {
-                ...dataObj,
-                customers: dataObj.customers.map((c: Customer) =>
-                  c.id === customer.id ? { ...c, ...customer } : c
-                ),
-              };
-            }
-          }
-          
-          return oldData;
-        }
-      );
-      
-      // Update individual customer cache
-      queryClient.setQueryData(['customer', customer.id], customer);
-      
-      // تحديث العقود المرتبطة بالعميل - عند تحديث بيانات العميل
-      queryClient.invalidateQueries({ 
-        queryKey: ['contract-details'],
-        exact: false 
-      });
-      queryClient.invalidateQueries({ 
-        queryKey: ['contracts'],
-        exact: false 
-      });
-      queryClient.invalidateQueries({ 
-        queryKey: ['customer-contracts', customer.id] 
-      });
-      queryClient.invalidateQueries({ 
-        queryKey: ['customer-details', customer.id] 
-      });
-      
-      // Force background refetch for consistency
-      setTimeout(() => {
-        queryClient.refetchQueries({ 
-          queryKey: ['customers'],
-          type: 'active'
-        });
-      }, 100);
-      
+    onSuccess: async (customer) => {
+      await notifyRecordChange(queryClient, { entity: 'customer', companyId: customer.company_id, recordId: customer.id });
       toast.success('تم تحديث العميل بنجاح');
     },
     onError: (error: unknown) => {

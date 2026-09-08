@@ -30,6 +30,8 @@ export interface ContractDocument {
   preview_url?: string | null;
   legal_identity_match_status?: string | null;
   legal_identity_match_reason?: string | null;
+  legal_evidence_state?: string | null;
+  legal_identity_details?: unknown;
 }
 
 export type ContractViewDocumentDeleteTarget = Pick<
@@ -63,7 +65,7 @@ export function useContractDocuments(contractId?: string, customerId?: string, v
         // Fetch contract documents
         supabase
           .from('contract_documents')
-          .select('id, company_id, contract_id, document_type, document_name, file_path, file_size, mime_type, uploaded_by, uploaded_at, notes, is_required, condition_report_id, created_at, updated_at, legal_identity_match_status, legal_identity_match_reason')
+          .select('id, company_id, contract_id, document_type, document_name, file_path, file_size, mime_type, uploaded_by, uploaded_at, notes, is_required, condition_report_id, created_at, updated_at, legal_identity_match_status, legal_identity_match_reason, legal_evidence_state, legal_identity_details')
           .eq('contract_id', contractId)
           .eq('company_id', companyId)
           .order('created_at', { ascending: false }),

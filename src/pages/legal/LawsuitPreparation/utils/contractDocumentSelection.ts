@@ -1,3 +1,5 @@
+export { hasExactIdentityNumberMatch, getEffectiveLegalIdentityMatchStatus } from '@/utils/legalContractIdentityMatch';
+
 export interface ContractDocumentCandidate {
   id: string;
   document_name: string | null;
@@ -8,24 +10,8 @@ export interface ContractDocumentCandidate {
   legal_identity_expected_id?: string | null;
   legal_identity_extracted_id?: string | null;
   legal_evidence_state?: string | null;
+  legal_identity_match_reason?: string | null;
 }
-
-const normalizeIdentityNumber = (value: string | null | undefined): string =>
-  String(value || '').replace(/[^0-9]/g, '');
-
-export const hasExactIdentityNumberMatch = (document: ContractDocumentCandidate): boolean => {
-  const expectedId = normalizeIdentityNumber(document.legal_identity_expected_id);
-  const extractedId = normalizeIdentityNumber(document.legal_identity_extracted_id);
-  return expectedId.length === 11 && expectedId === extractedId;
-};
-
-export const getEffectiveLegalIdentityMatchStatus = (
-  document: ContractDocumentCandidate,
-): string | null | undefined => (
-  hasExactIdentityNumberMatch(document)
-    ? 'matched'
-    : document.legal_identity_match_status
-);
 
 const normalizeDocumentName = (value: string | null): string =>
   (value || '')
@@ -42,7 +28,6 @@ const scoreContractDocument = (
   if (
     identityMode === 'matched'
     && document.legal_identity_match_status !== 'matched'
-    && !hasExactIdentityNumberMatch(document)
   ) return -1;
   if (identityMode === 'pending' && document.legal_identity_match_status !== 'pending') return -1;
 
@@ -77,6 +62,32 @@ export function selectLegalContractDocument<T extends ContractDocumentCandidate>
   // older copies as superseded before legal filing can continue.
   if (matched.length !== 1) return null;
   return matched[0].document;
+}
+
+/** Explains attachment presence separately from eligibility as filing evidence. */
+export function getContractDocumentReview(documents: ContractDocumentCandidate[]) {
+  const copies = documents.filter((document) => document.file_path
+    && ['signed_contract', 'signed_contract_image'].includes((document.document_type || '').toLowerCase()));
+  const matched = selectLegalContractDocument(documents);
+  const activeMatched = copies.filter((document) => (document.legal_evidence_state || 'active') === 'active'
+    && document.legal_identity_match_status === 'matched');
+  if (matched) return { kind: 'ready' as const, label: 'جاهز', message: '', copies };
+  if (!copies.length) return {
+    kind: 'missing' as const, label: 'نسخة العقد ناقصة', copies,
+    message: 'لا توجد نسخة مرفوعة مصنفة كعقد موقّع لهذا العقد. ارفع النسخة أو راجع تصنيف المستند الموجود في ملف العقد.',
+  };
+  if (activeMatched.length > 1) return {
+    kind: 'conflict' as const, label: 'موجود — تعدد النسخ', copies,
+    message: 'توجد أكثر من نسخة عقد نشطة ومطابقة. راجع النسخ وحدد النسخة المعتمدة قبل الرفع.',
+  };
+  const candidate = copies.find((document) => document.legal_evidence_state !== 'superseded') || copies[0];
+  const reason = candidate.legal_identity_match_reason?.trim();
+  return {
+    kind: 'review' as const, label: 'موجود — يحتاج مراجعة', copies,
+    message: candidate.legal_evidence_state === 'superseded'
+      ? 'نسخة العقد موجودة لكنها مستبدلة وغير معتمدة للرفع. راجع النسخة الحالية في ملف العقد.'
+      : `نسخة العقد موجودة. يلزم مراجعة المطابقة قبل اعتمادها للدعوى. ${reason || 'لم تكتمل مطابقة هوية المستأجر.'} افتح مراجعة العقد لإكمال التحقق.`,
+  };
 }
 
 /**

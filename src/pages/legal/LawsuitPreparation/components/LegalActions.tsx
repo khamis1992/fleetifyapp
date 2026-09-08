@@ -75,6 +75,8 @@ function StationHeader({
 export function LegalActions() {
   const { state, actions } = useLawsuitPreparationContext();
   const { documents, taqadiData, ui } = state;
+  const caseRegistered = Boolean(state.legalCase?.case_reference)
+    || Boolean(state.legalCase && !['preparation', 'cancelled'].includes(state.legalCase.workflow_stage));
 
   const readiness = getFilingReadiness(state);
   const {
@@ -167,8 +169,8 @@ export function LegalActions() {
           <StationHeader
             number={3}
             title="الإغلاق والتسجيل"
-            subtitle="تأكيد فتح القضية في النظام بعد اكتمال الرفع"
-            state={allReady ? 'current' : 'upcoming'}
+            subtitle={caseRegistered ? 'تم تسجيل القضية ويمكن متابعتها من سجل القضايا' : 'تأكيد فتح القضية في النظام بعد اكتمال الرفع'}
+            state={caseRegistered ? 'done' : allReady ? 'current' : 'upcoming'}
           />
         </div>
 
@@ -177,11 +179,11 @@ export function LegalActions() {
             type="button"
             size="lg"
             onClick={actions.markCaseAsOpened}
-            disabled={!allReady || ui.isMarkingCaseOpened}
+            disabled={caseRegistered || !allReady || ui.isMarkingCaseOpened}
             className="lawsuit-primary-command"
           >
             {ui.isMarkingCaseOpened ? <Loader2 className="h-5 w-5 animate-spin" /> : <Gavel className="h-5 w-5" />}
-            تأكيد فتح القضية
+            {caseRegistered ? 'تم تسجيل القضية' : 'تأكيد فتح القضية'}
           </Button>
 
           <DropdownMenu>
@@ -193,7 +195,7 @@ export function LegalActions() {
             </DropdownMenuTrigger>
             <DropdownMenuContent align="start" className="rounded-lg border-[#E5EAF1]">
               <DropdownMenuItem
-                disabled={!allReady || ui.isRegistering}
+                disabled={caseRegistered || !allReady || ui.isRegistering}
                 onSelect={() => { void actions.registerCase(); }}
               >
                 {ui.isRegistering ? <Loader2 className="h-4 w-4 animate-spin" /> : <Database className="h-4 w-4" />}
@@ -220,8 +222,8 @@ export function LegalActions() {
         <div className="lawsuit-followup-note">
           <FileText className="h-5 w-5" />
           <div>
-            <strong>بعد التسجيل</strong>
-            <span>سيتم تحويل العقد إلى إجراء قانوني ويمكن متابعة القضية من سجل القضايا.</span>
+            <strong>{caseRegistered ? 'اكتمل التسجيل' : 'بعد التسجيل'}</strong>
+            <span>{caseRegistered ? 'يمكن متابعة الإيداع وقرار المحكمة من سجل القضايا.' : 'سيتم تحويل العقد إلى إجراء قانوني ويمكن متابعة القضية من سجل القضايا.'}</span>
           </div>
         </div>
       </section>

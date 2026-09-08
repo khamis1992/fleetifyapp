@@ -12,6 +12,7 @@ import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
 import { supabase } from '@/integrations/supabase/client';
 import { saveContractNotes, saveContractVehicleAndExtension } from '@/services/contractQuickEditService';
 import { refreshContractFinancialQueries } from '@/utils/contractFinancialQueries';
+import { notifyRecordChange } from '@/services/recordQuerySynchronization';
 import type { ContractFormData } from '../SimpleContractWizard';
 import { editCopy } from './copy';
 import { currentEditVehicle, editChanges, editCustomerName, editPreviewAmount, initialEditDraft, isValidEditDate, type EditableContract, type EditDraft, type EditVehicle } from './model';
@@ -164,6 +165,7 @@ export function ContractEditWorkspace({ open, onOpenChange, contract, onSubmit }
       toast.success(copy.saved);
       // A failed read after a confirmed write must not offer to submit again.
       void Promise.all([
+        notifyRecordChange(queryClient, { entity: 'contract', companyId: snapshot.company_id, recordId: snapshot.id }),
         refreshContractFinancialQueries(queryClient, { companyId: snapshot.company_id,
           contractId: snapshot.id, contractNumber: snapshot.contract_number || snapshot.id }),
         ...[['contracts'], ['contract-amendments', snapshot.id], ['vehicles']].map(queryKey => queryClient.invalidateQueries({ queryKey })),

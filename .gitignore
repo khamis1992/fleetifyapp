@@ -89,6 +89,7 @@ tmp/
 # Python cache
 scripts/__pycache__/
 .taqadi-agent/
+.document-orientation-agent/
 .env.taqadi-agent
 
 # opencode local config (contains MCP access token)

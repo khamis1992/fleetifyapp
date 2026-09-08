@@ -19,6 +19,7 @@
  */
 
 import { createClient, SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.57.4";
+import { PDFDocument } from "https://esm.sh/pdf-lib@1.17.1";
 import {
   buildLongCatHeaders,
   getLongCatApiKey,
@@ -27,7 +28,13 @@ import {
 } from "../_shared/longcat.ts";
 import {
   assessLegalContractIdentity,
+  LEGAL_IDENTITY_ENGINE_VERSION,
+  normalizeIdentityNumber,
+  normalizeIdentityDigits,
+  normalizeArabicIdentityName,
+  isPlausibleTenantName,
   extractContractTenantIdentity,
+  extractLabelledIdentityNumbers,
   type ContractTenantIdentity,
   type LegalContractIdentityAssessment,
 } from "../_shared/legal-contract-identity.ts";
@@ -103,6 +110,8 @@ interface ContractDocumentRow {
   document_name: string;
   file_path: string | null;
   mime_type: string | null;
+  identityRevision?: string;
+  fileSha256?: string;
 }
 
 interface OcrAnnotation {
@@ -113,6 +122,7 @@ interface OcrAnnotation {
 interface OcrResult {
   text: string;
   annotations: OcrAnnotation[];
+  words: Array<{ text: string; confidence: number | null }>;
 }
 
 interface NameEvidence {
@@ -371,71 +381,10 @@ async function processSingleDocument(supabase: SupabaseClient, documentId: strin
 // Stored OCR mode — reuse a previously reviewed scan before calling Vision
 // ---------------------------------------------------------------------------
 
-async function processStoredOcr(
-  supabase: SupabaseClient,
-  documentId: string,
-) {
-  const { data: doc, error: documentError } = await supabase
-    .from("contract_documents")
-    .select("id, company_id, contract_id, document_type, document_name, file_path, mime_type")
-    .eq("id", documentId)
-    .single();
-
-  if (documentError || !doc) throw new Error("Document not found");
-
-  const { data: proposal, error: proposalError } = await supabase
-    .from("customer_id_scan_proposals")
-    .select("raw_text, page_number, evidence_image_path, evidence_label")
-    .eq("contract_document_id", documentId)
-    .not("raw_text", "is", null)
-    .order("created_at", { ascending: false })
-    .limit(1)
-    .maybeSingle();
-
-  if (proposalError) throw proposalError;
-  const rawText = typeof proposal?.raw_text === "string"
-    ? proposal.raw_text.trim()
-    : "";
-  if (!rawText) {
-    return { outcome: "stored_ocr_unavailable", source: "stored_ocr" };
-  }
-
-  try {
-    const outcome = await buildAndStoreProposal(
-      supabase,
-      doc as ContractDocumentRow,
-      rawText,
-      proposal?.page_number ?? null,
-      {
-        imagePath: proposal?.evidence_image_path || doc.file_path,
-        crop: null,
-        label: proposal?.evidence_label || null,
-      },
-      [],
-      rawText,
-    );
-    if (outcome !== "proposal_created") await deletePendingProposal(supabase, doc.id);
-    await markDocument(
-      supabase,
-      doc.id,
-      outcome === "proposal_created" ? "proposal_created" : "no_changes",
-    );
-    return {
-      outcome,
-      source: "stored_ocr",
-      pageNumber: proposal?.page_number ?? null,
-    };
-  } catch (error) {
-    console.error(`Failed to compare stored OCR for document ${doc.id}:`, error);
-    await markDocument(
-      supabase,
-      doc.id,
-      "failed",
-      error instanceof Error ? error.message : String(error),
-    );
-    await markLegalIdentityFailedIfPending(supabase, doc.id, error);
-    return { outcome: "failed", source: "stored_ocr" };
-  }
+async function processStoredOcr(_supabase: SupabaseClient, _documentId: string) {
+  // Legacy proposals contain only a truncated excerpt, not all contract pages.
+  // Force a complete scan instead of upgrading a decision from that excerpt.
+  return { outcome: "stored_ocr_unavailable", source: "stored_ocr" };
 }
 
 // ---------------------------------------------------------------------------
@@ -447,14 +396,29 @@ async function processRasterizedPages(
   documentId: string,
   pages: Array<{ pageNumber: number; imageBase64: string; evidenceImagePath?: string }>,
 ) {
-  const { data: doc, error } = await supabase
+  const { data: documentRow, error } = await supabase
     .from("contract_documents")
     .select("id, company_id, contract_id, document_type, document_name, file_path, mime_type")
     .eq("id", documentId)
     .single();
 
-  if (error || !doc) throw new Error("Document not found");
+  if (error || !documentRow) throw new Error("Document not found");
+  const doc: ContractDocumentRow = documentRow;
 
+  doc.identityRevision = await identityRevision(supabase, doc);
+  if (pages.length < 1 || pages.length > 20
+    || pages.some((page, index) => page.pageNumber !== index + 1 || !page.imageBase64)) {
+    throw new Error("يلزم إرسال جميع الصفحات بالترتيب، بحد أقصى 20 صفحة");
+  }
+  if (!doc.file_path) throw new Error("المستند لا يحتوي على ملف للفحص");
+  const { data: original, error: originalError } = await supabase.storage.from("contract-documents").download(doc.file_path);
+  if (originalError || !original) throw new Error("تعذر قراءة الملف الأصلي للتحقق من اكتمال الصفحات");
+  const originalBytes = await original.arrayBuffer();
+  doc.fileSha256 = await sha256(originalBytes);
+  const originalPageCount = doc.mime_type === "application/pdf" || doc.document_name.toLowerCase().endsWith(".pdf")
+    ? (await PDFDocument.load(originalBytes, { updateMetadata: false })).getPageCount() : 1;
+  if (originalPageCount !== pages.length) throw new Error("عدد الصفحات المرسلة لا يطابق الملف الأصلي؛ أعد فحص جميع الصفحات");
+  const scannedPages: Array<{ pageNumber: number; ocr: OcrResult }> = [];
   const evidencePages: Array<{
     page: { pageNumber: number; imageBase64: string; evidenceImagePath?: string };
     ocr: OcrResult;
@@ -462,9 +426,10 @@ async function processRasterizedPages(
   const allPageTexts: string[] = [];
   const pageErrors: string[] = [];
 
-  for (const page of pages.slice(0, 20)) {
+  for (const page of pages) {
     try {
       const ocr = await detectTextWithGoogleVision(page.imageBase64);
+      scannedPages.push({ pageNumber: page.pageNumber, ocr });
       if (ocr.text) allPageTexts.push(ocr.text);
       if (ocr.text && looksLikeCustomerIdentityEvidence(ocr.text)) {
         evidencePages.push({ page, ocr });
@@ -490,7 +455,7 @@ async function processRasterizedPages(
     .includes(doc.document_type);
   if (evidencePages.length === 0 && monthlyRent === undefined && !isSignedContract) {
     await deletePendingProposal(supabase, doc.id);
-    await recordLegalIdentityAssessment(supabase, doc.id, {
+    await recordLegalIdentityAssessment(supabase, doc, {
       status: "unverified",
       expectedName: null,
       extractedName: null,
@@ -529,6 +494,7 @@ async function processRasterizedPages(
       },
       evidencePage?.ocr.annotations ?? [],
       fullText,
+      { pages: scannedPages, incomplete: pageErrors.length > 0 },
     );
     if (outcome !== "proposal_created") await deletePendingProposal(supabase, doc.id);
     await markDocument(
@@ -559,6 +525,7 @@ async function scanDocumentImage(
   doc: ContractDocumentRow,
 ): Promise<"proposal_created" | "no_changes" | "no_id_card" | "failed"> {
   try {
+    doc.identityRevision = await identityRevision(supabase, doc);
     const { data: file, error: downloadError } = await supabase.storage
       .from("contract-documents")
       .download(doc.file_path!);
@@ -566,6 +533,7 @@ async function scanDocumentImage(
     if (downloadError || !file) throw downloadError || new Error("Download failed");
 
     const buffer = await file.arrayBuffer();
+    doc.fileSha256 = await sha256(buffer);
     const imageBase64 = arrayBufferToBase64(buffer);
 
     const ocr = await detectTextWithGoogleVision(imageBase64);
@@ -578,7 +546,7 @@ async function scanDocumentImage(
       : false;
     if (!text || (!looksLikeCustomerIdentityEvidence(text) && !rentFound && !tenantFound)) {
       await deletePendingProposal(supabase, doc.id);
-      await recordLegalIdentityAssessment(supabase, doc.id, {
+      await recordLegalIdentityAssessment(supabase, doc, {
         status: "unverified",
         expectedName: null,
         extractedName: null,
@@ -602,6 +570,7 @@ async function scanDocumentImage(
       },
       ocr.annotations,
       text,
+      { pages: [{ pageNumber: 1, ocr }], incomplete: false },
     );
     if (outcome !== "proposal_created") {
       await deletePendingProposal(supabase, doc.id);
@@ -660,10 +629,20 @@ async function detectTextWithGoogleVision(imageBase64: string): Promise<OcrResul
   }
 
   const data = await response.json();
+  if (data.responses?.[0]?.error) throw new Error("تعذرت قراءة الصورة من مزود OCR");
+  const words = (data.responses?.[0]?.fullTextAnnotation?.pages || [])
+    .flatMap((page: { blocks?: unknown[] }) => page.blocks || [])
+    .flatMap((block: { paragraphs?: unknown[] }) => block.paragraphs || [])
+    .flatMap((paragraph: { words?: unknown[] }) => paragraph.words || [])
+    .map((word: { symbols?: Array<{ text?: string }>; confidence?: number }) => ({
+      text: (word.symbols || []).map((symbol) => symbol.text || "").join(""),
+      confidence: typeof word.confidence === "number" ? word.confidence : null,
+    }));
   const annotations = (data.responses?.[0]?.textAnnotations || []) as OcrAnnotation[];
   return {
     text: data.responses?.[0]?.fullTextAnnotation?.text || annotations[0]?.description || "",
     annotations,
+    words,
   };
 }
 
@@ -738,6 +717,7 @@ function findNameEvidenceCrop(
 // ---------------------------------------------------------------------------
 
 function looksLikeIdCard(text: string): boolean {
+  text = normalizeIdentityDigits(text);
   const hasElevenDigitId = /\b\d{11}\b/.test(text);
   const hasIdKeywords =
     /قطر|Qatar|الجنسية|Nationality|بطاقة|CARD|إقامة|Residence|Permit|الشخصية/i.test(
@@ -747,6 +727,7 @@ function looksLikeIdCard(text: string): boolean {
 }
 
 function looksLikeContractPartyIdentity(text: string): boolean {
+  text = normalizeIdentityDigits(text);
   const hasElevenDigitId = /\b\d{11}\b/.test(text);
   const hasPartyLabel = /الطرف\s*الثاني|المستأجر|اسم\s*المستأجر/i.test(text);
   const hasIdentityLabel = /بطاقة|الرقم\s*الشخصي|رقم\s*الهوية|الجنسية/i.test(text);
@@ -1025,6 +1006,7 @@ function extractMonthlyRent(lines: string[]): number | undefined {
 }
 
 function extractIdData(text: string): ExtractedIdData {
+  text = normalizeIdentityDigits(text);
   const data: ExtractedIdData = {};
   const lines = text.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
   const cleanText = text.replace(/\s+/g, " ").trim();
@@ -1323,6 +1305,7 @@ async function buildAndStoreProposal(
   evidence: NameEvidence = {},
   annotations: OcrAnnotation[] = [],
   contractText: string = rawText,
+  scan: { pages: Array<{ pageNumber: number; ocr: OcrResult }>; incomplete: boolean } = { pages: [], incomplete: true },
 ): Promise<"proposal_created" | "no_changes"> {
   // Get the contract (and its customer) — monthly_amount is needed so the
   // scanner can recover contracts whose rent was never recorded.
@@ -1330,6 +1313,7 @@ async function buildAndStoreProposal(
     .from("contracts")
     .select("customer_id, monthly_amount, contract_amount")
     .eq("id", doc.contract_id)
+    .eq("company_id", doc.company_id)
     .single();
 
   if (contractError || !contract?.customer_id) {
@@ -1342,6 +1326,7 @@ async function buildAndStoreProposal(
       "id, first_name, last_name, first_name_ar, last_name_ar, national_id, national_id_expiry, nationality, date_of_birth",
     )
     .eq("id", contract.customer_id)
+    .eq("company_id", doc.company_id)
     .single();
 
   if (customerError || !customer) throw new Error("Customer not found");
@@ -1352,28 +1337,50 @@ async function buildAndStoreProposal(
 
   const expectedArabicName = `${customer.first_name_ar || ""} ${customer.last_name_ar || ""}`.trim();
   let contractTenant = extractContractTenantIdentity(contractText);
-  if (!contractTenant.nameArabic) {
+  if (!contractTenant.nameArabic && !contractTenant.ambiguous) {
     contractTenant = await extractContractTenantWithLongCat(contractText)
       || contractTenant;
   }
+  const labelledIds = scan.pages.flatMap(({ pageNumber, ocr }) =>
+    extractLabelledIdentityNumbers(ocr.text).map((candidate) => ({ ...candidate, pageNumber })));
+  const selectedId = contractTenant.identityNumber || labelledIds[0]?.value;
+  const idPages = scan.pages.filter(({ pageNumber }) =>
+    labelledIds.some((candidate) => candidate.pageNumber === pageNumber && candidate.value === selectedId));
+  const idWords = idPages.flatMap(({ ocr }) => ocr.words)
+    .filter((word) => normalizeIdentityNumber(word.text) === normalizeIdentityNumber(selectedId));
+  const knownConfidences = idWords.map((word) => word.confidence).filter((value): value is number => value != null);
+  const idConfidence = knownConfidences.length ? Math.min(...knownConfidences) : null;
+  const identityNumbers = new Set(labelledIds.map((candidate) => candidate.value));
   const identityAssessment = assessLegalContractIdentity({
     expectedName: expectedArabicName,
     extractedName: contractTenant.nameArabic || extracted.nameArabic,
     expectedId: customer.national_id,
-    extractedId: contractTenant.identityNumber || extracted.nationalId,
+    extractedId: selectedId,
     authoritativeName: Boolean(contractTenant.nameArabic),
+    ambiguousEvidence: contractTenant.ambiguous || identityNumbers.size > 1,
+    incompleteScan: scan.incomplete,
+    idConfidence,
   });
-  await recordLegalIdentityAssessment(supabase, doc.id, identityAssessment);
+  const selectedName = contractTenant.nameArabic || extracted.nameArabic;
+  const namePage = scan.pages.find(({ ocr }) => selectedName
+    && normalizeArabicIdentityName(ocr.text).includes(normalizeArabicIdentityName(selectedName)));
+  identityAssessment.details = {
+    ...identityAssessment.details,
+    extractorVersion: "2026-09-07.labelled-qid.2",
+    scan: { pageCount: scan.pages.length, complete: !scan.incomplete, provider: "google_vision", fileSha256: doc.fileSha256 || null },
+    name: { pageNumber: namePage?.pageNumber ?? null, snippet: contractTenant.evidence || null,
+      crop: namePage ? findNameEvidenceCrop(namePage.ocr.annotations, selectedName) : null },
+    identityNumber: { pageNumber: idPages[0]?.pageNumber ?? null, confidence: idConfidence,
+      crop: idPages[0] ? findNameEvidenceCrop(idPages[0].ocr.annotations, selectedId || null) : null },
+    identityCandidates: labelledIds.slice(0, 30),
+    tenantCandidates: contractTenant.candidates || [],
+  };
+  await recordLegalIdentityAssessment(supabase, doc, identityAssessment);
   if (identityAssessment.status === "mismatch") {
-    const extractedParty = identityAssessment.extractedName
-      || identityAssessment.extractedId
-      || "unknown";
-    const expectedParty = identityAssessment.expectedName
-      || identityAssessment.expectedId
-      || "unknown";
-    throw new Error(
-      `LEGAL_IDENTITY_MISMATCH: signed contract party "${extractedParty}" does not match defendant "${expectedParty}"`,
-    );
+    // LEGAL_IDENTITY_MISMATCH: signed contract party does not match defendant.
+    // A completed comparison is not an OCR failure; never propose customer changes.
+    await deletePendingProposal(supabase, doc.id);
+    return "no_changes";
   }
 
   const differs = (current: string | null, proposed?: string) =>
@@ -1385,13 +1392,13 @@ async function buildAndStoreProposal(
   //     (like the English rendering of a matching Arabic name) deserve
   //     high confidence instead of the default medium one.
   const nationalIdMatches =
-    !!extracted.nationalId && customer.national_id === extracted.nationalId;
+    !!normalizeIdentityNumber(extracted.nationalId) && normalizeIdentityNumber(customer.national_id) === normalizeIdentityNumber(extracted.nationalId);
   const arabicNameMatches =
     !!extracted.nameArabic &&
     normalizeArabic(`${customer.first_name_ar || ""} ${customer.last_name_ar || ""}`) ===
       normalizeArabic(extracted.nameArabic);
-  const identityConfirmed = nationalIdMatches ||
-    (!customer.national_id && arabicNameMatches);
+  const identityConfirmed = identityAssessment.status === "matched" && (nationalIdMatches ||
+    (!customer.national_id && arabicNameMatches));
 
   // Confidence levels: corroborated by identity confirmation vs raw pattern match
   const CONF_NATIONALITY = identityConfirmed ? 0.9 : 0.85;
@@ -1593,7 +1600,7 @@ async function extractContractTenantWithLongCat(
         temperature: 0,
         messages: [{
           role: "user",
-          content: `استخرج فقط اسم المستأجر أو الطرف الثاني المكتوب في متن عقد إيجار السيارة، وليس اسم صاحب بطاقة هوية مرفقة ولا اسم الشركة. أعد JSON فقط بالشكل {"nameArabic": string|null, "identityNumber": string|null}. النص:\n${rawText.substring(0, 7000)}`,
+          content: `استخرج فقط اسم المستأجر أو الطرف الثاني المكتوب في متن عقد إيجار السيارة، وليس اسم صاحب بطاقة هوية مرفقة ولا اسم الشركة. أعد JSON فقط بالشكل {"nameArabic": string|null, "identityNumber": string|null, "evidence": string|null}. النص:\n${rawText.substring(0, 7000)}`,
         }],
       }),
     });
@@ -1603,14 +1610,12 @@ async function extractContractTenantWithLongCat(
     const match = content.match(/\{[\s\S]*\}/);
     if (!match) return null;
     const parsed = JSON.parse(match[0]);
-    return {
-      nameArabic: typeof parsed.nameArabic === "string" && parsed.nameArabic.trim()
-        ? parsed.nameArabic.trim()
-        : null,
-      identityNumber: typeof parsed.identityNumber === "string"
-        ? parsed.identityNumber.replace(/[^0-9]/g, "") || null
-        : null,
-    };
+    // The model proposes an extraction; only an exact, labelled source quote can confirm it.
+    const quote = typeof parsed.evidence === "string" ? parsed.evidence.trim() : "";
+    if (!quote || !rawText.includes(quote) || !isPlausibleTenantName(parsed.nameArabic)) return null;
+    const verified = extractContractTenantIdentity(quote);
+    if (verified.ambiguous || normalizeArabicIdentityName(verified.nameArabic) !== normalizeArabicIdentityName(parsed.nameArabic)) return null;
+    return verified;
   } catch (error) {
     console.warn("Failed to extract the contract tenant with LongCat:", error);
     return null;
@@ -1640,24 +1645,24 @@ async function deletePendingProposal(
   }
 }
 
+async function identityRevision(supabase: SupabaseClient, doc: ContractDocumentRow): Promise<string> {
+  const { data, error } = await supabase.rpc("contract_identity_revision_v2", {
+    p_company_id: doc.company_id, p_document_id: doc.id,
+  });
+  if (error || !data) throw error || new Error("تعذر قراءة بيانات العميل والمستند");
+  return data;
+}
+
 async function recordLegalIdentityAssessment(
   supabase: SupabaseClient,
-  documentId: string,
+  doc: ContractDocumentRow,
   assessment: LegalContractIdentityAssessment,
 ): Promise<void> {
-  const { error } = await supabase
-    .from("contract_documents")
-    .update({
-      legal_identity_match_status: assessment.status,
-      legal_identity_expected_name: assessment.expectedName,
-      legal_identity_extracted_name: assessment.extractedName,
-      legal_identity_expected_id: assessment.expectedId,
-      legal_identity_extracted_id: assessment.extractedId,
-      legal_identity_match_reason: assessment.reason,
-      legal_identity_checked_at: new Date().toISOString(),
-    })
-    .eq("id", documentId);
-
+  const { error } = await supabase.rpc("record_contract_identity_assessment_v2", {
+    p_company_id: doc.company_id, p_document_id: doc.id,
+    p_revision: doc.identityRevision,
+    p_assessment: { ...assessment, engineVersion: LEGAL_IDENTITY_ENGINE_VERSION },
+  });
   if (error) throw error;
 }
 
@@ -1715,4 +1720,8 @@ function arrayBufferToBase64(buffer: ArrayBuffer): string {
     binary += String.fromCharCode(...bytes.subarray(i, i + chunkSize));
   }
   return btoa(binary);
+}
+
+async function sha256(buffer: ArrayBuffer): Promise<string> {
+  return Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256", buffer)), (byte) => byte.toString(16).padStart(2, "0")).join("");
 }

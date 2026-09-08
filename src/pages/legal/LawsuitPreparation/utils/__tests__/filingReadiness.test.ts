@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import type { LawsuitPreparationState } from '../../store';
 import { getFilingReadiness } from '../filingReadiness';
+import { getFilingIssues } from '../filingIssues';
 
 vi.mock('../documentGenerators', () => ({
   isMemoSnapshotCurrent: vi.fn(() => true),
@@ -79,6 +80,72 @@ function createReadyState(violationsCount = 0): LawsuitPreparationState {
 }
 
 describe('getFilingReadiness', () => {
+  it('requires traffic documents for a positive claimed amount even if the count is stale', () => {
+    const state = createReadyState(0);
+    state.calculations!.violationsFines = 500;
+    state.documents.violationsEvidence.status = 'missing';
+    expect(getFilingReadiness(state).requiredDocumentIds).toContain('violationsEvidence');
+    expect(getFilingReadiness(state).canStartFiling).toBe(false);
+  });
+  it('requires official proof for traffic-only scope even before a supported amount is available', () => {
+    const state = createReadyState(0);
+    state.legalCase = { claim_scope: 'traffic_violations_only' } as LawsuitPreparationState['legalCase'];
+    state.documents.violationsEvidence.status = 'missing';
+    expect(getFilingReadiness(state).canStartFiling).toBe(false);
+  });
+  it('explains missing nationality directly and sends the user to its completion form', () => {
+    const state = createReadyState();
+    state.taqadiData!.defendant.nationality = null;
+    const readiness = getFilingReadiness(state);
+    const blockers = getFilingIssues(state, readiness).filter((issue) => issue.severity === 'blocking');
+    expect(readiness.taqadiIssues.map((issue) => issue.field)).toEqual(['nationality']);
+    expect(readiness.missingReasons).toHaveLength(1);
+    expect(blockers).toHaveLength(1);
+    expect(blockers[0]).toMatchObject({ id: 'field-nationality', resolution: { kind: 'nationality' } });
+    state.taqadiData!.defendant.nationality = 'مصري';
+    expect(getFilingReadiness(state).canStartFiling).toBe(true);
+    expect(getFilingIssues(state).some((issue) => issue.id === 'field-nationality')).toBe(false);
+  });
+
+  it('keeps custody and notice warnings actionable without turning them into blockers', () => {
+    const state = createReadyState();
+    const readiness = getFilingReadiness(state);
+    readiness.legalStatus.warnings = ['حيازة المركبة غير مؤكدة؛ لن يظهر طلب الرد أو تعويض الاحتباس.', 'لا يوجد إعذار سابق أو استثناء موثق.'];
+    const issues = getFilingIssues(state, readiness);
+    expect(issues.filter((issue) => issue.severity === 'blocking')).toHaveLength(0);
+    expect(issues[0].resolution).toMatchObject({ kind: 'tab', tab: 'evidence', anchor: 'lawsuit-custody' });
+    expect(issues[1].resolution).toMatchObject({ kind: 'tab', tab: 'evidence', anchor: 'lawsuit-notices' });
+    expect(readiness.canStartFiling).toBe(true);
+  });
+
+  it('shows one actionable contact error when the email is missing and unverified', () => {
+    const state = createReadyState();
+    const readiness = getFilingReadiness(state);
+    readiness.taqadiIssues = [{ field: 'email', message: 'بريد المدعى عليه المتحقق منه غير مكتمل.' }];
+    readiness.legalStatus.issues = ['حالة بريد المدعى عليه غير محددة.'];
+    const blockers = getFilingIssues(state, readiness).filter((issue) => issue.severity === 'blocking');
+    expect(blockers).toHaveLength(1);
+    expect(blockers[0].resolution).toMatchObject({ anchor: 'lawsuit-contact' });
+  });
+
+  it('routes an unsigned/unmatched lease to the document workflow only once', () => {
+    const state = createReadyState();
+    state.documents.contract.status = 'missing';
+    const blockers = getFilingIssues(state).filter((issue) => issue.severity === 'blocking');
+    expect(blockers).toHaveLength(1);
+    expect(blockers[0]).toMatchObject({ id: 'signed-contract', resolution: { tab: 'documents' } });
+    expect(getFilingReadiness(state).canStartFiling).toBe(false);
+  });
+
+  it('exposes failed document generation and its completion action', () => {
+    const state = createReadyState();
+    state.documents.memo.status = 'error';
+    state.documents.memo.error = new Error('تعذر إنشاء المذكرة');
+    const issue = getFilingIssues(state).find((item) => item.id === 'document-memo');
+    expect(issue).toMatchObject({ description: 'تعذر إنشاء المذكرة', resolution: { tab: 'documents', anchor: 'lawsuit-documents' } });
+    expect(getFilingReadiness(state).canStartFiling).toBe(false);
+  });
+
   it.each(['غير محدد', 'unknown', '', null])('rejects missing nationality %j even with complete documents', (nationality) => {
     const state = createReadyState();
     state.taqadiData!.defendant.nationality = nationality;

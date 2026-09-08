@@ -19,7 +19,7 @@ export type ContractCustomer = Pick<
   | 'phone'
   | 'email'
   | 'national_id'
->
+> & Partial<Pick<CustomerRow, 'nationality' | 'address' | 'country'>>
 
 export type ContractVehicle = Pick<
   VehicleRow,

@@ -1,6 +1,6 @@
 import { LegalPageHeader } from '@/components/legal/workspace/LegalPageHeader';
-import { useMemo, useState, type ElementType } from 'react';
-import { useParams } from 'react-router-dom';
+import { useCallback, useEffect, useMemo, useState, type ElementType } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Activity,
@@ -45,10 +45,14 @@ import { LegalDocuments } from './components/LegalDocuments';
 import { LegalTaqadi } from './components/LegalTaqadi';
 import { LegalActions } from './components/LegalActions';
 import { getFilingReadiness } from './utils/filingReadiness';
+import { getFilingIssues, type FilingIssue, type PreparationTab } from './utils/filingIssues';
+import { FilingIssuesPanel } from './components/FilingIssuesPanel';
+import { NationalityCompletionDialog } from './components/NationalityCompletionDialog';
 import '@/styles/legal-system.css';
 import './LegalTheme.css';
+import './ReadinessIssues.css';
 
-type TabId = 'overview' | 'evidence' | 'documents' | 'taqadi' | 'actions';
+type TabId = PreparationTab;
 
 type LawsuitTab = {
   id: TabId;
@@ -136,17 +140,17 @@ function getStepStatuses(state: LawsuitPreparationState): Record<TabId, StepStat
       hint:
         missing === 0
           ? `${readiness.documents.ready}/${total} مستنداً جاهزاً`
-          : `${missing} من ${total} مستندات ناقصة`,
+          : `${missing} من ${total} مستندات تحتاج استكمالًا أو مراجعة`,
     },
     taqadi: {
       done: readiness.taqadiComplete,
-      issues: readiness.taqadiComplete ? 0 : 1,
-      hint: readiness.taqadiComplete ? 'بيانات المحكمة مكتملة' : 'بيانات المحكمة ناقصة',
+      issues: readiness.taqadiIssues.length,
+      hint: readiness.taqadiComplete ? 'بيانات المحكمة مكتملة' : readiness.taqadiIssues[0]?.field === 'nationality' ? 'جنسية العميل تحتاج استكمالًا' : 'بيانات المحكمة ناقصة',
     },
     actions: {
       done: readiness.canStartFiling,
       issues: readiness.missingReasons.length,
-      hint: readiness.canStartFiling ? 'جاهز للتقديم' : 'يتطلب إكمال الخطوات السابقة',
+      hint: readiness.canStartFiling ? 'جاهز للتقديم' : state.legalCase?.id ? 'متابعة العملية واستكمال النواقص' : 'يتطلب إكمال الخطوات السابقة',
     },
   };
 }
@@ -155,12 +159,13 @@ function getStepStatuses(state: LawsuitPreparationState): Record<TabId, StepStat
  * الخطوات الأربع الأولى مفتوحة دائماً — لأن متطلباتها مترابطة
  * (مثلاً: ربط نسخة العقد في الحافظة يحل مشكلة في الوقائع)،
  * وقفلها التسلسلي يسبب جموداً. القفل الحقيقي الوحيد: خطوة الإغلاق
- * حتى تكتمل كل شروط canStartFiling.
+ * حتى تكتمل كل شروط canStartFiling، أو توجد قضية لمتابعة عمليتها السابقة.
+ * أزرار الرفع نفسها تتحقق من الجاهزية قبل إرسال أي محاولة جديدة.
  */
-function getUnlockedTabs(statuses: Record<TabId, StepStatus>): Set<TabId> {
+function getUnlockedTabs(statuses: Record<TabId, StepStatus>, hasLegalCase: boolean): Set<TabId> {
   const order: TabId[] = ['overview', 'evidence', 'documents', 'taqadi'];
   const unlocked = new Set<TabId>(order);
-  if (statuses.actions.done) {
+  if (statuses.actions.done || hasLegalCase) {
     unlocked.add('actions');
   }
   return unlocked;
@@ -365,7 +370,7 @@ function LawsuitAIAssistantCard({ readiness }: { readiness: ReturnType<typeof ge
 
       {insight.missingDocs.length > 0 && (
         <div className="mt-3">
-          <p className="text-xs font-black text-[#66758A]">نواقص المستندات</p>
+          <p className="text-xs font-black text-[#66758A]">مستندات تحتاج إجراء</p>
           <div className="mt-2 flex flex-wrap gap-1.5">
             {insight.missingDocs.slice(0, 4).map((doc) => (
               <Badge key={doc.id} variant="outline" className="border-amber-200 bg-amber-50 text-amber-700">
@@ -457,34 +462,27 @@ function ChecklistRow({
 function LawsuitCommandPanel({
   activeTab,
   onTabChange,
+  onResolveIssue,
 }: {
   activeTab: TabId;
   onTabChange: (tab: TabId) => void;
+  onResolveIssue: (issue: FilingIssue) => void;
 }) {
   const { state, actions } = useLawsuitPreparationContext();
   const { calculations, overdueInvoices, taqadiData, ui } = state;
   const readiness = useMemo(() => getDocumentMetrics(state), [state]);
   const statuses = useMemo(() => getStepStatuses(state), [state]);
+  const firstBlocker = useMemo(() => getFilingIssues(state).find((issue) => issue.severity === 'blocking'), [state]);
   const [executing, setExecuting] = useState(false);
 
   /** الإجراء التنفيذي الأساسي — واحد فقط */
   const effectiveAction = useMemo(() => {
-    if (readiness.missing > 0) {
+    if (firstBlocker) {
       return {
-        title: 'استكمال ناقص المستندات',
-        note: readiness.missingReasons[0] || `${readiness.missing} مستند مطلوب قبل جاهزية الملف.`,
-        button: 'فتح الحافظة لاستكمالها',
-        tab: 'documents' as TabId,
-        run: () => onTabChange('documents'),
-      };
-    }
-    if (!readiness.isComplete) {
-      return {
-        title: 'استكمال بيانات الدعوى',
-        note: readiness.missingReasons[0] || 'توجد بيانات أساسية مطلوبة قبل بدء إجراءات الرفع.',
-        button: 'متابعة إلى الوقائع والأدلة',
-        tab: 'evidence' as TabId,
-        run: () => onTabChange('evidence'),
+        title: firstBlocker.title,
+        note: firstBlocker.description,
+        button: firstBlocker.actionLabel,
+        run: () => onResolveIssue(firstBlocker),
       };
     }
     if (!taqadiData) {
@@ -506,7 +504,7 @@ function LawsuitCommandPanel({
         onTabChange('actions');
       },
     };
-  }, [readiness, taqadiData, actions, onTabChange]);
+  }, [firstBlocker, taqadiData, actions, onTabChange, onResolveIssue]);
 
   const userTasks: { key: TabId; label: string; note: string; done: boolean; pending?: boolean }[] = [
     {
@@ -746,15 +744,45 @@ function LawsuitPrevNextNav({
 
 function LawsuitPreparationContent() {
   const { state } = useLawsuitPreparationContext();
+  const navigate = useNavigate();
   const { contract, ui } = state;
   const [selectedTab, setSelectedTab] = useState<TabId>('overview');
+  const [nationalityOpen, setNationalityOpen] = useState(false);
+  const [focusRequest, setFocusRequest] = useState<{ tab: TabId; anchor: string; sequence: number } | null>(null);
+  const issues = useMemo(() => getFilingIssues(state), [state]);
   const readiness = useMemo(() => getDocumentMetrics(state), [state]);
   const statuses = useMemo(() => getStepStatuses(state), [state]);
-  const unlocked = useMemo(() => getUnlockedTabs(statuses), [statuses]);
+  const unlocked = useMemo(() => getUnlockedTabs(statuses, Boolean(state.legalCase?.id)), [statuses, state.legalCase?.id]);
 
   // الخطوة الفعلية مشتقة: إذا اختار المستخدم خطوة مقفلة نعرض أول خطوة مفتوحة
   // بدل setState أثناء الـ render.
   const activeTab: TabId = unlocked.has(selectedTab) ? selectedTab : 'overview';
+
+  const resolveIssue = useCallback((issue: FilingIssue) => {
+    const target = issue.resolution;
+    if (target.kind === 'nationality' && state.customer) {
+      setNationalityOpen(true);
+    } else if (target.kind === 'customer') {
+      navigate(state.customer ? `/customers/${state.customer.id}` : '/customers');
+    } else if (target.kind === 'contract' || target.kind === 'nationality') {
+      navigate(`/contracts/${state.contract?.contract_number || state.contract?.id}`);
+    } else if (target.kind === 'vehicle') {
+      navigate(state.contract?.vehicle_id ? `/fleet/vehicles/${state.contract.vehicle_id}` : `/contracts/${state.contract?.contract_number}`);
+    } else {
+      setSelectedTab(target.tab);
+      setFocusRequest((previous) => ({ tab: target.tab, anchor: target.anchor, sequence: (previous?.sequence || 0) + 1 }));
+    }
+  }, [navigate, state.customer, state.contract]);
+
+  useEffect(() => {
+    if (!focusRequest || activeTab !== focusRequest.tab || ui.isLoading) return;
+    const frame = requestAnimationFrame(() => {
+      const section = document.getElementById(focusRequest.anchor);
+      section?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      section?.focus({ preventScroll: true });
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [activeTab, focusRequest, ui.isLoading]);
 
   if (ui.isLoading) {
     return (
@@ -782,6 +810,17 @@ function LawsuitPreparationContent() {
 
       <LegalHeader />
 
+      <FilingIssuesPanel issues={issues} onResolve={resolveIssue} />
+      {nationalityOpen && state.customer && (
+        <NationalityCompletionDialog
+          key={state.customer.id}
+          customerId={state.customer.id}
+          customerName={formatCustomerName(state.customer)}
+          nationality={state.customer.nationality}
+          onClose={() => setNationalityOpen(false)}
+        />
+      )}
+
       <LegalStageNav
         activeTab={activeTab}
         onTabChange={setSelectedTab}
@@ -790,7 +829,7 @@ function LawsuitPreparationContent() {
       />
 
       <div className="lawsuit-redesign-grid">
-        <LawsuitCommandPanel activeTab={activeTab} onTabChange={setSelectedTab} />
+        <LawsuitCommandPanel activeTab={activeTab} onTabChange={setSelectedTab} onResolveIssue={resolveIssue} />
         <section className="lawsuit-workbench">
           <LawsuitTabContent activeTab={activeTab} />
           <LawsuitPrevNextNav
