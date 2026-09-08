@@ -7,7 +7,7 @@ describe('legal conversion read refresh',()=>{
     const client=new QueryClient();
     const invalidate=vi.spyOn(client,'invalidateQueries').mockResolvedValue();
     expect(await refreshLegalConversionQueries(client)).toBe(true);
-    for (const key of ['contract-details','existing-legal-case','manual-legal-delinquency-queue','opened-legal-cases-count']) {
+    for (const key of ['contract-details','existing-legal-case','manual-legal-delinquency-queue','opened-legal-cases-count','legal-delinquency-manual-candidates','batch-filing-candidates']) {
       expect(invalidate).toHaveBeenCalledWith({queryKey:[key]},{throwOnError:true});
     }
     expect(invalidate.mock.calls.some(([filter])=>filter?.queryKey?.[0]==='contract-financial-sync')).toBe(false);

@@ -29,6 +29,8 @@ describe('memo receipt settlement against reviewed deployed claim bodies',()=>{
       CREATE OR REPLACE FUNCTION auth.uid() RETURNS uuid LANGUAGE sql AS $$SELECT nullif(current_setting('fixture.uid',true),'')::uuid$$;
       CREATE OR REPLACE FUNCTION auth.jwt() RETURNS jsonb LANGUAGE sql AS $$SELECT jsonb_build_object('role',current_setting('fixture.role',true))$$;
       CREATE OR REPLACE FUNCTION public.get_user_company_id() RETURNS uuid LANGUAGE sql AS $$SELECT nullif(current_setting('fixture.company',true),'')::uuid$$;
+      ALTER TABLE invoices ADD COLUMN notes text, ADD COLUMN journal_entry_id uuid;
+      CREATE TABLE journal_entries(id uuid PRIMARY KEY,company_id uuid,reference_type text,reference_id uuid,status text,reversal_entry_id uuid,description text);
       CREATE TABLE IF NOT EXISTS profiles(user_id uuid,company_id uuid,is_active boolean);`);
     await db.exec(await read('./fixtures/legal-claim-classification-baseline-20260907.sql'));
     const amountMigration=await read('../../supabase/migrations/20260831173107_add_traffic_violations_only_legal_claim_scope.sql');
@@ -38,13 +40,23 @@ describe('memo receipt settlement against reviewed deployed claim bodies',()=>{
     await db.exec(await read(`../../supabase/migrations/${migration}.sql`));
     await db.exec(await read("../../supabase/migrations/20260908221719_align_legal_recorded_rent_cutoff.sql"));
     await db.exec(await read("../../supabase/migrations/20260908223651_disclose_legal_invoice_service_periods.sql"));
+    await db.exec(await read("../../supabase/migrations/20260908225924_recognize_reviewed_traffic_invoice_retirement.sql"));
+    await db.exec(await read("../../supabase/migrations/20260908230412_bound_legal_traffic_retirement_lookup.sql"));
+    await db.exec(`CREATE TABLE invoice_items(invoice_id uuid);
+      CREATE FUNCTION public.can_prepare_contract_for_legal_v1(uuid,uuid) RETURNS boolean LANGUAGE sql AS $$SELECT true$$;
+      CREATE FUNCTION public.get_legal_transfer_readiness_v1(uuid,uuid) RETURNS jsonb LANGUAGE sql AS $$SELECT '{"signed_contract_ready":true,"payments":[],"preserved_metadata":"yes"}'::jsonb$$;`);
+    const readinessSource=await read('../../supabase/migrations/20260901090230_unify_legal_claim_engine_and_cancelled_collection.sql');
+    const readinessStart=readinessSource.indexOf('CREATE OR REPLACE FUNCTION public.get_legal_transfer_readiness_v2(');
+    await db.exec(readinessSource.slice(readinessStart,readinessSource.indexOf('$;',readinessStart)+3));
+    await db.exec(await read('../../supabase/migrations/20260908232819_align_transfer_readiness_with_memo_statement.sql'));
+
   });
   after(async()=>db?.close());
   beforeEach(async()=>{
     await db.exec('BEGIN');
     await rows("SELECT set_config('fixture.role','service_role',true)");
     await rows("INSERT INTO contracts VALUES($1,$2,$3,'TEST','2024-01-01','2028-12-31','under_legal_procedure',1700,true,0)",[contract,company,customer]);
-    await rows(`INSERT INTO invoices VALUES($1,$2,$3,$4,'2026-08-01','2026-08-01','2026-08-01','RENT','service',null,1700,0,1700,'unpaid','sent')`,[invoice,company,contract,customer]);
+    await rows(`INSERT INTO invoices(id,company_id,contract_id,customer_id,invoice_month,invoice_date,due_date,invoice_number,invoice_type,penalty_id,total_amount,paid_amount,balance_due,payment_status,status) VALUES($1,$2,$3,$4,'2026-08-01','2026-08-01','2026-08-01','RENT','service',null,1700,0,1700,'unpaid','sent')`,[invoice,company,contract,customer]);
     await rows("INSERT INTO contract_payment_schedules(company_id,contract_id,due_date,amount,paid_amount,status,invoice_id) VALUES($1,$2,'2026-08-01',1700,0,'pending',$3)",[company,contract,invoice]);
   });
   afterEach(async()=>db.exec('ROLLBACK'));
@@ -123,6 +135,87 @@ describe('memo receipt settlement against reviewed deployed claim bodies',()=>{
     await rows("INSERT INTO contract_documents VALUES($1,$2,'violations_proof','proof.pdf')",[company,contract]);
     return result;
   };
+  const retiredTrafficInvoice=async()=>{
+    const id=await penalty();
+    const note='إلغاء فاتورة مخالفة مرورية بقرار معتمد 2026-08-30: المخالفات تُدار من قسمها الخاص ولا تُنشأ لها فواتير في نظام الفواتير.';
+    const saved=(await rows("INSERT INTO invoices(company_id,contract_id,customer_id,invoice_number,invoice_type,penalty_id,invoice_month,due_date,total_amount,paid_amount,balance_due,payment_status,status,notes,journal_entry_id) VALUES($1,$2,$3,'TV-RETIRED','service',$4,'2026-08-01','2026-08-01',500,0,0,'cancelled','cancelled',$5,gen_random_uuid()) RETURNING id,journal_entry_id",[company,contract,customer,id,note]))[0];
+    const reversal=(await rows('SELECT gen_random_uuid() id'))[0].id;
+    await rows("INSERT INTO journal_entries(id,company_id,reference_type,reference_id,status,reversal_entry_id,description) VALUES($1,$2,'invoice',$3,'posted',$4,'invoice'),($4,$2,'journal_reversal',$1,'posted',null,$5)",[saved.journal_entry_id,company,saved.id,reversal,note]);
+    return {...saved,penaltyId:id,reversal};
+  };
+  it('recognizes evidenced retirement without recreating the cancelled traffic invoice',async()=>{
+    const saved=await retiredTrafficInvoice(); const result=await claim();
+    assert.equal(result.components.traffic_violations,500); assert.equal(result.total,2200);
+    assert.equal((await rows('SELECT status FROM invoices WHERE id=$1',[saved.id]))[0].status,'cancelled');
+    assert.equal((await rows("SELECT has_function_privilege('authenticated','legal_memo_calc_private.is_reviewed_traffic_invoice_retirement(uuid,uuid,uuid,numeric)','EXECUTE') allowed"))[0].allowed,false);
+  });
+  for(const change of ['manual_cancellation','unposted_reversal','reversal_undone','wrong_contract','wrong_customer','wrong_amount','receipt','allocation']) it('requires review for retirement with '+change,async()=>{
+    const saved=await retiredTrafficInvoice();
+    if(change==='manual_cancellation') await rows("UPDATE invoices SET notes='إلغاء يدوي' WHERE id=$1",[saved.id]);
+    if(change==='unposted_reversal') await rows("UPDATE journal_entries SET status='draft' WHERE id=$1",[saved.reversal]);
+    if(change==='reversal_undone') await rows('UPDATE journal_entries SET reversal_entry_id=$2 WHERE id=$1',[saved.reversal,other]);
+    if(change==='wrong_contract') await rows('UPDATE invoices SET contract_id=$2 WHERE id=$1',[saved.id,other]);
+    if(change==='wrong_customer') await rows('UPDATE invoices SET customer_id=$2 WHERE id=$1',[saved.id,other]);
+    if(change==='wrong_amount') await rows('UPDATE invoices SET total_amount=400 WHERE id=$1',[saved.id]);
+    if(change==='receipt'||change==='allocation') {
+      const paid=(await rows("INSERT INTO payments(company_id,customer_id,contract_id,invoice_id,amount,payment_status,transaction_type) VALUES($1,$2,$3,$4,200,'completed','receipt') RETURNING id",[company,customer,contract,saved.id]))[0].id;
+      if(change==='allocation') await rows("INSERT INTO payment_allocations(company_id,payment_id,target_id,allocation_type,amount,is_active) VALUES($1,$2,$3,'invoice',200,true)",[company,paid,saved.id]);
+    }
+    await assert.rejects(claim(),/مطابقة/);
+  });
+  it('does not revive a cancelled penalty when its former invoice was retired',async()=>{
+    const saved=await retiredTrafficInvoice();
+    await rows("UPDATE penalties SET status='cancelled' WHERE id=$1",[saved.penaltyId]);
+    assert.equal((await claim()).components.traffic_violations,0);
+  });
+  it('restores the pre-optimization traffic body exactly',async()=>{
+    const old=(await rows("SELECT prosrc FROM pg_proc WHERE oid='legal_memo_calc_private.before_bounded_retirement_read_traffic(uuid,uuid,date)'::regprocedure"))[0].prosrc;
+    await db.exec((await read('../../supabase/rollbacks/20260908230412_bound_legal_traffic_retirement_lookup.rollback.sql')).replace(/^BEGIN;/m,'').replace(/^COMMIT;/m,''));
+    assert.equal((await rows("SELECT prosrc FROM pg_proc WHERE oid='legal_memo_calc_private.read_traffic(uuid,uuid,date)'::regprocedure"))[0].prosrc,old);
+    await retiredTrafficInvoice(); assert.equal((await claim()).total,2200);
+  });
+  it('restores the original retirement guard exactly on rollback',async()=>{
+    const old=(await rows("SELECT prosrc FROM pg_proc WHERE oid='legal_memo_calc_private.before_retirement_read_traffic(uuid,uuid,date)'::regprocedure"))[0].prosrc;
+    await db.exec((await read('../../supabase/rollbacks/20260908225924_recognize_reviewed_traffic_invoice_retirement.rollback.sql')).replace(/^BEGIN;/m,'').replace(/^COMMIT;/m,''));
+    const current=(await rows("SELECT prosrc FROM pg_proc WHERE oid='legal_memo_calc_private.read_traffic(uuid,uuid,date)'::regprocedure"))[0].prosrc;
+    assert.equal(current,old);
+    await retiredTrafficInvoice(); await assert.rejects(claim(),/مطابقة/);
+  });
+  const financialReadiness=async()=> (await rows('SELECT legal_memo_calc_private.readiness_financials($1,$2,$3) value',[company,contract,'2026-09-08']))[0].value;
+  it('readiness shows receipt-backed service rent instead of paid invoice caches',async()=>{
+    await pay(500);await rows("UPDATE invoices SET paid_amount=1700,balance_due=0,payment_status='paid' WHERE id=$1",[invoice]);
+    const result=await financialReadiness();
+    assert.equal(result.financial_context.rent_total,1200);assert.equal(result.financial_context.rent_requires_review,false);
+    assert.equal(result.invoices[0].total_amount,1700);assert.equal(result.invoices[0].paid_amount,500);
+    assert.equal(result.invoices[0].balance_due,1200);assert.equal(result.invoices[0].can_edit_amount,false);
+    assert.equal(result.invoices[0].service_period_end,'2026-08-31');
+  });
+  it('keeps traffic-only readiness usable when rent schedules require review',async()=>{
+    await penalty();
+    await rows("INSERT INTO contract_payment_schedules(company_id,contract_id,due_date,amount,paid_amount,status) VALUES($1,$2,'2026-07-01',1700,0,'pending')",[company,contract]);
+    const result=await financialReadiness();
+    assert.equal(result.financial_context.rent_requires_review,true);assert.equal(result.financial_context.rent_total,null);
+    assert.equal(result.financial_context.traffic_requires_review,false);assert.equal(result.financial_context.traffic_total,500);
+    assert.equal(result.financial_context.traffic_claim_total,500);assert.equal(result.violations[0].liability_amount,500);
+  });
+  it('does not treat company or future penalties as current customer liabilities in readiness',async()=>{
+    const id=await penalty();await rows("UPDATE penalties SET responsibility_party='company' WHERE id=$1",[id]);
+    const result=await financialReadiness();assert.equal(result.financial_context.traffic_total,0);assert.equal(result.violations[0].liability_amount,0);
+    await rows("UPDATE penalties SET responsibility_party='customer',penalty_date='2026-10-01' WHERE id=$1",[id]);
+    assert.equal((await financialReadiness()).financial_context.traffic_total,0);
+  });
+  it('readiness preserves contract evidence metadata and never exposes private readers',async()=>{
+    const result=(await rows('SELECT public.get_legal_transfer_readiness_v2($1,$2) value',[company,contract]))[0].value;
+    assert.equal(result.signed_contract_ready,true);assert.equal(result.preserved_metadata,'yes');assert.deepEqual(result.payments,[]);
+    assert.equal((await rows("SELECT has_function_privilege('authenticated','legal_memo_calc_private.readiness_financials(uuid,uuid,date)','EXECUTE') allowed"))[0].allowed,false);
+    await rows("SELECT set_config('fixture.role','authenticated',true),set_config('fixture.uid',$1,true),set_config('fixture.company',$2,true)",[customer,other]);
+    await assert.rejects(rows('SELECT public.get_legal_transfer_readiness_v2($1,$2)',[company,contract]),/Not authorized/);
+  });
+  it('restores the exact original readiness gateway on rollback',async()=>{
+    const old=(await rows("SELECT prosrc FROM pg_proc WHERE oid='legal_memo_calc_private.before_statement_readiness(uuid,uuid)'::regprocedure"))[0].prosrc;
+    await db.exec((await read('../../supabase/rollbacks/20260908232819_align_transfer_readiness_with_memo_statement.rollback.sql')).replace(/^BEGIN;/m,'').replace(/^COMMIT;/m,''));
+    assert.equal((await rows("SELECT prosrc FROM pg_proc WHERE oid='public.get_legal_transfer_readiness_v2(uuid,uuid)'::regprocedure"))[0].prosrc,old);
+  });
   it('keeps a customer traffic debt after government payment',async()=>{
     const id=await penalty();
     await rows("UPDATE penalties SET violation_type='سرعة',location='موقع تجريبي' WHERE id=$1",[id]);
@@ -175,7 +268,7 @@ describe('memo receipt settlement against reviewed deployed claim bodies',()=>{
   it('excludes rent after return while preserving receipt settlement before return',async()=>{
     await pay(500);
     await rows("INSERT INTO legal_case_litigation_profile(company_id,contract_id,vehicle_returned_at) VALUES($1,$2,'2026-08-31')",[company,contract]);
-    await rows("INSERT INTO invoices VALUES(gen_random_uuid(),$1,$2,$3,'2026-09-01','2026-09-01','2026-09-01','RENT-SEP','sales',null,1700,0,1700,'unpaid','sent')",[company,contract,customer]);
+    await rows("INSERT INTO invoices(id,company_id,contract_id,customer_id,invoice_month,invoice_date,due_date,invoice_number,invoice_type,penalty_id,total_amount,paid_amount,balance_due,payment_status,status) VALUES(gen_random_uuid(),$1,$2,$3,'2026-09-01','2026-09-01','2026-09-01','RENT-SEP','sales',null,1700,0,1700,'unpaid','sent')",[company,contract,customer]);
     const value=await claim();
     assert.equal(value.total,1200);
     assert.equal(value.included_invoices.length,1);

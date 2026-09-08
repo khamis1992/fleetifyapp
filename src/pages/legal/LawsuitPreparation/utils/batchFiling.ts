@@ -1,3 +1,4 @@
+import { loadLegalQueueClaims, type QueueClaimResult } from '../../utils/legalQueueClaims';
 import { buildLegalMemoFactsText } from '@/utils/legal-document-generator';
 /**
  * Batch Filing Service — خدمة الرفع الجماعي للدعاوى
@@ -69,25 +70,9 @@ export interface BatchCandidate {
   customerName: string;
   hasNationalId: boolean;
   hasSignedContract: boolean;
-  overdueInvoicesCount: number;
-  totalRemaining: number;
-}
-
-interface CandidateInvoiceRow {
-  contract_id: string | null;
-  total_amount: number | null;
-  paid_amount: number | null;
-  balance_due?: number | null;
-  due_date?: string | null;
-  invoice_month?: string | null;
-}
-
-interface CandidateScheduleRow {
-  contract_id: string;
-  amount: number;
-  paid_amount: number | null;
-  due_date: string;
-  invoice_id: string | null;
+  overdueRent: number | null;
+  totalRemaining: number | null;
+  financialReview: string | null;
 }
 
 interface CandidateContractRow {
@@ -113,45 +98,13 @@ type CandidateDocumentRow = Parameters<typeof selectLegalContractDocument>[0][nu
   contract_id: string | null;
 };
 
-/** دالة نقية: تجمع الفواتير المتأخرة لكل عقد وتبني صفوف المرشحين */
+/** Build candidates from the same statement as the memo; never invoice caches. */
 export function buildBatchCandidates(input: {
-  invoices: CandidateInvoiceRow[];
-  schedules?: CandidateScheduleRow[];
+  claims: ReadonlyMap<string, QueueClaimResult>;
   contracts: CandidateContractRow[];
   customers: CandidateCustomerRow[];
   documents: CandidateDocumentRow[];
 }): BatchCandidate[] {
-  const remainingByContract = new Map<string, { count: number; total: number }>();
-  const invoiceMonthsByContract = new Map<string, Set<string>>();
-  for (const invoice of input.invoices) {
-    const remaining = invoice.balance_due == null
-      ? Number(invoice.total_amount || 0) - Number(invoice.paid_amount || 0)
-      : Number(invoice.balance_due || 0);
-    if (remaining <= 0 || !invoice.contract_id) continue;
-    const entry = remainingByContract.get(invoice.contract_id) ?? { count: 0, total: 0 };
-    entry.count += 1;
-    entry.total += remaining;
-    remainingByContract.set(invoice.contract_id, entry);
-    const month = (invoice.invoice_month || invoice.due_date || '').slice(0, 7);
-    if (month) {
-      const months = invoiceMonthsByContract.get(invoice.contract_id) ?? new Set<string>();
-      months.add(month);
-      invoiceMonthsByContract.set(invoice.contract_id, months);
-    }
-  }
-
-  for (const schedule of input.schedules ?? []) {
-    if (schedule.invoice_id) continue;
-    const remaining = Number(schedule.amount || 0) - Number(schedule.paid_amount || 0);
-    if (remaining <= 0) continue;
-    const month = schedule.due_date.slice(0, 7);
-    if (invoiceMonthsByContract.get(schedule.contract_id)?.has(month)) continue;
-    const entry = remainingByContract.get(schedule.contract_id) ?? { count: 0, total: 0 };
-    entry.count += 1;
-    entry.total += remaining;
-    remainingByContract.set(schedule.contract_id, entry);
-  }
-
   const customerById = new Map(input.customers.map((customer) => [customer.id, customer]));
   const documentsByContract = new Map<string, CandidateDocumentRow[]>();
   for (const document of input.documents) {
@@ -162,10 +115,13 @@ export function buildBatchCandidates(input: {
   }
 
   return input.contracts
-    .filter((contract) => remainingByContract.has(contract.id))
+    .filter((contract) => {
+      const claim = input.claims.get(contract.id);
+      return !claim?.amounts || claim.amounts.total > 0;
+    })
     .map((contract) => {
       const customer = contract.customer_id ? customerById.get(contract.customer_id) : null;
-      const totals = remainingByContract.get(contract.id)!;
+      const claim = input.claims.get(contract.id);
       return {
         contractId: contract.id,
         contractNumber: contract.contract_number,
@@ -175,48 +131,28 @@ export function buildBatchCandidates(input: {
         hasSignedContract: Boolean(
           selectLegalContractDocument(documentsByContract.get(contract.id) ?? []),
         ),
-        overdueInvoicesCount: totals.count,
-        totalRemaining: totals.total,
+        overdueRent: claim?.amounts?.overdueRent ?? null,
+        totalRemaining: claim?.amounts?.total ?? null,
+        financialReview: claim?.error ?? (!claim?.amounts ? 'تعذر التحقق من المطالبة المالية' : null),
       };
     })
-    .sort((a, b) => b.totalRemaining - a.totalRemaining);
+    .sort((a, b) => (b.totalRemaining ?? -1) - (a.totalRemaining ?? -1));
 }
 
-export async function listBatchCandidates(companyId: string): Promise<BatchCandidate[]> {
-  const today = new Date().toISOString().split('T')[0];
-
-  const [invoiceResult, scheduleResult] = await Promise.all([
-    supabase
-      .from('invoices')
-      .select('contract_id, total_amount, paid_amount, balance_due, due_date, invoice_month')
-      .eq('company_id', companyId)
-      .lte('due_date', today)
-      .not('contract_id', 'is', null),
-    supabase
-      .from('contract_payment_schedules')
-      .select('contract_id, amount, paid_amount, due_date, invoice_id')
-      .eq('company_id', companyId)
-      .lte('due_date', today),
-  ]);
-  const { data: invoices, error: invoicesError } = invoiceResult;
-  if (invoicesError) throw invoicesError;
-  if (scheduleResult.error) throw scheduleResult.error;
-
-  const contractIds = [...new Set(
-    [
-      ...(invoices ?? []).map((invoice) => invoice.contract_id),
-      ...(scheduleResult.data ?? []).map((schedule) => schedule.contract_id),
-    ].filter((id): id is string => Boolean(id)),
-  )];
-  if (contractIds.length === 0) return [];
-
-  const { data: contracts, error: contractsError } = await supabase
-    .from('contracts')
+export async function listBatchCandidates(companyId: string, page = 0, pageSize = 25): Promise<{ items: BatchCandidate[]; hasMore: boolean }> {
+  if (!Number.isInteger(page) || page < 0 || !Number.isInteger(pageSize) || pageSize < 1 || pageSize > 100) {
+    throw new Error('نطاق صفحة العقود غير صالح');
+  }
+  // Read one extra contract for pagination. Include traffic-only/extension claims
+  // even when invoice caches show zero or there is no rental invoice.
+  const { data, error } = await supabase.from('contracts')
     .select('id, contract_number, status, customer_id')
-    .eq('company_id', companyId)
-    .in('id', contractIds);
-  if (contractsError) throw contractsError;
-
+    .eq('company_id', companyId).order('id')
+    .range(page * pageSize, (page + 1) * pageSize);
+  if (error) throw error;
+  const contracts = (data ?? []).slice(0, pageSize);
+  const contractIds = contracts.map(contract => contract.id);
+  if (!contracts.length) return { items: [], hasMore: false };
   const customerIds = [...new Set(
     (contracts ?? []).map((contract) => contract.customer_id).filter(Boolean),
   )] as string[];
@@ -232,20 +168,20 @@ export async function listBatchCandidates(companyId: string): Promise<BatchCandi
         : Promise.resolve({ data: [] as never[], error: null }),
       supabase
         .from('contract_documents')
-        .select('id, contract_id, document_name, document_type, file_path, mime_type')
+        .select('id, contract_id, document_name, document_type, file_path, mime_type, legal_identity_match_status, legal_identity_expected_id, legal_identity_extracted_id, legal_evidence_state')
         .eq('company_id', companyId)
         .in('contract_id', contractIds),
     ]);
   if (customersError) throw customersError;
   if (documentsError) throw documentsError;
 
-  return buildBatchCandidates({
-    invoices: invoices ?? [],
-    schedules: scheduleResult.data ?? [],
+  const claims = await loadLegalQueueClaims(companyId, contractIds);
+  return { hasMore: (data?.length ?? 0) > pageSize, items: buildBatchCandidates({
+    claims,
     contracts: contracts ?? [],
     customers: (customers ?? []) as CandidateCustomerRow[],
     documents: documents ?? [],
-  });
+  }) };
 }
 
 // ==========================================

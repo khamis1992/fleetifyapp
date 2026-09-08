@@ -59,7 +59,7 @@ function formatQar(amount: number) {
   return new Intl.NumberFormat('ar-QA', {
     style: 'currency',
     currency: 'QAR',
-    maximumFractionDigits: 0,
+    maximumFractionDigits: 2,
   }).format(amount);
 }
 
@@ -84,17 +84,20 @@ export default function BatchLawsuitFiling() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
 
+  const [page, setPage] = useState(0);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [phases, setPhases] = useState<Record<string, RowPhase>>({});
   const [running, setRunning] = useState(false);
   const stopRequested = useRef(false);
 
   const candidatesQuery = useQuery({
-    queryKey: ['batch-filing-candidates', companyId],
+    queryKey: ['batch-filing-candidates', companyId, page],
     enabled: Boolean(companyId),
-    queryFn: () => listBatchCandidates(companyId!),
+    queryFn: () => listBatchCandidates(companyId!, page),
   });
-  const candidates = useMemo(() => candidatesQuery.data ?? [], [candidatesQuery.data]);
+  const candidates = useMemo(() => candidatesQuery.data?.items ?? [], [candidatesQuery.data]);
+
+  const selectableCandidates = candidates.filter(c => !c.financialReview && (c.totalRemaining ?? 0) > 0);
 
   const workerQuery = useQuery({
     queryKey: ['taqadi-automation-worker'],
@@ -124,7 +127,7 @@ export default function BatchLawsuitFiling() {
   }, [companyId, queryClient]);
 
   const toggleAll = (checked: boolean) => {
-    setSelected(checked ? new Set(candidates.map((c) => c.contractId)) : new Set());
+    setSelected(checked ? new Set(candidates.filter((c) => !c.financialReview && (c.totalRemaining ?? 0) > 0).map((c) => c.contractId)) : new Set());
   };
 
   const toggleOne = (contractId: string, checked: boolean) => {
@@ -148,6 +151,9 @@ export default function BatchLawsuitFiling() {
 
   const startBatch = async () => {
     if (!companyId || !user?.id || selected.size === 0) return;
+    if ([...selected].some(id => !candidates.some(c => c.contractId === id && !c.financialReview && (c.totalRemaining ?? 0) > 0))) {
+      toast.error('تغيرت جاهزية العقود؛ راجع المطالبات وأعد التحديد.'); return;
+    }
     setRunning(true);
     stopRequested.current = false;
 
@@ -235,13 +241,13 @@ export default function BatchLawsuitFiling() {
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 p-4">
           <div className="flex items-center gap-3">
             <Checkbox
-              checked={candidates.length > 0 && selected.size === candidates.length}
+              checked={selectableCandidates.length > 0 && selected.size === selectableCandidates.length}
               onCheckedChange={(checked) => toggleAll(checked === true)}
               disabled={running}
               aria-label="تحديد الكل"
             />
             <span className="text-sm font-bold text-slate-600">
-              {selected.size > 0 ? `محدد ${selected.size} من ${candidates.length}` : `${candidates.length} عقدًا متعثرًا`}
+              {selected.size > 0 ? `محدد ${selected.size} من ${candidates.length}` : `${candidates.length} مطالبة أو حالة مراجعة`}
             </span>
           </div>
           <div className="flex items-center gap-2">
@@ -274,14 +280,19 @@ export default function BatchLawsuitFiling() {
           </div>
         )}
 
-        {candidatesQuery.isLoading ? (
+        <div className="flex items-center justify-between gap-3 border-b p-4" dir="rtl">
+          <Button variant="outline" disabled={running || candidatesQuery.isFetching || page === 0} onClick={() => { setSelected(new Set()); setPage(page - 1); }}>السابق</Button>
+          <span className="text-sm">صفحة {page + 1} من العقود · التحديد للصفحة الحالية</span>
+          <Button variant="outline" disabled={running || candidatesQuery.isFetching || !candidatesQuery.data?.hasMore} onClick={() => { setSelected(new Set()); setPage(page + 1); }}>التالي</Button>
+        </div>
+        {candidatesQuery.isError ? <div role="alert" className="p-6 text-red-700">تعذر تحميل المطالبات. أعد المحاولة. <Button variant="outline" onClick={() => void candidatesQuery.refetch()}>إعادة المحاولة</Button></div> : candidatesQuery.isLoading ? (
           <div className="flex items-center justify-center gap-3 p-12 text-slate-500">
             <LoadingSpinner className="h-6 w-6" /> جاري تحميل العقود المتعثرة...
           </div>
         ) : candidates.length === 0 ? (
           <div className="flex flex-col items-center gap-2 p-12 text-center text-slate-500">
             <FileText className="h-8 w-8" />
-            <p className="font-bold">لا توجد عقود متعثرة بفواتير متأخرة غير مسددة</p>
+            <p className="font-bold">لا توجد مطالبات مالية أو حالات مراجعة في هذه الصفحة</p>
           </div>
         ) : (
           <div className="overflow-x-auto">
@@ -291,8 +302,8 @@ export default function BatchLawsuitFiling() {
                   <th className="p-3 w-10" />
                   <th className="p-3">العقد</th>
                   <th className="p-3">العميل</th>
-                  <th className="p-3">المديونية</th>
-                  <th className="p-3">فواتير</th>
+                  <th className="p-3">صافي المطالبة</th>
+                  <th className="p-3">صافي الأجرة</th>
                   <th className="p-3">مؤشرات الجاهزية</th>
                   <th className="p-3">الحالة</th>
                   <th className="p-3 w-10" />
@@ -305,7 +316,7 @@ export default function BatchLawsuitFiling() {
                       <Checkbox
                         checked={selected.has(candidate.contractId)}
                         onCheckedChange={(checked) => toggleOne(candidate.contractId, checked === true)}
-                        disabled={running}
+                        disabled={running || Boolean(candidate.financialReview)}
                         aria-label={`تحديد العقد ${candidate.contractNumber}`}
                       />
                     </td>
@@ -316,9 +327,10 @@ export default function BatchLawsuitFiling() {
                         {candidate.customerName}
                       </span>
                     </td>
-                    <td className="p-3 font-bold text-[#173A63]">{formatQar(candidate.totalRemaining)}</td>
-                    <td className="p-3">{candidate.overdueInvoicesCount}</td>
+                    <td className="p-3 font-bold text-[#173A63]">{candidate.totalRemaining == null ? "تحتاج مراجعة" : formatQar(candidate.totalRemaining)}</td>
+                    <td className="p-3">{candidate.overdueRent == null ? "—" : formatQar(candidate.overdueRent)}</td>
                     <td className="p-3">
+                      {candidate.financialReview && <p className="mb-2 text-sm text-amber-800">{candidate.financialReview}</p>}
                       <div className="flex flex-wrap gap-1">
                         {candidate.hasNationalId
                           ? <Badge variant="outline" className="border-emerald-200 bg-emerald-50 text-emerald-700">هوية ✓</Badge>

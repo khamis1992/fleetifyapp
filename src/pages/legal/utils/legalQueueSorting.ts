@@ -1,11 +1,11 @@
 export type LegalQueueAmountSort = 'amount_desc' | 'amount_asc';
 
 type LegalQueueAmountItem = {
-  detailedClaimTotal: number;
+  detailedClaimTotal: number | null;
 };
 
-const safeAmount = (value: number) => (
-  Number.isFinite(value) ? value : 0
+const safeAmount = (value: number | null) => (
+  value != null && Number.isFinite(value) ? value : 0
 );
 
 /**
@@ -18,6 +18,11 @@ export function sortLegalQueueByAmount<T extends LegalQueueAmountItem>(
 ): T[] {
   const multiplier = direction === 'amount_desc' ? -1 : 1;
   return [...items].sort(
-    (left, right) => multiplier * (safeAmount(left.detailedClaimTotal) - safeAmount(right.detailedClaimTotal)),
+    (left, right) => {
+      const leftUnknown = left.detailedClaimTotal == null || !Number.isFinite(left.detailedClaimTotal);
+      const rightUnknown = right.detailedClaimTotal == null || !Number.isFinite(right.detailedClaimTotal);
+      if (leftUnknown !== rightUnknown) return leftUnknown ? 1 : -1;
+      return multiplier * (safeAmount(left.detailedClaimTotal) - safeAmount(right.detailedClaimTotal));
+    },
   );
 }
