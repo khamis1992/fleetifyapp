@@ -336,6 +336,7 @@ const ContractOperationsRow = ({
   const { formatCurrency } = useCurrencyFormatter();
   const isActive = contract.status === "active";
   const isCancelled = contract.status === "cancelled";
+  const cancellationNote = isCancelled ? contract.suspension_reason?.trim() : null;
   const hasLegalStatus = Boolean(contract.legal_status || contract.status === "under_legal_procedure");
   const daysLeft = getContractDaysLeft(contract.end_date);
   const incompleteReasons = getContractIncompleteReasons(contract);
@@ -396,6 +397,15 @@ const ContractOperationsRow = ({
                 </span>
               </div>
               {contract.vehicle_id && isContractOccupyingVehicle(contract) && <span className="contracts-occupancy">المركبة مشغولة بهذا العقد</span>}
+              {cancellationNote && (
+                <div className="mt-3 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-900">
+                  <div className="mb-1 flex items-center gap-1.5 font-bold">
+                    <MessageSquare className="h-4 w-4 shrink-0" aria-hidden="true" />
+                    ملاحظة الإلغاء
+                  </div>
+                  <p className="whitespace-pre-wrap break-words leading-6">{cancellationNote}</p>
+                </div>
+              )}
               <SeizedActiveContractBanner contractStatus={contract.status} vehicleStatus={contract.vehicles?.status} className="mt-3" />
               {incompleteReasons.length > 0 && (
                 <div className="mt-3 rounded-[8px] border border-[#FED7AA] bg-[#FFF7ED] px-3 py-2 text-xs font-bold leading-5 text-[#C2410C]">
