@@ -284,6 +284,21 @@ describe('buildMemoDocumentData', () => {
     expect(isMemoSnapshotCurrent(changed, snapshot)).toBe(false);
   });
 
+  it('keeps an unchanged reviewed memo current across days without changing its historical payload', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-08-25T00:00:00Z'));
+    const payload = buildMemoDocumentData(baseState);
+    const historical = JSON.stringify(payload);
+    const snapshot = { payload } as LawsuitPreparationState['memoSnapshots'][number];
+    vi.setSystemTime(new Date('2026-08-26T00:00:00Z'));
+    expect(buildMemoDocumentData(baseState).customer.days_overdue).toBe(payload.customer.days_overdue + 1);
+    expect(isMemoSnapshotCurrent(baseState, snapshot)).toBe(true);
+    expect(JSON.stringify(payload)).toBe(historical);
+    const changed = structuredClone(baseState);
+    changed.contract!.end_date = '2027-01-01';
+    expect(isMemoSnapshotCurrent(changed, snapshot)).toBe(false);
+  });
+
   it('refreshes the live memorandum when the court assigns a number without altering historical exports', () => {
     const payload = { ...buildMemoDocumentData(baseState), caseNumber: 'CASE-26-0059', memoDate: '26/08/2026' };
     const snapshot = { payload, readiness_status: 'approved' } as LawsuitPreparationState['memoSnapshots'][number];

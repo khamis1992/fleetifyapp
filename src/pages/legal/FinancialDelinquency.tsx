@@ -1022,6 +1022,8 @@ const FinancialDelinquencyPage: React.FC = () => {
             th, td { border: 1px solid #cbd5e1; padding: 7px 5px; text-align: center; vertical-align: middle; overflow-wrap: anywhere; }
             th { background: #e2f5f1; color: #134e4a; font-weight: 700; }
             tbody tr:nth-child(even) { background: #f8fafc; }
+            thead { display: table-header-group; }
+            tr { break-inside: avoid; page-break-inside: avoid; }
             .name { font-weight: 700; }
             .total { font-weight: 700; color: #0f766e; }
             footer { display: flex; justify-content: space-between; margin-top: 12px; color: #64748b; }
@@ -1041,16 +1043,19 @@ const FinancialDelinquencyPage: React.FC = () => {
           <table>
             <thead>
               <tr>
-                <th style="width: 4%">#</th>
-                <th style="width: 13%">اسم العميل</th>
-                <th style="width: 10%">رقم العقد</th>
-                <th style="width: 13%">المركبة</th>
-                <th style="width: 10%">الهاتف</th>
-                <th style="width: 10%">نوع المطالبة</th>
-                <th style="width: 10%">الإيجار</th>
-                <th style="width: 10%">التعويض الاتفاقي</th>
-                <th style="width: 10%">المخالفات</th>
-                <th>الأضرار</th><th>الاحتباس</th><th>خصم الوديعة</th><th>صافي المطالبة</th>
+                <th style="width: 3%">#</th>
+                <th style="width: 12%">اسم العميل</th>
+                <th style="width: 9%">رقم العقد</th>
+                <th style="width: 10%">المركبة</th>
+                <th style="width: 8%">الهاتف</th>
+                <th style="width: 9%">نوع المطالبة</th>
+                <th style="width: 7%">الإيجار</th>
+                <th style="width: 7%">التعويض الاتفاقي</th>
+                <th style="width: 7%">المخالفات</th>
+                <th style="width: 7%">الأضرار</th>
+                <th style="width: 7%">الاحتباس</th>
+                <th style="width: 7%">خصم الوديعة</th>
+                <th style="width: 7%">صافي المطالبة</th>
               </tr>
             </thead>
             <tbody>${rows}</tbody>

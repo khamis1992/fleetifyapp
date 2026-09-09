@@ -1,4 +1,5 @@
 const fs = require('fs');
+const { getInvoicePaymentMismatch } = require('./utils/invoice-payment-mismatch.cjs');
 const path = require('path');
 const { createClient } = require('@supabase/supabase-js');
 
@@ -103,26 +104,8 @@ async function main() {
     for (const invoice of companyInvoices) {
       const linkedPayments = paymentsByInvoice.get(invoice.id) || [];
       const linkedPaid = sum(linkedPayments, (payment) => payment.amount);
-      const recordedPaid = Number(invoice.paid_amount || 0);
-      const totalAmount = Number(invoice.total_amount || 0);
-      const recordedBalance = Number(invoice.balance_due || 0);
-      const expectedBalance = Number(Math.max(totalAmount - linkedPaid, 0).toFixed(2));
-
-      if (
-        Math.abs(linkedPaid - recordedPaid) > 0.01
-        || Math.abs(expectedBalance - recordedBalance) > 0.01
-        || linkedPaid - totalAmount > 0.01
-      ) {
-        invoiceMismatches.push({
-          invoice_id: invoice.id,
-          invoice_number: invoice.invoice_number,
-          total_amount: totalAmount,
-          linked_paid: linkedPaid,
-          recorded_paid: recordedPaid,
-          expected_balance: expectedBalance,
-          recorded_balance: recordedBalance,
-        });
-      }
+      const mismatch = getInvoicePaymentMismatch(invoice, linkedPaid);
+      if (mismatch) invoiceMismatches.push(mismatch);
     }
 
     const completedPayments = companyPayments.filter((payment) => payment.payment_status === 'completed');

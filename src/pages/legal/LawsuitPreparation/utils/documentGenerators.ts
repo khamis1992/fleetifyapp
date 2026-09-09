@@ -320,6 +320,15 @@ export function isMemoSnapshotCurrent(
       delete current[key];
       delete frozen[key];
     }
+    // This legacy display counter is not rendered in the explanatory memo.
+    // Letting it age alone invalidate a reviewed snapshot creates a new draft
+    // every day despite identical claims, service periods and evidence. Actual
+    // retention days, amounts and all contractual dates remain compared below.
+    for (const memo of [current, frozen]) {
+      if (memo.customer && typeof memo.customer === 'object') {
+        delete (memo.customer as Record<string, unknown>).days_overdue;
+      }
+    }
     return JSON.stringify(stableMemoValue(current)) === JSON.stringify(stableMemoValue(frozen));
   } catch {
     return false;
