@@ -225,3 +225,50 @@ describe('legal case workflow', () => {
     expect(blocked.reasons).toContain('لا توجد مطالبة موثقة الوصول برد المركبة.');
   });
 });
+
+
+describe('readiness follows the documented claim components', () => {
+  const stateWithTraffic = (): LawsuitPreparationState => ({
+    legalCase: { claim_scope: 'traffic_violations_only' },
+    contract: { vehicle_id: 'vehicle-1', end_date: '2026-12-31' }, vehicle: { id: 'vehicle-1' },
+    customer: { national_id: 'TEST', email: 'customer@example.test', address: 'عنوان مثبت' },
+    litigationProfile: profile({ vehicle_custody: 'returned', defendant_email_status: 'verified', defendant_contact_source: 'customer_record' }),
+    calculations: { total: 500, overdueRent: 0, violationsFines: 500, lateFees: 0, damagesFee: 0, retentionCompensation: 0 },
+    overdueInvoices: [], trafficViolations: [{ id: 'traffic', total_amount: 500 }],
+    violationEvidenceDocuments: [{ id: 'proof', url: 'proof.pdf' }],
+    documents: { contract: { sourceDocumentId: 'signed' } }, damageCosts: [], formalNotices: [],
+  } as unknown as LawsuitPreparationState);
+  it('accepts an evidenced traffic-only claim without rent, termination or return-document requirements', () => {
+    const result = evaluateLegalCaseReadiness(stateWithTraffic());
+    expect(result.issues).toEqual([]);
+    expect(result.eligibleClaims).toMatchObject({ rent: false, violations: true, vehicleReturn: false, retention: false, contractualCompensation: false });
+    expect(result.status).toBe('ready');
+  });
+  it('still blocks traffic money without the supporting report', () => {
+    const state = stateWithTraffic(); state.violationEvidenceDocuments = [];
+    expect(evaluateLegalCaseReadiness(state).issues).toContain('مبلغ المخالفات المطالب به يحتاج تفاصيل المخالفات والمستخرج المؤيد.');
+  });
+  it('still blocks positive rent without rental obligations', () => {
+    const state = stateWithTraffic(); state.calculations!.overdueRent = 100;
+    expect(evaluateLegalCaseReadiness(state).issues).toContain('الأجرة المطالب بها لا تسندها استحقاقات ضمن نطاق الدعوى.');
+  });
+  it('keeps a financial reconciliation failure blocked despite old positive totals', () => {
+    const state = stateWithTraffic(); state.financialClaimError = 'أقساط تحتاج المطابقة';
+    expect(evaluateLegalCaseReadiness(state).issues).toContain('لا توجد مطالبة مالية موجبة من استحقاقات حالّة ومثبتة.');
+  });
+  it('accepts a documented damages claim after rent has been settled', () => {
+    const state = stateWithTraffic();state.legalCase!.claim_scope = 'full_outstanding';
+    state.litigationProfile!.vehicle_custody = 'with_defendant';
+    state.calculations!.violationsFines = 0;state.calculations!.damagesFee = 500;
+    state.damageCosts = [{ verified: true, evidence_document_id: 'damage-doc', amount: 500 }] as LawsuitPreparationState['damageCosts'];
+    expect(evaluateLegalCaseReadiness(state).issues).toEqual([]);
+  });
+  it('uses the authoritative retention period instead of recalculating through today', () => {
+    const state = stateWithTraffic();state.legalCase!.claim_scope = 'full_outstanding';
+    state.litigationProfile!.vehicle_custody = 'with_defendant';
+    state.calculations!.violationsFines = 0;state.calculations!.retentionCompensation = 500;
+    state.financialClaimSource = { authoritativeRetention: { amount: 500, days: 5, from: '2026-08-01', to: '2026-08-05' } } as LawsuitPreparationState['financialClaimSource'];
+    const result = evaluateLegalCaseReadiness(state, new Date('2026-09-09'));
+    expect(result.issues).toEqual([]);expect(result.eligibleClaims.retention).toBe(true);
+  });
+});

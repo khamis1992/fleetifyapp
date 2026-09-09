@@ -49,6 +49,28 @@ describe('memo receipt settlement against reviewed deployed claim bodies',()=>{
     const readinessStart=readinessSource.indexOf('CREATE OR REPLACE FUNCTION public.get_legal_transfer_readiness_v2(');
     await db.exec(readinessSource.slice(readinessStart,readinessSource.indexOf('$;',readinessStart)+3));
     await db.exec(await read('../../supabase/migrations/20260908232819_align_transfer_readiness_with_memo_statement.sql'));
+    // Load the three exact deployed command bodies; the new migration verifies their hashes.
+    const loadCommand=async(file,name,rename=name)=>{
+      const source=await read('../../supabase/migrations/'+file);
+      const start=source.indexOf('CREATE OR REPLACE FUNCTION public.'+name+'(');
+      const end=source.indexOf('$;',start)+3;
+      assert.ok(start>=0 && end>start);
+      await db.exec(source.slice(start,end).replace('public.'+name+'(', 'public.'+rename+'('));
+    };
+    await loadCommand('20260727013000_require_legal_transfer_readiness_wizard.sql','complete_legal_transfer_readiness_v1','complete_legal_transfer_readiness_v1_pre_pdf_request_agent');
+    await loadCommand('20260831180500_harden_scoped_legal_readiness_authorization.sql','complete_legal_transfer_readiness_with_scope_v1');
+    await loadCommand('20260901090230_unify_legal_claim_engine_and_cancelled_collection.sql','complete_legal_transfer_readiness_v2');
+    await db.exec(`CREATE TABLE contract_operations_log(company_id uuid,contract_id uuid,operation_type text,operation_details jsonb,notes text,performed_by uuid,performed_at timestamptz);
+      -- Evidence/request wrappers are isolated here: no messages or live completion calls.
+      CREATE FUNCTION public.check_contract_has_verified_signed_lease_v1(uuid,uuid) RETURNS boolean LANGUAGE sql AS $$SELECT current_setting('fixture.evidence',true)='ready'$$;
+      CREATE FUNCTION public.check_contract_identity_verified_v1(uuid,uuid) RETURNS boolean LANGUAGE sql AS $$SELECT current_setting('fixture.evidence',true)='ready'$$;
+      CREATE FUNCTION public.complete_legal_transfer_readiness_v1(p_company_id uuid,p_contract_id uuid,p_payload jsonb,p_actor_id uuid DEFAULT NULL)
+      RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER AS $$ BEGIN
+        IF current_setting('fixture.evidence',true) IS DISTINCT FROM 'ready' THEN RETURN '{"blocked":true,"message_ar":"مستند مطلوب"}'::jsonb; END IF;
+        RETURN public.complete_legal_transfer_readiness_v1_pre_pdf_request_agent(p_company_id,p_contract_id,p_payload,p_actor_id);
+      END $$;`);
+    await db.exec(await read('../../supabase/migrations/20260908234503_persist_memo_aligned_readiness.sql'));
+
 
   });
   after(async()=>db?.close());
@@ -143,6 +165,120 @@ describe('memo receipt settlement against reviewed deployed claim bodies',()=>{
     await rows("INSERT INTO journal_entries(id,company_id,reference_type,reference_id,status,reversal_entry_id,description) VALUES($1,$2,'invoice',$3,'posted',$4,'invoice'),($4,$2,'journal_reversal',$1,'posted',null,$5)",[saved.journal_entry_id,company,saved.id,reversal,note]);
     return {...saved,penaltyId:id,reversal};
   };
+
+  const currentClaim=async(scope='full_outstanding',excluded=[]) => (await rows(
+    "SELECT public.calculate_legal_claim_statement_v4($1,$2,(CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Qatar')::date,$3,$4::uuid[]) value",
+    [company,contract,scope,excluded]))[0].value;
+  const reviewedPayload=async(scope='full_outstanding',excluded=[])=>{
+    const statement=await currentClaim(scope,excluded);
+    return {financial_reviewed:true,violations_reviewed:true,vehicle_returned:true,claim_scope:scope,
+      claim_amount:statement.total,reviewed_claim_statement:statement,excluded_invoice_ids:excluded,
+      excluded_invoices:excluded.map(id=>({invoice_id:id,reason:'استبعاد بموجب المراجعة'}))};
+  };
+  const complete=async(payload,scope='full_outstanding',actor=customer) => (await rows(
+    'SELECT public.complete_legal_transfer_readiness_v2($1,$2,$3::jsonb,$4,$5) value',
+    [company,contract,JSON.stringify(payload),scope,actor]))[0].value;
+  const readyEvidence=()=>rows("SELECT set_config('fixture.evidence','ready',true)");
+  const savedLogs=()=>rows('SELECT operation_details FROM contract_operations_log');
+  it('persists the reviewed receipt-backed claim and every component once',async()=>{
+    await readyEvidence();await pay(500);const payload=await reviewedPayload();
+    payload.completed_payments=99999; payload.included_invoice_balance=99999;
+    const result=await complete(payload);
+    assert.equal(result.ready,true);assert.equal(result.claim_amount,1200);
+    const logs=await savedLogs(); assert.equal(logs.length,1);
+    const saved=logs[0].operation_details;
+    assert.deepEqual(saved.claim_statement,payload.reviewed_claim_statement);
+    assert.deepEqual(saved.claim_components,payload.reviewed_claim_statement.components);
+    assert.equal(saved.included_invoice_balance,1200);
+    assert.equal(saved.completed_payments,undefined);
+    assert.equal(saved.claim_statement.included_invoices[0].paid_amount,500);
+  });
+  it('traffic-only approval counts government-paid customer liability minus actual receipts',async()=>{
+    await readyEvidence();const id=await penalty();
+    const trafficInvoice=(await rows("INSERT INTO invoices(company_id,contract_id,customer_id,invoice_number,invoice_type,penalty_id,invoice_month,due_date,total_amount,paid_amount,balance_due,payment_status,status) VALUES($1,$2,$3,'TV-TEST','service',$4,'2026-08-01','2026-08-01',500,0,500,'unpaid','sent') RETURNING id",[company,contract,customer,id]))[0].id;
+    await rows("INSERT INTO payments(company_id,customer_id,contract_id,invoice_id,amount,payment_status,transaction_type) VALUES($1,$2,$3,$4,200,'completed','receipt')",[company,customer,contract,trafficInvoice]);
+    const payload=await reviewedPayload('traffic_violations_only');
+    const result=await complete(payload,'traffic_violations_only');
+    assert.equal(result.claim_amount,300);assert.equal(result.violation_count,1);
+    const saved=(await savedLogs())[0].operation_details;
+    assert.equal(saved.claim_components.traffic_violations,300);
+    assert.equal(saved.included_invoice_balance,0);
+  });
+  it('rejects a receipt posted after review before writing any completion',async()=>{
+    await readyEvidence();const payload=await reviewedPayload();await pay(500);
+    await db.exec('SAVEPOINT stale_claim');
+    await assert.rejects(complete(payload),e=>e.code==='40001');
+    await db.exec('ROLLBACK TO SAVEPOINT stale_claim');
+    assert.equal((await savedLogs()).length,0);
+  });
+  it('rejects changed components even when the grand total is unchanged',async()=>{
+    await readyEvidence();const payload=await reviewedPayload();
+    payload.reviewed_claim_statement.components.rent_due-=100;
+    payload.reviewed_claim_statement.components.damages+=100;
+    await db.exec('SAVEPOINT stale_components');
+    await assert.rejects(complete(payload),e=>e.code==='40001');
+    await db.exec('ROLLBACK TO SAVEPOINT stale_components');
+    assert.equal((await savedLogs()).length,0);
+  });
+  it('rejects changed service coverage even when the grand total is unchanged',async()=>{
+    await readyEvidence();const payload=await reviewedPayload();
+    payload.reviewed_claim_statement.included_invoices[0].service_period_end='2026-07-31';
+    await assert.rejects(complete(payload),e=>e.code==='40001');
+  });
+  it('requires the reviewed snapshot on the legacy direct completion entry too',async()=>{
+    await readyEvidence();const payload=await reviewedPayload();delete payload.reviewed_claim_statement;
+    await assert.rejects(rows('SELECT public.complete_legal_transfer_readiness_v1_pre_pdf_request_agent($1,$2,$3::jsonb,$4)',
+      [company,contract,JSON.stringify(payload),customer]),e=>e.code==='40001');
+  });
+  it('preserves excluded invoice reasons and uses their canonical balances',async()=>{
+    await readyEvidence();await pay(500);const payload=await reviewedPayload('full_outstanding',[invoice]);
+    const result=await complete(payload);assert.equal(result.claim_amount,0);
+    const saved=(await savedLogs())[0].operation_details;
+    assert.equal(saved.excluded_invoice_balance,1200);
+    assert.equal(saved.reported_exclusion_notes[0].reason,'استبعاد بموجب المراجعة');
+  });
+  it('preserves the existing missing-document blocked response without a completion write',async()=>{
+    const payload=await reviewedPayload();const result=await complete(payload);
+    assert.equal(result.blocked,true);assert.equal((await savedLogs()).length,0);
+  });
+  it('denies mismatched actors before calling document-request wrappers',async()=>{
+    await rows('INSERT INTO profiles VALUES($1,$2,true)',[customer,company]);
+    await rows("SELECT set_config('fixture.role','authenticated',true),set_config('fixture.uid',$1,true),set_config('fixture.company',$2,true)",[customer,company]);
+    await assert.rejects(complete({},'full_outstanding',other),e=>e.code==='42501');
+  });
+  it('denies cross-company completion even when the contract permission stub allows it',async()=>{
+    await rows("SELECT set_config('fixture.role','authenticated',true),set_config('fixture.uid',$1,true),set_config('fixture.company',$2,true)",[customer,other]);
+    await assert.rejects(complete({}),e=>e.code==='42501');
+  });
+  it('requires proof for current customer traffic liabilities before saving',async()=>{
+    await readyEvidence();await penalty();await db.exec("DELETE FROM contract_documents WHERE document_type='violations_proof'");
+    const payload=await reviewedPayload();
+    await assert.rejects(complete(payload),/أرفق الإثبات/);
+  });
+  it('does not require proof for company-responsibility traffic on approval',async()=>{
+    await readyEvidence();const id=await penalty();
+    await rows("UPDATE penalties SET responsibility_party='company' WHERE id=$1",[id]);
+    await db.exec("DELETE FROM contract_documents WHERE document_type='violations_proof'");
+    const result=await complete(await reviewedPayload());assert.equal(result.claim_amount,1700);assert.equal(result.violation_count,0);
+  });
+  it('allows authorized API approval but keeps validation and backup helpers private',async()=>{
+    await readyEvidence();await rows('INSERT INTO profiles VALUES($1,$2,true)',[customer,company]);
+    await rows("SELECT set_config('fixture.role','authenticated',true),set_config('fixture.uid',$1,true),set_config('fixture.company',$2,true)",[customer,company]);
+    await db.exec('SET LOCAL ROLE authenticated');
+    const result=await complete(await reviewedPayload());assert.equal(result.ready,true);
+    for(const signature of ['prepare_memo_readiness(uuid,uuid,jsonb,uuid)','authorize_memo_completion(uuid,uuid,uuid)','before_memo_completion_v2(uuid,uuid,jsonb,text,uuid)']) {
+      assert.equal((await rows("SELECT has_function_privilege('authenticated',$1,'EXECUTE') allowed",['legal_memo_calc_private.'+signature]))[0].allowed,false);
+    }
+    await db.exec('RESET ROLE');
+  });
+  it('restores the three original readiness command bodies exactly',async()=>{
+    const rollback=(await read('../../supabase/rollbacks/20260908234503_persist_memo_aligned_readiness.rollback.sql')).replace(/^BEGIN;|^COMMIT;/gm,'');
+    await db.exec(rollback);
+    const expected={complete_legal_transfer_readiness_v1_pre_pdf_request_agent:'bce8a7542ebc1b3a5cd5585c3dae5cd1',complete_legal_transfer_readiness_with_scope_v1:'d1c3dc92014e40cc0e292daf87b2eb78',complete_legal_transfer_readiness_v2:'5284fa39784cfe5d3bb512d784bdacdd'};
+    const result=await rows("SELECT proname,md5(prosrc) hash FROM pg_proc WHERE pronamespace='public'::regnamespace AND proname=ANY($1::text[])",[Object.keys(expected)]);
+    assert.equal(result.length,3);for(const row of result)assert.equal(row.hash,expected[row.proname]);
+  });
+
   it('recognizes evidenced retirement without recreating the cancelled traffic invoice',async()=>{
     const saved=await retiredTrafficInvoice(); const result=await claim();
     assert.equal(result.components.traffic_violations,500); assert.equal(result.total,2200);

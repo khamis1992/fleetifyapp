@@ -63,6 +63,33 @@ export function assertRentClaimConsistent(state: LawsuitPreparationState): void 
   }
   const trafficOnly = isTrafficViolationsOnlyScope(state.legalCase?.claim_scope);
   if (authoritative) {
+    const profile = state.litigationProfile;
+    const units = Number(state.financialClaimSource?.authoritativeCompensationUnits ?? 0);
+    const rate = Number(profile?.contractual_compensation_rate ?? 0);
+    const cap = profile?.contractual_compensation_cap;
+    const compensationEnabled = !trafficOnly && profile?.contractual_compensation_enabled
+      && profile.contractual_compensation_clause_number?.trim()
+      && profile.contractual_compensation_clause_text?.trim()
+      && profile.contractual_compensation_document_id
+      && ['fixed', 'daily', 'monthly', 'per_invoice'].includes(profile.contractual_compensation_method || '')
+      && Number.isFinite(rate) && rate > 0;
+    const compensationRaw = compensationEnabled ? units * rate : 0;
+    const compensationDetail = cap == null ? compensationRaw : Math.min(compensationRaw, Math.max(0, Number(cap)));
+    if (!Number.isSafeInteger(units) || units < 0 || !Number.isFinite(compensationDetail)
+      || (compensationEnabled && profile.contractual_compensation_method === 'fixed' && units !== 1)
+      || Math.round(compensationDetail * 100) !== Math.round(authoritative.lateFees * 100)) {
+      throw new Error('تغيرت تفاصيل التعويض الاتفاقي أو سقفه عن المبلغ المعتمد؛ حدّث بيانات المطالبة قبل إعداد المذكرة');
+    }
+    if (authoritative.retentionCompensation > 0) {
+      const retention = state.financialClaimSource?.authoritativeRetention;
+      const dailyRate = Number(profile?.retention_daily_rate);
+      if (!retention || !profile?.retention_rate_source || !profile.retention_rate_source_ref?.trim()
+        || !profile.retention_rate_source_document_id || !Number.isFinite(dailyRate) || dailyRate <= 0
+        || Math.round(retention.days * dailyRate * 100) !== Math.round(authoritative.retentionCompensation * 100)
+        || Math.round(retention.amount * 100) !== Math.round(authoritative.retentionCompensation * 100)) {
+        throw new Error('تغيرت تفاصيل الاحتباس أو سعره اليومي عن المبلغ المعتمد؛ حدّث بيانات المطالبة قبل إعداد المذكرة');
+      }
+    }
     const damageDetail = trafficOnly ? 0 : getVerifiedDamageNetFromCosts(state.damageCosts ?? []);
     const depositDetail = !trafficOnly && state.litigationProfile?.apply_security_deposit
       ? Math.max(0, Number(state.litigationProfile.security_deposit_amount || 0)) : 0;

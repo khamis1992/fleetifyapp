@@ -139,6 +139,7 @@ export interface LegalDocumentData {
     method?: 'fixed' | 'daily' | 'monthly' | 'per_invoice';
     rate?: number;
     units?: number;
+    cap?: number;
   };
   /** بنود مصاريف الأضرار المتحقق منها (تُفصَّل في الجدول) */
   damageCostItems?: { type: string; description: string; amount: number }[];
@@ -372,14 +373,17 @@ export function generateLegalComplaintHTML(data: LegalDocumentData): string {
     0,
     documentedDamages - paymentDelayDamage - operationalLoss,
   );
-  const contractualCompensationFormula = data.contractualCompensation?.method === 'fixed'
-    && Number(data.contractualCompensation.rate) > 0
-    ? `مبلغ ثابت قدره ${formatQar(Number(data.contractualCompensation.rate))} ريال قطري`
-    : data.contractualCompensation?.method === 'monthly'
-    && Number(data.contractualCompensation.rate) > 0
-    && Number(data.contractualCompensation.units) > 0
-    ? `${formatQar(Number(data.contractualCompensation.rate))} ريال × ${Number(data.contractualCompensation.units)} شهر استحقاق غير مسدد`
-    : `وفق البند رقم (${data.contractualCompensation?.clauseNumber}) من العقد`;
+  const compensation = data.contractualCompensation;
+  const compensationUnitsLabel = compensation?.method === 'daily' ? 'يوم تأخر عن الاستحقاقات'
+    : compensation?.method === 'per_invoice' ? 'استحقاق غير مسدد' : 'شهر استحقاق غير مسدد';
+  const compensationBaseFormula = compensation?.method === 'fixed' && Number(compensation.rate) > 0
+    ? `مبلغ ثابت قدره ${formatQar(Number(compensation.rate))} ريال قطري`
+    : compensation?.method && Number(compensation.rate) > 0 && Number(compensation.units) > 0
+    ? `${formatQar(Number(compensation.rate))} ريال × ${Number(compensation.units)} ${compensationUnitsLabel}`
+    : `وفق البند رقم (${compensation?.clauseNumber}) من العقد`;
+  const contractualCompensationFormula = compensationBaseFormula
+    + (compensation?.cap != null && Number.isFinite(compensation.cap)
+      ? `، وبحد أقصى تعاقدي قدره ${formatQar(compensation.cap)} ريال قطري` : '');
   const contractualCompensationClauseText = data.contractualCompensation?.clauseText?.trim() || '';
 
   // وديعة الضمان: تُخصم فقط بقرار صريح، وبحد أقصى قيمة المطالبة

@@ -91,6 +91,20 @@ describe('rendered readiness financial safety (all external effects mocked)', ()
     expect(screen.getByRole('button', { name: 'التالي' })).toBeDisabled();
     expect(screen.getByText(/تغيرت الأرقام بين فحص الجاهزية/)).toBeInTheDocument();
   });
+  it('sends the reviewed statement to the server before approval', async () => {
+    mount(); fireEvent.click(toFinal());
+    await waitFor(() => expect(state.convert).toHaveBeenCalledTimes(1));
+    expect(state.rpc).toHaveBeenCalledWith('complete_legal_transfer_readiness_v2', expect.objectContaining({
+      p_payload: expect.objectContaining({ reviewed_claim_statement: state.claim, claim_amount: 1000 }),
+    }));
+  });
+  it('refreshes and requires review again when the server rejects a stale snapshot', async () => {
+    state.rpc.mockResolvedValue({ data: null, error: { code: '40001', message: 'تغيرت المطالبة' } });
+    mount(); fireEvent.click(toFinal());
+    await waitFor(() => expect(state.refetch).toHaveBeenCalledTimes(2));
+    expect(state.convert).not.toHaveBeenCalled();
+    expect(screen.getByRole('button', { name: 'اعتماد وتحويل للقانونية' })).toBeDisabled();
+  });
   it('allows only one completion request while the readiness command is in flight', async () => {
     let finish!: (value: unknown) => void;
     state.rpc.mockImplementation(() => new Promise(resolve => { finish = resolve; }));

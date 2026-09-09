@@ -177,6 +177,13 @@ describe('explanatory memo structure (approved template)', () => {
     expect(memo).not.toContain('تعويض عن الأضرار المادية والمعنوية والحرمان من الانتفاع');
   });
 
+  for (const method of ['monthly', 'daily', 'per_invoice'] as const) it('discloses '+method+' units and the compensation cap', () => {
+    const memo = generateLegalComplaintHTML({ ...lawsuitData,
+      contractualCompensation: { amount: 100, clauseNumber: '7', clauseText: 'بند موثق', method, rate: 30, units: 4, cap: 100 },
+    });
+    expect(memo).toContain('30 ريال × 4');
+    expect(memo).toContain('وبحد أقصى تعاقدي قدره 100 ريال قطري');
+  });
   it('never injects arbitrary compensation when no documented damages exist', () => {
     const memo = generateLegalComplaintHTML({
       ...lawsuitData,

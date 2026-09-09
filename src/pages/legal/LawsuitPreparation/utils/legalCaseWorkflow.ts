@@ -1,3 +1,4 @@
+import { isTrafficViolationsOnlyScope } from '@/types/legalClaimScope';
 import type {
   Customer,
   DamageCost,
@@ -304,8 +305,9 @@ export function evaluateLegalCaseReadiness(
   const strengths: string[] = [];
   const profile = state.litigationProfile;
   const defendantContact = getDefendantContact(state);
+  const trafficOnly = isTrafficViolationsOnlyScope(state.legalCase?.claim_scope);
   const legalPath = resolveLegalPath(profile, state.contract?.end_date ?? null, state.formalNotices, today);
-  issues.push(...legalPath.issues);
+  if (!trafficOnly) issues.push(...legalPath.issues);
 
   if (!state.contract) issues.push('بيانات العقد غير مكتملة.');
   if (!state.customer?.national_id) issues.push('الرقم الشخصي للمدعى عليه غير مكتمل.');
@@ -326,29 +328,30 @@ export function evaluateLegalCaseReadiness(
   ) {
     issues.push('بيانات التبليغ المدخلة يدوياً تحتاج مستند إثبات مرتبطاً بالعقد.');
   }
-  if (!state.calculations || state.calculations.total <= 0 || state.overdueInvoices.length === 0) {
+  if (state.financialClaimError || !state.calculations
+    || !Number.isFinite(state.calculations.total) || state.calculations.total <= 0) {
     issues.push('لا توجد مطالبة مالية موجبة من استحقاقات حالّة ومثبتة.');
   }
   if (!state.documents?.contract?.sourceDocumentId) issues.push('نسخة العقد المؤيدة غير مرتبطة بالقضية.');
   if (!profile) issues.push('لم يُحفظ الملف القانوني للقضية بعد.');
-  if (profile?.vehicle_custody === 'unknown') {
+  if (!trafficOnly && profile?.vehicle_custody === 'unknown') {
     warnings.push('حيازة المركبة غير مؤكدة؛ لن يظهر طلب الرد أو تعويض الاحتباس.');
   }
-  if (profile?.delivery_handover_date && !profile.delivery_handover_document_id) {
+  if (!trafficOnly && profile?.delivery_handover_date && !profile.delivery_handover_document_id) {
     warnings.push('تاريخ تسليم المركبة مسجل دون محضر مؤيد؛ ستستخدم المذكرة صياغة تحفظية.');
   }
   if (
-    profile
+    !trafficOnly && profile
     && ['returned', 'recovered_by_company'].includes(profile.vehicle_custody)
     && (!profile.vehicle_returned_at || !profile.vehicle_return_document_id)
   ) {
     issues.push('إثبات رد أو استرداد المركبة غير مكتمل: يلزم التاريخ والمستند المؤيد.');
   }
-  if (profile?.vehicle_custody === 'lost') {
+  if (!trafficOnly && profile?.vehicle_custody === 'lost') {
     warnings.push('المركبة مسجلة كمفقودة؛ يلزم فحص مسار البلاغ والقيمة السوقية قبل اعتماد الطلبات.');
   }
 
-  if (legalPath.effectivePath === 'judicial_rescission') {
+  if (!trafficOnly && legalPath.effectivePath === 'judicial_rescission') {
     const hasFormalDemand = state.formalNotices.some((notice) => (
       ['payment_demand', 'vehicle_return_demand'].includes(notice.notice_type)
         && isConfirmedNotice(notice)
@@ -367,15 +370,16 @@ export function evaluateLegalCaseReadiness(
     }
   }
 
-  const verifiedDamageNet = getVerifiedDamageNet(state);
-  const monetaryDelayDamage = state.damageCosts.some((cost) => (
+  const verifiedDamageNet = trafficOnly ? 0 : getVerifiedDamageNet(state);
+  const monetaryDelayDamage = !trafficOnly && state.damageCosts.some((cost) => (
     cost.cost_type === 'monetary_delay_damage'
       && cost.verified
       && Boolean(cost.evidence_document_id)
   ));
-  const retention = calculateRetentionClaim(profile, legalPath, today);
+  const retention = trafficOnly ? { amount: 0 }
+    : state.financialClaimSource?.authoritativeRetention ?? calculateRetentionClaim(profile, legalPath, today);
   const contractualCompensation = Boolean(
-    profile?.contractual_compensation_enabled
+    !trafficOnly && profile?.contractual_compensation_enabled
       && profile.contractual_compensation_clause_number?.trim()
       && profile.contractual_compensation_clause_text?.trim()
       && profile.contractual_compensation_method
@@ -387,8 +391,27 @@ export function evaluateLegalCaseReadiness(
   if (state.trafficViolations.length > 0 && !violations) {
     warnings.push('المخالفات غير مرتبطة بمستخرج رسمي؛ لن تدخل المطالبة النهائية.');
   }
-  if (profile?.contractual_compensation_enabled && !contractualCompensation) {
+  if (!trafficOnly && profile?.contractual_compensation_enabled && !contractualCompensation) {
     warnings.push('التعويض الاتفاقي غير مكتمل الأدلة؛ سيستبعد من المطالبة.');
+  }
+
+  // A traffic/damage/retention claim need not contain a rental invoice.
+  // Require supporting rows for each positive component instead of a rent-only gate.
+  const amounts = state.calculations;
+  if ((amounts?.overdueRent ?? 0) > 0 && (trafficOnly || state.overdueInvoices.length === 0)) {
+    issues.push('الأجرة المطالب بها لا تسندها استحقاقات ضمن نطاق الدعوى.');
+  }
+  if ((amounts?.violationsFines ?? 0) > 0 && !violations) {
+    issues.push('مبلغ المخالفات المطالب به يحتاج تفاصيل المخالفات والمستخرج المؤيد.');
+  }
+  if ((amounts?.lateFees ?? 0) > 0 && !contractualCompensation) {
+    issues.push('مبلغ التعويض الاتفاقي يحتاج بند العقد ومستنده المؤيد.');
+  }
+  if ((amounts?.damagesFee ?? 0) > 0 && verifiedDamageNet <= 0) {
+    issues.push('مبلغ الأضرار المطالب به يحتاج تكاليف متحققاً منها ومستنداتها.');
+  }
+  if ((amounts?.retentionCompensation ?? 0) > 0 && retention.amount <= 0) {
+    issues.push('مبلغ الاحتباس المطالب به يحتاج فترة وسعراً مثبتين ضمن نطاق الدعوى.');
   }
 
   if (state.overdueInvoices.length > 0) {
@@ -418,10 +441,10 @@ export function evaluateLegalCaseReadiness(
     strengths,
     legalPath,
     eligibleClaims: {
-      rent: Boolean(state.calculations && state.calculations.overdueRent > 0),
+      rent: !trafficOnly && Boolean(state.calculations && state.calculations.overdueRent > 0),
       contractualCompensation,
       violations,
-      vehicleReturn: profile?.vehicle_custody === 'with_defendant',
+      vehicleReturn: !trafficOnly && profile?.vehicle_custody === 'with_defendant',
       retention: retention.amount > 0,
       documentedDamages: verifiedDamageNet > 0,
       monetaryDelayDamage,

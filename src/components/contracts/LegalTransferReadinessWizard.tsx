@@ -193,12 +193,12 @@ const callRpc = async <T,>(
   const { data, error } = await (supabase.rpc as unknown as (
     name: string,
     parameters: Record<string, unknown>,
-  ) => Promise<{ data: unknown; error: { message?: string } | null }>)(
+  ) => Promise<{ data: unknown; error: { message?: string; code?: string } | null }>)(
     functionName,
     args,
   );
 
-  if (error) throw new Error(error.message || 'تعذر تنفيذ العملية');
+  if (error) throw Object.assign(new Error(error.message || 'تعذر تنفيذ العملية'), { code: error.code });
   return data as T;
 };
 
@@ -690,6 +690,7 @@ export function LegalTransferReadinessWizard({
         p_payload: {
           financial_reviewed: true,
           claim_amount: claimStatement.total,
+          reviewed_claim_statement: claimStatement,
           accounting_invoice_balance: invoiceOutstanding,
           included_invoice_balance: includedInvoiceOutstanding,
           excluded_invoice_balance: excludedInvoiceOutstanding,
@@ -752,6 +753,14 @@ export function LegalTransferReadinessWizard({
       onOpenChange(false);
       onSuccess?.();
     } catch (error) {
+      if (error && typeof error === 'object' && 'code' in error && error.code === '40001') {
+        setFinancialReviewed(false);
+        setViolationsReviewed(false);
+        await Promise.allSettled([
+          readinessQuery.refetch(),
+          claimStatementQuery.refetch(),
+        ]);
+      }
       toast.error(error instanceof Error ? error.message : 'تعذر إكمال التحويل القانوني');
     } finally {
       transferInFlightRef.current = false;

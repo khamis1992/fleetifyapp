@@ -265,6 +265,7 @@ export function buildMemoDocumentData(
           method: profile!.contractual_compensation_method!,
           rate: Number(profile!.contractual_compensation_rate),
           units: calculations.contractualCompensationUnits ?? 0,
+          ...(profile!.contractual_compensation_cap != null ? { cap: Number(profile!.contractual_compensation_cap) } : {}),
         }
       : undefined,
     damages: verifiedDamages > 0 ? verifiedDamages : undefined,
@@ -772,7 +773,7 @@ export function buildClaimsStatementData(
     } : null,
     retentionCompensation: calculations.retentionCompensation > 0 ? {
       amount: calculations.retentionCompensation,
-      days: calculateRetentionClaim(
+      days: state.financialClaimSource?.authoritativeRetention?.days ?? calculateRetentionClaim(
         state.litigationProfile,
         evaluateLegalCaseReadiness(state).legalPath,
       ).days,

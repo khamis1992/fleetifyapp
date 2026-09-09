@@ -177,11 +177,16 @@ export async function createDocxDocumentFromHtml(htmlContent: string): Promise<a
   };
 
   const extractMetaInfo = () => {
-    const refDate = doc.querySelector('.ref-date');
-    const refNumber = refDate?.querySelector('div:first-child')?.textContent?.replace('الرقم المرجعي:', '').trim() || '';
-    const dateText = refDate?.querySelector('div:last-child')?.textContent?.replace('التاريخ:', '').trim() || 
-                     new Date().toLocaleDateString('ar-QA', { year: 'numeric', month: 'long', day: 'numeric' });
-    return { refNumber, dateText };
+    // Read labels, not child positions: the revised memo includes a separate
+    // official court number after its independent memorandum date.
+    const lines = Array.from(doc.querySelector('.ref-date')?.children || [])
+      .map(row => row.textContent?.trim() || '');
+    const value = (label: RegExp) => lines.find(line => label.test(line))?.replace(label, '').trim() || '';
+    const refNumber = value(/^الرقم المرجعي\s*:/);
+    const memoDate = value(/^تاريخ المذكرة\s*:/);
+    const dateText = memoDate || value(/^التاريخ\s*:/);
+    const caseNumber = value(/^الدعوى رقم\s*:/);
+    return { refNumber, dateText, caseNumber, dateLabel: memoDate ? 'تاريخ المذكرة' : 'التاريخ' };
   };
 
   const extractSubject = () => {
@@ -397,7 +402,7 @@ export async function createDocxDocumentFromHtml(htmlContent: string): Promise<a
             new TableCell({
               children: [new Paragraph({ 
                 children: [new TextRun({ 
-                  text: `التاريخ: ${metaInfo.dateText}`, 
+                  text: `${metaInfo.dateLabel}: ${metaInfo.dateText}`,
                   size: 20, 
                   font: 'Arial', 
                   rightToLeft: true 
@@ -423,6 +428,15 @@ export async function createDocxDocumentFromHtml(htmlContent: string): Promise<a
   );
 
   children.push(new Paragraph({ spacing: { before: 150 } }));
+
+  if (metaInfo.caseNumber) {
+    children.push(new Paragraph({
+      children: [new TextRun({ text: `الدعوى رقم: ${metaInfo.caseNumber}`, size: 20, font: 'Arial', rightToLeft: true })],
+      alignment: AlignmentType.RIGHT,
+      bidirectional: true,
+      spacing: { after: 150 },
+    }));
+  }
 
   // 4. صندوق الموضوع (بلون خلفية مطابق)
   children.push(

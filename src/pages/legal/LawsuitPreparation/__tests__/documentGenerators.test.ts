@@ -189,6 +189,16 @@ describe('buildMemoDocumentData', () => {
     expect(data.customer.days_overdue).toBe(0);
   });
 
+  it('keeps the same authoritative retention days in the memo and claims statement', () => {
+    const state = {
+      ...baseState,
+      calculations: { ...baseState.calculations!, retentionCompensation: 500, total: 6100 },
+      financialClaimSource: { authoritativeRetention: { days: 5, amount: 500, from: '2026-08-01', to: '2026-08-05' } },
+    } as unknown as LawsuitPreparationState;
+    expect(buildMemoDocumentData(state).retentionClaim).toEqual({ days: 5, amount: 500, from: '2026-08-01', to: '2026-08-05' });
+    expect(buildClaimsStatementData(state).retentionCompensation).toMatchObject({ days: 5, amount: 500 });
+  });
+
   it('throws when contract or calculations are missing', () => {
     expect(() =>
       buildMemoDocumentData({ ...baseState, contract: null } as unknown as LawsuitPreparationState),

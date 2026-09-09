@@ -55,6 +55,37 @@ describe('documentary monetary detail consistency', () => {
       litigationProfile: { apply_security_deposit: true, security_deposit_amount: 20 },
     } as unknown as LawsuitPreparationState;
   };
+  const withCompensation = () => {
+    const state = createState();
+    Object.assign(state.calculations!, { lateFees: 100, total: 160 });
+    Object.assign(state.financialClaimSource.authoritativeAmounts!, state.calculations);
+    state.financialClaimSource.authoritativeCompensationUnits = 4;
+    Object.assign(state.litigationProfile!, { contractual_compensation_enabled: true,
+      contractual_compensation_method: 'monthly', contractual_compensation_rate: 30, contractual_compensation_cap: 100,
+      contractual_compensation_clause_number: '7', contractual_compensation_clause_text: 'بند موثق', contractual_compensation_document_id: 'clause-proof' });
+    return state;
+  };
+  it('accepts documented compensation after applying the contractual cap', () => {
+    expect(() => assertRentClaimConsistent(withCompensation())).not.toThrow();
+  });
+  for (const change of ['rate', 'cap', 'document'] as const) it('rejects a changed compensation '+change+' before export', () => {
+    const state = withCompensation();
+    if (change === 'rate') state.litigationProfile!.contractual_compensation_rate = 10;
+    if (change === 'cap') state.litigationProfile!.contractual_compensation_cap = 50;
+    if (change === 'document') state.litigationProfile!.contractual_compensation_document_id = null;
+    expect(() => assertRentClaimConsistent(state)).toThrow('تفاصيل التعويض الاتفاقي');
+  });
+  it('rejects a changed retention rate even when the saved monetary total remains unchanged', () => {
+    const state = createState();
+    Object.assign(state.calculations!, { retentionCompensation: 100, total: 160 });
+    Object.assign(state.financialClaimSource.authoritativeAmounts!, state.calculations);
+    state.financialClaimSource.authoritativeRetention = { days: 5, amount: 100, from: '2026-08-01', to: '2026-08-05' };
+    Object.assign(state.litigationProfile!, { retention_daily_rate: 20, retention_rate_source: 'market_quotes',
+      retention_rate_source_ref: 'عروض موثقة', retention_rate_source_document_id: 'price-proof' });
+    expect(() => assertRentClaimConsistent(state)).not.toThrow();
+    state.litigationProfile!.retention_daily_rate = 30;
+    expect(() => assertRentClaimConsistent(state)).toThrow('تفاصيل الاحتباس');
+  });
   it('accepts evidence amounts that reconcile to the server calculation', () => {
     expect(() => assertRentClaimConsistent(createState())).not.toThrow();
   });
