@@ -22,6 +22,7 @@ const legalReaders = new Set([
   'legal-case-memo-snapshots', 'legal-case-evidence-proposals', 'legal-claim-projection',
   'legal-transfer-readiness', 'manual-legal-delinquency-queue', 'delinquent-customers',
   'legal-delinquency-manual-candidates', 'batch-filing-candidates',
+  'contract-reminder-history', 'contract-traffic-violations',
 ]);
 const documentReaders = new Set([
   'contract-documents', 'contract-document', 'contract-violation-evidence-documents',
@@ -35,6 +36,7 @@ const companyAtTwo = new Set([
   'lawsuit-contract-details', 'contract-document', 'contract-violation-evidence-documents',
   'legal-case-litigation-profile', 'legal-case-formal-notices', 'legal-case-damage-costs',
   'legal-case-memo-snapshots', 'legal-case-evidence-proposals', 'legal-claim-projection',
+  'contract-reminder-history', 'contract-traffic-violations',
 ]);
 const companyAtOne = new Set([
   'crm-customers-optimized', 'express-customers', 'customers-for-matching', 'contracts-export',

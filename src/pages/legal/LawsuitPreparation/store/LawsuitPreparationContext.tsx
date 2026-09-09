@@ -24,6 +24,7 @@ import { exportDocumentsAsZip } from '../utils/zipExport';
 import {
   getEffectiveLegalIdentityMatchStatus,
   getContractDocumentReview,
+  isActiveLegalEvidenceDocument,
   selectContractDocumentForIdentityScan,
   selectLegalContractDocument,
 } from '../utils/contractDocumentSelection';
@@ -45,10 +46,10 @@ import { getFilingReadiness } from '../utils/filingReadiness';
 import { taqadiErrorMessage } from '../utils/taqadiErrorMessage';
 import { getLawsuitClaimAmounts } from '../utils/claimAmounts';
 import { loadLegalClaimProjection } from '../utils/legalClaimSources';
+import { freezeCurrentMemoSnapshot, MemoFactsChangedError } from '../utils/memoSnapshot';
 import {
   DEFAULT_DEFENDANT_SERVICE_ADDRESS,
   calculateRetentionClaim,
-  evaluateLegalMemoReadiness,
   getVerifiedDamageNetFromCosts,
   resolveDefendantContact,
   resolveLegalPath,
@@ -453,7 +454,7 @@ export function LawsuitPreparationProvider({
 
       const { data, error } = await supabase
         .from('contract_documents')
-        .select('id, document_name, file_path, mime_type')
+        .select('id, document_name, file_path, mime_type, legal_evidence_state, superseded_by_document_id')
         .eq('contract_id', contractId)
         .eq('company_id', companyId)
         .eq('document_type', 'violations_proof')
@@ -461,7 +462,7 @@ export function LawsuitPreparationProvider({
 
       if (error) throw error;
 
-      const evidenceDocuments = (await Promise.all((data || []).map(async (document) => {
+      const evidenceDocuments = (await Promise.all((data || []).filter(isActiveLegalEvidenceDocument).map(async (document) => {
         if (!document.file_path) return null;
         const { data: signedUrl, error: signedUrlError } = await supabase.storage
           .from('contract-documents')
@@ -1262,38 +1263,15 @@ export function LawsuitPreparationProvider({
     if (!companyId || !contractId || !state.contract || !user?.id) {
       throw new Error('بيانات القضية غير مكتملة');
     }
-    const readiness = evaluateLegalMemoReadiness(state);
-    if (readiness.status === 'not_ready') {
-      throw new Error(`لا يمكن تثبيت المذكرة قبل معالجة: ${readiness.issues.join('، ')}`);
+    let snapshot: LegalMemoSnapshot;
+    try {
+      snapshot = await freezeCurrentMemoSnapshot(companyId, contractId, state);
+    } catch (error) {
+      if (error instanceof MemoFactsChangedError) {
+        await notifyRecordChange(queryClient, { entity: 'documents', companyId, recordId: contractId });
+      }
+      throw error;
     }
-
-    const legalCase = await getCurrentLegalCase(companyId, contractId);
-    const now = new Date();
-    const filedOn = legalCase?.filing_date?.slice(0, 10) || null;
-    const memoPayload = {
-      ...buildMemoDocumentData(state),
-      caseNumber: legalCase?.case_number || undefined,
-      filingDate: filedOn || undefined,
-    };
-
-    const { data, error } = await supabase
-      .rpc('freeze_legal_case_memo_snapshot', {
-        p_company_id: companyId,
-        p_contract_id: contractId,
-        p_case_id: legalCase?.id || null,
-        p_facts_as_of_date: now.toISOString().slice(0, 10),
-        p_filing_date: filedOn,
-        p_legal_path: readiness.legalPath.effectivePath,
-        p_readiness_status: ['ready', 'approved'].includes(readiness.status)
-          ? 'ready'
-          : 'ready_with_reservations',
-        p_readiness_issues: [...readiness.issues, ...readiness.warnings],
-        p_payload: JSON.parse(JSON.stringify(memoPayload)),
-        p_template_version: 'INVESTMENT_COURT_MEMO_V2',
-        p_approve: false,
-      });
-    if (error) throw error;
-    const snapshot = data as unknown as LegalMemoSnapshot;
     dispatch({ type: 'SET_MEMO_SNAPSHOTS', payload: [snapshot, ...state.memoSnapshots] });
     await queryClient.invalidateQueries({
       queryKey: ['legal-case-memo-snapshots', contractId, companyId],

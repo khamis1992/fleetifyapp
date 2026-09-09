@@ -10,7 +10,15 @@ export interface ContractDocumentCandidate {
   legal_identity_expected_id?: string | null;
   legal_identity_extracted_id?: string | null;
   legal_evidence_state?: string | null;
+  superseded_by_document_id?: string | null;
   legal_identity_match_reason?: string | null;
+}
+
+export function isActiveLegalEvidenceDocument(document: Pick<ContractDocumentCandidate,
+  'file_path' | 'legal_evidence_state' | 'superseded_by_document_id'>): boolean {
+  return Boolean(document.file_path?.trim()
+    && (document.legal_evidence_state || 'active') === 'active'
+    && !document.superseded_by_document_id);
 }
 
 const normalizeDocumentName = (value: string | null): string =>

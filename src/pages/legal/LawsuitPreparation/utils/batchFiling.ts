@@ -35,6 +35,7 @@ import {
 } from './documentGenerators';
 import {
   getEffectiveLegalIdentityMatchStatus,
+  isActiveLegalEvidenceDocument,
   selectLegalContractDocument,
 } from './contractDocumentSelection';
 import { registerLegalCase } from './caseRegistration';
@@ -316,7 +317,7 @@ async function loadBatchContractState(
   // العقد الموقع + أدلة المخالفات من contract_documents
   const { data: contractDocumentRows } = await supabase
     .from('contract_documents')
-    .select('id, file_path, document_name, document_type, mime_type, legal_identity_match_status, legal_evidence_state, legal_identity_expected_name, legal_identity_extracted_name, legal_identity_expected_id, legal_identity_extracted_id, legal_identity_match_reason, legal_identity_checked_at')
+    .select('id, file_path, document_name, document_type, mime_type, legal_identity_match_status, legal_evidence_state, superseded_by_document_id, legal_identity_expected_name, legal_identity_extracted_name, legal_identity_expected_id, legal_identity_extracted_id, legal_identity_match_reason, legal_identity_checked_at')
     .eq('contract_id', contractId)
     .eq('company_id', companyId)
     .order('created_at', { ascending: false });
@@ -345,7 +346,7 @@ async function loadBatchContractState(
 
   const evidenceDocuments: ViolationEvidenceDocument[] = (await Promise.all(
     (contractDocumentRows ?? [])
-      .filter((document) => document.document_type === 'violations_proof' && document.file_path)
+      .filter((document) => document.document_type === 'violations_proof' && isActiveLegalEvidenceDocument(document))
       .map(async (document) => {
         const { data: signedUrl, error: signedUrlError } = await supabase.storage
           .from('contract-documents')

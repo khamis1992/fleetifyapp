@@ -3,7 +3,19 @@ import {
   selectContractDocumentForIdentityScan,
   selectLegalContractDocument,
   getContractDocumentReview,
+  isActiveLegalEvidenceDocument,
 } from '../utils/contractDocumentSelection';
+
+describe('active evidence for legal claims', () => {
+  it('accepts active and legacy evidence but rejects quarantined, superseded and empty files', () => {
+    expect(isActiveLegalEvidenceDocument({ file_path: 'proof.pdf', legal_evidence_state: 'active' })).toBe(true);
+    expect(isActiveLegalEvidenceDocument({ file_path: 'proof.pdf', legal_evidence_state: null })).toBe(true);
+    for (const change of [{ legal_evidence_state: 'quarantined' }, { legal_evidence_state: 'superseded' },
+      { superseded_by_document_id: 'replacement' }, { file_path: ' ' }, { file_path: null }]) {
+      expect(isActiveLegalEvidenceDocument({ file_path: 'proof.pdf', legal_evidence_state: 'active', ...change })).toBe(false);
+    }
+  });
+});
 
 const document = (
   id: string,

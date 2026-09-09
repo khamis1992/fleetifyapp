@@ -12,6 +12,23 @@ const createClient = () => {
 afterEach(() => { clients.splice(0).forEach((client) => client.clear()); });
 
 describe('shared record read synchronization', () => {
+  it('refreshes all memo evidence readers after stale facts are detected within the same contract and company', async () => {
+    const client = createClient();
+    for (const root of ['contract-reminder-history', 'contract-traffic-violations', 'contract-document',
+      'contract-violation-evidence-documents', 'legal-claim-projection', 'lawsuit-contract-details']) {
+      for (const [contract, company] of [['contract-1', 'company-1'], ['contract-2', 'company-1'], ['contract-1', 'company-2']]) {
+        client.setQueryData([root, contract, company], { keep: true });
+      }
+    }
+    await notifyRecordChange(client, { entity: 'documents', companyId: 'company-1', recordId: 'contract-1' });
+    for (const root of ['contract-reminder-history', 'contract-traffic-violations', 'contract-document',
+      'contract-violation-evidence-documents', 'legal-claim-projection', 'lawsuit-contract-details']) {
+      expect(client.getQueryState([root, 'contract-1', 'company-1'])?.isInvalidated).toBe(true);
+      expect(client.getQueryState([root, 'contract-2', 'company-1'])?.isInvalidated).toBe(false);
+      expect(client.getQueryState([root, 'contract-1', 'company-2'])?.isInvalidated).toBe(false);
+    }
+  });
+
   it('invalidates actual customer, CRM, contract and lawsuit keys including legacy nested keys', async () => {
     const client = createClient();
     const keys = [

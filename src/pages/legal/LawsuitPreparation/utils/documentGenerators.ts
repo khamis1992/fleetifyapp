@@ -32,6 +32,7 @@ import { getLawsuitClaimAmounts } from './claimAmounts';
 import { assertRentClaimConsistent, summarizeRentClaim } from './rentClaimSummary';
 import {
   getEffectiveLegalIdentityMatchStatus,
+  isActiveLegalEvidenceDocument,
   selectLegalContractDocument,
 } from './contractDocumentSelection';
 import { getQatarBusinessDate, loadLegalClaimProjection } from './legalClaimSources';
@@ -301,7 +302,7 @@ function stableMemoValue(value: unknown): unknown {
 /** يمنع رفع قضية تغيرت وقائعها أو أرقامها بعد اعتماد آخر لقطة. */
 export function isMemoSnapshotCurrent(
   state: LawsuitPreparationState,
-  snapshot: LegalMemoSnapshot | undefined,
+  snapshot: Pick<LegalMemoSnapshot, 'payload'> | undefined,
 ): boolean {
   if (!snapshot) return false;
   // This predicate runs while the preparation page is still loading its
@@ -504,7 +505,7 @@ export async function loadCanonicalLawsuitState(
       .order('created_at'),
     supabase
       .from('contract_documents')
-      .select('id, document_name, document_type, file_path, mime_type, created_at, legal_identity_match_status, legal_evidence_state, legal_identity_expected_id, legal_identity_extracted_id')
+      .select('id, document_name, document_type, file_path, mime_type, created_at, legal_identity_match_status, legal_evidence_state, superseded_by_document_id, legal_identity_expected_id, legal_identity_extracted_id')
       .eq('contract_id', contractId)
       .eq('company_id', companyId)
       .order('created_at', { ascending: false }),
@@ -584,8 +585,8 @@ export async function loadCanonicalLawsuitState(
     legal_identity_expected_id: document.legal_identity_expected_id,
     legal_identity_extracted_id: document.legal_identity_extracted_id,
   }));
-  state.violationEvidenceDocuments = state.contractEvidenceDocuments
-    .filter((document) => document.document_type === 'violations_proof')
+  state.violationEvidenceDocuments = (documentsResult.data || [])
+    .filter((document) => document.document_type === 'violations_proof' && isActiveLegalEvidenceDocument(document))
     .map((document) => ({ id: document.id, name: document.document_name, url: '', mimeType: document.mime_type }));
   const signedContract = selectLegalContractDocument(documentsResult.data || []);
   if (signedContract) state.documents.contract.sourceDocumentId = signedContract.id;

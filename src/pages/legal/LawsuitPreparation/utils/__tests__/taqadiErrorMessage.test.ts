@@ -2,6 +2,20 @@ import { describe, expect, it } from 'vitest';
 import { taqadiErrorMessage } from '../taqadiErrorMessage';
 
 describe('filing authentication recovery messages', () => {
+  it('explains stale memo components and service dates with a new-snapshot recovery action', () => {
+    const message = taqadiErrorMessage('Filing package is incomplete: ["memoSnapshot.financial_components_changed","memoSnapshot.service_period_changed"]');
+    expect(message).toContain('تغيرت مكونات المطالبة');
+    expect(message).toContain('تغيرت فترة الخدمة');
+    expect(message).toContain('ثبّت نسخة جديدة');
+    expect(message).not.toContain('memoSnapshot.');
+  });
+  it('explains changed evidence once when more than one validation stage reports it', () => {
+    const message = taqadiErrorMessage('Filing package is incomplete: ["memoSnapshot.evidence_unavailable","memoSnapshot.evidence_unavailable","memoSnapshot.vehicle_changed"]');
+    expect(message.match(/أحد المستندات المؤيدة/g)).toHaveLength(1);
+    expect(message).toContain('تغيرت بيانات المركبة');
+    expect(message).toContain('ثبّت نسخة جديدة');
+    expect(message).not.toContain('memoSnapshot.');
+  });
   it('explains missing filing documents in Arabic for PostgREST error objects', () => {
     const message = taqadiErrorMessage({ message: 'Filing package is incomplete: ["documents.violations", "documents.violationsEvidence"]' });
     expect(message).toContain('كشف المخالفات');

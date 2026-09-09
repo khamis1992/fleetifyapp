@@ -70,14 +70,30 @@ describe('memo receipt settlement against reviewed deployed claim bodies',()=>{
         RETURN public.complete_legal_transfer_readiness_v1_pre_pdf_request_agent(p_company_id,p_contract_id,p_payload,p_actor_id);
       END $$;`);
     await db.exec(await read('../../supabase/migrations/20260908234503_persist_memo_aligned_readiness.sql'));
-
+    await db.exec(`CREATE TABLE legal_case_memo_snapshots(id uuid PRIMARY KEY,company_id uuid,contract_id uuid,case_id uuid,version integer,payload jsonb);
+      ALTER TABLE contract_documents ADD COLUMN id uuid DEFAULT gen_random_uuid();`);
+    await db.exec(await read('../../supabase/migrations/20260907151151_align_taqadi_violation_document_requirements.sql'));
+    await db.exec(await read('../../supabase/migrations/20260909002436_validate_filing_memo_statement_details.sql'));
+    await db.exec(`ALTER TABLE contracts ADD COLUMN vehicle_id uuid, ADD COLUMN license_plate text;
+      ALTER TABLE customers ADD COLUMN customer_type text,ADD COLUMN national_id text,ADD COLUMN nationality text,ADD COLUMN phone text,ADD COLUMN address text,ADD COLUMN email text;
+      CREATE TABLE vehicles(id uuid,company_id uuid,plate_number text,make text,model text,year integer,vin text,color text);
+      ALTER TABLE contract_documents ADD COLUMN legal_evidence_state text DEFAULT 'active',ADD COLUMN superseded_by_document_id uuid;
+      ALTER TABLE legal_case_damage_costs ADD COLUMN cost_type text,ADD COLUMN description text;
+      ALTER TABLE legal_case_litigation_profile ADD COLUMN delivery_handover_date date,ADD COLUMN delivery_handover_document_id uuid,ADD COLUMN vehicle_return_document_id uuid,
+        ADD COLUMN rescission_strategy text,ADD COLUMN termination_type text,ADD COLUMN termination_supporting_document_id uuid,ADD COLUMN renewal_applies boolean,
+        ADD COLUMN renewed_end_date date,ADD COLUMN termination_clause_number text,ADD COLUMN termination_clause_text text,
+        ADD COLUMN notice_exception_type text,ADD COLUMN notice_exception_clause_or_reason text,ADD COLUMN notice_exception_document_id uuid;
+      CREATE TABLE legal_case_formal_notices(company_id uuid,contract_id uuid,notice_type text,sent_on date,delivered_on date,delivery_confirmed boolean,proof_document_id uuid,grace_period_days integer,delivery_method text);`);
+    await db.exec(await read('../../supabase/migrations/20260909004625_validate_filing_memo_facts_and_evidence.sql'));
 
   });
   after(async()=>db?.close());
   beforeEach(async()=>{
     await db.exec('BEGIN');
     await rows("SELECT set_config('fixture.role','service_role',true)");
-    await rows("INSERT INTO contracts VALUES($1,$2,$3,'TEST','2024-01-01','2028-12-31','under_legal_procedure',1700,true,0)",[contract,company,customer]);
+    await rows("INSERT INTO contracts(id,company_id,customer_id,contract_number,start_date,end_date,status,monthly_amount,vehicle_returned,late_fine_amount,vehicle_id) VALUES($1,$2,$3,'TEST','2024-01-01','2028-12-31','under_legal_procedure',1700,true,0,$4)",[contract,company,customer,other]);
+    await rows("INSERT INTO customers(id,company_id,first_name_ar,last_name_ar,national_id,nationality,phone) VALUES($1,$2,'عميل','اختبار','test-id','قطري','test-phone')",[customer,company]);
+    await rows("INSERT INTO vehicles VALUES($1,$2,'TEST','Test','Car',2026,'test-vin','أبيض')",[other,company]);
     await rows(`INSERT INTO invoices(id,company_id,contract_id,customer_id,invoice_month,invoice_date,due_date,invoice_number,invoice_type,penalty_id,total_amount,paid_amount,balance_due,payment_status,status) VALUES($1,$2,$3,$4,'2026-08-01','2026-08-01','2026-08-01','RENT','service',null,1700,0,1700,'unpaid','sent')`,[invoice,company,contract,customer]);
     await rows("INSERT INTO contract_payment_schedules(company_id,contract_id,due_date,amount,paid_amount,status,invoice_id) VALUES($1,$2,'2026-08-01',1700,0,'pending',$3)",[company,contract,invoice]);
   });
@@ -154,7 +170,7 @@ describe('memo receipt settlement against reviewed deployed claim bodies',()=>{
   });
   const penalty=async()=>{
     const result=(await rows("INSERT INTO penalties(company_id,contract_id,amount,payment_status,status,customer_id,responsible_customer_id,penalty_number,penalty_date,responsibility_party,customer_payment_status) VALUES($1,$2,500,'paid','active',$3,$3,'TV-REF','2026-08-15','customer','unpaid') RETURNING id",[company,contract,customer]))[0].id;
-    await rows("INSERT INTO contract_documents VALUES($1,$2,'violations_proof','proof.pdf')",[company,contract]);
+    await rows("INSERT INTO contract_documents(company_id,contract_id,document_type,file_path) VALUES($1,$2,'violations_proof','proof.pdf')",[company,contract]);
     return result;
   };
   const retiredTrafficInvoice=async()=>{
@@ -449,6 +465,195 @@ describe('memo receipt settlement against reviewed deployed claim bodies',()=>{
     await db.exec((await read('../../supabase/rollbacks/20260908221719_align_legal_recorded_rent_cutoff.rollback.sql')).replace(/^BEGIN;/m,'').replace(/^COMMIT;/m,''));
     const hashes=await rows("SELECT proname,md5(prosrc) hash FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname='legal_memo_calc_private' AND proname IN ('calculate_legal_claim_breakdown_v3','calculate_legal_claim_statement_v4') ORDER BY proname");
     assert.deepEqual(hashes.map(row=>row.hash),['e7624daa5cf7c757e8f053f9714003fe','da1c4e9c91285bd1521697634666b487']);
+  });
+  const snapshotFixture=async(statement=undefined,extra={})=>{
+    const value=statement??await claim();
+    const invoices=value.included_invoices.filter(row=>row.amount>0);
+    const dates=key=>invoices.map(row=>row[key]).filter(Boolean).sort();
+    const format=value=>value?.split('-').reverse().join('/');
+    const currentContract=(await rows('SELECT to_jsonb(c) value FROM contracts c WHERE id=$1',[contract]))[0].value;
+    const memo={claimScope:value.claim_scope,customer:{customer_name:'عميل اختبار',customer_code:customer,id_number:'test-id',nationality:'قطري',phone:'test-phone',address:'الدوحة قطر',email:'',overdue_amount:value.components.rent_due+value.components.legal_extension_rent,
+      late_penalty:value.components.contractual_compensation,violations_amount:value.components.traffic_violations,total_debt:value.total},
+      contractInfo:{contract_number:'TEST',start_date:format(currentContract.start_date),end_date:format(currentContract.end_date),monthly_rent:1700},
+      vehicleInfo:{plate:'TEST',make:'Test',model:'Car',year:2026,vin:'test-vin',color:'أبيض'},
+      vehicleCustody:'unknown',vehicleReturnedAt:null,returnDocumented:false,terminationPath:'judicial',formalNotices:[],
+      grossInvoicesTotal:invoices.reduce((sum,row)=>sum+row.total_amount,0)+value.components.legal_extension_rent,
+      paidTotal:invoices.reduce((sum,row)=>sum+row.paid_amount,0),
+      unpaidPeriodFrom:format(dates('service_period_start')[0]),unpaidPeriodTo:format(dates('service_period_end').at(-1)),...extra};
+    await rows('INSERT INTO legal_case_memo_snapshots(id,company_id,contract_id,version,payload) VALUES($1,$2,$3,1,$4)',[other,company,contract,memo]);
+    return memo;
+  };
+  const snapshotGate=async(value=undefined,packageExtra={})=>{
+    const statement=value??await claim();
+    return (await rows('SELECT legal_memo_calc_private.validate_snapshot_statement($1,$2,$3,$4) missing',
+      [company,contract,{memoSnapshotId:other,case:{amount:statement.total},...packageExtra},statement]))[0].missing;
+  };
+  it('accepts current snapshot receipt amounts and runs the same gate through the filing validator',async()=>{
+    await pay(500); await snapshotFixture();
+    assert.deepEqual(await snapshotGate(),[]);
+    const documents=['memo','claims','docsList','contract','commercialRegister','ibanCertificate','representativeId'].map(key=>({key,ready:true,htmlContent:'fixture'}));
+    const packet={memoSnapshotId:other,case:{amount:1200,title:'fixture',facts:'fixture',claims:'fixture'},defendant:{fullName:'Fixture',idNumber:'test',nationality:'test'},documents};
+    const validate=async()=>(await rows('SELECT public.validate_taqadi_filing_payload_v1_pre_failure_containment($1,$2,$3) result',[company,contract,packet]))[0].result;
+    assert.equal((await validate()).ready,true);
+    await db.exec("UPDATE legal_case_memo_snapshots SET payload=jsonb_set(payload,'{grossInvoicesTotal}','1800')");
+    assert.ok((await validate()).missing.includes('memoSnapshot.rent_settlement_changed'));
+  });
+  it('rejects same-net rent when gross and counted receipts both change',async()=>{
+    await pay(500); await snapshotFixture();
+    await db.exec('UPDATE invoices SET total_amount=1800; UPDATE contract_payment_schedules SET amount=1800');
+    await pay(100);
+    assert.equal((await claim()).total,1200);
+    assert.ok((await snapshotGate()).includes('memoSnapshot.rent_settlement_changed'));
+  });
+  it('allows an authenticated company user through the validator and denies another company',async()=>{
+    await snapshotFixture();
+    await rows('INSERT INTO profiles VALUES($1,$2,true)',[customer,company]);
+    await rows("SELECT set_config('fixture.role','authenticated',true),set_config('fixture.uid',$1,true),set_config('fixture.company',$2,true)",[customer,company]);
+    await db.exec('SET LOCAL ROLE authenticated');
+    const result=(await rows('SELECT public.validate_taqadi_filing_payload_v1_pre_failure_containment($1,$2,$3) result',
+      [company,contract,{memoSnapshotId:other,case:{amount:1700}}]))[0].result;
+    assert.ok(!result.missing.some(key=>key.startsWith('memoSnapshot.')));
+    await db.exec('RESET ROLE');
+    await rows("SELECT set_config('fixture.company',$1,true)",[other]);
+    await assert.rejects(rows('SELECT public.validate_taqadi_filing_payload_v1_pre_failure_containment($1,$2,$3)',
+      [company,contract,{memoSnapshotId:other,case:{amount:1700}}]),/Not authorized/);
+  });
+  it('rejects same-total component redistribution between rent and documented damage',async()=>{
+    await snapshotFixture(); await pay(50);
+    await rows('INSERT INTO legal_case_damage_costs(company_id,contract_id,amount,verified,evidence_document_id) VALUES($1,$2,50,true,$3)',[company,contract,other]);
+    assert.equal((await claim()).total,1700);
+    assert.ok((await snapshotGate()).includes('memoSnapshot.financial_components_changed'));
+  });
+  it('rejects service coverage changes even when amounts stay identical',async()=>{
+    await snapshotFixture();
+    await rows("INSERT INTO legal_case_litigation_profile(company_id,contract_id,vehicle_returned_at) VALUES($1,$2,'2026-08-20')",[company,contract]);
+    assert.equal((await claim()).total,1700);
+    assert.ok((await snapshotGate()).includes('memoSnapshot.service_period_changed'));
+  });
+  it('rejects a changed compensation rate even if its cap keeps the amount unchanged',async()=>{
+    await rows("INSERT INTO legal_case_litigation_profile(company_id,contract_id,contractual_compensation_enabled,contractual_compensation_clause_number,contractual_compensation_clause_text,contractual_compensation_method,contractual_compensation_rate,contractual_compensation_cap,contractual_compensation_document_id) VALUES($1,$2,true,'7','Clause','fixed',200,100,$3)",[company,contract,other]);
+    await snapshotFixture(undefined,{contractualCompensation:{amount:100,units:1,rate:200,cap:100,method:'fixed',clauseNumber:'7',clauseText:'Clause'}});
+    assert.deepEqual(await snapshotGate(),[]);
+    await db.exec('UPDATE legal_case_litigation_profile SET contractual_compensation_rate=300');
+    assert.equal((await claim()).total,1800);
+    assert.ok((await snapshotGate()).includes('memoSnapshot.compensation_details_changed'));
+  });
+  it('rejects missing, cross-contract, superseded and malformed snapshot references',async()=>{
+    assert.deepEqual(await snapshotGate(),['memoSnapshot.missing']);
+    await snapshotFixture();
+    assert.deepEqual(await snapshotGate(undefined,{memoSnapshotId:'invalid'}),['memoSnapshot.invalid_details']);
+    await rows('UPDATE legal_case_memo_snapshots SET contract_id=$1',[other]);
+    assert.deepEqual(await snapshotGate(),['memoSnapshot.missing']);
+    await rows('UPDATE legal_case_memo_snapshots SET contract_id=$1',[contract]);
+    await rows('INSERT INTO legal_case_memo_snapshots(id,company_id,contract_id,version,payload) SELECT $1,company_id,contract_id,2,payload FROM legal_case_memo_snapshots',[invoice]);
+    assert.ok((await snapshotGate()).includes('memoSnapshot.superseded'));
+  });
+  it('validates traffic-only snapshots with no rent period and rejects a different scope',async()=>{
+    await penalty();
+    const statement=(await rows('SELECT public.calculate_legal_claim_statement_v4($1,$2,$3,$4) value',[company,contract,'2026-09-08','traffic_violations_only']))[0].value;
+    await snapshotFixture(statement);
+    assert.deepEqual(await snapshotGate(statement),[]);
+    await db.exec("UPDATE legal_case_memo_snapshots SET payload=jsonb_set(payload,'{claimScope}','\"full_outstanding\"')");
+    assert.ok((await snapshotGate(statement)).includes('memoSnapshot.scope_changed'));
+  });
+  it('includes legal extension rent and its actual coverage in the frozen gross',async()=>{
+    await db.exec("UPDATE contracts SET end_date='2026-08-31',vehicle_returned=false");
+    await rows("INSERT INTO legal_case_litigation_profile(company_id,contract_id,vehicle_custody) VALUES($1,$2,'with_defendant')",[company,contract]);
+    const statement=await claim();
+    assert.ok(statement.components.legal_extension_rent>0);
+    await snapshotFixture(statement,{unpaidPeriodTo:statement.cutoff_date.split('-').reverse().join('/')});
+    assert.deepEqual(await snapshotGate(statement),[]);
+  });
+  it('validates evidenced retention dates and rejects a shifted equal-length period',async()=>{
+    await db.exec('UPDATE contracts SET vehicle_returned=false');
+    await rows("INSERT INTO legal_case_litigation_profile(company_id,contract_id,vehicle_custody,termination_date,termination_date_status,retention_daily_rate,retention_rate_source,retention_rate_source_ref,retention_rate_source_document_id) VALUES($1,$2,'with_defendant','2026-09-01','confirmed',20,'document','TEST',$3)",[company,contract,other]);
+    await snapshotFixture(undefined,{retentionRate:{daily:20,sourceRef:'TEST'},retentionClaim:{amount:140,days:7,from:'2026-09-02',to:'2026-09-08'}});
+    assert.deepEqual(await snapshotGate(),[]);
+    await db.exec("UPDATE legal_case_memo_snapshots SET payload=jsonb_set(jsonb_set(payload,'{retentionClaim,from}','\"2026-09-03\"'),'{retentionClaim,to}','\"2026-09-09\"')");
+    assert.ok((await snapshotGate()).includes('memoSnapshot.retention_details_changed'));
+  });
+  it('keeps snapshot helpers private and restores exact original validator on rollback',async()=>{
+    const permissions=await rows("SELECT has_function_privilege('authenticated','legal_memo_calc_private.validate_snapshot_statement(uuid,uuid,jsonb,jsonb)','EXECUTE') allowed");
+    assert.equal(permissions[0].allowed,false);
+    const rollback=await read('../../supabase/rollbacks/20260909002436_validate_filing_memo_statement_details.rollback.sql');
+    await db.exec(rollback.replace(/^BEGIN;/m,'').replace(/^COMMIT;/m,''));
+    const hash=(await rows("SELECT md5(prosrc) hash FROM pg_proc WHERE oid='public.validate_taqadi_filing_payload_v1_pre_failure_containment(uuid,uuid,jsonb)'::regprocedure"))[0].hash;
+    assert.equal(hash,'314ebbe34fec9c763825253b51eceb99');
+  });
+  const factsGate=async()=>(await rows('SELECT legal_memo_calc_private.validate_snapshot_facts($1,$2,$3) missing',[company,contract,{memoSnapshotId:other}]))[0].missing;
+  for(const [label,sql,key] of [
+    ['nationality',"UPDATE customers SET nationality='محدثة'",'parties_changed'],
+    ['phone',"UPDATE customers SET phone='updated-phone'",'parties_changed'],
+    ['name',"UPDATE customers SET first_name_ar='محدث'",'parties_changed'],
+    ['contract rent','UPDATE contracts SET monthly_amount=1800','contract_changed'],
+    ['contract date',"UPDATE contracts SET end_date='2028-11-30'",'contract_changed'],
+    ['vehicle VIN',"UPDATE vehicles SET vin='updated-vin'",'vehicle_changed'],
+    ['vehicle model',"UPDATE vehicles SET model='Updated'",'vehicle_changed'],
+  ]) it('requires a new memo after changing '+label,async()=>{
+    await snapshotFixture(); assert.deepEqual(await factsGate(),[]);
+    await db.exec(sql);
+    assert.ok((await factsGate()).includes('memoSnapshot.'+key));
+  });
+  for(const [label,sql] of [
+    ['quarantined',"UPDATE contract_documents SET legal_evidence_state='quarantined'"],
+    ['superseded',"UPDATE contract_documents SET superseded_by_document_id='77777777-7777-4777-8777-777777777777'"],
+    ['missing file',"UPDATE contract_documents SET file_path=' '"],
+    ['different contract',"UPDATE contract_documents SET contract_id='77777777-7777-4777-8777-777777777777'"],
+    ['deleted','DELETE FROM contract_documents'],
+  ]) it('does not cite a delivery document that became '+label,async()=>{
+    await rows("INSERT INTO legal_case_litigation_profile(company_id,contract_id,delivery_handover_date,delivery_handover_document_id) VALUES($1,$2,'2024-01-01',$3)",[company,contract,invoice]);
+    await rows("INSERT INTO contract_documents(id,company_id,contract_id,document_type,file_path) VALUES($1,$2,$3,'handover','fixture.pdf')",[invoice,company,contract]);
+    await snapshotFixture(undefined,{handoverInfo:{date:'01/01/2024',documented:true}});
+    assert.deepEqual(await factsGate(),[]);
+    await db.exec(sql); assert.ok((await factsGate()).includes('memoSnapshot.evidence_unavailable'));
+  });
+  it('detects changed notice wording and proof while respecting traffic-only scope',async()=>{
+    await rows("INSERT INTO contract_documents(id,company_id,contract_id,document_type,file_path) VALUES($1,$2,$3,'notice','fixture.pdf')",[invoice,company,contract]);
+    await rows("INSERT INTO legal_case_formal_notices VALUES($1,$2,'payment_demand','2026-08-01','2026-08-02',true,$3,7,'email')",[company,contract,invoice]);
+    await snapshotFixture(undefined,{formalNotices:[{noticeType:'payment_demand',sentOn:'2026-08-01',deliveredOn:'2026-08-02',confirmed:true,proofDocumentId:invoice,graceDays:7,methodLabel:'البريد الإلكتروني'}]});
+    assert.deepEqual(await factsGate(),[]);
+    await db.exec("UPDATE legal_case_formal_notices SET delivered_on='2026-08-03'");
+    assert.ok((await factsGate()).includes('memoSnapshot.notices_changed'));
+    await db.exec("UPDATE legal_case_memo_snapshots SET payload=jsonb_set(payload,'{claimScope}','\"traffic_violations_only\"'); UPDATE contract_documents SET legal_evidence_state='quarantined'");
+    assert.deepEqual(await factsGate(),[]);
+  });
+  it('compares each verified damage description even when net damages do not change',async()=>{
+    await rows("INSERT INTO contract_documents(id,company_id,contract_id,document_type,file_path) VALUES($1,$2,$3,'damage','fixture.pdf')",[invoice,company,contract]);
+    await rows("INSERT INTO legal_case_damage_costs(company_id,contract_id,amount,verified,evidence_document_id,cost_type,description) VALUES($1,$2,50,true,$3,'repair','Original')",[company,contract,invoice]);
+    await snapshotFixture(undefined,{damages:50,damageCostItems:[{type:'repair',description:'Original',amount:50}]});
+    assert.deepEqual(await factsGate(),[]);
+    await db.exec("UPDATE legal_case_damage_costs SET description='Different repair'");
+    assert.ok((await factsGate()).includes('memoSnapshot.damage_details_changed'));
+  });
+  it('keeps factual helpers private and restores the financial validator exactly',async()=>{
+    assert.equal((await rows("SELECT has_function_privilege('authenticated','legal_memo_calc_private.validate_snapshot_facts(uuid,uuid,jsonb)','EXECUTE') allowed"))[0].allowed,false);
+    const rollback=await read('../../supabase/rollbacks/20260909004625_validate_filing_memo_facts_and_evidence.rollback.sql');
+    await db.exec(rollback.replace(/^BEGIN;/m,'').replace(/^COMMIT;/m,''));
+    assert.equal((await rows("SELECT md5(prosrc) hash FROM pg_proc WHERE oid='public.validate_taqadi_filing_payload_v1_pre_failure_containment(uuid,uuid,jsonb)'::regprocedure"))[0].hash,'b42cb6186fc3a23dfea9b95c08d446ea');
+    assert.equal((await rows("SELECT md5(prosrc) hash FROM pg_proc WHERE oid='legal_memo_calc_private.read_traffic(uuid,uuid,date)'::regprocedure"))[0].hash,'89991407ca0cd6292e5481c535a6b2e1');
+  });
+  it('distinguishes a newly assigned official court number from internal preparation references',async()=>{
+    await rows("INSERT INTO legal_cases(id,company_id,contract_id,case_number,created_at) VALUES($1,$2,$3,'CASE-TEST',now())",[invoice,company,contract]);
+    await snapshotFixture(); assert.deepEqual(await factsGate(),[]);
+    await db.exec("UPDATE legal_cases SET case_number='2026/1234'");
+    assert.ok((await factsGate()).includes('memoSnapshot.case_number_changed'));
+  });
+  it('checks the documented expiry date and detects a later renewal',async()=>{
+    await rows("INSERT INTO contract_documents(id,company_id,contract_id,document_type,file_path) VALUES($1,$2,$3,'signed_contract','fixture.pdf')",[invoice,company,contract]);
+    await rows("INSERT INTO legal_case_litigation_profile(company_id,contract_id,rescission_strategy,termination_type,termination_date,termination_date_status,termination_supporting_document_id) VALUES($1,$2,'natural_expiry','contract_expired','2026-08-31','confirmed',$3)",[company,contract,invoice]);
+    await snapshotFixture(undefined,{terminationPath:'natural_expiry',terminationInfo:{type:'contract_expired',date:'31/08/2026',status:'confirmed'}});
+    assert.deepEqual(await factsGate(),[]);
+    await db.exec("UPDATE legal_case_litigation_profile SET renewal_applies=true,renewed_end_date='2027-08-31'");
+    assert.ok((await factsGate()).includes('memoSnapshot.termination_changed'));
+  });
+  for(const state of ['quarantined','superseded']) it('does not treat '+state+' traffic proof as evidence in the canonical claim',async()=>{
+    await penalty(); assert.equal((await claim()).components.traffic_violations,500);
+    await rows('UPDATE contract_documents SET legal_evidence_state=$1',[state]);
+    const statement=await claim();
+    assert.equal(statement.traffic_settlement.proof_ready,false);
+    assert.equal(statement.components.traffic_violations,0);
+    assert.equal(statement.total,1700);
+    assert.equal(Number((await rows('SELECT amount FROM penalties'))[0].amount),500);
   });
   it('restores the exact original engine bodies on rollback',async()=>{
     const rollback=await read(`../../supabase/rollbacks/${migration}.rollback.sql`);

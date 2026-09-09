@@ -35,11 +35,31 @@ export function taqadiErrorMessage(value: unknown, code?: string | null): string
           'defendant.fullName': 'اسم المدعى عليه',
           'defendant.idNumber': 'الرقم الشخصي للمدعى عليه',
           'defendant.nationality': 'جنسية المدعى عليه',
+          'memoSnapshot.missing': 'نسخة المذكرة المحفوظة غير موجودة لهذا العقد',
+          'memoSnapshot.superseded': 'توجد نسخة أحدث من المذكرة',
+          'memoSnapshot.scope_changed': 'تغير نطاق المطالبة عن المذكرة',
+          'memoSnapshot.financial_components_changed': 'تغيرت مكونات المطالبة عن المذكرة',
+          'memoSnapshot.rent_settlement_changed': 'تغير إجمالي الأجرة أو المدفوعات المحتسبة',
+          'memoSnapshot.service_period_changed': 'تغيرت فترة الخدمة المطالب بها',
+          'memoSnapshot.compensation_details_changed': 'تغيرت تفاصيل التعويض الاتفاقي أو سقفه',
+          'memoSnapshot.retention_details_changed': 'تغيرت فترة الاحتباس أو سعره المؤيد',
+          'memoSnapshot.invalid_details': 'تعذر التحقق من تفاصيل المذكرة المحفوظة',
+          'memoSnapshot.parties_changed': 'تغيرت بيانات المدعى عليه أو بيانات تبليغه',
+          'memoSnapshot.contract_changed': 'تغيرت بيانات العقد أو بنوده',
+          'memoSnapshot.vehicle_changed': 'تغيرت بيانات المركبة',
+          'memoSnapshot.case_number_changed': 'تغير رقم الدعوى القضائي',
+          'memoSnapshot.custody_changed': 'تغيرت وقائع تسليم المركبة أو حيازتها أو ردها',
+          'memoSnapshot.termination_changed': 'تغير مسار إنهاء العقد أو مستنداته',
+          'memoSnapshot.notices_changed': 'تغيرت وقائع الإعذار أو مستنداته',
+          'memoSnapshot.damage_details_changed': 'تغيرت تفاصيل الأضرار والمصاريف المؤيدة',
+          'memoSnapshot.evidence_unavailable': 'أحد المستندات المؤيدة لم يعد صالحًا للاعتماد',
         };
-        const names = keys.map((key: string) => key.startsWith('documents.contract.sourceDocumentId')
+        const names = [...new Set(keys.map((key: string) => key.startsWith('documents.contract.sourceDocumentId')
           ? 'نسخة عقد موقّع مرتبطة بالعقد ومطابقة للهوية'
-          : labels[key] || decodeDisplayText(key));
-        const guidance = keys.includes('documents.violationsEvidence')
+          : labels[key] || decodeDisplayText(key)))];
+        const guidance = keys.some((key: string) => key.startsWith('memoSnapshot.'))
+          ? ' حدّث بيانات المطالبة وراجع تفاصيلها، ثم ثبّت نسخة جديدة من المذكرة وأعد تجهيز الحافظة.'
+          : keys.includes('documents.violationsEvidence')
           ? ' أرفق الإثبات الرسمي في الوقائع والأدلة، ثم أعد تجهيز الحافظة.'
           : ' راجع البيانات وحافظة المستندات ثم أعد المحاولة.';
         return `حافظة الدعوى غير مكتملة: ${names.join('، ')}.${guidance}`;
