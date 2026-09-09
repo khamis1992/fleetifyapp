@@ -1,8 +1,12 @@
 # Lawsuit preparation and explanatory memorandum alignment
 
+## Final acceptance — 2026-09-09
+
+Implementation and verification completed. See [acceptance evidence](2026-09-09-lawsuit-memo-acceptance.md) for the final scope, deployed repairs, tests and operational limits. The progress entries below preserve the historical investigation and do not describe current blockers.
+
 ## Requested outcome
 
-Apply the user's Arabic template to the explanatory memorandum and align all related preparation pages, claim amounts and exports. The supplied template ends after the gross rent / counted payments / net unpaid rent paragraph. A question requesting any remaining template sections is pending; do not invent additional monetary entitlements.
+Apply the user's Arabic template to the explanatory memorandum and align all related preparation pages, claim amounts and exports. The supplied template ends after the gross rent / counted payments / net unpaid rent paragraph. Existing evidence-dependent requests are preserved; no additional monetary entitlements are invented.
 
 ## Verified findings
 
@@ -15,14 +19,14 @@ Apply the user's Arabic template to the explanatory memorandum and align all rel
 
 ## Completion gates (all required)
 
-- [ ] Supplied template fields, introduction and factual paragraphs rendered; preserve evidence-dependent termination/return and traffic-only paths.
-- [ ] Distinguish memo date, official court case number and internal case reference; preserve frozen snapshots.
-- [ ] Determine documented service coverage dates separately from payment due dates, including partial months and legal extensions.
-- [ ] Gross rent minus counted completed allocations equals net rent; distinguish deposits, credits, extension rent, traffic, documented compensation and damages without double counting.
-- [ ] Align live calculation, overview, invoices, claims statement, facts/requests, snapshots, bulk exports and worker payload.
+- [x] Supplied template fields, introduction and factual paragraphs rendered; preserve evidence-dependent termination/return and traffic-only paths.
+- [x] Distinguish memo date, official court case number and internal case reference; preserve frozen snapshots.
+- [x] Determine documented service coverage dates separately from payment due dates, including partial months and legal extensions.
+- [x] Gross rent minus counted completed allocations equals net rent; distinguish deposits, credits, extension rent, traffic, documented compensation and damages without double counting.
+- [x] Align live calculation, overview, invoices, claims statement, facts/requests, snapshots, bulk exports and worker payload.
 - [x] Inspect live schema and data and implement reversible database changes if required; do not silently deploy old migrations with unknown dependencies. (Applied/retested 2026-09-09, see rollout entry below.)
-- [ ] Regression tests for partial payments, cancellations, partial periods, extensions, deposits, traffic-only scope, unknown custody and snapshots.
-- [ ] Type check, relevant financial checks, rendered memo and browser verification.
+- [x] Regression tests for partial payments, cancellations, partial periods, extensions, deposits, traffic-only scope, unknown custody and snapshots.
+- [x] Type check, relevant financial checks, rendered memo and browser verification.
 
 ## Work in progress
 

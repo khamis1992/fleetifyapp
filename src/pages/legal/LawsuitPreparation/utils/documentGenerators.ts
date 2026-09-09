@@ -669,6 +669,11 @@ export async function loadCanonicalLawsuitState(
       amountInWords: lawsuitService.convertAmountToWords(authoritative.total) };
   }
 
+  // All export consumers, including the bulk ZIP path, must reconcile the
+  // separately loaded evidence with the authoritative monetary statement.
+  // This async boundary runs only after the reads finish, not during React's
+  // transient loading renders.
+  assertRentClaimConsistent(state);
   return state;
 }
 
