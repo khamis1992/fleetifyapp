@@ -1,14 +1,12 @@
-import { useEffect, useId, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { ChevronDown, Search } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { ChevronDown, Search, X } from "lucide-react";
 import {
   findFinanceDestination,
   isFinanceDestinationActive,
-  type FinanceDestination,
 } from "./financeNavigation";
 import { useFinanceNavigation } from "./useFinanceNavigation";
-import "./finance-system.css";
+import "@/components/navigation/sidebar-workspace/sidebar-workspace.css";
 
 export function FinanceSidebarNavigation({
   collapsed = false,
@@ -30,16 +28,14 @@ export function FinanceSidebarNavigation({
     current?.group.id || "overview"
   );
   const [search, setSearch] = useState("");
-  const id = useId();
   useEffect(() => {
     if (currentGroup) setExpanded(currentGroup);
   }, [currentGroup]);
   const searching = !!search.trim() && !collapsed;
-  // Outside search, secondary items render nested under their parent item.
   const visible = (searching ? searchGroups : groups)
     .map((group) => {
       const query = searching ? search.trim().toLowerCase() : "";
-      const matches = (item: FinanceDestination) =>
+      const matches = (item: { ar: string; en: string }) =>
         !query ||
         `${item.ar} ${item.en} ${group.ar} ${group.en}`
           .toLowerCase()
@@ -50,75 +46,85 @@ export function FinanceSidebarNavigation({
       }
       return {
         ...group,
-        items: group.items.filter(matches),
-        secondaryItems: group.secondaryItems.filter(matches),
+        items: group.items,
+        secondaryItems: group.secondaryItems,
       };
     })
     .filter((group) => group.items.length);
-  const secondaryByParent = useMemo(() => {
-    const map = new Map<string, FinanceDestination[]>();
-    for (const group of visible) {
-      for (const secondary of group.secondaryItems) {
-        const key = secondary.parentId || group.items[0]?.id || "";
-        map.set(key, [...(map.get(key) || []), secondary]);
-      }
-    }
-    return map;
-  }, [visible]);
-  const renderItem = (item: FinanceDestination, nested: boolean) => (
-    <li key={item.id}>
+  const ar = language === "ar";
+  const renderLink = (item: {
+    id: string;
+    href: string;
+    ar: string;
+    en: string;
+  }) => {
+    const active = isFinanceDestinationActive(
+      item.href,
+      location.pathname,
+      location.search
+    );
+    return (
       <Link
         to={item.href}
         onClick={() => {
           setSearch("");
-          setExpanded(
-            groups.find((group) => group.items.some((entry) => entry.id === item.id) || group.secondaryItems.some((entry) => entry.id === item.id))?.id || null
-          );
           onNavigate?.();
         }}
-        className={nested ? "finance-sidebar-nested-link" : undefined}
-        aria-current={
-          isFinanceDestinationActive(item.href, location.pathname, location.search)
-            ? "page"
-            : !nested && current?.item.parentId === item.id
-            ? "location"
-            : undefined
-        }
+        className={`sw-subitem ${active ? "is-active" : ""}`}
+        aria-current={active ? "page" : undefined}
       >
-        {item[language]}
+        <span>{item[language]}</span>
+        {active && <i className="sw-active-dot" />}
       </Link>
-    </li>
-  );
-  const ar = language === "ar";
+    );
+  };
   return (
-    <div className="finance-sidebar-tree" dir={ar ? "rtl" : "ltr"}>
+    <div dir={ar ? "rtl" : "ltr"} className="finance-sw-menu">
       {!collapsed && (
-        <label className="finance-sidebar-search">
-          <Search aria-hidden="true" size={16} />
-          <input
-            aria-label={
-              ar ? "بحث في الأقسام المالية" : "Search finance sections"
-            }
-            placeholder={ar ? "ابحث عن قسم مالي…" : "Find a finance section…"}
-            value={search}
-            onChange={(event) => setSearch(event.target.value)}
-          />
-        </label>
+        <div className="sw-search-area">
+          <div className="sw-search">
+            <Search size={16} />
+            <input
+              aria-label={
+                ar ? "بحث في الأقسام المالية" : "Search finance sections"
+              }
+              placeholder={ar ? "ابحث عن قسم مالي…" : "Find a finance section…"}
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+            />
+            {search && (
+              <button
+                type="button"
+                className="sw-icon-button"
+                onClick={() => setSearch("")}
+                aria-label={ar ? "مسح بحث الأقسام" : "Clear search"}
+              >
+                <X size={14} />
+              </button>
+            )}
+          </div>
+        </div>
       )}
       {isLoading && !groups.length && (
-        <p role="status" className="p-3 text-xs">
+        <p role="status" className="sw-empty">
           {ar ? "جاري تحميل الأقسام…" : "Loading sections…"}
         </p>
       )}
       {!isLoading && !visible.length && (
-        <p role="status" className="p-3 text-xs">
-          {ar ? "لا توجد أقسام مطابقة متاحة." : "No available sections match."}
-        </p>
+        <div className="sw-empty" role="status">
+          <Search size={23} />
+          <strong>{ar ? "لا توجد أقسام مطابقة" : "No matching sections"}</strong>
+          <p>{ar ? "جرّب اسماً آخر للقسم الذي تبحث عنه." : "Try a different name."}</p>
+          <button onClick={() => setSearch("")}>
+            {ar ? "عرض جميع الأقسام" : "Show all sections"}
+          </button>
+        </div>
       )}
       {visible.map((group) => {
-        const open = searching || expanded === group.id;
-        const selected = current?.group.id === group.id;
+        const open = !collapsed && (searching || expanded === group.id);
         const Icon = group.icon;
+        const groupActive = current?.group.id === group.id;
+        const groupId = `sw-finance-${group.id}`;
         if (collapsed)
           return (
             <Link
@@ -127,69 +133,72 @@ export function FinanceSidebarNavigation({
               onClick={onNavigate}
               title={group[language]}
               aria-label={group[language]}
-              className={cn("finance-sidebar-icon", selected && "is-active")}
+              className={`sw-nav-item ${groupActive ? "is-active" : ""}`}
             >
-              <Icon aria-hidden="true" size={20} />
+              <Icon size={19} />
             </Link>
           );
         return (
-          <div key={group.id} className="finance-sidebar-group">
+          <div className="sw-group" key={group.id}>
             <button
               type="button"
-              className={cn(
-                "finance-sidebar-group-button",
-                selected && "is-current"
-              )}
-              aria-expanded={open}
-              aria-controls={`${id}-${group.id}`}
+              className={`sw-nav-item ${groupActive ? "is-parent-active" : ""}`}
               onClick={() =>
                 setExpanded((previous) =>
                   previous === group.id ? null : group.id
                 )
               }
+              aria-expanded={open}
+              aria-controls={open ? groupId : undefined}
             >
-              <Icon aria-hidden="true" size={17} />
+              <Icon size={19} />
               <span>{group[language]}</span>
               <ChevronDown
                 size={14}
-                aria-hidden="true"
-                className={open ? "rotate-180" : ""}
+                className={`sw-chevron ${open ? "is-open" : ""}`}
               />
             </button>
-            <ul id={`${id}-${group.id}`} hidden={!open}>
-              {group.items.map((item) => (
-                <li key={item.id}>
-                  <Link
-                    to={item.href}
-                    onClick={() => {
-                      setSearch("");
-                      setExpanded(group.id);
-                      onNavigate?.();
-                    }}
-                    aria-current={
-                      isFinanceDestinationActive(
-                        item.href,
-                        location.pathname,
-                        location.search
-                      )
-                        ? "page"
-                        : current?.item.parentId === item.id
-                        ? "location"
-                        : undefined
-                    }
-                  >
-                    {item[language]}
-                  </Link>
-                  {secondaryByParent.get(item.id)?.length ? (
-                    <ul className="finance-sidebar-nested">
-                      {secondaryByParent
-                        .get(item.id)
-                        ?.map((secondary) => renderItem(secondary, true))}
-                    </ul>
-                  ) : null}
-                </li>
-              ))}
-            </ul>
+            {open && (
+              <ul className="sw-subnavigation" id={groupId}>
+                {group.items.map((item) => {
+                  const active = isFinanceDestinationActive(
+                    item.href,
+                    location.pathname,
+                    location.search
+                  );
+                  const isParentOfCurrent = current?.item.parentId === item.id;
+                  const children = group.secondaryItems.filter(
+                    (secondary) => secondary.parentId === item.id
+                  );
+                  return (
+                    <li key={item.id}>
+                      <Link
+                        to={item.href}
+                        onClick={() => {
+                          setSearch("");
+                          setExpanded(group.id);
+                          onNavigate?.();
+                        }}
+                        className={`sw-subitem ${active || isParentOfCurrent ? "is-active" : ""}`}
+                        aria-current={
+                          active ? "page" : isParentOfCurrent ? "location" : undefined
+                        }
+                      >
+                        <span>{item[language]}</span>
+                        {active && <i className="sw-active-dot" />}
+                      </Link>
+                      {children.length > 0 && (
+                        <ul className="sw-subnavigation">
+                          {children.map((child) =>
+                            <li key={child.id}>{renderLink(child)}</li>
+                          )}
+                        </ul>
+                      )}
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
           </div>
         );
       })}
