@@ -40,7 +40,8 @@ describe('financial navigation', () => {
     render(<MemoryRouter initialEntries={['/finance/reports-analysis?tab=reports&report=balance-sheet']}><FinanceSidebarNavigation /></MemoryRouter>);
     expect(screen.getByRole('button', { name: 'التقارير والتحليل' })).toHaveAttribute('aria-expanded', 'true');
     expect(screen.getByRole('link', { name: 'مكتبة التقارير' })).toHaveAttribute('aria-current', 'location');
-    expect(screen.getAllByRole('link').filter(link => !!link.getAttribute('aria-current'))).toHaveLength(1);
+    expect(screen.getByRole('link', { name: 'المركز المالي' })).toHaveAttribute('aria-current', 'page');
+    expect(screen.getAllByRole('link').filter(link => link.getAttribute('aria-current') === 'page')).toHaveLength(1);
   });
   it('searches hidden subsections in Arabic and English and supports navigation', () => {
     const onNavigate = vi.fn();

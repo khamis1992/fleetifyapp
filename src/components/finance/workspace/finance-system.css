@@ -54,6 +54,11 @@
 .finance-sidebar-group li a { display: block; padding: 9px 12px; margin-block: 2px; border-radius: 7px; color: var(--finance-muted); line-height: 1.6; font-size: 12px; }
 .finance-sidebar-group li a:hover { color: var(--finance-ink); background: var(--finance-wash); }
 .finance-sidebar-group li a[aria-current] { background: #14675e; color: #fff; font-weight: 700; }
+.finance-sidebar-nested { margin: 1px 0 5px; padding-inline-start: 8px; }
+.finance-sidebar-nested li { margin: 0; }
+.finance-sidebar-nested .finance-sidebar-nested-link { display: block; padding: 6px 12px; border-inline-start: 1px dashed var(--finance-border); border-radius: 6px; color: var(--finance-muted); font-size: 11px; line-height: 1.6; opacity: .88; }
+.finance-sidebar-nested .finance-sidebar-nested-link:hover { color: var(--finance-ink); opacity: 1; background: var(--finance-wash); }
+.finance-sidebar-nested .finance-sidebar-nested-link[aria-current=page] { background: #14675e; color: #fff; border-inline-start-color: transparent; font-weight: 650; opacity: 1; }
 .finance-sidebar-icon { display: grid; place-items: center; width: 44px; height: 44px; border-radius: 10px; margin: 3px auto; color: var(--finance-muted); }
 .finance-sidebar-icon.is-active { color: white; background: #14675e; }
 .finance-sidebar-tree :is(button,a):focus-visible,.finance-context-bar :is(a,select):focus-visible { outline: 2px solid var(--finance-accent); outline-offset: 2px; }

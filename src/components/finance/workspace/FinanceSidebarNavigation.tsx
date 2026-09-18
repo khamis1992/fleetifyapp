@@ -1,10 +1,11 @@
-import { useEffect, useId, useState } from "react";
+import { useEffect, useId, useMemo, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { ChevronDown, Search } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   findFinanceDestination,
   isFinanceDestinationActive,
+  type FinanceDestination,
 } from "./financeNavigation";
 import { useFinanceNavigation } from "./useFinanceNavigation";
 import "./finance-system.css";
@@ -33,19 +34,61 @@ export function FinanceSidebarNavigation({
   useEffect(() => {
     if (currentGroup) setExpanded(currentGroup);
   }, [currentGroup]);
-  const visible = (search.trim() && !collapsed ? searchGroups : groups)
-    .map((group) => ({
-      ...group,
-      items: group.items.filter(
-        (item) =>
-          collapsed ||
-          !search.trim() ||
-          `${item.ar} ${item.en} ${group.ar} ${group.en}`
-            .toLowerCase()
-            .includes(search.trim().toLowerCase())
-      ),
-    }))
+  const searching = !!search.trim() && !collapsed;
+  // Outside search, secondary items render nested under their parent item.
+  const visible = (searching ? searchGroups : groups)
+    .map((group) => {
+      const query = searching ? search.trim().toLowerCase() : "";
+      const matches = (item: FinanceDestination) =>
+        !query ||
+        `${item.ar} ${item.en} ${group.ar} ${group.en}`
+          .toLowerCase()
+          .includes(query);
+      if (searching) {
+        // searchGroups already merges secondary items into items.
+        return { ...group, items: group.items.filter(matches), secondaryItems: [] };
+      }
+      return {
+        ...group,
+        items: group.items.filter(matches),
+        secondaryItems: group.secondaryItems.filter(matches),
+      };
+    })
     .filter((group) => group.items.length);
+  const secondaryByParent = useMemo(() => {
+    const map = new Map<string, FinanceDestination[]>();
+    for (const group of visible) {
+      for (const secondary of group.secondaryItems) {
+        const key = secondary.parentId || group.items[0]?.id || "";
+        map.set(key, [...(map.get(key) || []), secondary]);
+      }
+    }
+    return map;
+  }, [visible]);
+  const renderItem = (item: FinanceDestination, nested: boolean) => (
+    <li key={item.id}>
+      <Link
+        to={item.href}
+        onClick={() => {
+          setSearch("");
+          setExpanded(
+            groups.find((group) => group.items.some((entry) => entry.id === item.id) || group.secondaryItems.some((entry) => entry.id === item.id))?.id || null
+          );
+          onNavigate?.();
+        }}
+        className={nested ? "finance-sidebar-nested-link" : undefined}
+        aria-current={
+          isFinanceDestinationActive(item.href, location.pathname, location.search)
+            ? "page"
+            : !nested && current?.item.parentId === item.id
+            ? "location"
+            : undefined
+        }
+      >
+        {item[language]}
+      </Link>
+    </li>
+  );
   const ar = language === "ar";
   return (
     <div className="finance-sidebar-tree" dir={ar ? "rtl" : "ltr"}>
@@ -73,7 +116,7 @@ export function FinanceSidebarNavigation({
         </p>
       )}
       {visible.map((group) => {
-        const open = !!search.trim() || expanded === group.id;
+        const open = searching || expanded === group.id;
         const selected = current?.group.id === group.id;
         const Icon = group.icon;
         if (collapsed)
@@ -137,6 +180,13 @@ export function FinanceSidebarNavigation({
                   >
                     {item[language]}
                   </Link>
+                  {secondaryByParent.get(item.id)?.length ? (
+                    <ul className="finance-sidebar-nested">
+                      {secondaryByParent
+                        .get(item.id)
+                        ?.map((secondary) => renderItem(secondary, true))}
+                    </ul>
+                  ) : null}
                 </li>
               ))}
             </ul>
