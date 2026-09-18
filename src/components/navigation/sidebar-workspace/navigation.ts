@@ -24,6 +24,7 @@ import {
   Gavel,
   FolderOpen,
   FileWarning,
+  Banknote,
 } from 'lucide-react';
 
 // === Types ===
@@ -91,6 +92,14 @@ export const navigation: NavItem[] = [
   },
 
   // Administrative sections; financial navigation has its own dedicated menu.
+  {
+    id: 'finance',
+    label: 'المالية',
+    icon: Banknote,
+    href: '/finance/overview',
+    category: 'finance-admin',
+    requiresAdmin: true,
+  },
   {
     id: 'hr',
     label: 'الموارد البشرية',

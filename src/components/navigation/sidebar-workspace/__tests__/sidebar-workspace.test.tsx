@@ -76,4 +76,13 @@ describe('sidebar workspace', () => {
     fireEvent.click(screen.getByRole('button', { name: 'إغلاق القائمة' }));
     expect(onCloseMobile).toHaveBeenCalledTimes(2);
   });
+  it('gives admins a direct finance entry that is active on the finance overview', () => {
+    expect(activeNavigationHref(navigation, '/finance/overview')).toBe('/finance/overview');
+    expect(activeNavigationHref(navigation, '/finance/overview/extra')).toBe('/finance/overview');
+    access.admin = true; const view = mount('/dashboard');
+    expect(screen.getByRole('link', { name: 'المالية' })).toHaveAttribute('href', '/finance/overview');
+    view.unmount();
+    access.admin = false; mount('/dashboard');
+    expect(screen.queryByRole('link', { name: 'المالية' })).not.toBeInTheDocument();
+  });
 });
