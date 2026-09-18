@@ -9,6 +9,15 @@ import type {
 import { getLawsuitClaimAmounts } from './claimAmounts';
 import { getDefendantContact } from './legalCaseWorkflow';
 import { requiresViolationDocuments } from './violationDocumentRequirements';
+import { resolveClaimEvidenceDocuments } from './claimEvidence';
+
+export async function prepareTaqadiFilingPayload(state: LawsuitPreparationState, sourceUrl: string): Promise<TaqadiFilingPayload> {
+  const payload = buildTaqadiFilingPayload(state, sourceUrl);
+  const evidence = await resolveClaimEvidenceDocuments(state);
+  const included = new Set(payload.documents.map(doc => doc.sourceDocumentId));
+  payload.documents.push(...evidence.filter(doc => !included.has(doc.sourceDocumentId)));
+  return payload;
+}
 
 export type TaqadiFilingStatus =
   | 'queued'

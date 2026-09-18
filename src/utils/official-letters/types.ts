@@ -1,3 +1,4 @@
+import type { LegalClaimRegister } from '@/types/legalClaimRegister';
 /**
  * واجهات وأنواع الكتب الرسمية
  */
@@ -16,6 +17,7 @@ export interface OfficialLetterData {
 
 // واجهة بيانات كشف المطالبات
 export interface ClaimsStatementData {
+  claimRegister?: LegalClaimRegister;
   customerName: string;
   nationalId: string;
   phone?: string;

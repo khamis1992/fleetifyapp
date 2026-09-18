@@ -1,5 +1,16 @@
 # Fleetify Database Reference
 
+## Fixed compensation request — deployed (2026-09-09)
+
+Migration `20260909184802` adds `legal_case_litigation_profile.fixed_compensation_requested`
+(boolean, not null, default false). The existing private `claim_register` calculator
+adds QAR 10,000 once only when explicitly selected and the profile matches the current
+case. Traffic-only, zero claims and no-claim closures remain excluded. Installing the
+feature changes no existing monetary records or claim totals. Only LTO2024268 was
+enabled at the user's request. The matching rollback restores the prior calculator
+and retains the opt-in field as historical user input. Company authorization and
+existing grants remain unchanged.
+
 ## Automatic external filing handoff — deployed (2026-09-08)
 
 Migration `20260908063143` adds `record_external_legal_filing_v2`, an authenticated
@@ -10545,4 +10556,36 @@ Key RPCs: `system_agent_create_run`, `system_agent_claim_job`, `system_agent_fin
 | Vehicles | ~510 |
 | Invoices | ~1,250 |
 | Payments | ~6,568 |
+
+## Pending financial-reporting migrations — 2026-09-18
+
+The following additions are implemented and tested locally; this section does **not** indicate production deployment. They do not insert actual accounting transactions or change historical balances during installation. Apply the matching migration and rollback files in dependency order.
+
+### Financial statement packages (`20260918002000`)
+
+Depends on `20260918001000_professional_balance_sheets.sql`. `public.professional_financial_statement_packages` stores immutable server-generated JSON in `payload`, its SHA-256 `source_fingerprint`, and `company_id`. Identity/history fields are `id`, `created_by`, `created_by_name`, `created_at`, `approved_by`, `approved_by_name`, `approved_at`, `review_notes`, `confirmations`, `voided_by`, `voided_at`, and `void_reason`. Status is `draft`, `approved`, or `voided`. Private append-only history is stored in `financial_statement_private.report_events`.
+
+| RPC | Arguments | Result |
+|---|---|---|
+| `get_financial_statement_package_v1` | `p_company_id uuid`, `p_configuration jsonb` | Calculated package |
+| `save_financial_statement_package_v1` | `p_company_id uuid`, `p_configuration jsonb` | Immutable draft row |
+| `approve_financial_statement_package_v1` | `p_report_id uuid`, `p_review_notes text`, `p_confirmations jsonb` | Independently approved row |
+| `list_financial_statement_packages_v1` | `p_company_id uuid` | Latest 50 rows for the company |
+| `void_financial_statement_package_v1` | `p_report_id uuid`, `p_reason text` | Retained row marked voided |
+
+The configuration is defined in `src/types/financialStatementPackage.ts`: annual or YTD interim period and prior-year comparisons, explicit account presentation mappings/splits, reviewed journal classifications, and numbered disclosure notes. It contains no replacement ledger balances. Monetary classification allocations are bounded to ±1 trillion and must reconcile to actual signed ledger amounts. Current, comparative, and optional opening position columns retain their own reviewed classifications. Closing journals and their reversal chains are excluded from period performance; position balances remain cumulative. Cash flows retain separate gross receipt/payment classes, with reviewed `cashFlows[].label` and `internalCashTransfer` for complex journals. Equity movements reconcile by component. Missing classifications, source comparisons, disclosures, invalid journals, or reconciliation differences block approval; draft generation remains available.
+
+Table writes and raw calculators are not granted to clients or `service_role`. Public RPCs use the existing company/finance authorization helper; explicit permission denial wins. Independent approval requires all five confirmations (`classifications`, `policies`, `reconciliations`, `disclosures`, `periodCutoff`), reviewed notes, and a fresh source fingerprint under READ COMMITTED isolation with source-table locks. This is internal review, not an audit opinion or automatic IFRS compliance assertion. Rollback disables the RPCs while retaining snapshots, audit history, tenant SELECT RLS, and immutability.
+
+### Reporting period locks (`20260918003000`)
+
+`public.financial_reporting_period_locks` stores one managed cumulative cutoff per company: `id`, `company_id` (unique), `accounting_period_id` (unique), `locked_through`, `status` (`locked`/`unlocked`), `changed_by`, `changed_by_name`, `changed_at`, and `reason`. It references an `accounting_periods` row spanning the historical ledger through the selected cutoff. Immutable audit history is `balance_sheet_private.period_lock_events`; the ungranted `period_lock_mutations` table authorizes only the controlled transaction's change to the managed accounting-period row.
+
+| RPC | Arguments | Result |
+|---|---|---|
+| `list_financial_reporting_period_locks_v1` | `p_company uuid` | Managed lock, other closed periods, latest 100 history events, `can_manage` |
+| `lock_financial_reporting_period_v1` | `p_company uuid`, `p_locked_through date`, `p_reason text` | Locked/extended managed cutoff row |
+| `unlock_financial_reporting_period_v1` | `p_company uuid`, `p_reason text` | Audited unlocked row |
+
+Only callers with financial-report approval access may manage a lock, with a reason of 20–4000 characters. Installation creates no locked period. Journal/header and line guards enforce existing closed periods and the managed cutoff, including historical edits and moves between companies/periods. Dedicated locking serializes cutoff changes with ledger writers; fixed transaction snapshots are rejected. Unlocking the managed cutoff preserves unrelated closed periods and all historical lock events. Report generation/approval does not implicitly lock or unlock periods, and lock metadata is separate from report source fingerprints. See the matching rollback for preservation of existing history and preexisting period controls.
 

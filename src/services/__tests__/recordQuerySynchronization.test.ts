@@ -12,6 +12,18 @@ const createClient = () => {
 afterEach(() => { clients.splice(0).forEach((client) => client.clear()); });
 
 describe('shared record read synchronization', () => {
+  it('refreshes additional claims for the edited contract without crossing company or contract boundaries', async () => {
+    const client = createClient();
+    const keys = [
+      ['legal-claim-items', 'company-1', 'contract-1', 'case-1'],
+      ['legal-claim-items', 'company-1', 'contract-1', 'case-2'],
+      ['legal-claim-items', 'company-1', 'contract-2', 'case-3'],
+      ['legal-claim-items', 'company-2', 'contract-1', 'case-1'],
+    ];
+    keys.forEach(key => client.setQueryData(key, []));
+    await notifyRecordChange(client, { entity: 'legal', companyId: 'company-1', recordId: 'contract-1' });
+    expect(keys.map(key => client.getQueryState(key)?.isInvalidated)).toEqual([true, true, false, false]);
+  });
   it('refreshes all memo evidence readers after stale facts are detected within the same contract and company', async () => {
     const client = createClient();
     for (const root of ['contract-reminder-history', 'contract-traffic-violations', 'contract-document',

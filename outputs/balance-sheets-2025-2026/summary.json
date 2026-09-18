@@ -1,0 +1,28 @@
+{
+  "totals": {
+    "2025-12-31": {
+      "assets": "10298179.17",
+      "liabilities": "1499975",
+      "equity": "0",
+      "revenue": "8809754.17",
+      "expenses": "11550",
+      "residual": "8798204.17",
+      "total_equity": "8798204.17",
+      "liabilities_equity": "10298179.17",
+      "difference": "0.00"
+    },
+    "2026-08-31": {
+      "assets": "20772219.00",
+      "liabilities": "2301860.91",
+      "equity": "14623471.92",
+      "revenue": "3944576.17",
+      "expenses": "97690",
+      "residual": "3846886.17",
+      "total_equity": "18470358.09",
+      "liabilities_equity": "20772219.00",
+      "difference": "0.00"
+    }
+  },
+  "source_sha256": "ad92b1f42822fcf07bcb1c425402b16d4a75d7dd2daa8e89eb3f905d4cb152eb",
+  "status": "draft_unreviewed"
+}

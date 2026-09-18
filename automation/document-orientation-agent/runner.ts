@@ -139,7 +139,9 @@ export async function runOrientationScan(options: { apply: boolean; documentId?:
             const { error } = await service.rpc('finish_agent_execution_v1', { p_company_id: COMPANY,
               p_agent_id: ORIENTATION_AGENT_ID, p_request_id: agentRequestId, p_success: status !== 'failed',
               p_summary: { document_id: candidate.document_id, status, reason }, p_failure_code: status === 'failed' ? 'orientation_scan_failed' : null });
-            if (error) throw new Error('Could not close orientation execution lease');
+            if (error) {
+              report.failed++; status = 'failed'; reason = 'Could not close orientation execution lease';
+            }
           }
         }
         report.results.push({ documentId: candidate.document_id, status, reason, ...result });

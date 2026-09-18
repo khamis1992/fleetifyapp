@@ -1,3 +1,6 @@
+import type { LegalClaimRegister } from '@/types/legalClaimRegister';
+import { renderClaimRegister, renderClaimRegisterNarrative } from './legal-claim-register-render';
+import { additionalPrimaryAmount } from '@/types/legalClaimRegister';
 /**
  * Legal Document Generator
  * Generates legal complaint documents (مذكرة شارحة) for delinquent customers
@@ -18,6 +21,7 @@ export function getOfficialCourtCaseNumber(value?: string | null): string | unde
 }
 
 export interface LegalDocumentData {
+  claimRegister?: LegalClaimRegister;
   /** النطاق المالي المثبت على القضية ويجب أن يحكم كل النصوص والمبالغ. */
   claimScope?: LegalClaimScope;
   /** رقم الدعوى بعد القيد؛ يبقى فارغاً في مرحلة التجهيز */
@@ -343,7 +347,7 @@ export function generateLegalComplaintHTML(data: LegalDocumentData): string {
   const courtCaseNumber = getOfficialCourtCaseNumber(data.caseNumber) || 'لم تقيد بعد';
   const trafficOnlyClaim = isTrafficViolationsOnlyScope(data.claimScope);
 
-  // المكونات الموثقة فقط — لا توجد مبالغ ثابتة أو نسب افتراضية
+  // مكونات المطالبة من السجل، بما فيها التعويض الثابت المطلوب عند إدراجه.
   // لا يُعرض التعويض الاتفاقي ولا يدخل الإجمالي إلا إذا مرّ معه نص البند الموثق.
   const latePenalty = !trafficOnlyClaim && data.contractualCompensation
     ? Math.max(0, Number(data.contractualCompensation.amount) || 0)
@@ -351,6 +355,7 @@ export function generateLegalComplaintHTML(data: LegalDocumentData): string {
   const overdueRent = trafficOnlyClaim ? 0 : customer.overdue_amount || 0;
   const violationsAmount = customer.violations_amount || 0;
   const documentedDamages = trafficOnlyClaim ? 0 : damages || 0;
+  const evidencedCosts = Math.max(0, documentedDamages - additionalPrimaryAmount(data.claimRegister));
 
   const paidTotal = trafficOnlyClaim ? 0 : data.paidTotal ?? 0;
   const grossInvoicesTotal = trafficOnlyClaim ? 0 : data.grossInvoicesTotal ?? 0;
@@ -449,7 +454,7 @@ export function generateLegalComplaintHTML(data: LegalDocumentData): string {
     authorized_title: 'المخول بالتوقيع',
   };
 
-  return `
+  const html = `
 <!DOCTYPE html>
 <html dir="rtl" lang="ar">
 <head>
@@ -1086,9 +1091,9 @@ export function generateLegalComplaintHTML(data: LegalDocumentData): string {
           ولما كانت تلك المخالفات قد وقعت خلال فترة حيازة المدعى عليه للمركبة وبسبب استعمالها، فإنه يكون ملزمًا بقيمتها وفقًا لشروط عقد الإيجار، مع طلب إلزامه ماليًا بها دون تعليق طلبات الدعوى على إجراء التحويل الإداري للمخالفات.
         </p>
         ` : ''}
-        ${documentedDamages > 0 ? `
+        ${evidencedCosts > 0 ? `
         <p>
-          كما تكبدت المدعية مبلغ <strong>(${formatQar(documentedDamages)})</strong> ريال قطري مقابل مصاريف وأضرار ثابتة${breachDetails?.damagesDescription ? ` (${breachDetails.damagesDescription})` : ''}، وذلك وفق الفواتير والتقارير والصور المرفقة.
+          كما تكبدت المدعية مبلغ <strong>(${formatQar(evidencedCosts)})</strong> ريال قطري مقابل مصاريف وأضرار ثابتة${breachDetails?.damagesDescription ? ` (${breachDetails.damagesDescription})` : ''}، وذلك وفق الفواتير والتقارير والصور المرفقة.
         </p>
         ` : ''}
         ${!trafficOnlyClaim && effectiveTerminationPath === 'natural_expiry' ? `
@@ -1112,8 +1117,10 @@ export function generateLegalComplaintHTML(data: LegalDocumentData): string {
     </div>
 
     <!-- Section 2: Financial Claims -->
+    ${data.claimRegister && !trafficOnlyClaim ? renderClaimRegisterNarrative(data) : ''}
     <div class="section">
-      <div class="section-title">ثالثاً: البيان الحسابي للمطالبة</div>
+      <div class="section-title">${data.claimRegister && !trafficOnlyClaim ? 'ثامناً' : 'ثالثاً'}: البيان الحسابي للمطالبة</div>
+      ${data.claimRegister ? renderClaimRegister(data.claimRegister) : `
       <table>
         <thead>
           <tr>
@@ -1125,13 +1132,13 @@ export function generateLegalComplaintHTML(data: LegalDocumentData): string {
         <tbody>
           ${!trafficOnlyClaim ? `
           <tr>
-            <td>إجمالي الفواتير المستحقة عن فترة التخلف</td>
+            <td>أصل الأجرة الداخلة في المطالبة قبل خصم السداد الجزئي</td>
             <td>${unpaidPeriodLabel}</td>
             <td class="amount">${formatQar(grossInvoicesTotal || overdueRent + paidTotal)}</td>
           </tr>
           <tr>
-            <td>يخصم: المبالغ المسددة</td>
-            <td>وفق إيصالات السداد وكشف الحساب</td>
+            <td>يخصم: المسدد جزئيًا من هذه الأجرة</td>
+            <td>وفق إيصالات السداد وكشف الحساب؛ استُبعدت الفواتير المسددة بالكامل ومدفوعاتها معًا</td>
             <td class="amount">(${formatQar(paidTotal)})</td>
           </tr>
           <tr>
@@ -1194,9 +1201,11 @@ export function generateLegalComplaintHTML(data: LegalDocumentData): string {
           ? 'وتؤكد المدعية أن البيان السابق يقتصر على المخالفات المرورية المثبتة بالكشف الرسمي، ولا يتضمن رصيد الأجرة أو غرامات التأخير أو التعويضات أو الأضرار أو تسوية وديعة الضمان.'
           : `وتؤكد المدعية أن البيان السابق لا يتضمن ازدواجًا في المطالبة؛ فلا تجمع عن المركبة والفترة الزمنية ذاتها بين الأجرة التعاقدية وتعويض الاحتباس وفوات التشغيل، ولا تكرر أصل الدين ضمن الضرر التمويلي، وأن كل مبلغ مدرج يقابله عقد أو فاتورة أو كشف رسمي أو إيصال أو تقرير مؤيد له${depositApplied > 0 ? '، وأن قيمة وديعة الضمان خصمت مرة واحدة فقط' : ''}.`}
       </p>
+      `}
     </div>
 
     <!-- Section: Legal Basis -->
+    ${data.claimRegister && !trafficOnlyClaim ? '' : `
     <div class="section">
       <div class="section-title">رابعاً: الأساس القانوني</div>
       <div class="section-content">
@@ -1266,8 +1275,9 @@ export function generateLegalComplaintHTML(data: LegalDocumentData): string {
     </div>
 
     <!-- Section: Requests -->
+    `}
     <div class="section">
-      <div class="section-title">سادساً: الطلبات</div>
+      <div class="section-title">${data.claimRegister && !trafficOnlyClaim ? 'تاسعاً' : 'سادساً'}: الطلبات</div>
       <div class="section-content">
         <p>لذلك، تلتمس المدعية من المحكمة الموقرة الحكم بما يلي:</p>
         <div class="requests-list">
@@ -1329,5 +1339,10 @@ export function generateLegalComplaintHTML(data: LegalDocumentData): string {
 </body>
 </html>
   `;
+  if (!data.claimRegister || trafficOnlyClaim) return html;
+  const ordinals = ['أولاً', 'ثانياً', 'ثالثاً', 'رابعاً', 'خامساً', 'سادساً', 'سابعاً', 'ثامناً', 'تاسعاً'];
+  let sectionIndex = 0;
+  return html.replace(/(<div class="section-title">)([^<]+)(<\/div>)/g,
+    (_match, opening: string, title: string, closing: string) =>
+      `${opening}${ordinals[sectionIndex++] || sectionIndex}: ${title.replace(/^[^:]+:\s*/, '')}${closing}`);
 }
-

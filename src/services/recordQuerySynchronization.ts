@@ -19,7 +19,7 @@ const contractReaders = new Set([
 const legalReaders = new Set([
   'legal-cases', 'legal-case', 'legal-case-workflow', 'lawsuit-legal-case',
   'legal-case-litigation-profile', 'legal-case-formal-notices', 'legal-case-damage-costs',
-  'legal-case-memo-snapshots', 'legal-case-evidence-proposals', 'legal-claim-projection',
+  'legal-case-memo-snapshots', 'legal-case-evidence-proposals', 'legal-claim-projection', 'legal-claim-items',
   'legal-transfer-readiness', 'manual-legal-delinquency-queue', 'delinquent-customers',
   'legal-delinquency-manual-candidates', 'batch-filing-candidates',
   'contract-reminder-history', 'contract-traffic-violations',
@@ -43,7 +43,7 @@ const companyAtOne = new Set([
   'contract-documents', 'legal-transfer-readiness', 'legal-transfer-signed-contract-document',
   'employee-signed-contract-documents', 'manual-legal-delinquency-queue',
   'legal-delinquency-manual-candidates', 'batch-filing-candidates',
-  'lawsuit-legal-case', 'legal-case-workflow', 'vehicle-plate-history',
+  'lawsuit-legal-case', 'legal-case-workflow', 'vehicle-plate-history', 'legal-claim-items',
 ]);
 const customerDetails = new Set([
   'customer', 'customer-details', 'customer-details-new', 'customer-details-split',
@@ -102,7 +102,7 @@ export function recordQueryMatches(query: Query, change: RecordChange): boolean 
     if (typeof contractId === 'string' && contractId !== change.recordId) return false;
     if (companyAtTwo.has(root) && !root.startsWith('customer-') && root !== 'contract-details'
       && key[1] !== change.recordId) return false;
-    if (['contract-documents', 'legal-transfer-readiness', 'legal-transfer-signed-contract-document', 'lawsuit-legal-case'].includes(root)
+    if (['contract-documents', 'legal-transfer-readiness', 'legal-transfer-signed-contract-document', 'lawsuit-legal-case', 'legal-claim-items'].includes(root)
       && key[2] !== change.recordId) return false;
   }
   return true;

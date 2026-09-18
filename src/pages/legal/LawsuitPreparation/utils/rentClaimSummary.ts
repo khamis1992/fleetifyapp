@@ -1,3 +1,5 @@
+import { additionalPrimaryAmount } from '@/types/legalClaimRegister';
+import { assertClaimRegisterConsistent } from '@/utils/legal-claim-register-validation';
 import type { LawsuitPreparationState, OverdueInvoice } from '../store/types';
 import { getVerifiedDamageNetFromCosts } from './legalCaseWorkflow';
 import { isTrafficViolationsOnlyScope } from '@/types/legalClaimScope';
@@ -52,6 +54,10 @@ export function summarizeRentClaim(
 /** Called at export/filing boundaries, not during transient React calculations. */
 export function assertRentClaimConsistent(state: LawsuitPreparationState): void {
   if (state.financialClaimError) throw new Error(state.financialClaimError);
+  const register = state.financialClaimSource?.claimRegister;
+  if (register) assertClaimRegisterConsistent(register);
+  if (register?.issues.length) throw new Error(register.issues.join('؛ '));
+  if (register && Math.round(register.primary_total * 100) !== Math.round((state.calculations?.total || 0) * 100)) throw new Error('تغير إجمالي سجل المطالبات؛ حدّث الحساب');
   if (!state.calculations) throw new Error('لم يكتمل حساب المطالبة بعد');
   const authoritative = state.financialClaimSource?.authoritativeAmounts;
   if (authoritative) {
@@ -64,6 +70,10 @@ export function assertRentClaimConsistent(state: LawsuitPreparationState): void 
   const trafficOnly = isTrafficViolationsOnlyScope(state.legalCase?.claim_scope);
   if (authoritative) {
     const profile = state.litigationProfile;
+    if (authoritative.retentionCompensation > 0 && register?.retention_basis === 'contract_monthly'
+      && (profile?.retention_calculation_basis !== 'contract_monthly'
+        || profile.retention_proration_basis !== register.retention_proration
+        || Number(state.contract?.monthly_amount) !== register.retention_monthly_rate)) throw new Error('تغير أساس الاحتباس أو أجرة العقد؛ حدّث الحساب قبل التصدير');
     const units = Number(state.financialClaimSource?.authoritativeCompensationUnits ?? 0);
     const rate = Number(profile?.contractual_compensation_rate ?? 0);
     const cap = profile?.contractual_compensation_cap;
@@ -80,7 +90,7 @@ export function assertRentClaimConsistent(state: LawsuitPreparationState): void 
       || Math.round(compensationDetail * 100) !== Math.round(authoritative.lateFees * 100)) {
       throw new Error('تغيرت تفاصيل التعويض الاتفاقي أو سقفه عن المبلغ المعتمد؛ حدّث بيانات المطالبة قبل إعداد المذكرة');
     }
-    if (authoritative.retentionCompensation > 0) {
+    if (authoritative.retentionCompensation > 0 && register?.retention_basis !== 'contract_monthly') {
       const retention = state.financialClaimSource?.authoritativeRetention;
       const dailyRate = Number(profile?.retention_daily_rate);
       if (!retention || !profile?.retention_rate_source || !profile.retention_rate_source_ref?.trim()
@@ -90,7 +100,7 @@ export function assertRentClaimConsistent(state: LawsuitPreparationState): void 
         throw new Error('تغيرت تفاصيل الاحتباس أو سعره اليومي عن المبلغ المعتمد؛ حدّث بيانات المطالبة قبل إعداد المذكرة');
       }
     }
-    const damageDetail = trafficOnly ? 0 : getVerifiedDamageNetFromCosts(state.damageCosts ?? []);
+    const damageDetail = trafficOnly ? 0 : getVerifiedDamageNetFromCosts(state.damageCosts ?? []) + additionalPrimaryAmount(register);
     const depositDetail = !trafficOnly && state.litigationProfile?.apply_security_deposit
       ? Math.max(0, Number(state.litigationProfile.security_deposit_amount || 0)) : 0;
     if (!Number.isFinite(damageDetail)

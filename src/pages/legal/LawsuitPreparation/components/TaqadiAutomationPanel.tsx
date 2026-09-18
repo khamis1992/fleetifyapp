@@ -46,7 +46,7 @@ import {
   reopenLegalCaseForPreparation,
 } from '../utils/taqadiFiling';
 import {
-  buildTaqadiFilingPayload,
+  prepareTaqadiFilingPayload,
   getLegalContractIdentityBlockReason,
   cancelTaqadiFilingJob,
   getActiveTaqadiWorker,
@@ -340,7 +340,7 @@ export function TaqadiAutomationPanel({
       if (!companyId || !contractId || !legalCase || !job) {
         throw new Error('تعذر تحديد عملية الرفع');
       }
-      const refreshedPayload = buildTaqadiFilingPayload(state, window.location.href);
+      const refreshedPayload = await prepareTaqadiFilingPayload(state, window.location.href);
 
       await syncLegalCaseWithTaqadiPayload(
         companyId,
@@ -371,7 +371,7 @@ export function TaqadiAutomationPanel({
         filingBaseState = { ...state, memoSnapshots: [snapshot, ...state.memoSnapshots] };
       }
       const filingState = await prepareCurrentFilingState(filingBaseState);
-      const payload = buildTaqadiFilingPayload(filingState, window.location.href);
+      const payload = await prepareTaqadiFilingPayload(filingState, window.location.href);
       return restartVerifiedUnsubmittedJob(companyId, payload, confirmation);
     },
     onSuccess: async () => {
@@ -434,7 +434,7 @@ export function TaqadiAutomationPanel({
         throw new Error('تعذر تحديد عملية الرفع');
       }
 
-      const refreshedPayload = buildTaqadiFilingPayload(state, window.location.href);
+      const refreshedPayload = await prepareTaqadiFilingPayload(state, window.location.href);
       const currentCase = await getTaqadiFilingJobCaseSnapshot(companyId, job.id);
       const caseSnapshotMatches = currentCase.amount === refreshedPayload.case.amount
         && currentCase.amountInWords === refreshedPayload.case.amountInWords

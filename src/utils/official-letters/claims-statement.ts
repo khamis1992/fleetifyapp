@@ -1,3 +1,4 @@
+import { renderClaimRegister } from '../legal-claim-register-render';
 /**
  * توليد كشف المطالبات المالية
  */
@@ -613,6 +614,7 @@ export function generateClaimsStatementHtml(data: ClaimsStatementData): string {
     ` : ''}
     
     <!-- الإجمالي النهائي -->
+    ${data.claimRegister ? renderClaimRegister(data.claimRegister) : `
     <div class="grand-total-box">
       <div class="grand-total-header">ملخص المطالبة الكلي</div>
       <div class="grand-total-body">
@@ -666,6 +668,7 @@ export function generateClaimsStatementHtml(data: ClaimsStatementData): string {
       </div>
     </div>
     
+    `}
     ${generateSignatureSection()}
   </div>
   

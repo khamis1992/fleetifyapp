@@ -642,7 +642,9 @@ export async function createDocxDocumentFromHtml(htmlContent: string): Promise<a
       );
 
       // معالجة الجدول (جدول المطالبات المالية)
-      if (tableEl) {
+      for (const tableEl of section.querySelectorAll('table')) {
+        const groupHeading = tableEl.previousElementSibling;
+        if (groupHeading?.matches('h3')) children.push(new Paragraph({children:[new TextRun({text:groupHeading.textContent?.trim() || '',bold:true,rightToLeft:true,font:'Arial',size:23})],bidirectional:true,spacing:{before:180,after:100}}));
         const rows: TableRowType[] = [];
         tableEl.querySelectorAll('tr').forEach((tr, rowIndex) => {
           const isHeader = tr.closest('thead') !== null || rowIndex === 0;
@@ -681,7 +683,7 @@ export async function createDocxDocumentFromHtml(htmlContent: string): Promise<a
           });
           
           if (cells.length > 0) {
-            rows.push(new TableRow({ children: cells }));
+            rows.push(new TableRow({ children: cells, tableHeader: isHeader, cantSplit: true }));
           }
         });
         
@@ -696,6 +698,8 @@ export async function createDocxDocumentFromHtml(htmlContent: string): Promise<a
           );
         }
       }
+      const register = section.querySelector('.claim-register');
+      if (register) children.push(...processContentParagraphs(register as HTMLElement));
       
       // معالجة المحتوى النصي (فقط إذا لم يكن هناك جدول أو معالجة الجدول منفصلة)
       if (contentEl && !tableEl) {

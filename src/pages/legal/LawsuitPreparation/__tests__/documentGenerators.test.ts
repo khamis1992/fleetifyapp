@@ -8,6 +8,10 @@ import {
   isMemoSnapshotCurrent,
 } from '../utils/documentGenerators';
 import type { LawsuitPreparationState } from '../store';
+import { fixedCompensationRegister } from '@/utils/__tests__/fixtures/fixedCompensation';
+import { buildLegalMemoClaimsText } from '@/utils/legal-memo-requests';
+import { assertRentClaimConsistent } from '../utils/rentClaimSummary';
+import { generateCaseSummary } from '../utils/zipExport';
 
 describe('buildViolationEvidenceDocumentEntries', () => {
   it('omits the traffic report when no evidence file exists', () => {
@@ -161,6 +165,20 @@ describe('buildMemoDocumentData', () => {
     const claim = buildClaimsStatementData(state);
     expect(claim.invoices[1]).toMatchObject({ dueDate: '2026-06-01', servicePeriodTo: '2026-06-30' });
     expect(claim.damageCosts).toEqual([{ description: 'موثق', amount: 400 }]);
+  });
+
+  it('keeps the compensation, memo, statement and filing requests consistent from the same state', () => {
+    const register = fixedCompensationRegister(5000);
+    const state = { ...baseState,
+      financialClaimSource: { claimRegister: register },
+      calculations: { ...baseState.calculations, lateFees: 0, damagesFee: 10000, total: 15000 },
+    } as LawsuitPreparationState;
+    expect(() => assertRentClaimConsistent(state)).not.toThrow();
+    const memo = buildMemoDocumentData(state), statement = buildClaimsStatementData(state);
+    expect(memo.customer.total_debt).toBe(15000);expect(memo.damages).toBe(10000);
+    expect(memo.claimRegister).toEqual(statement.claimRegister);
+    expect(buildLegalMemoClaimsText(memo)).toContain('10,000.00');
+    expect(generateCaseSummary(state)).toContain('تعويض عن الأضرار المادية والمعنوية والحرمان من الانتفاع: 10,000');
   });
 
   it('keeps the historical memo date when an older payload has no memoDate', () => {

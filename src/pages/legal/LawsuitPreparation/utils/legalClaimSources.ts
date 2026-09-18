@@ -1,3 +1,4 @@
+import type { LegalClaimRegister } from '@/types/legalClaimRegister';
 import { supabase } from '@/integrations/supabase/client';
 import type {
   FinancialClaimSourceSummary,
@@ -44,10 +45,11 @@ interface StatementRentRow {
 }
 
 export interface LegalClaimBreakdown {
+  claim_register?: LegalClaimRegister;
   service_period_version?: string;
   settlement_source?: string;
   calculation_details?: { retention_start_date?: string | null; retention_end_date?: string | null;
-    retention_daily_rate?: number | null; contractual_compensation_units?: number | null };
+    retention_daily_rate?: number | null; retention_calculation_basis?: string; retention_monthly_rate?: number | null; retention_proration_basis?: string; contractual_compensation_units?: number | null };
   traffic_settlement?: { requires_review: boolean; proof_ready: boolean; claim_amount: number; rows: {
     penalty_id: string | null; violation_number: string | null; penalty_date: string | null;
     violation_type?: string | null; location?: string | null;
@@ -441,6 +443,7 @@ export async function loadLegalClaimProjection(
     if (!Number.isFinite(Number(traffic.claim_amount)) || trafficCents !== Math.round(Number(traffic.claim_amount) * 100)) {
       throw new Error('تفاصيل المخالفات لا تتطابق مع إجمالي المطالبة');
     }
+    projection.summary.claimRegister = statement.claim_register;
     projection.summary.authoritativeAmounts = resolveStatementAmounts(statement);
     if (Math.round(projection.summary.authoritativeAmounts.overdueRent * 100) !== Math.round(projection.summary.outstandingTotal * 100)
       || Math.round(projection.summary.authoritativeAmounts.violationsFines * 100) !== trafficCents) {
@@ -459,8 +462,8 @@ export async function loadLegalClaimProjection(
       const days = from && to ? (Date.parse(to) - Date.parse(from)) / 86400000 + 1 : NaN;
       const rate = Number(details?.retention_daily_rate);
       if (!from || !to || !/^\d{4}-\d{2}-\d{2}$/.test(from) || !/^\d{4}-\d{2}-\d{2}$/.test(to)
-        || !Number.isSafeInteger(days) || days <= 0 || !Number.isFinite(rate) || rate <= 0
-        || Math.round(days * rate * 100) !== Math.round(retentionAmount * 100)) {
+        || !Number.isSafeInteger(days) || days <= 0 || (details?.retention_calculation_basis !== 'contract_monthly' && (!Number.isFinite(rate) || rate <= 0))
+        || (details?.retention_calculation_basis !== 'contract_monthly' && Math.round(days * rate * 100) !== Math.round(retentionAmount * 100))) {
         throw new Error('تعويض الاحتباس لا يطابق الفترة والسعر اليومي المثبتين');
       }
       projection.summary.authoritativeRetention = { days, amount: retentionAmount, from, to };

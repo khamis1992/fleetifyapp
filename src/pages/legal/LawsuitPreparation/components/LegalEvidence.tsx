@@ -1,3 +1,4 @@
+import { ClaimRegisterPanel } from './ClaimRegisterPanel';
 import {
   useEffect,
   useMemo,
@@ -83,6 +84,7 @@ const defaultProfile = (): Partial<LitigationProfile> => ({
   retention_rate_source_ref: null,
   retention_rate_source_document_id: null,
   contractual_compensation_enabled: false,
+  fixed_compensation_requested: false,
   contractual_compensation_clause_number: null,
   contractual_compensation_clause_text: null,
   contractual_compensation_method: null,
@@ -650,20 +652,36 @@ export function LegalEvidence() {
         </div>
       </section>
 
+      <ClaimRegisterPanel />
       <section id="lawsuit-compensation" tabIndex={-1} className="lawsuit-section-panel space-y-5">
-        <div className="lawsuit-section-heading compact"><div><h2>الخصومات والتعويضات المشروطة</h2><p>جميع القيم تساوي صفراً في المذكرة ما لم يكتمل السند.</p></div></div>
+        <div className="lawsuit-section-heading compact"><div><h2>الخصومات وطلبات التعويض</h2><p>اختر التعويض الثابت لهذه الدعوى، وأكمل سند البنود التي تعتمد على فترة أو مصروف موثق.</p></div></div>
         <div className="grid gap-4 md:grid-cols-3">
           <Field label="وديعة الضمان"><Input type="number" min={0} value={profile.security_deposit_amount ?? ''} onChange={(event) => updateProfile('security_deposit_amount', numberOrNull(event.target.value))} /></Field>
           <label className="mt-8 flex items-center gap-2 font-bold text-slate-700"><input type="checkbox" checked={Boolean(profile.apply_security_deposit)} onChange={(event) => updateProfile('apply_security_deposit', event.target.checked)} /> خصم الوديعة من التسوية</label>
           <span />
+          <Field label="أساس تقدير الاحتباس"><select className={fieldClass} value={profile.retention_calculation_basis || 'documented_daily'} onChange={event => updateProfile('retention_calculation_basis', event.target.value as LitigationProfile['retention_calculation_basis'])}><option value="documented_daily">سعر يومي موثق</option><option value="contract_monthly">الأجرة الشهرية للعقد الموقع</option></select></Field>
+          {profile.retention_calculation_basis === 'contract_monthly' && <Field label="احتساب جزء الشهر وفق الأساس المعتمد"><select className={fieldClass} value={profile.retention_proration_basis || 'calendar_days'} onChange={event => updateProfile('retention_proration_basis', event.target.value as LitigationProfile['retention_proration_basis'])}><option value="calendar_days">أيام الشهر الفعلية</option><option value="thirty_days">30 يومًا وفق العقد أو أساس موثق</option></select><p className="text-sm text-slate-600">اربط العقد الموقع بمستند أجرة المثل أدناه، وبيّن أساس جزء الشهر في المرجع. هذا تقدير مطلوب يخضع للمحكمة.</p></Field>}
+          {profile.retention_calculation_basis !== 'contract_monthly' && <>
           <Field label="أجرة المثل اليومية"><Input type="number" min={0} value={profile.retention_daily_rate ?? ''} onChange={(event) => updateProfile('retention_daily_rate', numberOrNull(event.target.value))} /></Field>
           <Field label="مصدر أجرة المثل">
             <select value={profile.retention_rate_source || ''} onChange={(event) => updateProfile('retention_rate_source', (event.target.value || null) as LitigationProfile['retention_rate_source'])} className={fieldClass}>
               <option value="">غير محدد</option><option value="company_price_list">قائمة أسعار معتمدة</option><option value="market_quotes">عروض سوقية</option><option value="recent_contracts">عقود مماثلة حديثة</option>
             </select>
           </Field>
+          </>}
           <Field label="مرجع مصدر أجرة المثل"><Input value={profile.retention_rate_source_ref || ''} onChange={(event) => updateProfile('retention_rate_source_ref', event.target.value)} /></Field>
           <Field label="مستند أجرة المثل"><EvidenceSelect value={profile.retention_rate_source_document_id} onChange={(value) => updateProfile('retention_rate_source_document_id', value)} documents={evidenceDocuments} /></Field>
+        </div>
+        <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 space-y-2">
+          <label className="flex items-start gap-3 font-bold text-slate-900">
+            <input type="checkbox" className="mt-1 h-4 w-4" disabled={!state.legalCase?.id} checked={Boolean(profile.fixed_compensation_requested && profile.case_id === state.legalCase?.id)} onChange={(event) => {
+              updateProfile('fixed_compensation_requested', event.target.checked);
+              updateProfile('case_id', state.legalCase?.id || null);
+            }} />
+            طلب تعويض عن الأضرار المادية والمعنوية والحرمان من الانتفاع — 10,000 ر.ق.
+          </label>
+          <p className="text-sm text-slate-700">بعد حفظ الملف، يضاف المبلغ الثابت مرة واحدة إلى البيان المالي والمذكرة والطلبات النهائية لهذه الدعوى، خاضعًا لتقدير المحكمة.</p>
+          {!state.legalCase?.id && <p className="text-sm text-slate-700">سجّل ملف القضية أولاً لربط التعويض بهذه الدعوى.</p>}
         </div>
         <label className="flex items-center gap-2 font-bold text-slate-700"><input type="checkbox" checked={Boolean(profile.contractual_compensation_enabled)} onChange={(event) => updateProfile('contractual_compensation_enabled', event.target.checked)} /> يوجد تعويض اتفاقي يراد عرضه للمراجعة</label>
         {profile.contractual_compensation_enabled && (

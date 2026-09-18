@@ -1,3 +1,4 @@
+import { additionalPrimaryAmount } from '@/types/legalClaimRegister';
 import { isTrafficViolationsOnlyScope } from '@/types/legalClaimScope';
 import type {
   Customer,
@@ -293,7 +294,7 @@ export function getVerifiedDamageNetFromCosts(costs: DamageCost[]): number {
 }
 
 export function getVerifiedDamageNet(state: LawsuitPreparationState): number {
-  return getVerifiedDamageNetFromCosts(state.damageCosts);
+  return getVerifiedDamageNetFromCosts(state.damageCosts) + additionalPrimaryAmount(state.financialClaimSource?.claimRegister);
 }
 
 export function evaluateLegalCaseReadiness(
@@ -397,6 +398,7 @@ export function evaluateLegalCaseReadiness(
 
   // A traffic/damage/retention claim need not contain a rental invoice.
   // Require supporting rows for each positive component instead of a rent-only gate.
+  issues.push(...(state.financialClaimSource?.claimRegister?.issues || []));
   const amounts = state.calculations;
   if ((amounts?.overdueRent ?? 0) > 0 && (trafficOnly || state.overdueInvoices.length === 0)) {
     issues.push('الأجرة المطالب بها لا تسندها استحقاقات ضمن نطاق الدعوى.');
@@ -421,7 +423,7 @@ export function evaluateLegalCaseReadiness(
   }
   if (state.documents?.contract?.sourceDocumentId) strengths.push('نسخة العقد مرتبطة بالقضية.');
   if (legalPath.isDocumented) strengths.push('تاريخ انتهاء العلاقة ومساره مثبتان بالمستندات.');
-  if (verifiedDamageNet > 0) strengths.push('الأضرار المدرجة مرتبطة بمستندات وتم التحقق منها.');
+  if (getVerifiedDamageNetFromCosts(state.damageCosts) > 0) strengths.push('الأضرار المدرجة مرتبطة بمستندات وتم التحقق منها.');
 
   const approved = profile?.legal_review_status === 'approved';
   const status = approved && issues.length === 0

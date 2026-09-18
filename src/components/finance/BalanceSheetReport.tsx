@@ -1,811 +1,1022 @@
 import { useState } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import "./BalanceSheetReport.css";
+import { Link, useSearchParams } from "react-router-dom";
+import {
+  AlertCircle,
+  CheckCircle2,
+  Download,
+  FileSpreadsheet,
+  Printer,
+  RefreshCw,
+  Save,
+  ShieldCheck,
+} from "lucide-react";
+import { toast } from "sonner";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { LoadingSpinner } from "@/components/ui/loading-spinner";
-import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { 
-  Download, 
-  FileSpreadsheet, 
-  FileText, 
-  TrendingUp, 
-  TrendingDown, 
-  Calendar,
-  Building,
-  PieChart as PieChartIcon,
-  CheckCircle,
-  AlertCircle
-} from "lucide-react";
-import { useEnhancedFinancialReports } from "@/hooks/useEnhancedFinancialReports";
-import { useCurrencyFormatter } from "@/hooks/useCurrencyFormatter";
-import { toast } from "sonner";
-import * as XLSX from 'xlsx';
-import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import { buildBalanceSheetReport } from "@/utils/standardFinancialReportRules";
+import { Textarea } from "@/components/ui/textarea";
 import {
-  exportOfficialFinancialReportToPDF,
-  type OfficialFinancialReportExportPayload,
-} from "@/utils/officialFinancialReportExport";
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { LoadingSpinner } from "@/components/ui/loading-spinner";
+import { FinancialReportLanguage, useFinancialReportLocale } from './FinancialReportLanguage';
+import { useUnifiedCompanyAccess } from "@/hooks/useUnifiedCompanyAccess";
+import {
+  useBalanceSheetActions,
+  useProfessionalBalanceSheet,
+  useSavedBalanceSheets,
+} from "@/hooks/finance/useProfessionalBalanceSheet";
+import { financeToday } from "@/services/financialReporting";
+import {
+  balanceSheetErrorMessage,
+  validateBalanceSheetDates,
+} from "@/services/professionalBalanceSheet";
+import {
+  formatBalanceSheetMoney,
+  getBalanceSheetCheckMessage,
+  getBalanceSheetRows,
+} from "@/utils/balanceSheetPresentation";
+import {
+  exportBalanceSheetExcel,
+  exportBalanceSheetPDF,
+  printBalanceSheet,
+} from "@/utils/balanceSheetExport";
+import type {
+  BalanceSheetLocale,
+  BalanceSheetReviewConfirmations,
+  SavedBalanceSheet,
+} from "@/types/balanceSheet";
 
-import { useFleetifyTranslation } from "@/hooks/useTranslation";
-
-const COLORS = {
-  assets: '#22c55e',
-  liabilities: '#ef4444',
-  equity: '#3b82f6',
-  currentAssets: '#10b981',
-  fixedAssets: '#059669',
-  currentLiabilities: '#f87171',
-  longTermLiabilities: '#dc2626'
+const emptyConfirmations: BalanceSheetReviewConfirmations = {
+  assets: false,
+  liabilities: false,
+  equity: false,
+  reconciliation: false,
+  completeness: false,
 };
 
 export function BalanceSheetReport() {
-  const { t } = useFleetifyTranslation("ui");
-  const [asOfDate, setAsOfDate] = useState<string>(new Date().toISOString().split('T')[0]);
-  const { formatCurrency } = useCurrencyFormatter();
-
-  // Fetch balance sheet data
-  const { data: reportData, isLoading, error } = useEnhancedFinancialReports(
-    'balance_sheet',
-    '',
-    asOfDate
-  );
-
-  // Calculate totals and ratios
-  const assetsSection = reportData?.sections?.find((s: any) => s.title === 'Assets');
-  const liabilitiesSection = reportData?.sections?.find((s: any) => s.title === 'Liabilities');
-  const equitySection = reportData?.sections?.find((s: any) => s.title === 'Equity');
-
-  const totalAssets = assetsSection?.subtotal || 0;
-  const totalLiabilities = liabilitiesSection?.subtotal || 0;
-  const totalEquity = equitySection?.subtotal || 0;
-  const totalLiabilitiesAndEquity = totalLiabilities + totalEquity;
-  
-  const isBalanced = Math.abs(totalAssets - totalLiabilitiesAndEquity) < 0.01;
-
-  // Financial Ratios
-  const currentAssets = assetsSection?.accounts?.filter((a: any) => 
-    a.accountCode?.startsWith('11') || a.accountCode?.startsWith('12')
-  ).reduce((sum: number, acc: any) => sum + Number(acc.balance || 0), 0) || 0;
-
-  const fixedAssets = totalAssets - currentAssets;
-
-  const currentLiabilities = liabilitiesSection?.accounts?.filter((a: any) =>
-    a.accountCode?.startsWith('21')
-  ).reduce((sum: number, acc: any) => sum + Number(acc.balance || 0), 0) || 0;
-
-  const longTermLiabilities = totalLiabilities - currentLiabilities;
-
-  // Financial Ratios Calculations
-  const currentRatio = currentLiabilities > 0 ? (currentAssets / currentLiabilities) : 0;
-  const debtToEquityRatio = totalEquity > 0 ? (totalLiabilities / totalEquity) : 0;
-  const debtRatio = totalAssets > 0 ? (totalLiabilities / totalAssets) : 0;
-  const equityRatio = totalAssets > 0 ? (totalEquity / totalAssets) : 0;
-
-  // Chart data
-  const assetsDistribution = [
-    { name: 'أصول متداولة', value: currentAssets, color: COLORS.currentAssets },
-    { name: 'أصول ثابتة', value: fixedAssets, color: COLORS.fixedAssets }
-  ].filter(item => item.value > 0);
-
-  const liabilitiesDistribution = [
-    { name: 'خصوم متداولة', value: currentLiabilities, color: COLORS.currentLiabilities },
-    { name: 'خصوم طويلة الأجل', value: longTermLiabilities, color: COLORS.longTermLiabilities },
-    { name: 'حقوق الملكية', value: totalEquity, color: COLORS.equity }
-  ].filter(item => item.value > 0);
-
-  const comparisonData = [
-    { name: 'الأصول', value: totalAssets, color: COLORS.assets },
-    { name: 'الخصوم', value: totalLiabilities, color: COLORS.liabilities },
-    { name: 'حقوق الملكية', value: totalEquity, color: COLORS.equity }
-  ];
-
-  // Export to Excel
-  const handleExportExcel = () => {
-    if (!reportData || !reportData.sections || reportData.sections.length === 0) {
-      toast.error("لا توجد بيانات للتصدير");
-      return;
-    }
-
-    try {
-      const wb = XLSX.utils.book_new();
-
-      // Assets Sheet
-      const assetsData = assetsSection?.accounts?.map((acc: any) => ({
-        'رمز الحساب': acc.accountCode,
-        'اسم الحساب': acc.accountNameAr || acc.accountName,
-        'المبلغ': Number(acc.balance)
-      })) || [];
-      assetsData.push({
-        'رمز الحساب': '',
-        'اسم الحساب': 'إجمالي الأصول',
-        'المبلغ': totalAssets
-      });
-
-      // Liabilities Sheet
-      const liabilitiesData = liabilitiesSection?.accounts?.map((acc: any) => ({
-        'رمز الحساب': acc.accountCode,
-        'اسم الحساب': acc.accountNameAr || acc.accountName,
-        'المبلغ': Number(acc.balance)
-      })) || [];
-      liabilitiesData.push({
-        'رمز الحساب': '',
-        'اسم الحساب': 'إجمالي الخصوم',
-        'المبلغ': totalLiabilities
-      });
-
-      // Equity Sheet
-      const equityData = equitySection?.accounts?.map((acc: any) => ({
-        'رمز الحساب': acc.accountCode,
-        'اسم الحساب': acc.accountNameAr || acc.accountName,
-        'المبلغ': Number(acc.balance)
-      })) || [];
-      equityData.push({
-        'رمز الحساب': '',
-        'اسم الحساب': 'إجمالي حقوق الملكية',
-        'المبلغ': totalEquity
-      });
-
-      // Create sheets
-      const wsAssets = XLSX.utils.json_to_sheet(assetsData);
-      const wsLiabilities = XLSX.utils.json_to_sheet(liabilitiesData);
-      const wsEquity = XLSX.utils.json_to_sheet(equityData);
-
-      // Set column widths
-      [wsAssets, wsLiabilities, wsEquity].forEach(ws => {
-        ws['!cols'] = [{ wch: 15 }, { wch: 40 }, { wch: 20 }];
-      });
-
-      XLSX.utils.book_append_sheet(wb, wsAssets, 'الأصول');
-      XLSX.utils.book_append_sheet(wb, wsLiabilities, 'الخصوم');
-      XLSX.utils.book_append_sheet(wb, wsEquity, 'حقوق الملكية');
-
-      // Ratios Sheet
-      const ratiosData = [
-        ['النسب المالية', ''],
-        ['', ''],
-        ['نسبة التداول', currentRatio.toFixed(2)],
-        ['نسبة الدين إلى حقوق الملكية', debtToEquityRatio.toFixed(2)],
-        ['نسبة الدين', `${(debtRatio * 100).toFixed(2)}%`],
-        ['نسبة حقوق الملكية', `${(equityRatio * 100).toFixed(2)}%`]
-      ];
-      const wsRatios = XLSX.utils.aoa_to_sheet(ratiosData);
-      XLSX.utils.book_append_sheet(wb, wsRatios, 'النسب المالية');
-
-      // Metadata Sheet
-      const metadata = XLSX.utils.aoa_to_sheet([
-        ['قائمة المركز المالي - Balance Sheet'],
-        ['كما في تاريخ:', asOfDate],
-        ['تاريخ الإصدار:', new Date().toLocaleDateString('ar-EG')],
-        [''],
-        ['الملخص المالي'],
-        ['إجمالي الأصول:', totalAssets],
-        ['إجمالي الخصوم:', totalLiabilities],
-        ['إجمالي حقوق الملكية:', totalEquity],
-        ['الحالة:', isBalanced ? 'متوازن' : 'غير متوازن']
-      ]);
-      XLSX.utils.book_append_sheet(wb, metadata, 'معلومات التقرير');
-
-      const fileName = `balance_sheet_${asOfDate}.xlsx`;
-      XLSX.writeFile(wb, fileName);
-      toast.success("تم تصدير التقرير بنجاح");
-    } catch (error) {
-      console.error('Excel export error:', error);
-      toast.error("حدث خطأ أثناء تصدير التقرير");
-    }
-  };
-
-  // Export to PDF
-  const handleExportPDF = async () => {
-    if (!reportData || !reportData.sections || reportData.sections.length === 0) {
-      toast.error("\u0644\u0627 \u062a\u0648\u062c\u062f \u0628\u064a\u0627\u0646\u0627\u062a \u0644\u0644\u062a\u0635\u062f\u064a\u0631");
-      return;
-    }
-
-    const assetAccounts = assetsSection?.accounts || [];
-    const liabilityAccounts = liabilitiesSection?.accounts || [];
-    const equityAccounts = equitySection?.accounts || [];
-    const sourceReport = buildBalanceSheetReport([
-      ...assetAccounts.map((acc: any) => ({
-        accountCode: acc.accountCode,
-        accountName: acc.accountNameAr || acc.accountName,
-        accountType: "asset",
-        debit: Number(acc.balance || 0),
-        credit: 0,
-      })),
-      ...liabilityAccounts.map((acc: any) => ({
-        accountCode: acc.accountCode,
-        accountName: acc.accountNameAr || acc.accountName,
-        accountType: "liability",
-        debit: 0,
-        credit: Number(acc.balance || 0),
-      })),
-      ...equityAccounts.map((acc: any) => ({
-        accountCode: acc.accountCode,
-        accountName: acc.accountNameAr || acc.accountName,
-        accountType: "equity",
-        debit: 0,
-        credit: Number(acc.balance || 0),
-      })),
-    ]);
-
-    const payload: OfficialFinancialReportExportPayload = {
-      metadata: {
-        reportTitle: "\u0642\u0627\u0626\u0645\u0629 \u0627\u0644\u0645\u0631\u0643\u0632 \u0627\u0644\u0645\u0627\u0644\u064a",
-        reportType: "balance_sheet",
-        companyName: "Fleetify",
-        asOfDate,
-        currency: "QAR",
-        exportedAt: new Date().toISOString(),
-        status: isBalanced ? "published" : "draft",
-        sourceFingerprint: sourceReport.sourceFingerprint,
-        reportHash: sourceReport.sourceFingerprint,
-      },
-      columns: [
-        { key: "section", header: "\u0627\u0644\u0628\u0646\u062f", width: 18 },
-        { key: "accountCode", header: "\u0631\u0645\u0632 \u0627\u0644\u062d\u0633\u0627\u0628", width: 18 },
-        { key: "accountName", header: "\u0627\u0633\u0645 \u0627\u0644\u062d\u0633\u0627\u0628", width: 42 },
-        { key: "amount", header: "\u0627\u0644\u0645\u0628\u0644\u063a", type: "money", width: 18 },
-      ],
-      rows: [
-        ...assetAccounts.map((acc: any) => ({ section: "\u0627\u0644\u0623\u0635\u0648\u0644", accountCode: acc.accountCode, accountName: acc.accountNameAr || acc.accountName, amount: Number(acc.balance || 0) })),
-        ...liabilityAccounts.map((acc: any) => ({ section: "\u0627\u0644\u0627\u0644\u062a\u0632\u0627\u0645\u0627\u062a", accountCode: acc.accountCode, accountName: acc.accountNameAr || acc.accountName, amount: Number(acc.balance || 0) })),
-        ...equityAccounts.map((acc: any) => ({ section: "\u062d\u0642\u0648\u0642 \u0627\u0644\u0645\u0644\u0643\u064a\u0629", accountCode: acc.accountCode, accountName: acc.accountNameAr || acc.accountName, amount: Number(acc.balance || 0) })),
-      ],
-      summaryRows: [
-        { section: "\u0627\u0644\u0625\u062c\u0645\u0627\u0644\u064a", accountCode: "", accountName: "\u0625\u062c\u0645\u0627\u0644\u064a \u0627\u0644\u0623\u0635\u0648\u0644", amount: totalAssets },
-        { section: "\u0627\u0644\u0625\u062c\u0645\u0627\u0644\u064a", accountCode: "", accountName: "\u0625\u062c\u0645\u0627\u0644\u064a \u0627\u0644\u0627\u0644\u062a\u0632\u0627\u0645\u0627\u062a", amount: totalLiabilities },
-        { section: "\u0627\u0644\u0625\u062c\u0645\u0627\u0644\u064a", accountCode: "", accountName: "\u0625\u062c\u0645\u0627\u0644\u064a \u062d\u0642\u0648\u0642 \u0627\u0644\u0645\u0644\u0643\u064a\u0629", amount: totalEquity },
-        { section: "\u0627\u0644\u062d\u0627\u0644\u0629", accountCode: "", accountName: isBalanced ? "\u0645\u062a\u0648\u0627\u0632\u0646" : "\u063a\u064a\u0631 \u0645\u062a\u0648\u0627\u0632\u0646", amount: Math.abs(totalAssets - totalLiabilitiesAndEquity) },
-      ],
-    };
-
-    try {
-      await exportOfficialFinancialReportToPDF(payload);
-      toast.success("\u062a\u0645 \u062a\u0635\u062f\u064a\u0631 \u0627\u0644\u0645\u0631\u0643\u0632 \u0627\u0644\u0645\u0627\u0644\u064a \u0628\u0635\u064a\u063a\u0629 \u0643\u062a\u0627\u0628 \u0631\u0633\u0645\u064a");
-    } catch (error) {
-      console.error("PDF export error:", error);
-      toast.error("\u062a\u0639\u0630\u0631 \u062a\u0635\u062f\u064a\u0631 \u0645\u0644\u0641 PDF");
-    }
-  };
-
-  // Export to CSV
-  const handleExportCSV = () => {
-    if (!reportData || !reportData.sections || reportData.sections.length === 0) {
-      toast.error("لا توجد بيانات للتصدير");
-      return;
-    }
-
-    try {
-      let csvContent = 'قائمة المركز المالي - Balance Sheet\n';
-      csvContent += `كما في - As of,${asOfDate}\n`;
-      csvContent += `تاريخ الإصدار - Generated,${new Date().toLocaleDateString('ar-EG')}\n\n`;
-
-      csvContent += 'الأصول - Assets\n';
-      csvContent += 'رمز الحساب,اسم الحساب,المبلغ\n';
-      assetsSection?.accounts?.forEach((acc: any) => {
-        csvContent += `${acc.accountCode},${acc.accountNameAr || acc.accountName},${acc.balance}\n`;
-      });
-      csvContent += `,,إجمالي الأصول,${totalAssets}\n\n`;
-
-      csvContent += 'الخصوم - Liabilities\n';
-      csvContent += 'رمز الحساب,اسم الحساب,المبلغ\n';
-      liabilitiesSection?.accounts?.forEach((acc: any) => {
-        csvContent += `${acc.accountCode},${acc.accountNameAr || acc.accountName},${acc.balance}\n`;
-      });
-      csvContent += `,,إجمالي الخصوم,${totalLiabilities}\n\n`;
-
-      csvContent += 'حقوق الملكية - Equity\n';
-      csvContent += 'رمز الحساب,اسم الحساب,المبلغ\n';
-      equitySection?.accounts?.forEach((acc: any) => {
-        csvContent += `${acc.accountCode},${acc.accountNameAr || acc.accountName},${acc.balance}\n`;
-      });
-      csvContent += `,,إجمالي حقوق الملكية,${totalEquity}\n\n`;
-
-      csvContent += `الحالة - Status,${isBalanced ? 'متوازن - Balanced' : 'غير متوازن - Not Balanced'}\n`;
-
-      const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8;' });
-      const link = document.createElement('a');
-      const url = URL.createObjectURL(blob);
-      link.setAttribute('href', url);
-      link.setAttribute('download', `balance_sheet_${asOfDate}.csv`);
-      link.style.visibility = 'hidden';
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-
-      toast.success("تم تصدير التقرير بنجاح");
-    } catch (error) {
-      console.error('CSV export error:', error);
-      toast.error("حدث خطأ أثناء تصدير التقرير");
-    }
-  };
-
-  if (error) {
+  const { companyId, user, isInitializing, isAuthenticating } =
+    useUnifiedCompanyAccess();
+  const currentLanguage = useFinancialReportLocale();
+  if (isInitializing || isAuthenticating) return <LoadingSpinner />;
+  if (!companyId || !user?.id)
     return (
-      <Card>
-        <CardContent className="p-6">
-          <div className="flex items-center gap-2 text-destructive">
-            <AlertCircle className="h-5 w-5" />
-            <p>حدث خطأ في تحميل البيانات</p>
-          </div>
-        </CardContent>
-      </Card>
+      <p role="alert">
+        {currentLanguage === "ar"
+          ? "يلزم تسجيل الدخول واختيار الشركة."
+          : "Sign in and select a company."}
+      </p>
     );
+  return (
+    <BalanceSheetWorkspace
+      key={`${companyId}:${user.id}`}
+      companyId={companyId}
+      actorId={user.id}
+      locale={currentLanguage === "ar" ? "ar" : "en"}
+    />
+  );
+}
+
+function BalanceSheetWorkspace({
+  companyId,
+  actorId,
+  locale,
+}: {
+  companyId: string;
+  actorId: string;
+  locale: BalanceSheetLocale;
+}) {
+  const ar = locale === "ar";
+  const tr = (arabic: string, english: string) => (ar ? arabic : english);
+  const [params, setParams] = useSearchParams();
+  const [asOf, setAsOf] = useState(params.get("asOf") || financeToday());
+  const [comparison, setComparison] = useState(params.get("compare") || "");
+  const [selected, setSelected] = useState<SavedBalanceSheet | null>(null);
+  const [notes, setNotes] = useState("");
+  const [reviewNotes, setReviewNotes] = useState("");
+  const [voidReason, setVoidReason] = useState("");
+  const [confirmations, setConfirmations] =
+    useState<BalanceSheetReviewConfirmations>({ ...emptyConfirmations });
+  const [exporting, setExporting] = useState(false);
+  const live = useProfessionalBalanceSheet(asOf, comparison || null);
+  const history = useSavedBalanceSheets();
+  const actions = useBalanceSheetActions();
+  const savedVersions =
+    history.data?.filter((row) => row.company_id === companyId) || [];
+  const snapshot = selected
+    ? savedVersions.find((row) => row.id === selected.id) || selected
+    : null;
+  const candidate = snapshot?.payload || live.data;
+  const scopeMatches =
+    candidate?.company.id === companyId &&
+    candidate.asOfDate === asOf &&
+    candidate.comparisonDate === (comparison || null);
+  const report = scopeMatches ? candidate : undefined;
+  const versionUnavailable = Boolean(
+    selected &&
+      history.data &&
+      !savedVersions.some((row) => row.id === selected.id)
+  );
+  let datesValid = true;
+  try {
+    validateBalanceSheetDates(asOf, comparison || null);
+  } catch {
+    datesValid = false;
   }
+  const busy =
+    exporting ||
+    actions.save.isPending ||
+    actions.approve.isPending ||
+    actions.voidReport.isPending;
+  const readFailed = Boolean(
+    live.error || (snapshot && history.error) || versionUnavailable
+  );
+  const readBusy = live.isFetching || Boolean(snapshot && history.isFetching);
+  const canExport = Boolean(
+    report &&
+      datesValid &&
+      !readFailed &&
+      !readBusy &&
+      !busy &&
+      snapshot?.status !== "voided"
+  );
+  const blocking =
+    report?.checks.filter(
+      (check) => check.severity === "error" && check.count > 0
+    ) || [];
+  const stale = Boolean(
+    snapshot &&
+      live.data &&
+      snapshot.source_fingerprint !== live.data.fingerprint
+  );
+  const canApprove = Boolean(
+    snapshot?.status === "draft" &&
+      live.data?.permissions.canApprove &&
+      snapshot.created_by !== actorId &&
+      !stale &&
+      blocking.length === 0 &&
+      report &&
+      report.current.postedEntries > 0 &&
+      !readFailed &&
+      !readBusy
+  );
+  const approvalReady =
+    canApprove &&
+    reviewNotes.trim().length >= 20 &&
+    Object.values(confirmations).every(Boolean);
+  const rows = report ? getBalanceSheetRows(report, locale) : [];
+  const money = (value: number) =>
+    formatBalanceSheetMoney(value, report?.company.currency || "", locale);
+  const status =
+    snapshot?.status === "approved"
+      ? tr("معتمد داخليًا", "Internally approved")
+      : snapshot?.status === "voided"
+      ? tr("نسخة ملغاة", "Voided version")
+      : tr("مسودة غير معتمدة", "Unapproved draft");
+
+  const changeDates = (nextAsOf: string, nextComparison: string) => {
+    setAsOf(nextAsOf);
+    setComparison(nextComparison);
+    setSelected(null);
+    setNotes("");
+    setReviewNotes("");
+    setConfirmations({ ...emptyConfirmations });
+    setVoidReason("");
+    const next = new URLSearchParams(params);
+    if (nextAsOf) next.set("asOf", nextAsOf);
+    else next.delete("asOf");
+    if (nextComparison) next.set("compare", nextComparison);
+    else next.delete("compare");
+    setParams(next, { replace: true });
+  };
+  const chooseSaved = (saved: SavedBalanceSheet) => {
+    changeDates(saved.as_of_date, saved.comparison_date || "");
+    setSelected(saved);
+  };
+  const handleExport = async (type: "pdf" | "excel" | "print") => {
+    if (!canExport || !report) return;
+    setExporting(true);
+    try {
+      // Issuing a saved version needs a fresh server status: another reviewer may
+      // have voided it since this screen loaded, including in a different session.
+      let issuingSnapshot = snapshot;
+      if (snapshot) {
+        const refreshed = await history.refetch();
+        if (refreshed.error) throw refreshed.error;
+        const latest = refreshed.data?.find(
+          (row) => row.id === snapshot.id && row.company_id === companyId
+        );
+        if (!latest) throw new Error("BALANCE_SHEET_VERSION_UNAVAILABLE");
+        setSelected(latest);
+        if (latest.status === "voided") {
+          toast.error(
+            tr(
+              "أُلغيت هذه النسخة؛ لا يمكن إصدارها.",
+              "This version was voided and cannot be issued."
+            )
+          );
+          return;
+        }
+        issuingSnapshot = latest;
+      }
+      const options = {
+        report: issuingSnapshot?.payload || report,
+        snapshot: issuingSnapshot,
+        locale,
+      };
+      if (type === "pdf") await exportBalanceSheetPDF(options);
+      if (type === "excel") await exportBalanceSheetExcel(options);
+      if (type === "print") await printBalanceSheet(options);
+    } catch {
+      toast.error(
+        tr(
+          "تعذر إخراج الملف. أعد المحاولة.",
+          "The file could not be generated. Try again."
+        )
+      );
+    } finally {
+      setExporting(false);
+    }
+  };
+  const save = async () => {
+    if (
+      !report ||
+      snapshot ||
+      busy ||
+      !canExport ||
+      !live.data?.permissions.canSave
+    )
+      return;
+    try {
+      setSelected(
+        await actions.save.mutateAsync({
+          asOf,
+          comparison: comparison || null,
+          notes,
+        })
+      );
+      toast.success(
+        tr(
+          "حُفظت نسخة ثابتة للمراجعة.",
+          "A fixed version was saved for review."
+        )
+      );
+    } catch (error) {
+      toast.error(balanceSheetErrorMessage(error, locale));
+    }
+  };
+  const approve = async () => {
+    if (!snapshot || !approvalReady || busy) return;
+    try {
+      setSelected(
+        await actions.approve.mutateAsync({
+          id: snapshot.id,
+          notes: reviewNotes,
+          confirmations,
+        })
+      );
+      toast.success(
+        tr(
+          "سُجل الاعتماد الداخلي باسم المراجع.",
+          "Internal approval was recorded under the reviewer’s identity."
+        )
+      );
+    } catch (error) {
+      toast.error(balanceSheetErrorMessage(error, locale));
+    }
+  };
+  const voidSaved = async () => {
+    if (!snapshot || voidReason.trim().length < 20 || busy) return;
+    try {
+      setSelected(
+        await actions.voidReport.mutateAsync({
+          id: snapshot.id,
+          reason: voidReason,
+        })
+      );
+      setVoidReason("");
+      toast.success(
+        tr(
+          "أُلغيت النسخة مع الاحتفاظ بسجلها.",
+          "The version was voided and retained in the history."
+        )
+      );
+    } catch (error) {
+      toast.error(balanceSheetErrorMessage(error, locale));
+    }
+  };
 
   return (
-    <div className="space-y-6">
+    <div
+      className="balance-sheet-workspace space-y-6"
+      dir={ar ? "rtl" : "ltr"}
+      data-testid="balance-sheet-report"
+    >
+      <FinancialReportLanguage />
       <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle className="flex items-center gap-2">
-                <Building className="h-5 w-5" />
-                قائمة المركز المالي
+        <CardHeader className="gap-4">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div className="space-y-1">
+              <CardTitle>
+                {tr("قائمة المركز المالي", "Statement of financial position")}
               </CardTitle>
               <CardDescription>
-                عرض الأصول والخصوم وحقوق الملكية كما في تاريخ محدد
+                {tr(
+                  "الأصول والالتزامات وحقوق الملكية في تاريخ محدد، مع المقارنة والمراجعة والاعتماد.",
+                  "Assets, liabilities and equity at a specified date, with comparison and recorded review."
+                )}
               </CardDescription>
             </div>
-            <div className="flex items-center gap-2">
+            <Badge
+              variant={
+                snapshot?.status === "approved" ? "default" : "secondary"
+              }
+            >
+              {status}
+            </Badge>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <Button variant="outline" size="sm" asChild>
+              <Link to={`/finance/reports/financial-statements?asOf=${asOf}`}>
+                {tr("حزمة القوائم المالية والإيضاحات", "Financial statements and notes")}
+              </Link>
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={!canExport}
+              onClick={() => void handleExport("pdf")}
+            >
+              <Download className="me-2 h-4 w-4" />
+              PDF
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={!canExport}
+              onClick={() => void handleExport("excel")}
+            >
+              <FileSpreadsheet className="me-2 h-4 w-4" />
+              Excel
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={!canExport}
+              onClick={() => void handleExport("print")}
+            >
+              <Printer className="me-2 h-4 w-4" />
+              {tr("طباعة", "Print")}
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={busy || !datesValid || readBusy}
+              onClick={() => {
+                void live.refetch();
+                void history.refetch();
+              }}
+            >
+              <RefreshCw className="me-2 h-4 w-4" />
+              {tr("تحديث", "Refresh")}
+            </Button>
+            {snapshot && (
               <Button
-                onClick={handleExportPDF}
                 variant="outline"
                 size="sm"
-                disabled={isLoading || !reportData}
+                onClick={() => changeDates(asOf, comparison)}
               >
-                <Download className="h-4 w-4 mr-2" />{t("pdf")}</Button>
-              <Button
-                onClick={handleExportExcel}
-                variant="outline"
-                size="sm"
-                disabled={isLoading || !reportData}
-              >
-                <FileSpreadsheet className="h-4 w-4 mr-2" />{t("excel")}</Button>
-              <Button
-                onClick={handleExportCSV}
-                variant="outline"
-                size="sm"
-                disabled={isLoading || !reportData}
-              >
-                <FileText className="h-4 w-4 mr-2" />{t("csv")}</Button>
-            </div>
+                {tr("العودة للأرصدة الحالية", "Return to current ledger")}
+              </Button>
+            )}
           </div>
         </CardHeader>
-        <CardContent>
-          <div className="space-y-6">
-            {/* Date Filter */}
-            <div className="flex items-end gap-4">
-              <div className="flex-1 max-w-xs">
-                <Label htmlFor="asOfDate">كما في تاريخ</Label>
-                <div className="relative mt-1">
-                  <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    id="asOfDate"
-                    type="date"
-                    value={asOfDate}
-                    onChange={(e) => setAsOfDate(e.target.value)}
-                    className="pl-10"
-                  />
-                </div>
-              </div>
-              {reportData && (
-                <Badge variant={isBalanced ? "default" : "destructive"} className="h-8">
-                  {isBalanced ? (
-                    <>
-                      <CheckCircle className="h-3 w-3 mr-1" />
-                      متوازن
-                    </>
-                  ) : (
-                    <>
-                      <AlertCircle className="h-3 w-3 mr-1" />
-                      غير متوازن
-                    </>
-                  )}
-                </Badge>
+        <CardContent className="space-y-4">
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor="bs-as-of">
+                {tr("كما في تاريخ", "As of date")}
+              </Label>
+              <Input
+                id="bs-as-of"
+                type="date"
+                value={asOf}
+                max={financeToday()}
+                onChange={(event) =>
+                  changeDates(event.target.value, comparison)
+                }
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="bs-comparison">
+                {tr("تاريخ المقارنة الاختياري", "Comparison date (optional)")}
+              </Label>
+              <Input
+                id="bs-comparison"
+                type="date"
+                value={comparison}
+                max={asOf}
+                onChange={(event) => changeDates(asOf, event.target.value)}
+              />
+            </div>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                const year = Number(financeToday().slice(0, 4)) - 1;
+                changeDates(`${year}-12-31`, `${year - 1}-12-31`);
+              }}
+            >
+              {tr("نهاية السنة السابقة", "Previous year end")}
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                const end = new Date(
+                  `${financeToday().slice(0, 7)}-01T12:00:00Z`
+                );
+                end.setUTCDate(0);
+                const cutoff = end.toISOString().slice(0, 10);
+                changeDates(cutoff, `${Number(cutoff.slice(0, 4)) - 1}-12-31`);
+              }}
+            >
+              {tr("نهاية الشهر السابق", "Previous month end")}
+            </Button>
+            {comparison && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => changeDates(asOf, "")}
+              >
+                {tr("إلغاء المقارنة", "Remove comparison")}
+              </Button>
+            )}
+          </div>
+          {!datesValid && (
+            <p role="alert" className="text-sm text-destructive">
+              {tr(
+                "حدد تاريخًا صحيحًا حتى اليوم، ومقارنة بتاريخ أسبق.",
+                "Choose a valid date up to today, with an earlier comparison date."
+              )}
+            </p>
+          )}
+          {readFailed && (
+            <p role="alert" className="text-sm text-destructive">
+              {versionUnavailable
+                ? tr(
+                    "تعذر التحقق من حالة هذه النسخة في سجل النسخ الحالي. حدّث السجل قبل إصدارها.",
+                    "This version is not available in the current history. Refresh its status before issuing it."
+                  )
+                : balanceSheetErrorMessage(live.error || history.error, locale)}
+            </p>
+          )}
+          {readBusy && (
+            <div className="flex items-center gap-2 text-sm" role="status">
+              <LoadingSpinner />
+              {tr(
+                "جارٍ التحقق من جميع الأرصدة…",
+                "Verifying all ledger balances…"
               )}
             </div>
+          )}
+          {stale && (
+            <p
+              role="alert"
+              className="text-sm text-amber-700 dark:text-amber-400"
+            >
+              {tr(
+                "تغيرت بيانات المصدر بعد حفظ هذه النسخة. تُعرض أرصدتها كما حُفظت؛ احفظ نسخة جديدة لاعتماد الأرصدة المحدثة.",
+                "Source data changed after this version was saved. Its saved balances are shown; save a new version to approve updated balances."
+              )}
+            </p>
+          )}
+        </CardContent>
+      </Card>
 
-            {/* Main Content Tabs */}
-            <Tabs defaultValue="statement" className="w-full">
-              <TabsList className="grid w-full grid-cols-3">
-                <TabsTrigger value="statement">قائمة المركز المالي</TabsTrigger>
-                <TabsTrigger value="ratios">النسب المالية</TabsTrigger>
-                <TabsTrigger value="charts">التحليل البياني</TabsTrigger>
-              </TabsList>
-
-              {/* Balance Sheet Tab */}
-              <TabsContent value="statement" className="space-y-4">
-                {isLoading ? (
-                  <div className="flex items-center justify-center h-64">
-                    <LoadingSpinner />
+      {report && datesValid && !readFailed && (
+        <>
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">
+                {ar
+                  ? report.company.nameAr || report.company.name
+                  : report.company.name}
+              </CardTitle>
+              <CardDescription>
+                {tr("السجل التجاري", "Commercial register")}:{" "}
+                {report.company.commercialRegister ||
+                  tr("غير مسجل", "Not recorded")}{" "}
+                · {report.company.currency} · {tr("كما في", "As of")}{" "}
+                <bdi>{report.asOfDate}</bdi>
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid gap-3 sm:grid-cols-3">
+                {[
+                  [tr("إجمالي الأصول", "Total assets"), report.current.assets],
+                  [
+                    tr("إجمالي الالتزامات", "Total liabilities"),
+                    report.current.liabilities,
+                  ],
+                  [
+                    tr("إجمالي حقوق الملكية", "Total equity"),
+                    report.current.equity,
+                  ],
+                ].map(([label, amount]) => (
+                  <div key={label} className="rounded-lg border p-4">
+                    <p className="text-sm text-muted-foreground">{label}</p>
+                    <p className="mt-2 text-xl font-semibold tabular-nums">
+                      <bdi>{money(Number(amount))}</bdi>
+                    </p>
                   </div>
-                ) : reportData && reportData.sections && reportData.sections.length > 0 ? (
-                  <div>
-                    {/* Summary Cards */}
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                      <Card>
-                        <CardContent className="p-4">
-                          <div className="flex items-center justify-between">
-                            <div>
-                              <p className="text-sm text-muted-foreground">إجمالي الأصول</p>
-                              <p className="text-2xl font-bold text-green-600">
-                                {formatCurrency(totalAssets)}
-                              </p>
-                            </div>
-                            <TrendingUp className="h-8 w-8 text-green-600 opacity-50" />
-                          </div>
-                        </CardContent>
-                      </Card>
-                      <Card>
-                        <CardContent className="p-4">
-                          <div className="flex items-center justify-between">
-                            <div>
-                              <p className="text-sm text-muted-foreground">إجمالي الخصوم</p>
-                              <p className="text-2xl font-bold text-red-600">
-                                {formatCurrency(totalLiabilities)}
-                              </p>
-                            </div>
-                            <TrendingDown className="h-8 w-8 text-red-600 opacity-50" />
-                          </div>
-                        </CardContent>
-                      </Card>
-                      <Card>
-                        <CardContent className="p-4">
-                          <div className="flex items-center justify-between">
-                            <div>
-                              <p className="text-sm text-muted-foreground">حقوق الملكية</p>
-                              <p className="text-2xl font-bold text-blue-600">
-                                {formatCurrency(totalEquity)}
-                              </p>
-                            </div>
-                            <Building className="h-8 w-8 text-blue-600 opacity-50" />
-                          </div>
-                        </CardContent>
-                      </Card>
-                    </div>
-
-                    {/* Detailed Table */}
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                      {/* Assets Column */}
-                      <Card>
-                        <CardHeader className="bg-green-50 border-b">
-                          <CardTitle className="flex items-center gap-2 text-green-700">
-                            <TrendingUp className="h-5 w-5" />
-                            الأصول
-                          </CardTitle>
-                        </CardHeader>
-                        <CardContent className="p-0">
-                          <Table>
-                            <TableHeader>
-                              <TableRow>
-                                <TableHead className="w-[100px]">الرمز</TableHead>
-                                <TableHead>الحساب</TableHead>
-                                <TableHead className="text-right">المبلغ</TableHead>
-                              </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                              {assetsSection?.accounts?.map((account: any, index: number) => (
-                                <TableRow key={index}>
-                                  <TableCell className="font-mono text-sm">{account.accountCode}</TableCell>
-                                  <TableCell>{account.accountNameAr || account.accountName}</TableCell>
-                                  <TableCell className="text-right font-semibold text-green-600">
-                                    {formatCurrency(Number(account.balance))}
-                                  </TableCell>
-                                </TableRow>
-                              ))}
-                              <TableRow className="bg-green-100 font-bold">
-                                <TableCell colSpan={2}>الإجمالي</TableCell>
-                                <TableCell className="text-right text-green-700">
-                                  {formatCurrency(totalAssets)}
-                                </TableCell>
-                              </TableRow>
-                            </TableBody>
-                          </Table>
-                        </CardContent>
-                      </Card>
-
-                      {/* Liabilities & Equity Column */}
-                      <div className="space-y-4">
-                        {/* Liabilities */}
-                        <Card>
-                          <CardHeader className="bg-red-50 border-b">
-                            <CardTitle className="flex items-center gap-2 text-red-700">
-                              <TrendingDown className="h-5 w-5" />
-                              الخصوم
-                            </CardTitle>
-                          </CardHeader>
-                          <CardContent className="p-0">
-                            <Table>
-                              <TableHeader>
-                                <TableRow>
-                                  <TableHead className="w-[80px]">الرمز</TableHead>
-                                  <TableHead>الحساب</TableHead>
-                                  <TableHead className="text-right">المبلغ</TableHead>
-                                </TableRow>
-                              </TableHeader>
-                              <TableBody>
-                                {liabilitiesSection?.accounts?.map((account: any, index: number) => (
-                                  <TableRow key={index}>
-                                    <TableCell className="font-mono text-sm">{account.accountCode}</TableCell>
-                                    <TableCell className="text-sm">{account.accountNameAr || account.accountName}</TableCell>
-                                    <TableCell className="text-right font-semibold text-red-600">
-                                      {formatCurrency(Number(account.balance))}
-                                    </TableCell>
-                                  </TableRow>
-                                ))}
-                                <TableRow className="bg-red-100 font-bold">
-                                  <TableCell colSpan={2}>الإجمالي</TableCell>
-                                  <TableCell className="text-right text-red-700">
-                                    {formatCurrency(totalLiabilities)}
-                                  </TableCell>
-                                </TableRow>
-                              </TableBody>
-                            </Table>
-                          </CardContent>
-                        </Card>
-
-                        {/* Equity */}
-                        <Card>
-                          <CardHeader className="bg-blue-50 border-b">
-                            <CardTitle className="flex items-center gap-2 text-blue-700">
-                              <Building className="h-5 w-5" />
-                              حقوق الملكية
-                            </CardTitle>
-                          </CardHeader>
-                          <CardContent className="p-0">
-                            <Table>
-                              <TableHeader>
-                                <TableRow>
-                                  <TableHead className="w-[80px]">الرمز</TableHead>
-                                  <TableHead>الحساب</TableHead>
-                                  <TableHead className="text-right">المبلغ</TableHead>
-                                </TableRow>
-                              </TableHeader>
-                              <TableBody>
-                                {equitySection?.accounts?.map((account: any, index: number) => (
-                                  <TableRow key={index}>
-                                    <TableCell className="font-mono text-sm">{account.accountCode}</TableCell>
-                                    <TableCell className="text-sm">{account.accountNameAr || account.accountName}</TableCell>
-                                    <TableCell className="text-right font-semibold text-blue-600">
-                                      {formatCurrency(Number(account.balance))}
-                                    </TableCell>
-                                  </TableRow>
-                                ))}
-                                <TableRow className="bg-blue-100 font-bold">
-                                  <TableCell colSpan={2}>الإجمالي</TableCell>
-                                  <TableCell className="text-right text-blue-700">
-                                    {formatCurrency(totalEquity)}
-                                  </TableCell>
-                                </TableRow>
-                              </TableBody>
-                            </Table>
-                          </CardContent>
-                        </Card>
-                      </div>
-                    </div>
-
-                    {/* Balance Verification */}
-                    <Card className={isBalanced ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'}>
-                      <CardContent className="p-4">
-                        <div className="flex items-center gap-3">
-                          {isBalanced ? (
-                            <>
-                              <CheckCircle className="h-6 w-6 text-green-600" />
-                              <div>
-                                <p className="font-semibold text-green-900">الميزانية متوازنة ✓</p>
-                                <p className="text-sm text-green-700">
-                                  الأصول ({formatCurrency(totalAssets)}) = الخصوم + حقوق الملكية ({formatCurrency(totalLiabilitiesAndEquity)})
-                                </p>
-                              </div>
-                            </>
-                          ) : (
-                            <>
-                              <AlertCircle className="h-6 w-6 text-red-600" />
-                              <div>
-                                <p className="font-semibold text-red-900">الميزانية غير متوازنة ✗</p>
-                                <p className="text-sm text-red-700">
-                                  الفرق: {formatCurrency(Math.abs(totalAssets - totalLiabilitiesAndEquity))}
-                                </p>
-                              </div>
-                            </>
-                          )}
-                        </div>
-                      </CardContent>
-                    </Card>
-                  </div>
+                ))}
+              </div>
+              <div className="flex flex-wrap items-center gap-2 text-sm">
+                {Math.abs(report.current.imbalance) < 0.01 ? (
+                  <CheckCircle2 className="h-4 w-4 text-green-700" />
                 ) : (
-                  <div className="flex flex-col items-center justify-center h-64 text-muted-foreground">
-                    <Building className="h-16 w-16 mb-4 opacity-20" />
-                    <p className="text-lg">لا توجد بيانات لعرضها</p>
-                    <p className="text-sm">قم بإنشاء قيود محاسبية لرؤية قائمة المركز المالي</p>
-                  </div>
+                  <AlertCircle className="h-4 w-4 text-destructive" />
                 )}
-              </TabsContent>
-
-              {/* Financial Ratios Tab */}
-              <TabsContent value="ratios" className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {/* Liquidity Ratios */}
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>نسب السيولة</CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                      <div className="flex justify-between items-center p-3 bg-accent rounded-lg">
-                        <span className="font-medium">نسبة التداول</span>
-                        <Badge variant={currentRatio >= 2 ? "default" : currentRatio >= 1 ? "secondary" : "destructive"}>
-                          {currentRatio.toFixed(2)}
-                        </Badge>
-                      </div>
-                      <p className="text-sm text-muted-foreground">
-                        نسبة التداول = الأصول المتداولة ÷ الخصوم المتداولة
-                        <br />
-                        {currentRatio >= 2 ? '✓ ممتاز' : currentRatio >= 1 ? '○ مقبول' : '✗ منخفض'}
+                <span>
+                  {tr("فرق المعادلة", "Accounting equation difference")}:{" "}
+                  <bdi>{money(report.current.imbalance)}</bdi>
+                </span>
+                <span className="text-muted-foreground">
+                  {tr(
+                    "التوازن الحسابي لا يعني اكتمال الأرصدة أو اعتمادها.",
+                    "Arithmetic balance does not establish completeness or approval."
+                  )}
+                </span>
+              </div>
+              {report.current.postedEntries === 0 && (
+                <p role="alert" className="text-sm text-amber-700">
+                  {tr(
+                    "لا توجد قيود مرحلة حتى هذا التاريخ. لا يجوز اعتماد قائمة فارغة.",
+                    "No posted entries exist by this date. An empty statement cannot be approved."
+                  )}
+                </p>
+              )}
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="text-start">
+                        {tr("البند", "Item")}
+                      </TableHead>
+                      <TableHead className="text-start">
+                        {tr("الحساب", "Account")}
+                      </TableHead>
+                      <TableHead className="text-end">
+                        <bdi>{report.asOfDate}</bdi>
+                      </TableHead>
+                      {report.comparisonDate && (
+                        <TableHead className="text-end">
+                          <bdi>{report.comparisonDate}</bdi>
+                        </TableHead>
+                      )}
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {rows.map((row) => (
+                      <TableRow
+                        key={row.key}
+                        className={
+                          row.kind === "section"
+                            ? "bg-muted/70 font-semibold"
+                            : row.kind === "total" || row.kind === "subtotal"
+                            ? "bg-muted/30 font-semibold"
+                            : ""
+                        }
+                      >
+                        <TableCell className="min-w-40">{row.label}</TableCell>
+                        <TableCell>
+                          <bdi>{row.code || ""}</bdi>
+                        </TableCell>
+                        <TableCell className="whitespace-nowrap text-end tabular-nums">
+                          <bdi>
+                            {row.amount == null ? "" : money(row.amount)}
+                          </bdi>
+                        </TableCell>
+                        {report.comparisonDate && (
+                          <TableCell className="whitespace-nowrap text-end tabular-nums">
+                            <bdi>
+                              {row.comparisonAmount == null
+                                ? ""
+                                : money(row.comparisonAmount)}
+                            </bdi>
+                          </TableCell>
+                        )}
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                {tr(
+                  "النتيجة غير المقفلة هي صافي أرصدة الإيرادات والمصروفات المتبقية حتى تاريخ القائمة، وقد تشمل سنوات سابقة. قيود الإقفال والعكس المرحلة مشمولة بحسب تاريخها.",
+                  "Unclosed results are the remaining cumulative revenue and expense balances, which may include prior years. Posted closing and reversal entries are included by their accounting dates."
+                )}
+              </p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">
+                {tr(
+                  "فحوص الجاهزية والملاحظات",
+                  "Readiness checks and findings"
+                )}
+              </CardTitle>
+              <CardDescription>
+                {tr(
+                  "عالج الملاحظات المانعة، وراجع المستندات المؤيدة قبل الاعتماد.",
+                  "Resolve blocking findings and review supporting records before approval."
+                )}
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {!report.checks.some((check) => check.count > 0) ? (
+                <p className="text-sm">
+                  {tr(
+                    "لم تكشف الفحوص الآلية عن مخالفات. تظل المراجعة المحاسبية مطلوبة.",
+                    "Automated checks found no issues. Accounting review is still required."
+                  )}
+                </p>
+              ) : (
+                <ul className="space-y-3">
+                  {report.checks
+                    .filter((check) => check.count > 0)
+                    .map((check, index) => (
+                      <li
+                        key={`${check.code}:${check.asOfDate}:${index}`}
+                        className="flex items-start gap-2 text-sm"
+                      >
+                        <AlertCircle
+                          className={`mt-0.5 h-4 w-4 shrink-0 ${
+                            check.severity === "error"
+                              ? "text-destructive"
+                              : "text-amber-600"
+                          }`}
+                        />
+                        <span>
+                          <strong>
+                            {check.severity === "error"
+                              ? tr("مانع للاعتماد", "Blocks approval")
+                              : tr("يتطلب مراجعة", "Review required")}
+                          </strong>{" "}
+                          — {getBalanceSheetCheckMessage(check, locale)}
+                        </span>
+                      </li>
+                    ))}
+                </ul>
+              )}
+              <div className="flex flex-wrap gap-4 pt-2 text-sm">
+                <Link className="underline" to="/finance/chart-of-accounts">
+                  {tr("تصنيف الحسابات", "Account classification")}
+                </Link>
+                <Link className="underline" to="/finance/journal-entries">
+                  {tr("مراجعة القيود", "Review ledger")}
+                </Link>
+                <Link className="underline" to="/finance/assets">
+                  {tr("الأصول والإهلاك", "Assets and depreciation")}
+                </Link>
+              </div>
+            </CardContent>
+          </Card>
+          {!snapshot && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">
+                  {tr("حفظ نسخة للمراجعة", "Save a version for review")}
+                </CardTitle>
+                <CardDescription>
+                  {tr(
+                    "تُحسب النسخة وتحفظ من قاعدة البيانات مع مرجع ثابت. الحفظ لا يعني الاعتماد.",
+                    "The database generates and stores a fixed version. Saving does not approve it."
+                  )}
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <Label htmlFor="bs-notes">
+                  {tr("إيضاحات المُعدّ", "Preparer notes")}
+                </Label>
+                <Textarea
+                  id="bs-notes"
+                  value={notes}
+                  maxLength={5000}
+                  onChange={(event) => setNotes(event.target.value)}
+                />
+                <Button
+                  disabled={!canExport || !live.data?.permissions.canSave}
+                  onClick={() => void save()}
+                >
+                  <Save className="me-2 h-4 w-4" />
+                  {tr("حفظ نسخة للمراجعة", "Save for review")}
+                </Button>
+              </CardContent>
+            </Card>
+          )}
+          {snapshot && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">
+                  {tr("سجل النسخة والاعتماد", "Version and approval record")}
+                </CardTitle>
+                <CardDescription className="break-all">
+                  {tr("المرجع", "Reference")}: {snapshot.id}
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <dl className="grid gap-2 text-sm sm:grid-cols-2">
+                  <div>
+                    <dt className="text-muted-foreground">
+                      {tr("أعدّها", "Prepared by")}
+                    </dt>
+                    <dd>
+                      {snapshot.created_by_name} ·{" "}
+                      <bdi>{snapshot.created_at.slice(0, 10)}</bdi>
+                    </dd>
+                  </div>
+                  {snapshot.approved_at && (
+                    <div>
+                      <dt className="text-muted-foreground">
+                        {tr("اعتمدها داخليًا", "Internally approved by")}
+                      </dt>
+                      <dd>
+                        {snapshot.approved_by_name} ·{" "}
+                        <bdi>{snapshot.approved_at.slice(0, 10)}</bdi>
+                      </dd>
+                    </div>
+                  )}
+                </dl>
+                {snapshot.notes && (
+                  <p className="whitespace-pre-wrap text-sm">
+                    {snapshot.notes}
+                  </p>
+                )}
+                {snapshot.review_notes && (
+                  <p className="whitespace-pre-wrap text-sm">
+                    {snapshot.review_notes}
+                  </p>
+                )}
+                <p className="text-sm text-muted-foreground">
+                  {tr(
+                    "الاعتماد الداخلي يسجل مراجعة المستخدم المخول، ولا يمثل تقرير تدقيق خارجي أو توقيع مدقق مستقل.",
+                    "Internal approval records an authorized user’s review. It is not an external audit opinion or independent auditor signature."
+                  )}
+                </p>
+                {snapshot.status === "draft" && (
+                  <>
+                    {snapshot.created_by === actorId && (
+                      <p className="text-sm">
+                        {tr(
+                          "يجب أن يراجع النسخة ويعتمدها مستخدم مخول آخر غير مُعدّها.",
+                          "A different authorized user must review and approve this version."
+                        )}
                       </p>
-                    </CardContent>
-                  </Card>
-
-                  {/* Leverage Ratios */}
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>نسب الرفع المالي</CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                      <div className="flex justify-between items-center p-3 bg-accent rounded-lg">
-                        <span className="font-medium">نسبة الدين إلى حقوق الملكية</span>
-                        <Badge variant={debtToEquityRatio <= 1 ? "default" : debtToEquityRatio <= 2 ? "secondary" : "destructive"}>
-                          {debtToEquityRatio.toFixed(2)}
-                        </Badge>
-                      </div>
-                      <p className="text-sm text-muted-foreground">
-                        نسبة الدين = إجمالي الخصوم ÷ حقوق الملكية
-                        <br />
-                        {debtToEquityRatio <= 1 ? '✓ ممتاز' : debtToEquityRatio <= 2 ? '○ مقبول' : '✗ مرتفع'}
-                      </p>
-                    </CardContent>
-                  </Card>
-
-                  {/* Solvency Ratios */}
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>نسب الملاءة</CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                      <div className="flex justify-between items-center p-3 bg-accent rounded-lg">
-                        <span className="font-medium">نسبة الدين</span>
-                        <Badge variant={debtRatio <= 0.5 ? "default" : debtRatio <= 0.7 ? "secondary" : "destructive"}>
-                          {(debtRatio * 100).toFixed(2)}%
-                        </Badge>
-                      </div>
-                      <p className="text-sm text-muted-foreground">
-                        نسبة الدين = إجمالي الخصوم ÷ إجمالي الأصول
-                        <br />
-                        {debtRatio <= 0.5 ? '✓ قوي' : debtRatio <= 0.7 ? '○ متوسط' : '✗ ضعيف'}
-                      </p>
-                    </CardContent>
-                  </Card>
-
-                  {/* Equity Ratio */}
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>نسبة حقوق الملكية</CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                      <div className="flex justify-between items-center p-3 bg-accent rounded-lg">
-                        <span className="font-medium">نسبة حقوق الملكية</span>
-                        <Badge variant={equityRatio >= 0.5 ? "default" : equityRatio >= 0.3 ? "secondary" : "destructive"}>
-                          {(equityRatio * 100).toFixed(2)}%
-                        </Badge>
-                      </div>
-                      <p className="text-sm text-muted-foreground">
-                        نسبة حقوق الملكية = حقوق الملكية ÷ إجمالي الأصول
-                        <br />
-                        {equityRatio >= 0.5 ? '✓ قوي' : equityRatio >= 0.3 ? '○ متوسط' : '✗ ضعيف'}
-                      </p>
-                    </CardContent>
-                  </Card>
-                </div>
-              </TabsContent>
-
-              {/* Charts Tab */}
-              <TabsContent value="charts" className="space-y-6">
-                {/* Assets vs Liabilities & Equity Comparison */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <PieChartIcon className="h-5 w-5" />
-                      مقارنة المكونات الرئيسية
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <ResponsiveContainer width="100%" height={300}>
-                      <BarChart data={comparisonData}>
-                        <CartesianGrid strokeDasharray="3 3" />
-                        <XAxis dataKey="name" />
-                        <YAxis />
-                        <Tooltip formatter={(value) => formatCurrency(Number(value))} />
-                        <Bar dataKey="value" name="المبلغ">
-                          {comparisonData.map((entry, index) => (
-                            <Cell key={`cell-${index}`} fill={entry.color} />
+                    )}
+                    {canApprove && (
+                      <>
+                        <fieldset className="space-y-3 rounded-lg border p-4">
+                          <legend className="px-2 text-sm font-medium">
+                            {tr("إقرارات المراجع", "Reviewer confirmations")}
+                          </legend>
+                          {(
+                            [
+                              [
+                                "assets",
+                                tr(
+                                  "راجعت الأصول وتكلفتها وإهلاكها والمستندات المؤيدة.",
+                                  "I reviewed assets, costs, depreciation and supporting records."
+                                ),
+                              ],
+                              [
+                                "liabilities",
+                                tr(
+                                  "راجعت الالتزامات والدفعات المقدمة وأكملت تصنيفها.",
+                                  "I reviewed liabilities, advances and classification."
+                                ),
+                              ],
+                              [
+                                "equity",
+                                tr(
+                                  "راجعت رأس المال والأرباح المحتجزة والنتيجة غير المقفلة.",
+                                  "I reviewed capital, retained earnings and unclosed results."
+                                ),
+                              ],
+                              [
+                                "reconciliation",
+                                tr(
+                                  "طابقت الأرصدة مع البنوك والصندوق والذمم والمستندات.",
+                                  "I reconciled balances to banks, cash, subledgers and documents."
+                                ),
+                              ],
+                              [
+                                "completeness",
+                                tr(
+                                  "راجعت اكتمال القيود والمسودات والتصحيحات اللاحقة والملاحظات.",
+                                  "I reviewed completeness, drafts, subsequent corrections and findings."
+                                ),
+                              ],
+                            ] as const
+                          ).map(([key, label]) => (
+                            <div key={key} className="flex items-start gap-2">
+                              <Checkbox
+                                id={`bs-review-${key}`}
+                                checked={confirmations[key]}
+                                onCheckedChange={(value) =>
+                                  setConfirmations((current) => ({
+                                    ...current,
+                                    [key]: value === true,
+                                  }))
+                                }
+                              />
+                              <Label
+                                className="text-sm leading-relaxed"
+                                htmlFor={`bs-review-${key}`}
+                              >
+                                {label}
+                              </Label>
+                            </div>
                           ))}
-                        </Bar>
-                      </BarChart>
-                    </ResponsiveContainer>
-                  </CardContent>
-                </Card>
-
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  {/* Assets Distribution */}
-                  {assetsDistribution.length > 0 && (
-                    <Card>
-                      <CardHeader>
-                        <CardTitle>توزيع الأصول</CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <ResponsiveContainer width="100%" height={250}>
-                          <PieChart>
-                            <Pie
-                              data={assetsDistribution}
-                              cx="50%"
-                              cy="50%"
-                              labelLine={false}
-                              label={(entry) => `${entry.name}: ${((entry.value / totalAssets) * 100).toFixed(1)}%`}
-                              outerRadius={80}
-                              fill="#8884d8"
-                              dataKey="value"
-                            >
-                              {assetsDistribution.map((entry, index) => (
-                                <Cell key={`cell-${index}`} fill={entry.color} />
-                              ))}
-                            </Pie>
-                            <Tooltip formatter={(value) => formatCurrency(Number(value))} />
-                          </PieChart>
-                        </ResponsiveContainer>
-                      </CardContent>
-                    </Card>
+                        </fieldset>
+                        <Label htmlFor="bs-review-notes">
+                          {tr(
+                            "نتيجة المراجعة ومعالجة الملاحظات",
+                            "Review conclusion and resolution of findings"
+                          )}
+                        </Label>
+                        <Textarea
+                          id="bs-review-notes"
+                          value={reviewNotes}
+                          maxLength={5000}
+                          onChange={(event) =>
+                            setReviewNotes(event.target.value)
+                          }
+                          placeholder={tr(
+                            "نتيجة المراجعة والمستندات المرجعية، 20 حرفًا على الأقل.",
+                            "Review and supporting references, at least 20 characters."
+                          )}
+                        />
+                      </>
+                    )}
+                    <Button
+                      disabled={!approvalReady || busy}
+                      onClick={() => void approve()}
+                    >
+                      <ShieldCheck className="me-2 h-4 w-4" />
+                      {tr("تسجيل الاعتماد الداخلي", "Record internal approval")}
+                    </Button>
+                  </>
+                )}
+                {snapshot.status !== "voided" &&
+                  (snapshot.created_by === actorId ||
+                    live.data?.permissions.canApprove) && (
+                    <details className="rounded-lg border p-3">
+                      <summary className="cursor-pointer text-sm">
+                        {tr(
+                          "إلغاء النسخة مع حفظ سجلها",
+                          "Void this version and retain its history"
+                        )}
+                      </summary>
+                      <div className="mt-3 space-y-3">
+                        <Label htmlFor="bs-void-reason">
+                          {tr(
+                            "سبب الإلغاء 20 حرفًا على الأقل",
+                            "Reason for voiding, at least 20 characters"
+                          )}
+                        </Label>
+                        <Textarea
+                          id="bs-void-reason"
+                          value={voidReason}
+                          maxLength={5000}
+                          onChange={(event) =>
+                            setVoidReason(event.target.value)
+                          }
+                        />
+                        <Button
+                          variant="destructive"
+                          disabled={busy || voidReason.trim().length < 20}
+                          onClick={() => void voidSaved()}
+                        >
+                          {tr("إلغاء هذه النسخة", "Void this version")}
+                        </Button>
+                      </div>
+                    </details>
                   )}
-
-                  {/* Liabilities & Equity Distribution */}
-                  {liabilitiesDistribution.length > 0 && (
-                    <Card>
-                      <CardHeader>
-                        <CardTitle>توزيع الخصوم وحقوق الملكية</CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <ResponsiveContainer width="100%" height={250}>
-                          <PieChart>
-                            <Pie
-                              data={liabilitiesDistribution}
-                              cx="50%"
-                              cy="50%"
-                              labelLine={false}
-                              label={(entry) => `${entry.name}: ${((entry.value / totalLiabilitiesAndEquity) * 100).toFixed(1)}%`}
-                              outerRadius={80}
-                              fill="#8884d8"
-                              dataKey="value"
-                            >
-                              {liabilitiesDistribution.map((entry, index) => (
-                                <Cell key={`cell-${index}`} fill={entry.color} />
-                              ))}
-                            </Pie>
-                            <Tooltip formatter={(value) => formatCurrency(Number(value))} />
-                          </PieChart>
-                        </ResponsiveContainer>
-                      </CardContent>
-                    </Card>
-                  )}
-                </div>
-              </TabsContent>
-            </Tabs>
-          </div>
+                {snapshot.status === "voided" && (
+                  <p className="text-sm text-destructive">
+                    {snapshot.void_reason ||
+                      tr(
+                        "أُلغيت النسخة ولا يمكن إصدارها.",
+                        "This version was voided and cannot be issued."
+                      )}
+                  </p>
+                )}
+                <p
+                  className="break-all font-mono text-xs text-muted-foreground"
+                  dir="ltr"
+                >
+                  SHA-256 {snapshot.source_fingerprint}
+                </p>
+              </CardContent>
+            </Card>
+          )}
+        </>
+      )}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg">
+            {tr("النسخ المحفوظة", "Saved versions")}
+          </CardTitle>
+          <CardDescription>
+            {tr(
+              "آخر 50 نسخة؛ يحتفظ النظام بالنسخ الملغاة وسجل مراجعتها.",
+              "Latest 50 versions; voided versions and their review history are retained."
+            )}
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {history.error ? (
+            <p role="alert" className="text-sm text-destructive">
+              {balanceSheetErrorMessage(history.error, locale)}
+            </p>
+          ) : history.isLoading ? (
+            <LoadingSpinner />
+          ) : !savedVersions.length ? (
+            <p className="text-sm text-muted-foreground">
+              {tr("لم تُحفظ نسخ بعد.", "No versions have been saved yet.")}
+            </p>
+          ) : (
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="text-start">
+                      {tr("تاريخ القائمة", "Statement date")}
+                    </TableHead>
+                    <TableHead className="text-start">
+                      {tr("المُعدّ", "Preparer")}
+                    </TableHead>
+                    <TableHead className="text-start">
+                      {tr("الحالة", "Status")}
+                    </TableHead>
+                    <TableHead>
+                      <span className="sr-only">{tr("عرض", "View")}</span>
+                    </TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {savedVersions.map((saved) => (
+                    <TableRow key={saved.id}>
+                      <TableCell>
+                        <bdi>{saved.as_of_date}</bdi>
+                      </TableCell>
+                      <TableCell>{saved.created_by_name}</TableCell>
+                      <TableCell>
+                        {saved.status === "approved"
+                          ? tr("معتمد داخليًا", "Internally approved")
+                          : saved.status === "voided"
+                          ? tr("ملغى", "Voided")
+                          : tr("مسودة", "Draft")}
+                      </TableCell>
+                      <TableCell>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          disabled={busy}
+                          onClick={() => chooseSaved(saved)}
+                        >
+                          {tr("عرض النسخة", "View version")}
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>
   );
 }
-

@@ -1095,14 +1095,14 @@ export class TaqadiWorker {
         return;
       }
       await this.queue.flushObservations();
-      error = classifyPortalSessionFailure(error, this.page?.url() || '', {
+      const failure = classifyPortalSessionFailure(error, this.page?.url() || '', {
         submissionStarted,
         caseDraftStarted: caseDraftStarted || job.progress >= 44,
       });
       if (
         canary
-        && error instanceof HumanInterventionError
-        && error.code === 'PARTIES_DIAGNOSTIC_COMPLETE'
+        && failure instanceof HumanInterventionError
+        && failure.code === 'PARTIES_DIAGNOSTIC_COMPLETE'
       ) {
         await this.uploadScreenshot(job, 'canary-parties', 'screenshot')
           .catch(() => undefined);
@@ -1113,11 +1113,11 @@ export class TaqadiWorker {
         return;
       }
 
-      const retryablePortalError = shouldRestartPortalFlow(error, {
+      const retryablePortalError = shouldRestartPortalFlow(failure, {
         caseDraftStarted,
         submissionStarted,
       });
-      if (retryablePortalError && error instanceof HumanInterventionError && portalAttempt < MAX_PORTAL_ATTEMPTS) {
+      if (retryablePortalError && failure instanceof HumanInterventionError && portalAttempt < MAX_PORTAL_ATTEMPTS) {
         const nextAttempt = portalAttempt + 1;
         const retryDelayMs = Math.min(
           60_000,
@@ -1129,9 +1129,9 @@ export class TaqadiWorker {
           progress: 12,
           message: `رفض موقع تقاضي الطلب مؤقتًا؛ ستبدأ العملية من جديد تلقائيًا (المحاولة ${nextAttempt} من ${MAX_PORTAL_ATTEMPTS})`,
           details: {
-            previousErrorCode: error.code,
-            previousErrorMessage: error.message,
-            previousErrorDetails: error.details,
+            previousErrorCode: failure.code,
+            previousErrorMessage: failure.message,
+            previousErrorDetails: failure.details,
             portalAttempt,
             retryDelayMs,
             browserPreserved: true,
@@ -1155,13 +1155,13 @@ export class TaqadiWorker {
       }
 
       const uncertain = submissionStarted
-        && !(error instanceof SubmissionUncertainError);
+        && !(failure instanceof SubmissionUncertainError);
       const normalized = uncertain
         ? new SubmissionUncertainError(
             'حدث خطأ بعد بدء الاعتماد. يجب التحقق من تقاضي قبل أي إعادة للمحاولة.',
-            { cause: workerErrorDetails(error) },
+            { cause: workerErrorDetails(failure) },
           )
-        : error;
+        : failure;
 
       await this.uploadTraceArtifact(job);
 

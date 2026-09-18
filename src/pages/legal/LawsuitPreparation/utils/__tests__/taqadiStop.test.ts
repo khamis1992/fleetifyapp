@@ -9,9 +9,10 @@ it('accepts a pending stop without pretending the worker already stopped',async(
   rpc.mockResolvedValue({data:job,error:null});
   expect(await cancelTaqadiFilingJob('company','job','stop')).toEqual(job);
 });
-it.each([null,{}, {id:'other',company_id:'company',status:'cancelled'},
-  {id:'job',company_id:'other',status:'cancelled'},{id:'job',company_id:'company',status:'submitting'}])
-  ('rejects a missing or unrelated stop acknowledgement %j',async data=>{
+for (const data of [null,{}, {id:'other',company_id:'company',status:'cancelled'},
+  {id:'job',company_id:'other',status:'cancelled'},{id:'job',company_id:'company',status:'submitting'}]) {
+  it(`rejects a missing or unrelated stop acknowledgement ${JSON.stringify(data)}`,async()=>{
     rpc.mockResolvedValue({data,error:null});
     await expect(cancelTaqadiFilingJob('company','job','stop')).rejects.toThrow('لم يؤكد النظام طلب الإيقاف');
   });
+}

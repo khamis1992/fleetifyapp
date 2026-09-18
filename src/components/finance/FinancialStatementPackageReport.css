@@ -1,0 +1,11 @@
+/* The application sets global RTL declarations; this report supports either locale. */
+.financial-statement-workspace[dir="ltr"],
+.financial-statement-workspace[dir="ltr"] * { direction: ltr; text-align: left; }
+.financial-statement-workspace[dir="rtl"],
+.financial-statement-workspace[dir="rtl"] * { direction: rtl; text-align: right; }
+.financial-statement-workspace[dir] th, .financial-statement-workspace[dir] td { text-align: end; }
+.financial-statement-workspace[dir] th:first-child { text-align: start; }
+.financial-statement-workspace bdi, .financial-statement-workspace [dir="ltr"] { direction: ltr; unicode-bidi: isolate; }
+.financial-statement-workspace .font-inherit { font-weight: inherit; }
+.financial-statement-workspace input, .financial-statement-workspace textarea,
+.financial-statement-workspace select { text-align: start; }

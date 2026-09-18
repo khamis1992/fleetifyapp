@@ -1,0 +1,12 @@
+body { margin: 0; background: #edf2f5; }
+.fsp-fixture-toolbar { padding: 14px 20px; color: #203c50; background: #e7eef3; font: 12px/1.5 Arial, sans-serif; }
+.fsp-fixture-toolbar, .fsp-fixture-toolbar * { direction: ltr; text-align: left; }
+.fsp-fixture-toolbar nav, .fsp-fixture-actions { display: flex; gap: 8px 16px; flex-wrap: wrap; margin-top: 10px; }
+.fsp-fixture-toolbar a { text-decoration: underline; }
+.fsp-fixture-actions button { border: 1px solid #839cab; border-radius: 5px; padding: 5px 10px; background: white; cursor: pointer; }
+.fsp-fixture-actions button:disabled { opacity: .5; cursor: wait; }
+.fsp-fixture-toolbar pre { max-height: 130px; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; }
+.fsp-fixture-preview { padding: 24px 12px; overflow: auto; max-width: 100vw; background: #dce3e8; }
+.fsp-fixture-preview .fsp-page { margin: 0 auto 24px; box-shadow: 0 4px 18px #203d5026; }
+.fsp-fixture-app { max-width: 1240px; margin: auto; padding: 24px; min-width: 0; }
+@media (max-width: 600px) { .fsp-fixture-app { padding: 12px; } .fsp-fixture-toolbar { padding: 10px 12px; } }

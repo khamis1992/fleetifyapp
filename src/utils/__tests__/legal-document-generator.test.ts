@@ -170,7 +170,7 @@ describe('explanatory memo structure (approved template)', () => {
     });
 
     expect(memo).toContain('الفترة أو المستند');
-    expect(memo).toContain('يخصم: المبالغ المسددة');
+    expect(memo).toContain('يخصم: المسدد جزئيًا من هذه الأجرة');
     expect(memo).toContain('(10,000)');
     expect(memo).toContain('صافي المطالبة حتى تاريخ إعداد الكشف');
     expect(memo).toContain('من 01/05/2026 إلى 01/07/2026');

@@ -15933,6 +15933,99 @@ export type Database = {
           },
         ]
       }
+      legal_case_claim_items: {
+        Row: {
+          id: string
+          company_id: string
+          contract_id: string
+          case_id: string | null
+          kind: string
+          disposition: string
+          description: string
+          period_from: string | null
+          period_to: string | null
+          requested_amount: number | null
+          avoided_costs: number
+          third_party_recovery: number
+          evidence_ids: string[]
+          calculation_basis: string
+          causation_notes: string
+          alternative_to: string | null
+          independence_notes: string
+          opportunity_requested_on: string | null
+          opportunity_probability: string
+          alternative_unavailable_reason: string
+          overlap_group: string
+          recovery_reference: string
+          opportunity_reference: string
+          review_status: string
+          exclusion_reason: string
+          created_by: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          company_id: string
+          contract_id: string
+          case_id?: string | null
+          kind: string
+          disposition?: string
+          description?: string
+          period_from?: string | null
+          period_to?: string | null
+          requested_amount?: number | null
+          avoided_costs?: number
+          third_party_recovery?: number
+          evidence_ids?: string[]
+          calculation_basis?: string
+          causation_notes?: string
+          alternative_to?: string | null
+          independence_notes?: string
+          opportunity_requested_on?: string | null
+          opportunity_probability?: string
+          alternative_unavailable_reason?: string
+          overlap_group?: string
+          recovery_reference?: string
+          opportunity_reference?: string
+          review_status?: string
+          exclusion_reason?: string
+          created_by?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          company_id?: string
+          contract_id?: string
+          case_id?: string | null
+          kind?: string
+          disposition?: string
+          description?: string
+          period_from?: string | null
+          period_to?: string | null
+          requested_amount?: number | null
+          avoided_costs?: number
+          third_party_recovery?: number
+          evidence_ids?: string[]
+          calculation_basis?: string
+          causation_notes?: string
+          alternative_to?: string | null
+          independence_notes?: string
+          opportunity_requested_on?: string | null
+          opportunity_probability?: string
+          alternative_unavailable_reason?: string
+          overlap_group?: string
+          recovery_reference?: string
+          opportunity_reference?: string
+          review_status?: string
+          exclusion_reason?: string
+          created_by?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       legal_case_damage_costs: {
         Row: {
           amount: number
@@ -16488,6 +16581,9 @@ export type Database = {
       }
       legal_case_litigation_profile: {
         Row: {
+          fixed_compensation_requested: boolean
+          retention_calculation_basis: string
+          retention_proration_basis: string
           approved_at: string | null
           approved_by: string | null
           approval_job_id: string | null
@@ -16544,6 +16640,8 @@ export type Database = {
           violations_clause_number: string | null
         }
         Insert: {
+          retention_calculation_basis?: string
+          retention_proration_basis?: string
           approved_at?: string | null
           approved_by?: string | null
           approval_job_id?: string | null
@@ -16558,6 +16656,7 @@ export type Database = {
           contractual_compensation_clause_text?: string | null
           contractual_compensation_document_id?: string | null
           contractual_compensation_enabled?: boolean
+          fixed_compensation_requested?: boolean
           contractual_compensation_method?: string | null
           contractual_compensation_rate?: number | null
           created_at?: string
@@ -16600,6 +16699,8 @@ export type Database = {
           violations_clause_number?: string | null
         }
         Update: {
+          retention_calculation_basis?: string
+          retention_proration_basis?: string
           approved_at?: string | null
           approved_by?: string | null
           approval_job_id?: string | null
@@ -16614,6 +16715,7 @@ export type Database = {
           contractual_compensation_clause_text?: string | null
           contractual_compensation_document_id?: string | null
           contractual_compensation_enabled?: boolean
+          fixed_compensation_requested?: boolean
           contractual_compensation_method?: string | null
           contractual_compensation_rate?: number | null
           created_at?: string

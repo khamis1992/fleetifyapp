@@ -30,7 +30,7 @@ import {
 } from '../utils/contractDocumentSelection';
 import { getCurrentLegalCase } from '../utils/taqadiFiling';
 import {
-  buildTaqadiFilingPayload,
+  prepareTaqadiFilingPayload,
   enqueueTaqadiFilingJob,
   getActiveTaqadiWorker,
 } from '../utils/taqadiAutomation';
@@ -1913,7 +1913,7 @@ export function LawsuitPreparationProvider({
         payload: 'جاري إعادة توليد الحزمة من النسخة التي سيراجعها الوكيل...',
       });
       const filingState = await prepareCurrentFilingState(filingBaseState);
-      const payload = buildTaqadiFilingPayload(filingState, window.location.href);
+      const payload = await prepareTaqadiFilingPayload(filingState, window.location.href);
       const job = await enqueueTaqadiFilingJob({
         companyId,
         legalCaseId: legalCase.id,
@@ -2003,83 +2003,12 @@ export function LawsuitPreparationProvider({
         return;
       }
       
-      // Dynamic import for heavy libraries
-      const [{ default: html2canvas }, { jsPDF }] = await Promise.all([
-        import('html2canvas'),
-        import('jspdf'),
-      ]);
-      
-      // Create iframe for rendering
-      const iframe = document.createElement('iframe');
-      iframe.style.position = 'absolute';
-      iframe.style.left = '-9999px';
-      iframe.style.width = '794px';
-      document.body.appendChild(iframe);
-      
-      const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
-      if (!iframeDoc) {
-        document.body.removeChild(iframe);
-        toast.error('فشل في إنشاء PDF');
-        return;
-      }
-      
-      // Write HTML to iframe
-      iframeDoc.open();
-      iframeDoc.write(memoHtml);
-      iframeDoc.close();
-      
-      // Wait for rendering
-      await new Promise(resolve => setTimeout(resolve, 800));
-      
-      toast.info('جاري تحويل المذكرة إلى PDF...');
-      
-      // Capture canvas
-      const canvas = await html2canvas(iframeDoc.body, {
-        scale: 1.5,
-        useCORS: true,
-        allowTaint: true,
-        logging: false,
-        backgroundColor: '#ffffff',
-        width: 794,
-      });
-      
-      // Create PDF
-      const pdf = new jsPDF({
-        orientation: 'portrait',
-        unit: 'mm',
-        format: 'a4',
-        compress: true,
-      });
-      
-      const imgData = canvas.toDataURL('image/jpeg', 0.85);
-      const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = pdf.internal.pageSize.getHeight();
-      const imgWidth = canvas.width;
-      const imgHeight = canvas.height;
-      const ratio = pdfWidth / imgWidth;
-      const contentHeight = imgHeight * ratio;
-      
-      // Add pages if content is long
-      let heightLeft = contentHeight;
-      let position = 0;
-      let pageCount = 0;
-      
-      while (heightLeft > 0 && pageCount < 10) {
-        if (pageCount > 0) pdf.addPage();
-        pdf.addImage(imgData, 'JPEG', 0, position, pdfWidth, contentHeight, undefined, 'FAST');
-        heightLeft -= pdfHeight;
-        position -= pdfHeight;
-        pageCount++;
-      }
-      
-      // Cleanup
-      document.body.removeChild(iframe);
-      
-      // Download
+      const { htmlToPdfBlob } = await import('../utils/zipExport');
+      const blob = await htmlToPdfBlob(memoHtml);
+      if (!blob) throw new Error('تعذر إنشاء المذكرة كاملة بصيغة PDF');
+      const { saveAs } = await import('file-saver');
       const customerName = formatCustomerName(state.customer) || 'عميل';
-      const fileName = `المذكرة_الشارحة_${customerName}_${state.contract?.contract_number || ''}.pdf`;
-      pdf.save(fileName);
-      
+      saveAs(blob, 'المذكرة_الشارحة_' + customerName + '_' + (state.contract?.contract_number || '') + '.pdf');
       toast.success('تم تحميل المذكرة بصيغة PDF');
     } catch (error) {
       console.error('Error downloading memo as PDF:', error);

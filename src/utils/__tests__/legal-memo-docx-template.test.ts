@@ -15,6 +15,16 @@ async function wordParagraphs(html: string) {
 }
 
 describe('revised memo Word export used by preparation and Taqadi', () => {
+  it('preserves all financial groups and repeats their header rows in Word', async () => {
+    const html='<div class="section"><div class="section-title">ثامناً: البيان الحسابي</div><div class="claim-register">'+['الأصل','البديل','الاحتياطي'].map((name,index)=>`<h3>${name}</h3><table><thead><tr><th>البند</th><th>المبلغ</th></tr></thead><tbody><tr><td>طلب ${name}</td><td>${100+index}</td></tr></tbody></table>`).join('')+'<p>البدائل خارج الإجمالي</p></div></div>';
+    const paragraphs=await wordParagraphs(html);
+    for(const name of ['الأصل','البديل','الاحتياطي']) expect(paragraphs).toContain(`طلب ${name}`);
+    expect(paragraphs.map(text=>text.trim())).toContain('البدائل خارج الإجمالي');
+    const {document,docxModule}=await createDocxDocumentFromHtml(html);
+    const archive=await JSZip.loadAsync(await docxModule.Packer.toBuffer(document));
+    const xml=await archive.file('word/document.xml')!.async('string');
+    expect((xml.match(/<w:tblHeader/g)||[]).length).toBeGreaterThanOrEqual(3);
+  });
   it('preserves the memo date separately from the court number and all supplied facts', async () => {
     const data: LegalDocumentData = {
       memoDate: '08/09/2026', caseNumber: '123/2026', documentReference: 'MEMO-TEST-V2',

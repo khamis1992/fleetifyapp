@@ -6,6 +6,8 @@ import type { LawsuitPreparationState, DocumentsState } from '../store';
 import { formatCustomerName } from '@/utils/formatCustomerName';
 import { renderOfficialInvoicePdfBlob } from '@/utils/renderOfficialInvoicePdf';
 import { getCriminalComplaintEligibility } from './legalCaseWorkflow';
+import { resolveClaimEvidenceDocuments } from './claimEvidence';
+import { fixedCompensationRow } from '@/types/legalClaimRegister';
 
 interface ContentRefs {
   memoHtml: string | null;
@@ -97,6 +99,7 @@ export async function htmlToPdfBlob(html: string): Promise<Blob | null> {
     await new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
 
     let contentBlocks: { top: number; bottom: number }[] = [];
+    let tableHeaders: { top: number; bottom: number; tableBottom: number }[] = [];
     const canvas = await html2canvas(iframeDoc.body, {
       scale: 1.5,
       useCORS: true,
@@ -108,6 +111,11 @@ export async function htmlToPdfBlob(html: string): Promise<Blob | null> {
         // Exclude controls explicitly marked as non-printable.
         clonedDocument.querySelectorAll('.no-print').forEach(element => element.remove());
         const bodyTop = clonedDocument.body.getBoundingClientRect().top;
+        tableHeaders = Array.from(clonedDocument.body.querySelectorAll('thead')).map(element => ({
+          top: element.getBoundingClientRect().top - bodyTop,
+          bottom: element.getBoundingClientRect().bottom - bodyTop,
+          tableBottom: element.closest('table')!.getBoundingClientRect().bottom - bodyTop,
+        }));
         contentBlocks = Array.from(clonedDocument.body.querySelectorAll(
           'tr, p, li, h1, h2, h3, h4, .section, .info-section, .closing, .legal-article, .request-item, .section-title, .footer',
         )).map(element => {
@@ -135,15 +143,18 @@ export async function htmlToPdfBlob(html: string): Promise<Blob | null> {
     const contentWidth = pdfWidth - 2 * margin;
     const ratio = contentWidth / canvas.width;
     const pages = paginatePdfContent(canvas.height, Math.floor((pdfHeight - 2 * margin) / ratio),
-      contentBlocks.map(block => ({ top: Math.floor(block.top * canvas.width / 794), bottom: Math.ceil(block.bottom * canvas.width / 794) })));
+      contentBlocks.map(block => ({ top: Math.floor(block.top * canvas.width / 794), bottom: Math.ceil(block.bottom * canvas.width / 794) })),
+      tableHeaders.map(block => ({top:Math.floor(block.top * canvas.width / 794),bottom:Math.ceil(block.bottom * canvas.width / 794),tableBottom:Math.ceil(block.tableBottom * canvas.width / 794)})));
     const pageCanvas = document.createElement('canvas');
     pageCanvas.width = canvas.width;
     for (const [index, page] of pages.entries()) {
-      pageCanvas.height = page.bottom - page.top;
+      const headerHeight = page.header ? page.header.bottom - page.header.top : 0;
+      pageCanvas.height = page.bottom - page.top + headerHeight;
       const context = pageCanvas.getContext('2d');
       if (!context) throw new Error('تعذر إنشاء صفحة المستند');
-      context.drawImage(canvas, 0, page.top, canvas.width, pageCanvas.height,
-        0, 0, canvas.width, pageCanvas.height);
+      if (page.header) context.drawImage(canvas,0,page.header.top,canvas.width,headerHeight,0,0,canvas.width,headerHeight);
+      context.drawImage(canvas, 0, page.top, canvas.width, page.bottom - page.top,
+        0, headerHeight, canvas.width, page.bottom - page.top);
       if (index > 0) pdf.addPage();
       pdf.addImage(pageCanvas.toDataURL('image/jpeg', 0.9), 'JPEG', margin, margin,
         contentWidth, pageCanvas.height * ratio, undefined, 'FAST');
@@ -295,6 +306,13 @@ async function addExternalDocuments(
     fileIndex++;
   }
 
+  const included = new Set([documents.contract.sourceDocumentId, ...state.violationEvidenceDocuments.map(doc => doc.id)]);
+  for (const evidence of await resolveClaimEvidenceDocuments(state)) {
+    if (included.has(evidence.sourceDocumentId)) continue;
+    const blob = await fetchFileAsBlob(evidence.url!);
+    if (!blob) throw new Error(`تعذر تضمين مستند الطلب في الحافظة: ${evidence.name}`);
+    zip.file(`${folderName}/${String(fileIndex++).padStart(2, '0')}_${safeFileName(evidence.name)}.${getBlobExtension(blob)}`, blob);
+  }
   return fileIndex;
 }
 
@@ -373,6 +391,7 @@ export function generateCaseSummary(state: LawsuitPreparationState): string {
   const { contract, customer, calculations, taqadiData, overdueInvoices, documents } = state;
 
   if (!contract) return '';
+  const fixedCompensation = fixedCompensationRow(state.financialClaimSource?.claimRegister);
 
   const customerName = formatCustomerName(customer) || 'غير محدد';
   const readyDocuments = Object.values(documents)
@@ -391,6 +410,9 @@ export function generateCaseSummary(state: LawsuitPreparationState): string {
 المطالبات المالية:
 - إيجار متأخر: ${(calculations?.overdueRent || 0).toLocaleString('en-US')} ر.ق
 - تعويض اتفاقي موثق: ${(calculations?.lateFees || 0).toLocaleString('en-US')} ر.ق
+- أضرار ومصاريف وطلبات إضافية: ${((calculations?.damagesFee || 0) - Number(fixedCompensation?.amount || 0)).toLocaleString('en-US')} ر.ق
+${fixedCompensation ? `- ${fixedCompensation.label}: ${Number(fixedCompensation.amount).toLocaleString('en-US')} ر.ق\n` : ''}- تعويض الاحتباس المحسوب بالمدة: ${(calculations?.retentionCompensation || 0).toLocaleString('en-US')} ر.ق
+- وديعة الضمان المخصومة: ${(calculations?.securityDepositDeduction || 0).toLocaleString('en-US')} ر.ق
 - مخالفات مرورية مدعومة بمستخرج رسمي: ${(calculations?.violationsFines || 0).toLocaleString('en-US')} ر.ق (${calculations?.violationsCount || 0} مخالفة)
 - إجمالي المطالبة: ${(calculations?.total || 0).toLocaleString('en-US')} ر.ق
 

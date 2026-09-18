@@ -84,7 +84,7 @@ const RETENTION_SOURCE_LABELS: Record<string, string> = {
  *
  * قواعد ملزمة:
  * - أيام التأخير تُحتسب من أقدم فاتورة متأخرة غير مسددة، لا من تاريخ بداية العقد.
- * - الأضرار تُمرر فقط من بنود متحقق منها بسند مستند؛ لا يوجد أي نسبة افتراضية.
+ * - التعويض الثابت والطلبات الإضافية تُنقل من السجل، والتكاليف من مستنداتها المتحقق منها.
  * - بيانات الملف التقاضي الموثق (legal_case_litigation_profile) هي المرجع الوحيد
  *   للحيازة والإنهاء؛ لا تُستنتج الحيازة من حالة المركبة التشغيلية.
  */
@@ -141,6 +141,7 @@ export function buildMemoDocumentData(
   const verifiedDamages = trafficOnlyClaim ? 0 : getVerifiedDamageNet(state);
 
   return {
+    claimRegister: state.financialClaimSource?.claimRegister,
     caseNumber: state.legalCase?.case_number || undefined,
     memoDate: formatDateForDocument(getQatarBusinessDate()),
     filingDate: state.legalCase?.filing_date
@@ -248,7 +249,7 @@ export function buildMemoDocumentData(
           applyToSettlement: Boolean(profile.apply_security_deposit),
         }
       : undefined,
-    retentionRate: !trafficOnlyClaim && profile?.retention_daily_rate
+    retentionRate: !trafficOnlyClaim && (profile?.retention_daily_rate || profile?.retention_calculation_basis === 'contract_monthly')
       && profile.retention_rate_source_document_id
       && profile.retention_rate_source_ref
       ? {
@@ -773,6 +774,7 @@ export function buildClaimsStatementData(
   const netClaimTotal = Math.max(0, claimBeforeDeduction - depositApplied);
 
   return {
+    claimRegister: state.financialClaimSource?.claimRegister,
     customerName: formatCustomerName(customer),
     nationalId: customer?.national_id || '-',
     phone: customer?.phone || '',
@@ -972,6 +974,13 @@ export async function generateDocumentsList(
 
   // 8) تقارير المخالفات الرسمية المرتبطة بالعقد، إن وجدت
   docsList.push(...buildViolationEvidenceDocumentEntries(state.violationEvidenceDocuments));
+  const claimEvidence = new Set(state.financialClaimSource?.claimRegister?.rows.filter(row => row.status === 'ready').flatMap(row => row.evidence_ids) || []);
+  for (const id of claimEvidence) {
+    const doc = state.contractEvidenceDocuments.find(item => item.id === id);
+    if (id === state.documents.contract.sourceDocumentId || state.violationEvidenceDocuments.some(item => item.id === id)) continue;
+    if (!doc?.file_path) throw new Error('مستند أحد الطلبات غير متوفر لإدراجه في الحافظة');
+    docsList.push({ name: `مستند مطالبة: ${doc.document_name}`, status: 'مرفق', type: 'pdf' });
+  }
   
   const html = generateDocumentsListHtml({
     caseTitle: taqadiData.caseTitle,

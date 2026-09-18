@@ -2,6 +2,11 @@ import { describe, expect, it } from 'vitest';
 import { paginatePdfContent } from '../pdfPagination';
 
 describe('complete memorandum PDF pagination', () => {
+  it('repeats table headers and reserves their height without losing any body rows', () => {
+    const pages=paginatePdfContent(280,100,[],[{top:10,bottom:30,tableBottom:260}]);
+    expect(pages).toEqual([{top:0,bottom:100},{top:100,bottom:180,header:{top:10,bottom:30}},{top:180,bottom:260,header:{top:10,bottom:30}},{top:260,bottom:280}]);
+    expect(pages.reduce((sum,page)=>sum+page.bottom-page.top,0)).toBe(280);
+  });
   it('moves a row crossing the page end intact onto the next page', () => {
     expect(paginatePdfContent(180, 100, [{ top: 90, bottom: 120 }]))
       .toEqual([{ top: 0, bottom: 90 }, { top: 90, bottom: 180 }]);

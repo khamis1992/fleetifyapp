@@ -1,0 +1,12 @@
+body { margin: 0; background: #f2f5f7; }
+.fixture-toolbar { padding: 12px 20px; border-bottom: 1px solid #bdcbd5; background: #e8eff4; color: #233e50; font: 12px/1.5 Arial, sans-serif; }
+.fixture-toolbar nav, .fixture-actions { display: flex; flex-wrap: wrap; gap: 8px 14px; margin-top: 8px; }
+.fixture-toolbar a { text-decoration: underline; }
+.fixture-actions button { border: 1px solid #8ca2b1; border-radius: 5px; background: white; color: #233e50; padding: 5px 9px; cursor: pointer; }
+.fixture-actions button:disabled { opacity: .5; cursor: wait; }
+.fixture-toolbar pre { max-height: 130px; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; margin: 8px 0 0; }
+.fixture-app { max-width: 1260px; padding: 24px; margin: 0 auto; }
+.fixture-preview { padding: 24px 12px; overflow: auto; max-width: 100vw; background: #dce3e8; }
+.fixture-preview .bs-page { margin-bottom: 24px; box-shadow: 0 4px 18px #203d5026; }
+[hidden] { display: none !important; }
+@media (max-width: 600px) { .fixture-app { padding: 12px; } .fixture-toolbar { padding: 10px 12px; } }

@@ -84,6 +84,7 @@ supabase/.temp/
 
 # Temp artifacts
 .tmp-*
+.tmp/
 tmp/
 
 # Python cache

@@ -19,11 +19,12 @@ it('sends current package, human confirmation and the same concurrency/idempoten
     p_verification_note: confirmation.verificationNote, p_request_id: 'request',
   });
 });
-it.each([{ confirmedNotSubmitted: false }, { verificationNote: '  ' }, { verificationNote: 'x'.repeat(2001) }])
-('does not send an unconfirmed restart %j', async patch => {
-  await expect(restartVerifiedUnsubmittedJob('company', payload, { ...confirmation, ...patch })).rejects.toThrow('أكد مراجعة');
-  expect(rpc).not.toHaveBeenCalled();
-});
+for (const patch of [{ confirmedNotSubmitted: false }, { verificationNote: '  ' }, { verificationNote: 'x'.repeat(2001) }]) {
+  it(`does not send an unconfirmed restart ${JSON.stringify(patch)}`, async () => {
+    await expect(restartVerifiedUnsubmittedJob('company', payload, { ...confirmation, ...patch })).rejects.toThrow('أكد مراجعة');
+    expect(rpc).not.toHaveBeenCalled();
+  });
+}
 it('does not fall back to an ordinary retry when the verified command is unavailable', async () => {
   rpc.mockResolvedValue({ data: null, error: { code: 'PGRST202', message: 'Missing function' } });
   await expect(restartVerifiedUnsubmittedJob('company', payload, confirmation)).rejects.toThrow('غير متاح');
@@ -33,8 +34,9 @@ it('preserves actionable database errors', async () => {
   rpc.mockResolvedValue({ data: null, error: { code: 'P0001', message: 'يوجد إيصال محفوظ' } });
   await expect(restartVerifiedUnsubmittedJob('company', payload, confirmation)).rejects.toThrow('يوجد إيصال محفوظ');
 });
-it.each([null, {}, { id: 'other', company_id: 'company', status: 'queued' }, { id: 'job', company_id: 'other', status: 'queued' }])
-('rejects an unrelated or missing acknowledgement %j', async data => {
-  rpc.mockResolvedValue({ data, error: null });
-  await expect(restartVerifiedUnsubmittedJob('company', payload, confirmation)).rejects.toThrow('لم يؤكد النظام');
-});
+for (const data of [null, {}, { id: 'other', company_id: 'company', status: 'queued' }, { id: 'job', company_id: 'other', status: 'queued' }]) {
+  it(`rejects an unrelated or missing acknowledgement ${JSON.stringify(data)}`, async () => {
+    rpc.mockResolvedValue({ data, error: null });
+    await expect(restartVerifiedUnsubmittedJob('company', payload, confirmation)).rejects.toThrow('لم يؤكد النظام');
+  });
+}

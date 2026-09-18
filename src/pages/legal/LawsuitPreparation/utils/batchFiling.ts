@@ -41,7 +41,7 @@ import {
 import { registerLegalCase } from './caseRegistration';
 import { getCurrentLegalCase, type LawsuitLegalCase } from './taqadiFiling';
 import {
-  buildTaqadiFilingPayload,
+  prepareTaqadiFilingPayload,
   enqueueTaqadiFilingJob,
   getLatestTaqadiFilingJob,
   TERMINAL_TAQADI_STATUSES,
@@ -651,7 +651,7 @@ export async function enqueueContractFiling(input: {
 
     report('enqueuing');
     // يرمي خطأً برسالة المستندات الناقصة عند عدم اكتمال الحزمة
-    const payload = buildTaqadiFilingPayload(filingState, sourceUrl);
+    const payload = await prepareTaqadiFilingPayload(filingState, sourceUrl);
     const job = await enqueueTaqadiFilingJob({
       companyId,
       legalCaseId: legalCase.id,

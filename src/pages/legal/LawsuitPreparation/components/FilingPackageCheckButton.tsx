@@ -4,7 +4,7 @@ import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { useLawsuitPreparationContext } from '../store';
-import { buildTaqadiFilingPayload, type TaqadiFilingPayload } from '../utils/taqadiAutomation';
+import { prepareTaqadiFilingPayload, type TaqadiFilingPayload } from '../utils/taqadiAutomation';
 import { getFilingReadiness } from '../utils/filingReadiness';
 import { taqadiErrorMessage } from '../utils/taqadiErrorMessage';
 
@@ -25,7 +25,7 @@ export function FilingPackageCheckButton() {
       if (!state.contractId) throw new Error('تعذر تحديد العقد');
       const readiness = getFilingReadiness(state);
       if (!readiness.canStartFiling) throw new Error(readiness.missingReasons.join('، '));
-      const payload = buildTaqadiFilingPayload(state, window.location.href);
+      const payload = await prepareTaqadiFilingPayload(state, window.location.href);
       const { data, error } = await (supabase.rpc as unknown as ValidatePackageRpc)(
         'validate_taqadi_filing_payload_v1',
         { p_company_id: state.companyId, p_contract_id: state.contractId, p_payload: payload },

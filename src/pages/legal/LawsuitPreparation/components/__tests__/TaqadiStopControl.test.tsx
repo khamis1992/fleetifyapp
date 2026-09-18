@@ -14,10 +14,11 @@ describe('visible agent stopping', () => {
     expect(screen.getByRole('button',{name:'بانتظار توقف الوكيل'})).toBeDisabled();
     expect(screen.getByRole('status')).toHaveTextContent('انتظر تأكيد التوقف');
   });
-  it.each([{status:'filed'},{current_step:'receipt_sync_pending'},{error_code:'SUBMISSION_UNCERTAIN'},
-    {error_code:'SUBMISSION_UNCERTAIN_AFTER_RESTART'},{error_code:'MANUALLY_STOPPED'}] as Partial<TaqadiFilingJob>[])
-    ('does not offer cancellation of recorded or uncertain submissions: %j', changes => {
+  for (const changes of [{status:'filed'},{current_step:'receipt_sync_pending'},{error_code:'SUBMISSION_UNCERTAIN'},
+    {error_code:'SUBMISSION_UNCERTAIN_AFTER_RESTART'},{error_code:'MANUALLY_STOPPED'}] as Partial<TaqadiFilingJob>[]) {
+    it(`does not offer cancellation of recorded or uncertain submissions: ${JSON.stringify(changes)}`, () => {
       render(<TaqadiStopControl job={job(changes)} pending={false} onStop={vi.fn()} />);
       expect(screen.queryByRole('button')).toBeNull();
     });
+  }
 });

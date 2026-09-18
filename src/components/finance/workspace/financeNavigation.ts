@@ -362,6 +362,14 @@ export const financeNavigation: FinanceNavigationGroup[] = [
         parentId: "reports",
       },
       {
+        id: "report-financial-statements",
+        href: "/finance/reports/financial-statements",
+        ar: "حزمة القوائم المالية",
+        en: "Financial statement package",
+        permission: "finance.reports.view",
+        parentId: "reports",
+      },
+      {
         id: "report-balance-sheet",
         href: "/finance/reports/balance-sheet",
         ar: "المركز المالي",

@@ -1,0 +1,2047 @@
+{
+  "company": {
+    "id": "11111111-1111-4111-8111-111111111111",
+    "name": "Synthetic company",
+    "nameAr": "شركة اختبار",
+    "address": "الدوحة",
+    "currency": "QAR",
+    "commercialRegister": "TEST-CR"
+  },
+  "version": 1,
+  "findings": [
+    {
+      "code": "no_fixed_asset_movements",
+      "count": 1,
+      "severity": "warning",
+      "messageAr": "فحص دفتر الأستاذ: no_fixed_asset_movements — 2026-08-31",
+      "messageEn": "Ledger check: no_fixed_asset_movements — 2026-08-31",
+      "accountIds": [],
+      "journalIds": []
+    },
+    {
+      "code": "no_expense_movements",
+      "count": 1,
+      "severity": "warning",
+      "messageAr": "فحص دفتر الأستاذ: no_expense_movements — 2025-12-31",
+      "messageEn": "Ledger check: no_expense_movements — 2025-12-31",
+      "accountIds": [],
+      "journalIds": []
+    },
+    {
+      "code": "no_fixed_asset_movements",
+      "count": 1,
+      "severity": "warning",
+      "messageAr": "فحص دفتر الأستاذ: no_fixed_asset_movements — 2025-12-31",
+      "messageEn": "Ledger check: no_fixed_asset_movements — 2025-12-31",
+      "accountIds": [],
+      "journalIds": []
+    }
+  ],
+  "journals": [
+    {
+      "id": "65be8715-32eb-4b5c-8f94-a0cd4d4861c5",
+      "date": "2026-02-01",
+      "number": "TEST",
+      "description": "Synthetic journal",
+      "cashMovement": 400,
+      "referenceType": null,
+      "effectiveTreatment": "regular",
+      "isCanonicalClosing": false,
+      "requiresEquityReview": false,
+      "requiresCashFlowReview": false
+    },
+    {
+      "id": "a22007e4-3182-4c55-bd1b-ff4c99ae74cb",
+      "date": "2026-03-01",
+      "number": "TEST",
+      "description": "Synthetic journal",
+      "cashMovement": -50,
+      "referenceType": null,
+      "effectiveTreatment": "regular",
+      "isCanonicalClosing": false,
+      "requiresEquityReview": false,
+      "requiresCashFlowReview": false
+    },
+    {
+      "id": "04d36194-036d-40f2-b579-8b41746ef012",
+      "date": "2025-01-01",
+      "number": "TEST",
+      "description": "Synthetic journal",
+      "cashMovement": 1000,
+      "referenceType": null,
+      "effectiveTreatment": "regular",
+      "isCanonicalClosing": false,
+      "requiresEquityReview": false,
+      "requiresCashFlowReview": false
+    },
+    {
+      "id": "aeb2e195-fe30-430b-a69a-d9542d7afcdb",
+      "date": "2025-06-01",
+      "number": "TEST",
+      "description": "Synthetic journal",
+      "cashMovement": 200,
+      "referenceType": null,
+      "effectiveTreatment": "regular",
+      "isCanonicalClosing": false,
+      "requiresEquityReview": false,
+      "requiresCashFlowReview": false
+    }
+  ],
+  "position": {
+    "checks": [
+      {
+        "code": "no_fixed_asset_movements",
+        "count": 1,
+        "asOfDate": "2026-08-31",
+        "severity": "warning"
+      },
+      {
+        "code": "no_expense_movements",
+        "count": 1,
+        "asOfDate": "2025-12-31",
+        "severity": "warning"
+      },
+      {
+        "code": "no_fixed_asset_movements",
+        "count": 1,
+        "asOfDate": "2025-12-31",
+        "severity": "warning"
+      }
+    ],
+    "company": {
+      "id": "11111111-1111-4111-8111-111111111111",
+      "name": "Synthetic company",
+      "nameAr": "شركة اختبار",
+      "address": "الدوحة",
+      "currency": "QAR",
+      "commercialRegister": "TEST-CR"
+    },
+    "current": {
+      "assets": 1550,
+      "equity": 1550,
+      "revenue": 600,
+      "expenses": 50,
+      "imbalance": 0,
+      "liabilities": 0,
+      "postedLines": 8,
+      "draftEntries": 0,
+      "postedEntries": 4,
+      "equityAccounts": 1000,
+      "unclosedResult": 550,
+      "liabilitiesAndEquity": 1550
+    },
+    "version": 1,
+    "accounts": [
+      {
+        "id": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa3",
+        "code": "capital",
+        "name": "capital",
+        "type": "equity",
+        "debit": 0,
+        "level": 3,
+        "credit": 1000,
+        "nameAr": null,
+        "balance": 1000,
+        "subtype": null,
+        "isActive": true,
+        "isHeader": false,
+        "classification": "equity",
+        "comparisonBalance": 1000
+      },
+      {
+        "id": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1",
+        "code": "cash",
+        "name": "cash",
+        "type": "asset",
+        "debit": 1600,
+        "level": 3,
+        "credit": 50,
+        "nameAr": null,
+        "balance": 1550,
+        "subtype": "current_asset",
+        "isActive": true,
+        "isHeader": false,
+        "classification": "current",
+        "comparisonBalance": 1200
+      },
+      {
+        "id": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa4",
+        "code": "expense",
+        "name": "expense",
+        "type": "expense",
+        "debit": 50,
+        "level": 3,
+        "credit": 0,
+        "nameAr": null,
+        "balance": 50,
+        "subtype": null,
+        "isActive": true,
+        "isHeader": false,
+        "classification": "result",
+        "comparisonBalance": 0
+      },
+      {
+        "id": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa6",
+        "code": "loan",
+        "name": "loan",
+        "type": "liability",
+        "debit": 0,
+        "level": 3,
+        "credit": 0,
+        "nameAr": null,
+        "balance": 0,
+        "subtype": "current_liability",
+        "isActive": true,
+        "isHeader": false,
+        "classification": "current",
+        "comparisonBalance": 0
+      },
+      {
+        "id": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa8",
+        "code": "reserve",
+        "name": "reserve",
+        "type": "equity",
+        "debit": 0,
+        "level": 3,
+        "credit": 0,
+        "nameAr": null,
+        "balance": 0,
+        "subtype": null,
+        "isActive": true,
+        "isHeader": false,
+        "classification": "equity",
+        "comparisonBalance": 0
+      },
+      {
+        "id": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa7",
+        "code": "retained",
+        "name": "retained",
+        "type": "equity",
+        "debit": 0,
+        "level": 3,
+        "credit": 0,
+        "nameAr": null,
+        "balance": 0,
+        "subtype": null,
+        "isActive": true,
+        "isHeader": false,
+        "classification": "equity",
+        "comparisonBalance": 0
+      },
+      {
+        "id": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa2",
+        "code": "revenue",
+        "name": "revenue",
+        "type": "revenue",
+        "debit": 0,
+        "level": 3,
+        "credit": 600,
+        "nameAr": null,
+        "balance": 600,
+        "subtype": null,
+        "isActive": true,
+        "isHeader": false,
+        "classification": "result",
+        "comparisonBalance": 200
+      },
+      {
+        "id": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa5",
+        "code": "vehicle",
+        "name": "vehicle",
+        "type": "asset",
+        "debit": 0,
+        "level": 3,
+        "credit": 0,
+        "nameAr": null,
+        "balance": 0,
+        "subtype": "fixed_asset",
+        "isActive": true,
+        "isHeader": false,
+        "classification": "non_current",
+        "comparisonBalance": 0
+      }
+    ],
+    "asOfDate": "2026-08-31",
+    "comparison": {
+      "assets": 1200,
+      "equity": 1200,
+      "revenue": 200,
+      "expenses": 0,
+      "imbalance": 0,
+      "liabilities": 0,
+      "postedLines": 4,
+      "draftEntries": 0,
+      "postedEntries": 2,
+      "equityAccounts": 1000,
+      "unclosedResult": 200,
+      "liabilitiesAndEquity": 1200
+    },
+    "fingerprint": "5ce1c9b7fb3b457a9b27d3d2ac63ab4c7dfe572715f28772ee17f93a6c2eca90",
+    "generatedAt": "2026-09-17T23:15:42.335+00:00",
+    "permissions": {
+      "canSave": true,
+      "canApprove": true
+    },
+    "comparisonDate": "2025-12-31"
+  },
+  "statements": [
+    {
+      "key": "position",
+      "rows": [
+        {
+          "key": "current_assets",
+          "kind": "section",
+          "values": [
+            null,
+            null
+          ],
+          "labelAr": "الأصول المتداولة",
+          "labelEn": "Current assets",
+          "accountIds": [],
+          "noteNumbers": []
+        },
+        {
+          "key": "cash",
+          "kind": "line",
+          "values": [
+            1550,
+            1200
+          ],
+          "labelAr": "النقد وما في حكمه",
+          "labelEn": "Cash and cash equivalents",
+          "accountIds": [
+            "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1"
+          ],
+          "noteNumbers": [
+            5
+          ]
+        },
+        {
+          "key": "receivables",
+          "kind": "line",
+          "values": [
+            0,
+            0
+          ],
+          "labelAr": "الذمم المدينة",
+          "labelEn": "Receivables",
+          "accountIds": [],
+          "noteNumbers": [
+            6
+          ]
+        },
+        {
+          "key": "inventories",
+          "kind": "line",
+          "values": [
+            0,
+            0
+          ],
+          "labelAr": "المخزون",
+          "labelEn": "Inventories",
+          "accountIds": [],
+          "noteNumbers": [
+            5
+          ]
+        },
+        {
+          "key": "current_tax_assets",
+          "kind": "line",
+          "values": [
+            0,
+            0
+          ],
+          "labelAr": "أصول ضريبية متداولة",
+          "labelEn": "Current tax assets",
+          "accountIds": [],
+          "noteNumbers": [
+            5
+          ]
+        },
+        {
+          "key": "other_current_assets",
+          "kind": "line",
+          "values": [
+            0,
+            0
+          ],
+          "labelAr": "أصول متداولة أخرى",
+          "labelEn": "Other current assets",
+          "accountIds": [],
+          "noteNumbers": [
+            5
+          ]
+        },
+        {
+          "key": "current_assets_total",
+          "kind": "subtotal",
+          "values": [
+            1550,
+            1200
+          ],
+          "labelAr": "إجمالي الأصول المتداولة",
+          "labelEn": "Total current assets",
+          "accountIds": [],
+          "noteNumbers": []
+        },
+        {
+          "key": "noncurrent_assets",
+          "kind": "section",
+          "values": [
+            null,
+            null
+          ],
+          "labelAr": "الأصول غير المتداولة",
+          "labelEn": "Non-current assets",
+          "accountIds": [],
+          "noteNumbers": []
+        },
+        {
+          "key": "property_equipment",
+          "kind": "line",
+          "values": [
+            0,
+            0
+          ],
+          "labelAr": "الممتلكات والمعدات",
+          "labelEn": "Property and equipment",
+          "accountIds": [
+            "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa5"
+          ],
+          "noteNumbers": [
+            5
+          ]
+        },
+        {
+          "key": "right_of_use_assets",
+          "kind": "line",
+          "values": [
+            0,
+            0
+          ],
+          "labelAr": "أصول حق الاستخدام",
+          "labelEn": "Right-of-use assets",
+          "accountIds": [],
+          "noteNumbers": [
+            5
+          ]
+        },
+        {
+          "key": "intangibles",
+          "kind": "line",
+          "values": [
+            0,
+            0
+          ],
+          "labelAr": "الأصول غير الملموسة",
+          "labelEn": "Intangible assets",
+          "accountIds": [],
+          "noteNumbers": [
+            5
+          ]
+        },
+        {
+          "key": "investments",
+          "kind": "line",
+          "values": [
+            0,
+            0
+          ],
+          "labelAr": "الاستثمارات",
+          "labelEn": "Investments",
+          "accountIds": [],
+          "noteNumbers": [
+            5
+          ]
+        },
+        {
+          "key": "investment_property",
+          "kind": "line",
+          "values": [
+            0,
+            0
+          ],
+          "labelAr": "العقارات الاستثمارية",
+          "labelEn": "Investment property",
+          "accountIds": [],
+          "noteNumbers": [
+            5
+          ]
+        },
+        {
+          "key": "deferred_tax_assets",
+          "kind": "line",
+          "values": [
+            0,
+            0
+          ],
+          "labelAr": "أصول ضريبية مؤجلة",
+          "labelEn": "Deferred tax assets",
+          "accountIds": [],
+          "noteNumbers": [
+            5
+          ]
+        },
+        {
+          "key": "other_noncurrent_assets",
+          "kind": "line",
+          "values": [
+            0,
+            0
+          ],
+          "labelAr": "أصول غير متداولة أخرى",
+          "labelEn": "Other non-current assets",
+          "accountIds": [],
+          "noteNumbers": [
+            5
+          ]
+        },
+        {
+          "key": "noncurrent_assets_total",
+          "kind": "subtotal",
+          "values": [
+            0,
+            0
+          ],
+          "labelAr": "إجمالي الأصول غير المتداولة",
+          "labelEn": "Total non-current assets",
+          "accountIds": [],
+          "noteNumbers": []
+        },
+        {
+          "key": "assets_total",
+          "kind": "total",
+          "values": [
+            1550,
+            1200
+          ],
+          "labelAr": "إجمالي الأصول",
+          "labelEn": "Total assets",
+          "accountIds": [],
+          "noteNumbers": []
+        },
+        {
+          "key": "current_liabilities",
+          "kind": "section",
+          "values": [
+            null,
+            null
+          ],
+          "labelAr": "الالتزامات المتداولة",
+          "labelEn": "Current liabilities",
+          "accountIds": [],
+          "noteNumbers": []
+        },
+        {
+          "key": "payables",
+          "kind": "line",
+          "values": [
+            0,
+            0
+          ],
+          "labelAr": "الذمم الدائنة",
+          "labelEn": "Payables",
+          "accountIds": [],
+          "noteNumbers": [
+            7
+          ]
+        },
+        {
+          "key": "customer_deposits",
+          "kind": "line",
+          "values": [
+            0,
+            0
+          ],
+          "labelAr": "تأمينات العملاء",
+          "labelEn": "Customer deposits",
+          "accountIds": [],
+          "noteNumbers": [
+            7
+          ]
+        },
+        {
+          "key": "current_borrowings",
+          "kind": "line",
+          "values": [
+            0,
+            0
+          ],
+          "labelAr": "قروض متداولة",
+          "labelEn": "Current borrowings",
+          "accountIds": [
+            "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa6"
+          ],
+          "noteNumbers": [
+            7
+          ]
+        },
+        {
+          "key": "current_lease_liabilities",
+          "kind": "line",
+          "values": [
+            0,
+            0
+          ],
+          "labelAr": "التزامات إيجار متداولة",
+          "labelEn": "Current lease liabilities",
+          "accountIds": [],
+          "noteNumbers": [
+            7
+          ]
+        },
+        {
+          "key": "current_tax_liabilities",
+          "kind": "line",
+          "values": [
+            0,
+            0
+          ],
+          "labelAr": "التزامات ضريبية متداولة",
+          "labelEn": "Current tax liabilities",
+          "accountIds": [],
+          "noteNumbers": [
+            7
+          ]
+        },
+        {
+          "key": "current_provisions",
+          "kind": "line",
+          "values": [
+            0,
+            0
+          ],
+          "labelAr": "مخصصات متداولة",
+          "labelEn": "Current provisions",
+          "accountIds": [],
+          "noteNumbers": [
+            7
+          ]
+        },
+        {
+          "key": "other_current_liabilities",
+          "kind": "line",
+          "values": [
+            0,
+            0
+          ],
+          "labelAr": "التزامات متداولة أخرى",
+          "labelEn": "Other current liabilities",
+          "accountIds": [],
+          "noteNumbers": [
+            7
+          ]
+        },
+        {
+          "key": "current_liabilities_total",
+          "kind": "subtotal",
+          "values": [
+            0,
+            0
+          ],
+          "labelAr": "إجمالي الالتزامات المتداولة",
+          "labelEn": "Total current liabilities",
+          "accountIds": [],
+          "noteNumbers": []
+        },
+        {
+          "key": "noncurrent_liabilities",
+          "kind": "section",
+          "values": [
+            null,
+            null
+          ],
+          "labelAr": "الالتزامات غير المتداولة",
+          "labelEn": "Non-current liabilities",
+          "accountIds": [],
+          "noteNumbers": []
+        },
+        {
+          "key": "noncurrent_borrowings",
+          "kind": "line",
+          "values": [
+            0,
+            0
+          ],
+          "labelAr": "قروض غير متداولة",
+          "labelEn": "Non-current borrowings",
+          "accountIds": [],
+          "noteNumbers": [
+            7
+          ]
+        },
+        {
+          "key": "noncurrent_lease_liabilities",
+          "kind": "line",
+          "values": [
+            0,
+            0
+          ],
+          "labelAr": "التزامات إيجار غير متداولة",
+          "labelEn": "Non-current lease liabilities",
+          "accountIds": [],
+          "noteNumbers": [
+            7
+          ]
+        },
+        {
+          "key": "employee_benefits",
+          "kind": "line",
+          "values": [
+            0,
+            0
+          ],
+          "labelAr": "التزامات منافع الموظفين",
+          "labelEn": "Employee benefit obligations",
+          "accountIds": [],
+          "noteNumbers": [
+            7
+          ]
+        },
+        {
+          "key": "deferred_tax_liabilities",
+          "kind": "line",
+          "values": [
+            0,
+            0
+          ],
+          "labelAr": "التزامات ضريبية مؤجلة",
+          "labelEn": "Deferred tax liabilities",
+          "accountIds": [],
+          "noteNumbers": [
+            7
+          ]
+        },
+        {
+          "key": "noncurrent_provisions",
+          "kind": "line",
+          "values": [
+            0,
+            0
+          ],
+          "labelAr": "مخصصات غير متداولة",
+          "labelEn": "Non-current provisions",
+          "accountIds": [],
+          "noteNumbers": [
+            7
+          ]
+        },
+        {
+          "key": "other_noncurrent_liabilities",
+          "kind": "line",
+          "values": [
+            0,
+            0
+          ],
+          "labelAr": "التزامات غير متداولة أخرى",
+          "labelEn": "Other non-current liabilities",
+          "accountIds": [],
+          "noteNumbers": [
+            7
+          ]
+        },
+        {
+          "key": "noncurrent_liabilities_total",
+          "kind": "subtotal",
+          "values": [
+            0,
+            0
+          ],
+          "labelAr": "إجمالي الالتزامات غير المتداولة",
+          "labelEn": "Total non-current liabilities",
+          "accountIds": [],
+          "noteNumbers": []
+        },
+        {
+          "key": "liabilities_total",
+          "kind": "total",
+          "values": [
+            0,
+            0
+          ],
+          "labelAr": "إجمالي الالتزامات",
+          "labelEn": "Total liabilities",
+          "accountIds": [],
+          "noteNumbers": []
+        },
+        {
+          "key": "equity",
+          "kind": "section",
+          "values": [
+            null,
+            null
+          ],
+          "labelAr": "حقوق الملكية",
+          "labelEn": "Equity",
+          "accountIds": [],
+          "noteNumbers": []
+        },
+        {
+          "key": "share_capital",
+          "kind": "line",
+          "values": [
+            1000,
+            1000
+          ],
+          "labelAr": "رأس المال",
+          "labelEn": "Share capital",
+          "accountIds": [
+            "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa3"
+          ],
+          "noteNumbers": [
+            8
+          ]
+        },
+        {
+          "key": "statutory_reserve",
+          "kind": "line",
+          "values": [
+            0,
+            0
+          ],
+          "labelAr": "الاحتياطي القانوني",
+          "labelEn": "Statutory reserve",
+          "accountIds": [],
+          "noteNumbers": [
+            8
+          ]
+        },
+        {
+          "key": "retained_earnings",
+          "kind": "line",
+          "values": [
+            550,
+            200
+          ],
+          "labelAr": "الأرباح المحتجزة",
+          "labelEn": "Retained earnings",
+          "accountIds": [
+            "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa7"
+          ],
+          "noteNumbers": [
+            8
+          ]
+        },
+        {
+          "key": "other_reserves",
+          "kind": "line",
+          "values": [
+            0,
+            0
+          ],
+          "labelAr": "احتياطيات أخرى",
+          "labelEn": "Other reserves",
+          "accountIds": [
+            "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa8"
+          ],
+          "noteNumbers": [
+            8
+          ]
+        },
+        {
+          "key": "other_equity",
+          "kind": "line",
+          "values": [
+            0,
+            0
+          ],
+          "labelAr": "حقوق ملكية أخرى",
+          "labelEn": "Other equity",
+          "accountIds": [],
+          "noteNumbers": [
+            8
+          ]
+        },
+        {
+          "key": "equity_total",
+          "kind": "total",
+          "values": [
+            1550,
+            1200
+          ],
+          "labelAr": "إجمالي حقوق الملكية",
+          "labelEn": "Total equity",
+          "accountIds": [],
+          "noteNumbers": []
+        },
+        {
+          "key": "liabilities_equity_total",
+          "kind": "total",
+          "values": [
+            1550,
+            1200
+          ],
+          "labelAr": "إجمالي الالتزامات وحقوق الملكية",
+          "labelEn": "Total liabilities and equity",
+          "accountIds": [],
+          "noteNumbers": []
+        },
+        {
+          "key": "position_difference",
+          "kind": "reconciliation",
+          "values": [
+            0,
+            0
+          ],
+          "labelAr": "فرق مطابقة المركز المالي",
+          "labelEn": "Position reconciliation difference",
+          "accountIds": [],
+          "noteNumbers": []
+        }
+      ],
+      "columns": [
+        {
+          "key": "current",
+          "endDate": "2026-08-31",
+          "labelAr": "الفترة الحالية",
+          "labelEn": "Current"
+        },
+        {
+          "key": "comparison",
+          "endDate": "2025-12-31",
+          "labelAr": "المقارنة",
+          "labelEn": "Comparative"
+        }
+      ],
+      "titleAr": "قائمة المركز المالي",
+      "titleEn": "Statement of financial position"
+    },
+    {
+      "key": "profit_loss_oci",
+      "rows": [
+        {
+          "key": "rental_revenue",
+          "kind": "line",
+          "values": [
+            400,
+            200
+          ],
+          "labelAr": "إيرادات التأجير",
+          "labelEn": "Rental revenue",
+          "accountIds": [
+            "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa2"
+          ],
+          "noteNumbers": [
+            3
+          ]
+        },
+        {
+          "key": "other_revenue",
+          "kind": "line",
+          "values": [
+            0,
+            0
+          ],
+          "labelAr": "إيرادات أخرى",
+          "labelEn": "Other revenue",
+          "accountIds": [],
+          "noteNumbers": [
+            3
+          ]
+        },
+        {
+          "key": "cost_of_revenue",
+          "kind": "line",
+          "values": [
+            0,
+            0
+          ],
+          "labelAr": "تكلفة الإيرادات",
+          "labelEn": "Cost of revenue",
+          "accountIds": [],
+          "noteNumbers": [
+            3
+          ]
+        },
+        {
+          "key": "staff_costs",
+          "kind": "line",
+          "values": [
+            0,
+            0
+          ],
+          "labelAr": "تكاليف الموظفين",
+          "labelEn": "Staff costs",
+          "accountIds": [],
+          "noteNumbers": [
+            3
+          ]
+        },
+        {
+          "key": "depreciation",
+          "kind": "line",
+          "values": [
+            0,
+            0
+          ],
+          "labelAr": "الاستهلاك والإطفاء",
+          "labelEn": "Depreciation and amortisation",
+          "accountIds": [],
+          "noteNumbers": [
+            5
+          ]
+        },
+        {
+          "key": "administrative_expenses",
+          "kind": "line",
+          "values": [
+            -50,
+            0
+          ],
+          "labelAr": "المصروفات الإدارية",
+          "labelEn": "Administrative expenses",
+          "accountIds": [
+            "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa4"
+          ],
+          "noteNumbers": [
+            3
+          ]
+        },
+        {
+          "key": "impairment",
+          "kind": "line",
+          "values": [
+            0,
+            0
+          ],
+          "labelAr": "خسائر انخفاض القيمة",
+          "labelEn": "Impairment losses",
+          "accountIds": [],
+          "noteNumbers": [
+            4
+          ]
+        },
+        {
+          "key": "finance_income",
+          "kind": "line",
+          "values": [
+            0,
+            0
+          ],
+          "labelAr": "إيرادات التمويل",
+          "labelEn": "Finance income",
+          "accountIds": [],
+          "noteNumbers": [
+            3
+          ]
+        },
+        {
+          "key": "finance_costs",
+          "kind": "line",
+          "values": [
+            0,
+            0
+          ],
+          "labelAr": "تكاليف التمويل",
+          "labelEn": "Finance costs",
+          "accountIds": [],
+          "noteNumbers": [
+            7
+          ]
+        },
+        {
+          "key": "other_income",
+          "kind": "line",
+          "values": [
+            0,
+            0
+          ],
+          "labelAr": "دخل آخر",
+          "labelEn": "Other income",
+          "accountIds": [],
+          "noteNumbers": [
+            3
+          ]
+        },
+        {
+          "key": "other_expenses",
+          "kind": "line",
+          "values": [
+            0,
+            0
+          ],
+          "labelAr": "مصروفات أخرى",
+          "labelEn": "Other expenses",
+          "accountIds": [],
+          "noteNumbers": [
+            3
+          ]
+        },
+        {
+          "key": "profit_before_tax",
+          "kind": "subtotal",
+          "values": [
+            350,
+            200
+          ],
+          "labelAr": "الربح قبل الضريبة",
+          "labelEn": "Profit before tax",
+          "accountIds": [],
+          "noteNumbers": []
+        },
+        {
+          "key": "income_tax",
+          "kind": "line",
+          "values": [
+            0,
+            0
+          ],
+          "labelAr": "ضريبة الدخل",
+          "labelEn": "Income tax",
+          "accountIds": [],
+          "noteNumbers": []
+        },
+        {
+          "key": "profit",
+          "kind": "total",
+          "values": [
+            350,
+            200
+          ],
+          "labelAr": "ربح أو خسارة الفترة",
+          "labelEn": "Profit or loss",
+          "accountIds": [],
+          "noteNumbers": []
+        },
+        {
+          "key": "oci_reclassifiable",
+          "kind": "line",
+          "values": [
+            0,
+            0
+          ],
+          "labelAr": "دخل شامل آخر قابل لإعادة التصنيف",
+          "labelEn": "Other comprehensive income that may be reclassified",
+          "accountIds": [],
+          "noteNumbers": []
+        },
+        {
+          "key": "oci_nonreclassifiable",
+          "kind": "line",
+          "values": [
+            0,
+            0
+          ],
+          "labelAr": "دخل شامل آخر غير قابل لإعادة التصنيف",
+          "labelEn": "Other comprehensive income not reclassified",
+          "accountIds": [],
+          "noteNumbers": []
+        },
+        {
+          "key": "total_comprehensive_income",
+          "kind": "total",
+          "values": [
+            350,
+            200
+          ],
+          "labelAr": "إجمالي الدخل الشامل",
+          "labelEn": "Total comprehensive income",
+          "accountIds": [],
+          "noteNumbers": []
+        }
+      ],
+      "columns": [
+        {
+          "key": "current",
+          "endDate": "2026-08-31",
+          "labelAr": "الفترة الحالية",
+          "labelEn": "Current",
+          "startDate": "2026-01-01"
+        },
+        {
+          "key": "comparison",
+          "endDate": "2025-08-31",
+          "labelAr": "الفترة المقارنة",
+          "labelEn": "Comparative",
+          "startDate": "2025-01-01"
+        }
+      ],
+      "titleAr": "قائمة الربح أو الخسارة والدخل الشامل الآخر",
+      "titleEn": "Statement of profit or loss and other comprehensive income"
+    },
+    {
+      "key": "equity_current",
+      "rows": [
+        {
+          "key": "opening",
+          "kind": "line",
+          "values": [
+            1000,
+            0,
+            200,
+            0,
+            0,
+            1200
+          ],
+          "labelAr": "الرصيد الافتتاحي",
+          "labelEn": "Opening balance",
+          "accountIds": [],
+          "noteNumbers": []
+        },
+        {
+          "key": "profit",
+          "kind": "line",
+          "values": [
+            0,
+            0,
+            350,
+            0,
+            0,
+            350
+          ],
+          "labelAr": "ربح أو خسارة الفترة",
+          "labelEn": "Profit or loss",
+          "accountIds": [],
+          "noteNumbers": []
+        },
+        {
+          "key": "oci",
+          "kind": "line",
+          "values": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "labelAr": "الدخل الشامل الآخر",
+          "labelEn": "Other comprehensive income",
+          "accountIds": [],
+          "noteNumbers": []
+        },
+        {
+          "key": "contributions",
+          "kind": "line",
+          "values": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "labelAr": "مساهمات الملاك",
+          "labelEn": "Owner contributions",
+          "accountIds": [],
+          "noteNumbers": []
+        },
+        {
+          "key": "distributions",
+          "kind": "line",
+          "values": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "labelAr": "توزيعات الملاك",
+          "labelEn": "Owner distributions",
+          "accountIds": [],
+          "noteNumbers": []
+        },
+        {
+          "key": "transfers",
+          "kind": "line",
+          "values": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "labelAr": "تحويلات بين مكونات حقوق الملكية",
+          "labelEn": "Transfers between equity components",
+          "accountIds": [],
+          "noteNumbers": []
+        },
+        {
+          "key": "prior_adjustments",
+          "kind": "line",
+          "values": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "labelAr": "تعديلات فترات سابقة",
+          "labelEn": "Prior-period adjustments",
+          "accountIds": [],
+          "noteNumbers": []
+        },
+        {
+          "key": "other",
+          "kind": "line",
+          "values": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "labelAr": "حركات أخرى مراجعة",
+          "labelEn": "Other reviewed movements",
+          "accountIds": [],
+          "noteNumbers": []
+        },
+        {
+          "key": "closing",
+          "kind": "total",
+          "values": [
+            1000,
+            0,
+            550,
+            0,
+            0,
+            1550
+          ],
+          "labelAr": "الرصيد الختامي",
+          "labelEn": "Closing balance",
+          "accountIds": [],
+          "noteNumbers": []
+        },
+        {
+          "key": "ledger_closing",
+          "kind": "reconciliation",
+          "values": [
+            1000,
+            0,
+            550,
+            0,
+            0,
+            1550
+          ],
+          "labelAr": "الرصيد الختامي بدفتر الأستاذ",
+          "labelEn": "Ledger closing balance",
+          "accountIds": [],
+          "noteNumbers": []
+        },
+        {
+          "key": "difference",
+          "kind": "reconciliation",
+          "values": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "labelAr": "فرق المطابقة",
+          "labelEn": "Reconciliation difference",
+          "accountIds": [],
+          "noteNumbers": []
+        }
+      ],
+      "columns": [
+        {
+          "key": "share_capital",
+          "endDate": "2026-08-31",
+          "labelAr": "رأس المال",
+          "labelEn": "Share capital",
+          "startDate": "2026-01-01"
+        },
+        {
+          "key": "statutory_reserve",
+          "endDate": "2026-08-31",
+          "labelAr": "الاحتياطي القانوني",
+          "labelEn": "Statutory reserve",
+          "startDate": "2026-01-01"
+        },
+        {
+          "key": "retained_earnings",
+          "endDate": "2026-08-31",
+          "labelAr": "الأرباح المحتجزة",
+          "labelEn": "Retained earnings",
+          "startDate": "2026-01-01"
+        },
+        {
+          "key": "other_reserves",
+          "endDate": "2026-08-31",
+          "labelAr": "احتياطيات أخرى",
+          "labelEn": "Other reserves",
+          "startDate": "2026-01-01"
+        },
+        {
+          "key": "other_equity",
+          "endDate": "2026-08-31",
+          "labelAr": "حقوق ملكية أخرى",
+          "labelEn": "Other equity",
+          "startDate": "2026-01-01"
+        },
+        {
+          "key": "total",
+          "endDate": "2026-08-31",
+          "labelAr": "الإجمالي",
+          "labelEn": "Total",
+          "startDate": "2026-01-01"
+        }
+      ],
+      "titleAr": "التغيرات في حقوق الملكية — الفترة الحالية",
+      "titleEn": "Changes in equity — current period"
+    },
+    {
+      "key": "equity_comparative",
+      "rows": [
+        {
+          "key": "opening",
+          "kind": "line",
+          "values": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "labelAr": "الرصيد الافتتاحي",
+          "labelEn": "Opening balance",
+          "accountIds": [],
+          "noteNumbers": []
+        },
+        {
+          "key": "profit",
+          "kind": "line",
+          "values": [
+            0,
+            0,
+            200,
+            0,
+            0,
+            200
+          ],
+          "labelAr": "ربح أو خسارة الفترة",
+          "labelEn": "Profit or loss",
+          "accountIds": [],
+          "noteNumbers": []
+        },
+        {
+          "key": "oci",
+          "kind": "line",
+          "values": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "labelAr": "الدخل الشامل الآخر",
+          "labelEn": "Other comprehensive income",
+          "accountIds": [],
+          "noteNumbers": []
+        },
+        {
+          "key": "contributions",
+          "kind": "line",
+          "values": [
+            1000,
+            0,
+            0,
+            0,
+            0,
+            1000
+          ],
+          "labelAr": "مساهمات الملاك",
+          "labelEn": "Owner contributions",
+          "accountIds": [],
+          "noteNumbers": []
+        },
+        {
+          "key": "distributions",
+          "kind": "line",
+          "values": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "labelAr": "توزيعات الملاك",
+          "labelEn": "Owner distributions",
+          "accountIds": [],
+          "noteNumbers": []
+        },
+        {
+          "key": "transfers",
+          "kind": "line",
+          "values": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "labelAr": "تحويلات بين مكونات حقوق الملكية",
+          "labelEn": "Transfers between equity components",
+          "accountIds": [],
+          "noteNumbers": []
+        },
+        {
+          "key": "prior_adjustments",
+          "kind": "line",
+          "values": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "labelAr": "تعديلات فترات سابقة",
+          "labelEn": "Prior-period adjustments",
+          "accountIds": [],
+          "noteNumbers": []
+        },
+        {
+          "key": "other",
+          "kind": "line",
+          "values": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "labelAr": "حركات أخرى مراجعة",
+          "labelEn": "Other reviewed movements",
+          "accountIds": [],
+          "noteNumbers": []
+        },
+        {
+          "key": "closing",
+          "kind": "total",
+          "values": [
+            1000,
+            0,
+            200,
+            0,
+            0,
+            1200
+          ],
+          "labelAr": "الرصيد الختامي",
+          "labelEn": "Closing balance",
+          "accountIds": [],
+          "noteNumbers": []
+        },
+        {
+          "key": "ledger_closing",
+          "kind": "reconciliation",
+          "values": [
+            1000,
+            0,
+            200,
+            0,
+            0,
+            1200
+          ],
+          "labelAr": "الرصيد الختامي بدفتر الأستاذ",
+          "labelEn": "Ledger closing balance",
+          "accountIds": [],
+          "noteNumbers": []
+        },
+        {
+          "key": "difference",
+          "kind": "reconciliation",
+          "values": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "labelAr": "فرق المطابقة",
+          "labelEn": "Reconciliation difference",
+          "accountIds": [],
+          "noteNumbers": []
+        }
+      ],
+      "columns": [
+        {
+          "key": "share_capital",
+          "endDate": "2025-08-31",
+          "labelAr": "رأس المال",
+          "labelEn": "Share capital",
+          "startDate": "2025-01-01"
+        },
+        {
+          "key": "statutory_reserve",
+          "endDate": "2025-08-31",
+          "labelAr": "الاحتياطي القانوني",
+          "labelEn": "Statutory reserve",
+          "startDate": "2025-01-01"
+        },
+        {
+          "key": "retained_earnings",
+          "endDate": "2025-08-31",
+          "labelAr": "الأرباح المحتجزة",
+          "labelEn": "Retained earnings",
+          "startDate": "2025-01-01"
+        },
+        {
+          "key": "other_reserves",
+          "endDate": "2025-08-31",
+          "labelAr": "احتياطيات أخرى",
+          "labelEn": "Other reserves",
+          "startDate": "2025-01-01"
+        },
+        {
+          "key": "other_equity",
+          "endDate": "2025-08-31",
+          "labelAr": "حقوق ملكية أخرى",
+          "labelEn": "Other equity",
+          "startDate": "2025-01-01"
+        },
+        {
+          "key": "total",
+          "endDate": "2025-08-31",
+          "labelAr": "الإجمالي",
+          "labelEn": "Total",
+          "startDate": "2025-01-01"
+        }
+      ],
+      "titleAr": "التغيرات في حقوق الملكية — فترة المقارنة",
+      "titleEn": "Changes in equity — comparative period"
+    },
+    {
+      "key": "cash_flow",
+      "rows": [
+        {
+          "key": "opening",
+          "kind": "line",
+          "values": [
+            1200,
+            0
+          ],
+          "labelAr": "النقد وما في حكمه أول الفترة",
+          "labelEn": "Opening cash and cash equivalents",
+          "accountIds": [],
+          "noteNumbers": []
+        },
+        {
+          "key": "operating_receipts_aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa2",
+          "kind": "line",
+          "values": [
+            400,
+            200
+          ],
+          "labelAr": "مقبوضات — revenue",
+          "labelEn": "Receipts — revenue",
+          "accountIds": [
+            "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa2"
+          ],
+          "noteNumbers": []
+        },
+        {
+          "key": "operating_payments_aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa4",
+          "kind": "line",
+          "values": [
+            -50,
+            0
+          ],
+          "labelAr": "مدفوعات — expense",
+          "labelEn": "Payments — expense",
+          "accountIds": [
+            "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa4"
+          ],
+          "noteNumbers": []
+        },
+        {
+          "key": "operating",
+          "kind": "subtotal",
+          "values": [
+            350,
+            200
+          ],
+          "labelAr": "صافي التدفقات من الأنشطة التشغيلية",
+          "labelEn": "Net operating cash flows",
+          "accountIds": [],
+          "noteNumbers": []
+        },
+        {
+          "key": "investing",
+          "kind": "subtotal",
+          "values": [
+            0,
+            0
+          ],
+          "labelAr": "صافي التدفقات من الأنشطة الاستثمارية",
+          "labelEn": "Net investing cash flows",
+          "accountIds": [],
+          "noteNumbers": []
+        },
+        {
+          "key": "financing_receipts_aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa3",
+          "kind": "line",
+          "values": [
+            0,
+            1000
+          ],
+          "labelAr": "مقبوضات — capital",
+          "labelEn": "Receipts — capital",
+          "accountIds": [
+            "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa3"
+          ],
+          "noteNumbers": []
+        },
+        {
+          "key": "financing",
+          "kind": "subtotal",
+          "values": [
+            0,
+            1000
+          ],
+          "labelAr": "صافي التدفقات من الأنشطة التمويلية",
+          "labelEn": "Net financing cash flows",
+          "accountIds": [],
+          "noteNumbers": []
+        },
+        {
+          "key": "exchange",
+          "kind": "subtotal",
+          "values": [
+            0,
+            0
+          ],
+          "labelAr": "أثر تغير أسعار الصرف",
+          "labelEn": "Effect of exchange rate changes",
+          "accountIds": [],
+          "noteNumbers": []
+        },
+        {
+          "key": "net_change",
+          "kind": "total",
+          "values": [
+            350,
+            1200
+          ],
+          "labelAr": "صافي التغير في النقد وما في حكمه",
+          "labelEn": "Net change in cash and cash equivalents",
+          "accountIds": [],
+          "noteNumbers": []
+        },
+        {
+          "key": "closing",
+          "kind": "total",
+          "values": [
+            1550,
+            1200
+          ],
+          "labelAr": "النقد وما في حكمه آخر الفترة",
+          "labelEn": "Closing cash and cash equivalents",
+          "accountIds": [],
+          "noteNumbers": []
+        },
+        {
+          "key": "ledger_closing",
+          "kind": "reconciliation",
+          "values": [
+            1550,
+            1200
+          ],
+          "labelAr": "النقد الختامي بدفتر الأستاذ",
+          "labelEn": "Ledger closing cash",
+          "accountIds": [],
+          "noteNumbers": []
+        },
+        {
+          "key": "difference",
+          "kind": "reconciliation",
+          "values": [
+            0,
+            0
+          ],
+          "labelAr": "فرق مطابقة التدفقات النقدية",
+          "labelEn": "Cash reconciliation difference",
+          "accountIds": [],
+          "noteNumbers": []
+        }
+      ],
+      "columns": [
+        {
+          "key": "current",
+          "endDate": "2026-08-31",
+          "labelAr": "الفترة الحالية",
+          "labelEn": "Current",
+          "startDate": "2026-01-01"
+        },
+        {
+          "key": "comparison",
+          "endDate": "2025-08-31",
+          "labelAr": "الفترة المقارنة",
+          "labelEn": "Comparative",
+          "startDate": "2025-01-01"
+        }
+      ],
+      "titleAr": "قائمة التدفقات النقدية",
+      "titleEn": "Statement of cash flows"
+    }
+  ],
+  "fingerprint": "74070d456e542d4f63e1b7e62f346f991cf6abc833c7a6701d26ca987334ef5f",
+  "generatedAt": "2026-09-17T23:15:42.335+00:00",
+  "permissions": {
+    "canSave": true,
+    "canApprove": true
+  },
+  "configuration": {
+    "kind": "interim",
+    "notes": [
+      {
+        "code": "entity",
+        "text": "Synthetic reviewed disclosure contents for this test company only.",
+        "number": 1,
+        "status": "complete",
+        "titleAr": "إيضاح entity",
+        "titleEn": "Note entity",
+        "evidence": "Synthetic fixture evidence"
+      },
+      {
+        "code": "basis",
+        "text": "Synthetic reviewed disclosure contents for this test company only.",
+        "number": 2,
+        "status": "complete",
+        "titleAr": "إيضاح basis",
+        "titleEn": "Note basis",
+        "evidence": "Synthetic fixture evidence"
+      },
+      {
+        "code": "policies",
+        "text": "Synthetic reviewed disclosure contents for this test company only.",
+        "number": 3,
+        "status": "complete",
+        "titleAr": "إيضاح policies",
+        "titleEn": "Note policies",
+        "evidence": "Synthetic fixture evidence"
+      },
+      {
+        "code": "estimates",
+        "text": "Synthetic reviewed disclosure contents for this test company only.",
+        "number": 4,
+        "status": "complete",
+        "titleAr": "إيضاح estimates",
+        "titleEn": "Note estimates",
+        "evidence": "Synthetic fixture evidence"
+      },
+      {
+        "code": "assets",
+        "text": "Synthetic reviewed disclosure contents for this test company only.",
+        "number": 5,
+        "status": "complete",
+        "titleAr": "إيضاح assets",
+        "titleEn": "Note assets",
+        "evidence": "Synthetic fixture evidence"
+      },
+      {
+        "code": "receivables",
+        "text": "Synthetic reviewed disclosure contents for this test company only.",
+        "number": 6,
+        "status": "complete",
+        "titleAr": "إيضاح receivables",
+        "titleEn": "Note receivables",
+        "evidence": "Synthetic fixture evidence"
+      },
+      {
+        "code": "liabilities",
+        "text": "Synthetic reviewed disclosure contents for this test company only.",
+        "number": 7,
+        "status": "complete",
+        "titleAr": "إيضاح liabilities",
+        "titleEn": "Note liabilities",
+        "evidence": "Synthetic fixture evidence"
+      },
+      {
+        "code": "equity",
+        "text": "Synthetic reviewed disclosure contents for this test company only.",
+        "number": 8,
+        "status": "complete",
+        "titleAr": "إيضاح equity",
+        "titleEn": "Note equity",
+        "evidence": "Synthetic fixture evidence"
+      },
+      {
+        "code": "related_parties",
+        "text": "Synthetic reviewed disclosure contents for this test company only.",
+        "number": 9,
+        "status": "complete",
+        "titleAr": "إيضاح related_parties",
+        "titleEn": "Note related_parties",
+        "evidence": "Synthetic fixture evidence"
+      },
+      {
+        "code": "commitments",
+        "text": "Synthetic reviewed disclosure contents for this test company only.",
+        "number": 10,
+        "status": "complete",
+        "titleAr": "إيضاح commitments",
+        "titleEn": "Note commitments",
+        "evidence": "Synthetic fixture evidence"
+      },
+      {
+        "code": "subsequent_events",
+        "text": "Synthetic reviewed disclosure contents for this test company only.",
+        "number": 11,
+        "status": "complete",
+        "titleAr": "إيضاح subsequent_events",
+        "titleEn": "Note subsequent_events",
+        "evidence": "Synthetic fixture evidence"
+      },
+      {
+        "code": "going_concern",
+        "text": "Synthetic reviewed disclosure contents for this test company only.",
+        "number": 12,
+        "status": "complete",
+        "titleAr": "إيضاح going_concern",
+        "titleEn": "Note going_concern",
+        "evidence": "Synthetic fixture evidence"
+      },
+      {
+        "code": "noncash_transactions",
+        "text": "Synthetic reviewed disclosure contents for this test company only.",
+        "number": 13,
+        "status": "complete",
+        "titleAr": "إيضاح noncash_transactions",
+        "titleEn": "Note noncash_transactions",
+        "evidence": "Synthetic fixture evidence"
+      },
+      {
+        "code": "interim_changes",
+        "text": "Synthetic reviewed disclosure contents for this test company only.",
+        "number": 14,
+        "status": "complete",
+        "titleAr": "إيضاح interim_changes",
+        "titleEn": "Note interim_changes",
+        "evidence": "Synthetic fixture evidence"
+      }
+    ],
+    "scope": "individual_entity",
+    "version": 1,
+    "framework": "IFRS",
+    "legalForm": "llc",
+    "periodEnd": "2026-08-31",
+    "periodStart": "2026-01-01",
+    "accountMappings": [
+      {
+        "accountId": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1",
+        "incomeLine": null,
+        "thirdSplit": null,
+        "currentSplit": null,
+        "positionLine": "cash",
+        "comparisonSplit": null,
+        "cashFlowCategory": null,
+        "isCashEquivalent": true,
+        "thirdPositionLine": null,
+        "comparisonPositionLine": null
+      },
+      {
+        "accountId": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa2",
+        "incomeLine": "rental_revenue",
+        "thirdSplit": null,
+        "currentSplit": null,
+        "positionLine": null,
+        "comparisonSplit": null,
+        "cashFlowCategory": "operating",
+        "isCashEquivalent": false,
+        "thirdPositionLine": null,
+        "comparisonPositionLine": null
+      },
+      {
+        "accountId": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa3",
+        "incomeLine": null,
+        "thirdSplit": null,
+        "currentSplit": null,
+        "positionLine": "share_capital",
+        "comparisonSplit": null,
+        "cashFlowCategory": "financing",
+        "isCashEquivalent": false,
+        "thirdPositionLine": null,
+        "comparisonPositionLine": null
+      },
+      {
+        "accountId": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa4",
+        "incomeLine": "administrative_expenses",
+        "thirdSplit": null,
+        "currentSplit": null,
+        "positionLine": null,
+        "comparisonSplit": null,
+        "cashFlowCategory": "operating",
+        "isCashEquivalent": false,
+        "thirdPositionLine": null,
+        "comparisonPositionLine": null
+      },
+      {
+        "accountId": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa5",
+        "incomeLine": null,
+        "thirdSplit": null,
+        "currentSplit": null,
+        "positionLine": "property_equipment",
+        "comparisonSplit": null,
+        "cashFlowCategory": "investing",
+        "isCashEquivalent": false,
+        "thirdPositionLine": null,
+        "comparisonPositionLine": null
+      },
+      {
+        "accountId": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa6",
+        "incomeLine": null,
+        "thirdSplit": null,
+        "currentSplit": null,
+        "positionLine": "current_borrowings",
+        "comparisonSplit": null,
+        "cashFlowCategory": "financing",
+        "isCashEquivalent": false,
+        "thirdPositionLine": null,
+        "comparisonPositionLine": null
+      },
+      {
+        "accountId": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa7",
+        "incomeLine": null,
+        "thirdSplit": null,
+        "currentSplit": null,
+        "positionLine": "retained_earnings",
+        "comparisonSplit": null,
+        "cashFlowCategory": "financing",
+        "isCashEquivalent": false,
+        "thirdPositionLine": null,
+        "comparisonPositionLine": null
+      },
+      {
+        "accountId": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa8",
+        "incomeLine": null,
+        "thirdSplit": null,
+        "currentSplit": null,
+        "positionLine": "other_reserves",
+        "comparisonSplit": null,
+        "cashFlowCategory": "financing",
+        "isCashEquivalent": false,
+        "thirdPositionLine": null,
+        "comparisonPositionLine": null
+      }
+    ],
+    "journalOverrides": [
+      {
+        "reason": "Reviewed classification against synthetic supporting source.",
+        "cashFlows": [],
+        "journalId": "04d36194-036d-40f2-b579-8b41746ef012",
+        "treatment": "regular",
+        "equityCategory": "contributions",
+        "internalCashTransfer": 0
+      }
+    ],
+    "preparationNotes": "Synthetic testing only",
+    "thirdPositionDate": null,
+    "comparativePeriodEnd": "2025-08-31",
+    "requiresThirdPosition": false,
+    "comparativePeriodStart": "2025-01-01",
+    "positionComparisonDate": "2025-12-31"
+  }
+}

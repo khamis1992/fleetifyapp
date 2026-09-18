@@ -6,6 +6,11 @@ import { FinancePageHeader } from "@/components/ui/FinancePageHeader";
 import { allFinanceDestinations } from "@/components/finance/workspace/financeNavigation";
 import { PageSkeletonFallback } from "@/components/common/LazyPageWrapper";
 const reports = {
+  "financial-statements": lazy(() =>
+    import("@/components/finance/FinancialStatementPackageReport").then((module) => ({
+      default: module.FinancialStatementPackageReport,
+    }))
+  ),
   "trial-balance": lazy(() =>
     import("@/components/finance/TrialBalanceReport").then((module) => ({
       default: module.TrialBalanceReport,

@@ -1,4 +1,5 @@
 import type { LegalDocumentData, VehicleCustody } from './legal-document-generator';
+import { claimRegisterRequests } from './legal-claim-register-render';
 import { isTrafficViolationsOnlyScope } from '@/types/legalClaimScope';
 
 export interface LegalMemoRequestSections {
@@ -24,7 +25,7 @@ const toEnglishDigits = (value: string | number | undefined | null): string => {
 
 /**
  * المصدر القانوني الوحيد لبنود الطلبات في المذكرة وبيانات نظام تقاضي.
- * لا يضيف أي تعويض غير مربوط ببند عقد أو مستند إثبات في LegalDocumentData.
+ * ينقل التعويض الثابت والطلبات الأخرى من سجل المطالبات دون إضافتها مرتين.
  */
 export function buildLegalMemoRequestSections(
   data: LegalDocumentData,
@@ -187,11 +188,24 @@ export function buildLegalMemoRequestSections(
   );
   addRequest(closing, 'إلزام المدعى عليه بالرسوم والمصاريف ومقابل أتعاب المحاماة.');
 
-  return {
-    procedural,
-    financial,
-    closing,
-  };
+  if (data.claimRegister) {
+    const nonMonetary = financial.filter(text => text.includes('برد المركبة') || text.includes('في حال تعذر الرد العيني'));
+    financial.splice(0, financial.length, ...claimRegisterRequests(data.claimRegister), ...nonMonetary);
+    if (custody === 'with_defendant') {
+      if (effectiveTerminationPath === 'judicial') addRequest(financial, `ما يستجد من أجرة عن المدة غير المحتسبة في البيان بواقع ${formatQar(Number(contractInfo.monthly_rent || 0))} ريال شهرياً أو جزء الشهر وفق العقد حتى انتهاء استحقاق الأجرة الذي تحدده المحكمة، وبعد تنزيل أي سداد لاحق.`);
+      addRequest(financial, `التعويض عما يستجد من احتباس من زوال سند الحيازة إلى الرد المثبت، ${data.claimRegister.retention_basis === 'contract_monthly' ? `بواقع أجرة العقد الشهرية (${formatQar(Number(contractInfo.monthly_rent || 0))} ريال) وجزء الشهر وفق الأساس الحسابي المبين بالمذكرة` : 'وفق القيمة الإيجارية والضرر الثابتين بالمستندات أو الخبرة'}، دون تداخل مع الأجرة أو المدة المحتسبة في البيان.`);
+    }
+    addRequest(closing, 'عند الحاجة إلى تحقيق فني أو حسابي، ندب خبير حسابي وخبير مركبات عند الاقتضاء لفحص العقد والمدفوعات والحيازة والرد وفرصة التأجير وصافي الضرر، واستبعاد التداخل والتكاليف المتجنبة وما جبره التأمين أو الغير، مع تمكين المدعية من تحديد طلباتها النهائية وفق الإجراءات المقررة.');
+    let index = 0;
+    for (const group of [procedural, financial, closing]) {
+      for (let i = 0; i < group.length; i++) {
+        const oldOrdinal = [...REQUEST_ORDINALS, 'وأخيراً'].find(value => group[i].startsWith(`${value}: `));
+        const text = oldOrdinal ? group[i].slice(oldOrdinal.length + 2) : group[i];
+        group[i] = `${++index}. ${text}`;
+      }
+    }
+  }
+  return { procedural, financial, closing };
 }
 
 export function buildLegalMemoClaimsText(data: LegalDocumentData): string {

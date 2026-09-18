@@ -6,7 +6,7 @@ const mocks = vi.hoisted(() => ({ rpc: vi.fn(), success: vi.fn(), error: vi.fn()
 vi.mock('@/integrations/supabase/client', () => ({ supabase: { rpc: mocks.rpc } }));
 vi.mock('sonner', () => ({ toast: { success: mocks.success, error: mocks.error } }));
 vi.mock('../../store', () => ({ useLawsuitPreparationContext: () => ({ state: { companyId: 'company', contractId: 'contract', ui: {} } }) }));
-vi.mock('../../utils/taqadiAutomation', () => ({ buildTaqadiFilingPayload: () => ({ documents: [] }) }));
+vi.mock('../../utils/taqadiAutomation', () => ({ prepareTaqadiFilingPayload: () => ({ documents: [] }) }));
 vi.mock('../../utils/filingReadiness', () => ({ getFilingReadiness: () => ({ canStartFiling: mocks.ready, missingReasons: ['مستند ناقص'] }) }));
 
 afterEach(cleanup);

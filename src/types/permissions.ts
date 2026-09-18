@@ -314,6 +314,20 @@ export const PERMISSIONS: Permission[] = [
     level: 'read'
   },
   {
+    id: 'finance.reports.save',
+    name: 'Save Financial Report Versions',
+    description: 'Create server-calculated balance sheet versions for independent review',
+    category: PERMISSION_CATEGORIES[1],
+    level: 'write'
+  },
+  {
+    id: 'finance.reports.approve',
+    name: 'Approve Financial Report Versions',
+    description: 'Approve another preparer’s balance sheet after reconciliation and completeness review',
+    category: PERMISSION_CATEGORIES[1],
+    level: 'admin'
+  },
+  {
     id: 'finance.assets.view',
     name: 'View Fixed Assets',
     description: 'View fixed assets information',

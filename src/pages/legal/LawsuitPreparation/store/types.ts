@@ -1,3 +1,4 @@
+import type { LegalClaimRegister } from '@/types/legalClaimRegister';
 /**
  * Types for Lawsuit Preparation Module
  * أنواع بيانات وحدة تجهيز الدعوى
@@ -73,6 +74,7 @@ export interface OverdueInvoice {
 }
 
 export interface FinancialClaimSourceSummary {
+  claimRegister?: LegalClaimRegister;
   authoritativeRetention?: { days: number; amount: number; from: string | null; to: string | null };
   authoritativeCompensationUnits?: number;
   authoritativeAmounts?: Pick<FinancialCalculations, 'overdueRent' | 'lateFees' | 'damagesFee' | 'violationsFines' | 'retentionCompensation' | 'securityDepositDeduction' | 'total'>;
@@ -160,11 +162,14 @@ export interface LitigationProfile {
   defendant_contact_document_id: string | null;
   security_deposit_amount: number | null;
   apply_security_deposit: boolean;
+  retention_calculation_basis?: 'documented_daily' | 'contract_monthly';
+  retention_proration_basis?: 'calendar_days' | 'thirty_days';
   retention_daily_rate: number | null;
   retention_rate_source: 'company_price_list' | 'market_quotes' | 'recent_contracts' | null;
   retention_rate_source_ref: string | null;
   retention_rate_source_document_id: string | null;
   contractual_compensation_enabled: boolean;
+  fixed_compensation_requested?: boolean;
   contractual_compensation_clause_number: string | null;
   contractual_compensation_clause_text: string | null;
   contractual_compensation_method: 'fixed' | 'daily' | 'monthly' | 'per_invoice' | null;

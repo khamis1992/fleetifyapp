@@ -1,0 +1,16 @@
+/* The legacy app applies RTL to every element. Contain the bilingual report's
+   direction here without changing unrelated financial screens. */
+.balance-sheet-workspace[dir="ltr"],
+.balance-sheet-workspace[dir="ltr"] * {
+  direction: ltr;
+  text-align: start;
+}
+
+.balance-sheet-workspace[dir="ltr"] .text-end {
+  text-align: end;
+}
+
+.balance-sheet-workspace bdi {
+  direction: ltr;
+  unicode-bidi: isolate;
+}

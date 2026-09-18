@@ -53,6 +53,9 @@ export function taqadiErrorMessage(value: unknown, code?: string | null): string
           'memoSnapshot.notices_changed': 'تغيرت وقائع الإعذار أو مستنداته',
           'memoSnapshot.damage_details_changed': 'تغيرت تفاصيل الأضرار والمصاريف المؤيدة',
           'memoSnapshot.evidence_unavailable': 'أحد المستندات المؤيدة لم يعد صالحًا للاعتماد',
+          'memoSnapshot.claim_register_changed': 'تغيرت الطلبات الأصلية أو البديلة عن نسخة المذكرة',
+          'memoSnapshot.claim_register_incomplete': 'سجل المطالبات والتعويضات يحتاج استكمالًا',
+          'documents.claim_evidence_missing': 'مستندات أحد الطلبات الإضافية غير مرفقة بالحافظة',
         };
         const names = [...new Set(keys.map((key: string) => key.startsWith('documents.contract.sourceDocumentId')
           ? 'نسخة عقد موقّع مرتبطة بالعقد ومطابقة للهوية'
