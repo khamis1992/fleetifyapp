@@ -19,6 +19,7 @@ const legalCase = (
   court_fees: null,
   filing_date: null,
   created_at: createdAt,
+  claim_scope: 'full_outstanding',
 });
 
 describe('taqadi filing helpers', () => {

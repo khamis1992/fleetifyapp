@@ -10,27 +10,46 @@
  *   - { mode: "apply", proposalId, actorId? } — execute an accepted merge
  */
 
-import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2";
 import {
   agentCorsHeaders,
-  authorizeAgent,
+  AgentInvocationContext,
+  authorizeScheduledAgent,
   createServiceClient,
+  finishAgentExecution,
   jsonResponse,
   storeAgentReview,
 } from "../_shared/agent.ts";
 
-serve(async (req) => {
+Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: agentCorsHeaders });
 
+  let invocation: AgentInvocationContext | null = null;
+  let executionFailed = false;
   try {
-    await authorizeAgent(req);
     const body = await req.json().catch(() => ({}));
     const supabase = createServiceClient();
+    let authorizationCompanyId = typeof body.companyId === "string"
+      ? body.companyId
+      : null;
+    if (!authorizationCompanyId && body.mode === "apply" && body.proposalId) {
+      const { data: proposal, error: proposalError } = await supabase
+        .from("customer_merge_proposals")
+        .select("company_id")
+        .eq("id", body.proposalId)
+        .maybeSingle();
+      if (proposalError) throw proposalError;
+      authorizationCompanyId = proposal?.company_id || null;
+    }
+    invocation = await authorizeScheduledAgent(
+      req,
+      "customer-duplicate-detector",
+      authorizationCompanyId,
+    );
 
     if (body.mode === "apply") {
       if (!body.proposalId) throw new Error("proposalId is required");
-      const result = await applyMerge(supabase, body.proposalId);
+      const result = await applyMerge(supabase, authorizationCompanyId!, body.proposalId);
       return jsonResponse({ success: true, ...result });
     }
 
@@ -38,8 +57,16 @@ serve(async (req) => {
     const result = await detectDuplicates(supabase, body.companyId);
     return jsonResponse({ success: true, ...result });
   } catch (error) {
+    executionFailed = true;
     const message = error instanceof Error ? error.message : "Unknown error";
     return jsonResponse({ success: false, error: message }, message === "Unauthorized" ? 401 : 500);
+  } finally {
+    if (invocation) {
+      await finishAgentExecution(
+        createServiceClient(), invocation, !executionFailed, {},
+        executionFailed ? "customer_duplicate_processing_failed" : null,
+      ).catch(() => undefined);
+    }
   }
 });
 
@@ -189,73 +216,34 @@ async function openConflictTask(
   });
 }
 
-async function applyMerge(supabase: SupabaseClient, proposalId: string) {
-  const { data: proposal, error } = await supabase
-    .from("customer_merge_proposals")
-    .select("*")
-    .eq("id", proposalId)
-    .eq("status", "pending")
-    .single();
-  if (error || !proposal) throw new Error("Pending proposal not found");
-
-  const primaryId = proposal.primary_customer_id;
-  const duplicateId = proposal.duplicate_customer_id;
-  const companyId = proposal.company_id;
-
-  // Re-link every dependent record, then mark the duplicate as merged.
-  const relinks: Array<[string, string]> = [
-    ["contracts", "customer_id"],
-    ["invoices", "customer_id"],
-    ["payments", "customer_id"],
-    ["penalties", "customer_id"],
-    ["customer_communications", "customer_id"],
-    ["legal_cases", "client_id"],
-  ];
-
-  const moved: Record<string, number> = {};
-  const skipped: string[] = [];
-  for (const [table, column] of relinks) {
-    const { data, error: relinkError } = await supabase
-      .from(table)
-      .update({ [column]: primaryId })
-      .eq(column, duplicateId)
-      .eq("company_id", companyId)
-      .select("id");
-    if (relinkError) {
-      // A missing/legacy table must never abort the whole merge — log and skip.
-      console.warn(`Merge relink skipped for ${table}:`, relinkError.message);
-      skipped.push(table);
-      continue;
-    }
-    moved[table] = (data || []).length;
+async function applyMerge(supabase: SupabaseClient, companyId: string, proposalId: string) {
+  const { data, error } = await supabase.rpc("apply_customer_merge_proposal_v1", {
+    p_company_id: companyId,
+    p_proposal_id: proposalId,
+  });
+  if (error) throw error;
+  const result = (data || {}) as {
+    merged?: boolean;
+    primaryCustomerId?: string;
+    duplicateCustomerId?: string;
+    moved?: Record<string, number>;
+  };
+  if (result.merged !== true || !result.primaryCustomerId || !result.duplicateCustomerId) {
+    throw new Error("Pending proposal not found");
   }
-
-  if (skipped.length > 0 && skipped.length === relinks.length) {
-    throw new Error("تعذر نقل أي سجل — تحقق من بنية قاعدة البيانات");
-  }
-
-  const { error: mergeError } = await supabase
-    .from("customers")
-    .update({ merged_into_customer_id: primaryId, updated_at: new Date().toISOString() })
-    .eq("id", duplicateId)
-    .eq("company_id", companyId);
-  if (mergeError) throw mergeError;
-
-  const { error: statusError } = await supabase
-    .from("customer_merge_proposals")
-    .update({ status: "accepted", reviewed_at: new Date().toISOString() })
-    .eq("id", proposalId);
-  if (statusError) throw statusError;
+  const moved = result.moved || {};
 
   await storeAgentReview(supabase, {
     companyId,
     agentType: "customer_merge",
     entityType: "customers",
-    entityId: primaryId,
+    entityId: result.primaryCustomerId,
     verdict: "merged",
     summary: `دمج العميل المكرر في السجل الأساسي — نُقلت ${Object.values(moved).reduce((a, b) => a + b, 0)} سجلات`,
-    details: { moved, skipped_tables: skipped, duplicate_customer_id: duplicateId },
-  });
+    details: { moved, duplicate_customer_id: result.duplicateCustomerId },
+  }).catch((reviewError) => console.error("Customer merge review audit failed", {
+    code: reviewError instanceof Error ? reviewError.name : "unknown_error",
+  }));
 
-  return { merged: true, moved, skipped };
+  return { merged: true, moved };
 }

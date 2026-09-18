@@ -29,6 +29,7 @@ import { ChartOfAccount } from '@/hooks/useChartOfAccounts';
 import { toast } from 'sonner';
 import { systemColorPattern } from '@/lib/design-system/systemColorPattern';
 import type { Database } from '@/integrations/supabase/types';
+import { useFleetifyTranslation } from '@/hooks/useTranslation';
 
 type ChartOfAccountUpdate = Database['public']['Tables']['chart_of_accounts']['Update'];
 
@@ -53,6 +54,33 @@ export const EnhancedAccountEditDialog: React.FC<EnhancedAccountEditDialogProps>
   account,
   onSuccess
 }) => {
+  const { t, currentLanguage } = useFleetifyTranslation('financial');
+  const isArabic = currentLanguage === 'ar';
+  const classificationLabel = t('accountEdit.financialClassification', {
+    defaultValue: isArabic ? 'تصنيف قائمة المركز المالي' : 'Balance sheet classification',
+  });
+  const subtypeLabels: Record<string, string> = {
+    current_asset: t('accountEdit.subtypes.currentAsset', {
+      defaultValue: isArabic ? 'أصل متداول' : 'Current asset',
+    }),
+    non_current_asset: t('accountEdit.subtypes.nonCurrentAsset', {
+      defaultValue: isArabic ? 'أصل غير متداول' : 'Non-current asset',
+    }),
+    contra_current_asset: t('accountEdit.subtypes.contraCurrentAsset', {
+      defaultValue: isArabic ? 'حساب مقابل لأصل متداول' : 'Contra account for a current asset',
+    }),
+    contra_non_current_asset: t('accountEdit.subtypes.contraNonCurrentAsset', {
+      defaultValue: isArabic
+        ? 'حساب مقابل لأصل غير متداول (مثل مجمع الإهلاك)'
+        : 'Contra account for a non-current asset (e.g. accumulated depreciation)',
+    }),
+    current_liability: t('accountEdit.subtypes.currentLiability', {
+      defaultValue: isArabic ? 'التزام متداول' : 'Current liability',
+    }),
+    non_current_liability: t('accountEdit.subtypes.nonCurrentLiability', {
+      defaultValue: isArabic ? 'التزام غير متداول' : 'Non-current liability',
+    }),
+  };
   const [activeTab, setActiveTab] = useState('basic');
   const [formData, setFormData] = useState({
     account_code: '',
@@ -73,6 +101,11 @@ export const EnhancedAccountEditDialog: React.FC<EnhancedAccountEditDialogProps>
   const updateAccount = useUpdateAccount();
   const { data: allAccounts } = useChartOfAccounts();
   const validator = new AccountMoveValidator(allAccounts || []);
+  const subtypeOptions = formData.account_type === 'assets'
+    ? ['current_asset', 'non_current_asset', 'contra_current_asset', 'contra_non_current_asset']
+    : formData.account_type === 'liabilities'
+      ? ['current_liability', 'non_current_liability']
+      : [];
 
   // Initialize form data when account changes
   useEffect(() => {
@@ -164,7 +197,9 @@ export const EnhancedAccountEditDialog: React.FC<EnhancedAccountEditDialogProps>
         ...formData,
         parent_account_id: formData.parent_account_id || null,
         account_name_ar: formData.account_name_ar || null,
-        account_subtype: formData.account_subtype || null,
+        account_subtype: formData.account_subtype === originalData.account_subtype
+          ? account.account_subtype ?? null
+          : formData.account_subtype || null,
         description: formData.description || null,
       };
       
@@ -210,6 +245,9 @@ export const EnhancedAccountEditDialog: React.FC<EnhancedAccountEditDialogProps>
       
       case 'balance_type':
         return value === 'debit' ? 'مدين' : value === 'credit' ? 'دائن' : String(value);
+
+      case 'account_subtype':
+        return subtypeLabels[String(value)] || String(value);
       
       case 'is_header':
         return value ? 'نعم' : 'لا';
@@ -337,9 +375,9 @@ export const EnhancedAccountEditDialog: React.FC<EnhancedAccountEditDialogProps>
                 </CardHeader>
                 <CardContent className="space-y-5">
                   <div className="space-y-2">
-                    <Label className="arabic-body text-foreground font-medium">نوع الحساب</Label>
+                    <Label htmlFor="account_type" className="arabic-body text-foreground font-medium">نوع الحساب</Label>
                     <Select value={formData.account_type} onValueChange={(value) => setFormData({ ...formData, account_type: value })}>
-                      <SelectTrigger className="arabic-body text-right border-input-border focus:border-input-focus bg-input/80 backdrop-blur-sm h-11" dir="rtl">
+                      <SelectTrigger id="account_type" className="arabic-body text-right border-input-border focus:border-input-focus bg-input/80 backdrop-blur-sm h-11" dir="rtl">
                         <SelectValue placeholder="اختر نوع الحساب" />
                       </SelectTrigger>
                       <SelectContent className="bg-popover border-border shadow-elevated">
@@ -351,6 +389,49 @@ export const EnhancedAccountEditDialog: React.FC<EnhancedAccountEditDialogProps>
                       </SelectContent>
                     </Select>
                   </div>
+
+                  {subtypeOptions.length > 0 && (
+                    <div className="space-y-2" dir={isArabic ? 'rtl' : 'ltr'}>
+                      <Label htmlFor="account_subtype" className="arabic-body text-foreground font-medium">
+                        {classificationLabel}
+                      </Label>
+                      <Select
+                        value={formData.account_subtype}
+                        onValueChange={(value) => setFormData({ ...formData, account_subtype: value })}
+                        dir={isArabic ? 'rtl' : 'ltr'}
+                      >
+                        <SelectTrigger
+                          id="account_subtype"
+                          aria-describedby="account_subtype_help"
+                          className="arabic-body border-input-border focus:border-input-focus bg-input/80 backdrop-blur-sm h-11"
+                        >
+                          <SelectValue placeholder={t('accountEdit.unclassified', {
+                            defaultValue: isArabic ? 'غير مصنف — اختر التصنيف' : 'Unclassified — choose a classification',
+                          })} />
+                        </SelectTrigger>
+                        <SelectContent className="bg-popover border-border shadow-elevated">
+                          {formData.account_subtype && !subtypeOptions.includes(formData.account_subtype) && (
+                            <SelectItem value={formData.account_subtype}>
+                              {t('accountEdit.existingSubtype', {
+                                defaultValue: isArabic ? 'التصنيف الحالي: {{subtype}}' : 'Existing classification: {{subtype}}',
+                                subtype: formData.account_subtype,
+                              })}
+                            </SelectItem>
+                          )}
+                          {subtypeOptions.map((value) => (
+                            <SelectItem key={value} value={value}>{subtypeLabels[value]}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <p id="account_subtype_help" className="text-sm text-muted-foreground">
+                        {t('accountEdit.classificationHelp', {
+                          defaultValue: isArabic
+                            ? 'اختر التصنيف حسب طبيعة الأصل أو الالتزام. يبقى التصنيف الحالي كما هو حتى تغييره.'
+                            : 'Choose the classification based on the asset or liability. The existing classification is preserved until you change it.',
+                        })}
+                      </p>
+                    </div>
+                  )}
                   
                   <div className="space-y-2">
                     <Label className="arabic-body text-foreground font-medium">طبيعة الرصيد</Label>
@@ -485,7 +566,7 @@ export const EnhancedAccountEditDialog: React.FC<EnhancedAccountEditDialogProps>
                         return (
                           <div key={key} className="flex items-center gap-4 p-4 bg-accent/10 rounded-lg border border-border/30 transition-smooth hover:bg-accent/20">
                             <Badge variant="outline" className="arabic-body-sm bg-primary/10 text-primary border-primary/20">
-                              {getFieldLabel(key)}
+                              {key === 'account_subtype' ? classificationLabel : getFieldLabel(key)}
                             </Badge>
                              <div className="flex items-center gap-3 arabic-body flex-1">
                                <span className="text-muted-foreground bg-background/80 px-3 py-1 rounded-md">

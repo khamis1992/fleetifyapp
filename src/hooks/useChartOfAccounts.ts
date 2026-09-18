@@ -3,8 +3,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { useUnifiedCompanyAccess } from "./useUnifiedCompanyAccess";
 import { useToast } from "./use-toast";
 import type { Database } from "@/integrations/supabase/types";
+import { readFinancialPages } from "@/services/financialReporting";
 
-type ChartOfAccountUpdate = Database["public"]["Tables"]["chart_of_accounts"]["Update"];
+type ChartOfAccountUpdate =
+  Database["public"]["Tables"]["chart_of_accounts"]["Update"];
 
 type AccountDeletionResult = {
   success?: boolean;
@@ -20,12 +22,12 @@ type AccountDeletionResult = {
 };
 
 function getErrorMessage(error: unknown): string {
-  return error instanceof Error ? error.message : 'حدث خطأ غير متوقع';
+  return error instanceof Error ? error.message : "حدث خطأ غير متوقع";
 }
 
 function parseDeletionResult(data: unknown): AccountDeletionResult {
-  if (typeof data !== 'object' || data === null || Array.isArray(data)) {
-    throw new Error('استجابة عملية الحسابات غير صالحة');
+  if (typeof data !== "object" || data === null || Array.isArray(data)) {
+    throw new Error("استجابة عملية الحسابات غير صالحة");
   }
   return data as AccountDeletionResult;
 }
@@ -63,23 +65,21 @@ export const useChartOfAccounts = (includeInactive: boolean = false) => {
 
       try {
         validateCompanyAccess(companyId);
-        
-        let query = supabase
-          .from("chart_of_accounts")
-          .select("*")
-          .eq("company_id", companyId);
 
-        // Only filter by is_active if not including inactive accounts
-        if (!includeInactive) {
-          query = query.eq("is_active", true);
-        }
+        const data = await readFinancialPages((from, to) => {
+          let query = supabase
+            .from("chart_of_accounts")
+            .select("*", { count: "exact" })
+            .eq("company_id", companyId);
 
-        const { data, error } = await query.order("account_code");
+          // Only filter by is_active if not including inactive accounts
+          if (!includeInactive) {
+            query = query.eq("is_active", true);
+          }
 
-        if (error) {
-          throw new Error(`فشل في تحميل دليل الحسابات: ${error.message}`);
-        }
-        
+          return query.order("account_code").order("id").range(from, to);
+        });
+
         return (data || []) as ChartOfAccount[];
       } catch (error) {
         throw error;
@@ -109,24 +109,28 @@ export const useCreateAccount = () => {
       description?: string;
     }) => {
       if (!companyId) throw new Error("معرف الشركة مطلوب");
-      
+
       validateCompanyAccess(companyId);
 
       // تنظيف البيانات قبل الإرسال - تحويل القيم الفارغة إلى null
       const cleanedAccount = {
         ...account,
-        parent_account_id: account.parent_account_id && account.parent_account_id.trim() !== '' 
-          ? account.parent_account_id 
-          : null,
-        account_name_ar: account.account_name_ar && account.account_name_ar.trim() !== '' 
-          ? account.account_name_ar 
-          : null,
-        account_subtype: account.account_subtype && account.account_subtype.trim() !== '' 
-          ? account.account_subtype 
-          : null,
-        description: account.description && account.description.trim() !== '' 
-          ? account.description 
-          : null,
+        parent_account_id:
+          account.parent_account_id && account.parent_account_id.trim() !== ""
+            ? account.parent_account_id
+            : null,
+        account_name_ar:
+          account.account_name_ar && account.account_name_ar.trim() !== ""
+            ? account.account_name_ar
+            : null,
+        account_subtype:
+          account.account_subtype && account.account_subtype.trim() !== ""
+            ? account.account_subtype
+            : null,
+        description:
+          account.description && account.description.trim() !== ""
+            ? account.description
+            : null,
         company_id: companyId,
       };
 
@@ -140,7 +144,9 @@ export const useCreateAccount = () => {
       return data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["chart-of-accounts", companyId] });
+      queryClient.invalidateQueries({
+        queryKey: ["chart-of-accounts", companyId],
+      });
       toast({
         title: "تم إنشاء الحساب بنجاح",
         description: "تم إضافة الحساب الجديد إلى دليل الحسابات",
@@ -174,7 +180,9 @@ export const useUpdateAccount = () => {
       return result;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["chart-of-accounts", companyId] });
+      queryClient.invalidateQueries({
+        queryKey: ["chart-of-accounts", companyId],
+      });
       toast({
         title: "تم تحديث الحساب بنجاح",
         description: "تم حفظ التعديلات على الحساب",
@@ -198,10 +206,13 @@ export const useDeleteAccount = () => {
   return useMutation({
     mutationFn: async (accountId: string) => {
       // استخدام الدالة الجديدة المحسنة بدلاً من التحديث المباشر
-      const { data, error } = await supabase.rpc('comprehensive_delete_account', {
-        account_id_param: accountId,
-        deletion_mode: 'soft' // استخدام الحذف الآمن كافتراضي
-      });
+      const { data, error } = await supabase.rpc(
+        "comprehensive_delete_account",
+        {
+          account_id_param: accountId,
+          deletion_mode: "soft", // استخدام الحذف الآمن كافتراضي
+        }
+      );
 
       if (error) {
         throw error;
@@ -209,18 +220,21 @@ export const useDeleteAccount = () => {
 
       const result = parseDeletionResult(data);
       if (!result.success) {
-        throw new Error(result.error || 'فشل في حذف الحساب');
+        throw new Error(result.error || "فشل في حذف الحساب");
       }
 
       return result;
     },
     onSuccess: (result) => {
-      queryClient.invalidateQueries({ queryKey: ["chart-of-accounts", companyId] });
+      queryClient.invalidateQueries({
+        queryKey: ["chart-of-accounts", companyId],
+      });
       queryClient.invalidateQueries({ queryKey: ["chartOfAccounts"] });
-      
+
       toast({
         title: "تم حذف الحساب بنجاح",
-        description: result.operation?.message || "تم إلغاء تفعيل الحساب من دليل الحسابات",
+        description:
+          result.operation?.message || "تم إلغاء تفعيل الحساب من دليل الحسابات",
       });
     },
     onError: (error: unknown) => {
@@ -239,27 +253,45 @@ export const useCascadeDeleteAccount = () => {
   const { toast } = useToast();
 
   return useMutation({
-    mutationFn: async ({ accountId, forceDelete = false }: { accountId: string; forceDelete?: boolean }) => {
-      const { data, error } = await supabase.rpc("cascade_delete_account_with_children", {
-        account_id_param: accountId,
-        force_delete: forceDelete,
-      });
+    mutationFn: async ({
+      accountId,
+      forceDelete = false,
+    }: {
+      accountId: string;
+      forceDelete?: boolean;
+    }) => {
+      const { data, error } = await supabase.rpc(
+        "cascade_delete_account_with_children",
+        {
+          account_id_param: accountId,
+          force_delete: forceDelete,
+        }
+      );
 
       if (error) throw new Error(`فشل في حذف الحساب: ${error.message}`);
-      
+
       const result = parseDeletionResult(data);
-      if (!result?.success) throw new Error(result?.error || "فشل في حذف الحساب");
-      
+      if (!result?.success)
+        throw new Error(result?.error || "فشل في حذف الحساب");
+
       return result;
     },
     onSuccess: (data: unknown) => {
-      queryClient.invalidateQueries({ queryKey: ["chart-of-accounts", companyId] });
+      queryClient.invalidateQueries({
+        queryKey: ["chart-of-accounts", companyId],
+      });
 
       const result = parseDeletionResult(data);
       const deletedCount = result.total_deleted || 0;
-      const permanentDeleted = result.deleted_accounts?.filter((account) => account.deletion_type === 'permanent').length || 0;
-      const softDeleted = result.deleted_accounts?.filter((account) => account.deletion_type === 'soft').length || 0;
-      
+      const permanentDeleted =
+        result.deleted_accounts?.filter(
+          (account) => account.deletion_type === "permanent"
+        ).length || 0;
+      const softDeleted =
+        result.deleted_accounts?.filter(
+          (account) => account.deletion_type === "soft"
+        ).length || 0;
+
       let description = `تم حذف ${deletedCount} حساب`;
       if (permanentDeleted > 0 && softDeleted > 0) {
         description += ` (${permanentDeleted} نهائي، ${softDeleted} مؤقت)`;
@@ -268,7 +300,7 @@ export const useCascadeDeleteAccount = () => {
       } else {
         description += ` مؤقتاً`;
       }
-      
+
       toast({
         title: "تم حذف الحسابات بنجاح",
         description,
@@ -287,15 +319,19 @@ export const useCascadeDeleteAccount = () => {
 export const useAccountDeletionPreview = () => {
   return useMutation({
     mutationFn: async (accountId: string) => {
-      const { data, error } = await supabase.rpc("get_account_deletion_preview", {
-        account_id_param: accountId,
-      });
+      const { data, error } = await supabase.rpc(
+        "get_account_deletion_preview",
+        {
+          account_id_param: accountId,
+        }
+      );
 
       if (error) throw new Error(`فشل في جلب معاينة الحذف: ${error.message}`);
-      
+
       const result = parseDeletionResult(data);
-      if (!result?.success) throw new Error(result?.error || "فشل في جلب معاينة الحذف");
-      
+      if (!result?.success)
+        throw new Error(result?.error || "فشل في جلب معاينة الحذف");
+
       return result;
     },
   });
@@ -307,35 +343,43 @@ export const useDeleteAllAccounts = () => {
   const { toast } = useToast();
 
   return useMutation({
-    mutationFn: async ({ 
-      confirmationText, 
-      forceDeleteSystem = false 
-    }: { 
-      confirmationText: string; 
-      forceDeleteSystem?: boolean; 
+    mutationFn: async ({
+      confirmationText,
+      forceDeleteSystem = false,
+    }: {
+      confirmationText: string;
+      forceDeleteSystem?: boolean;
     }) => {
       if (!companyId) throw new Error("معرف الشركة مطلوب");
 
-      const { data, error } = await supabase.rpc("bulk_delete_company_accounts", {
-        target_company_id: companyId,
-        include_system_accounts: forceDeleteSystem,
-        deletion_reason: confirmationText,
-      });
+      const { data, error } = await supabase.rpc(
+        "bulk_delete_company_accounts",
+        {
+          target_company_id: companyId,
+          include_system_accounts: forceDeleteSystem,
+          deletion_reason: confirmationText,
+        }
+      );
 
       if (error) throw new Error(`فشل في حذف جميع الحسابات: ${error.message}`);
-      
+
       const result = parseDeletionResult(data);
-      if (!result?.success) throw new Error(result?.error || "فشل في حذف جميع الحسابات");
-      
+      if (!result?.success)
+        throw new Error(result?.error || "فشل في حذف جميع الحسابات");
+
       return result;
     },
     onSuccess: (data: unknown) => {
-      queryClient.invalidateQueries({ queryKey: ["chart-of-accounts", companyId] });
+      queryClient.invalidateQueries({
+        queryKey: ["chart-of-accounts", companyId],
+      });
 
       const summary = parseDeletionResult(data).summary;
       toast({
         title: "تم حذف جميع الحسابات",
-        description: `تم حذف ${summary?.total_processed || 0} حساب (${summary?.deleted_permanently || 0} نهائي، ${summary?.deleted_soft || 0} مؤقت)`,
+        description: `تم حذف ${summary?.total_processed || 0} حساب (${
+          summary?.deleted_permanently || 0
+        } نهائي، ${summary?.deleted_soft || 0} مؤقت)`,
       });
     },
     onError: (error: unknown) => {
@@ -355,15 +399,22 @@ export const useAllAccountsDeletionPreview = () => {
     mutationFn: async () => {
       if (!companyId) throw new Error("معرف الشركة مطلوب");
 
-      const { data, error } = await supabase.rpc("get_all_accounts_deletion_preview", {
-        target_company_id: companyId,
-      });
+      const { data, error } = await supabase.rpc(
+        "get_all_accounts_deletion_preview",
+        {
+          target_company_id: companyId,
+        }
+      );
 
-      if (error) throw new Error(`فشل في جلب معاينة حذف جميع الحسابات: ${error.message}`);
-      
+      if (error)
+        throw new Error(
+          `فشل في جلب معاينة حذف جميع الحسابات: ${error.message}`
+        );
+
       const result = parseDeletionResult(data);
-      if (!result?.success) throw new Error(result?.error || "فشل في جلب معاينة حذف جميع الحسابات");
-      
+      if (!result?.success)
+        throw new Error(result?.error || "فشل في جلب معاينة حذف جميع الحسابات");
+
       return result;
     },
   });
@@ -377,14 +428,15 @@ export const useCopyDefaultAccounts = () => {
   return useMutation({
     mutationFn: async () => {
       if (!companyId) throw new Error("معرف الشركة مطلوب");
-      
+
       validateCompanyAccess(companyId);
 
       const { error } = await supabase.rpc("copy_default_accounts_to_company", {
         target_company_id: companyId,
       });
 
-      if (error) throw new Error(`فشل في نسخ الحسابات الافتراضية: ${error.message}`);
+      if (error)
+        throw new Error(`فشل في نسخ الحسابات الافتراضية: ${error.message}`);
     },
     onMutate: () => {
       toast({
@@ -393,7 +445,9 @@ export const useCopyDefaultAccounts = () => {
       });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["chart-of-accounts", companyId] });
+      queryClient.invalidateQueries({
+        queryKey: ["chart-of-accounts", companyId],
+      });
       toast({
         title: "تم نسخ الحسابات الافتراضية (القديم)",
         description: "تم إضافة دليل الحسابات الافتراضي للشركة (232 حساب)",

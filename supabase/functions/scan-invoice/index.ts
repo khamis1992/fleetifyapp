@@ -1,4 +1,3 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { buildLongCatHeaders, getLongCatApiKey, LONGCAT_CHAT_COMPLETIONS_URL, LONGCAT_MODEL } from "../_shared/longcat.ts";
 
@@ -270,7 +269,7 @@ async function performCustomerMatching(
 /**
  * Enhanced OCR with multi-engine support and intelligent text analysis
  */
-serve(async (req) => {
+Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
@@ -441,27 +440,37 @@ CRITICAL:
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabaseClient = createClient(supabaseUrl, supabaseServiceKey);
     
-    // Get company_id from request headers or default
+    // Resolve company scope from a verified user. Never persist an OCR result
+    // under a synthetic/default tenant when authentication or profile lookup fails.
     const authHeader = req.headers.get('authorization');
-    let companyId = 'default-company'; // Default fallback
-    
-    if (authHeader) {
-      try {
-        const { data: { user } } = await supabaseClient.auth.getUser(authHeader.replace('Bearer ', ''));
-        if (user) {
-          const { data: profile } = await supabaseClient
-            .from('profiles')
-            .select('company_id')
-            .eq('id', user.id)
-            .single();
-          if (profile?.company_id) {
-            companyId = profile.company_id;
-          }
-        }
-      } catch (error) {
-        console.warn('Could not get company_id from auth:', error);
-      }
+    if (!authHeader?.startsWith('Bearer ')) {
+      return new Response(
+        JSON.stringify({ success: false, error: 'Unauthorized' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+      );
     }
+    const { data: { user }, error: userError } = await supabaseClient.auth.getUser(
+      authHeader.slice('Bearer '.length),
+    );
+    if (userError || !user) {
+      return new Response(
+        JSON.stringify({ success: false, error: 'Unauthorized' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+      );
+    }
+    const { data: profile, error: profileError } = await supabaseClient
+      .from('profiles')
+      .select('company_id,is_active')
+      .eq('user_id', user.id)
+      .eq('is_active', true)
+      .maybeSingle();
+    if (profileError || !profile?.company_id) {
+      return new Response(
+        JSON.stringify({ success: false, error: 'Active company membership required' }),
+        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+      );
+    }
+    const companyId = profile.company_id;
 
     // Perform intelligent fuzzy matching
     let matchResult: FuzzyMatchResult | null = null;

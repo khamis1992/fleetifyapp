@@ -12,8 +12,11 @@ const issueLabels: Record<string, string> = {
 };
 
 export const FinancialIntegrityPanel = () => {
-  const { data, isLoading, isFetching, refetch } = useFinancialIntegrityReport();
+  const { data, error, isLoading, isFetching, refetch } = useFinancialIntegrityReport();
+  if (error) return <div role="alert" className="rounded-xl border border-destructive/30 p-5"><p>تعذر تحميل فحص سلامة البيانات المالية.</p><Button className="mt-3" variant="outline" onClick={() => refetch()}>إعادة المحاولة</Button></div>;
+  if (isLoading || !data) return <p role="status" className="p-5">جاري فحص سلامة البيانات المالية…</p>;
   const isHealthy = data?.status === 'healthy';
+  const metricsAvailable = !data.issues.some(issue => issue.code === 'financial_controls_migration_not_applied');
 
   return (
     <Card className="rounded-2xl border-slate-200 bg-white shadow-sm">
@@ -48,12 +51,12 @@ export const FinancialIntegrityPanel = () => {
           </Button>
         </div>
 
-        <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        {metricsAvailable && <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <Metric label="الدفعات المكتملة" value={data?.summary.completed_payments ?? 0} tone="neutral" />
           <Metric label="دفعات بلا قيد" value={data?.summary.completed_payments_without_journal ?? 0} tone={(data?.summary.completed_payments_without_journal ?? 0) > 0 ? 'danger' : 'success'} />
           <Metric label="قيود غير متزنة" value={data?.summary.unbalanced_journal_entries ?? 0} tone={(data?.summary.unbalanced_journal_entries ?? 0) > 0 ? 'danger' : 'success'} />
           <Metric label="فواتير متعارضة" value={(data?.summary.invoice_paid_amount_mismatches ?? 0) + (data?.summary.overpaid_invoices ?? 0)} tone={((data?.summary.invoice_paid_amount_mismatches ?? 0) + (data?.summary.overpaid_invoices ?? 0)) > 0 ? 'danger' : 'success'} />
-        </div>
+        </div>}
 
         {data?.issues && data.issues.length > 0 && (
           <div className="mt-4 rounded-2xl border border-[#FB6B7A]/20 bg-[#FFF0F2] p-3">

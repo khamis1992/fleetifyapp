@@ -1,3 +1,4 @@
+import { FinancePageHeader } from "@/components/ui/FinancePageHeader";
 import { useMemo, useState } from "react";
 import {
   Building,
@@ -27,7 +28,8 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { CostCenter, useCreateCostCenter, useDeleteCostCenter, useUpdateCostCenter } from "@/hooks/useFinance";
 import { useCostCenters } from "@/hooks/useCostCenters";
 
-const qarFormatter = new Intl.NumberFormat("en-QA", {
+const qarFormatter = new Intl.NumberFormat("ar-QA", {
+  numberingSystem: "latn",
   style: "currency",
   currency: "QAR",
   minimumFractionDigits: 2,
@@ -281,6 +283,7 @@ export default function CostCenters() {
   return (
     <TooltipProvider>
       <div className="space-y-5" dir="rtl">
+      <FinancePageHeader title="مراكز التكلفة" description="توزيع الموازنات ومتابعة التكاليف المسجلة لكل مركز." icon={Building} />
         <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
           <Card className="rounded-2xl border-slate-200 bg-white shadow-sm">
             <CardContent className="p-4">
@@ -337,7 +340,7 @@ export default function CostCenters() {
           </Card>
         </div>
 
-        <div className="grid gap-5 xl:grid-cols-[0.75fr_1.25fr]">
+        <div className="grid gap-5 xl:grid-cols-[minmax(0,0.75fr)_minmax(0,1.25fr)]">
           <Card className="rounded-2xl border-slate-200 bg-white shadow-sm">
             <CardHeader className="pb-3">
               <CardTitle className="flex items-center gap-2 text-lg font-black text-[#020617]">
@@ -368,7 +371,7 @@ export default function CostCenters() {
 
           <Card className="rounded-2xl border-slate-200 bg-white shadow-sm">
             <CardHeader className="pb-3">
-              <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+              <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
                   <CardTitle className="text-lg font-black text-[#020617]">مراكز التكلفة</CardTitle>
                   <p className="mt-1 text-sm text-[#94A3B8]">بحث بالرمز أو الاسم العربي/الإنجليزي مع متابعة الاستغلال</p>

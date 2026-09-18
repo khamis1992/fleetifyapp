@@ -1,385 +1,91 @@
-// ============================================================================
-// Hook لإعادة ربط المخالفات بالعملاء تلقائياً
-// يستخدم خوارزمية 4 مستويات للمطابقة مع العقود
-// ============================================================================
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
-import { useState, useCallback } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useQueryClient } from '@tanstack/react-query';
-import { toast } from 'sonner';
-
-interface RelinkResult {
-  totalUnlinked: number;
-  processed: number;
-  linked: number;
-  failed: number;
-  noContractFound: number;
-  details: RelinkDetail[];
-}
-
-interface RelinkDetail {
-  violationId: string;
-  penaltyNumber: string;
-  vehiclePlate: string;
-  status: 'linked' | 'no_contract' | 'no_vehicle' | 'error';
-  customerName?: string;
-  contractNumber?: string;
-  confidence?: 'high' | 'medium' | 'low';
-  reason: string;
-}
-
-interface ContractWithCustomer {
-  id: string;
+export interface AssignmentCandidate {
+  contract_id: string;
   contract_number: string;
-  status: string;
-  start_date: string | null;
-  end_date: string | null;
   customer_id: string;
-  vehicle_id: string;
-  customers: {
-    id: string;
-    first_name: string | null;
-    last_name: string | null;
-    first_name_ar: string | null;
-    last_name_ar: string | null;
-    company_name: string | null;
-  } | null;
+  customer_name: string;
+  start_date: string;
+  end_date: string;
+}
+export interface ViolationAssignment {
+  id: string;
+  penalty_number: string;
+  penalty_date: string;
+  amount: number;
+  vehicle_plate: string | null;
+  vehicle_id: string | null;
+  ready: boolean;
+  reason: string;
+  token: string;
+  candidates: AssignmentCandidate[];
 }
 
-export function useRelinkViolations() {
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [progress, setProgress] = useState(0);
-  const [result, setResult] = useState<RelinkResult | null>(null);
-  const queryClient = useQueryClient();
+// These RPCs are introduced by 20260906200000_customer_violation_assignment.sql.
+// Keep the narrow adapter here until generated database types are refreshed.
+type AssignmentRpc = (
+  name: string,
+  args: Record<string, unknown>
+) => Promise<{ data: unknown; error: { message: string } | null }>;
+const assignmentRpc = (supabase.rpc as unknown as AssignmentRpc).bind(supabase);
 
-  const relinkViolations = useCallback(async () => {
-    setIsProcessing(true);
-    setProgress(0);
-    setResult(null);
-
-    try {
-      // الحصول على معرف الشركة
-      const { data: user } = await supabase.auth.getUser();
-      if (!user.user) throw new Error('المستخدم غير مسجل الدخول');
-
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('company_id')
-        .eq('user_id', user.user.id)
-        .single();
-
-      if (!profile?.company_id) throw new Error('لم يتم العثور على بيانات المستخدم');
-
-      const companyId = profile.company_id;
-      const { data: penaltiesUnlinked, error: penaltiesError } = await supabase
-        .from('penalties')
-        .select('id, penalty_number, penalty_date, vehicle_id, vehicle_plate, customer_id')
-        .eq('company_id', companyId)
-        .is('customer_id', null);
-
-      if (penaltiesError) throw penaltiesError;
-
-      const unlinkedViolations = (penaltiesUnlinked || []).map(v => ({
-        ...v,
-        _source: 'penalties' as const,
-      }));
-
-      if (unlinkedViolations.length === 0) {
-        toast.info('لا توجد مخالفات غير مربوطة بعملاء');
-        setIsProcessing(false);
-        return { totalUnlinked: 0, processed: 0, linked: 0, failed: 0, noContractFound: 0, details: [] };
-      }
-
-      // جلب جميع العقود مع العملاء
-      const { data: allContracts, error: contractsError } = await supabase
-        .from('contracts')
-        .select(`
-          id,
-          contract_number,
-          status,
-          start_date,
-          end_date,
-          customer_id,
-          vehicle_id,
-          customers (
-            id,
-            first_name,
-            last_name,
-            first_name_ar,
-            last_name_ar,
-            company_name
-          )
-        `)
-        .eq('company_id', companyId)
-        .order('end_date', { ascending: false });
-
-      if (contractsError) throw contractsError;
-
-      // إنشاء خريطة للعقود حسب vehicle_id
-      const contractsByVehicle = new Map<string, ContractWithCustomer[]>();
-      (allContracts || []).forEach((contract: any) => {
-        if (contract.vehicle_id) {
-          const existing = contractsByVehicle.get(contract.vehicle_id) || [];
-          existing.push(contract);
-          contractsByVehicle.set(contract.vehicle_id, existing);
-        }
-      });
-
-      // جلب جميع المركبات لمطابقة اللوحات
-      const { data: vehicles } = await supabase
-        .from('vehicles')
-        .select('id, plate_number')
-        .eq('company_id', companyId);
-
-      const plateToVehicleId = new Map<string, string>();
-      const vehicleIdToPlate = new Map<string, string>();
-      (vehicles || []).forEach(v => {
-        if (v.plate_number) {
-          plateToVehicleId.set(v.plate_number, v.id);
-          plateToVehicleId.set(v.plate_number.replace(/\s+/g, ''), v.id);
-          plateToVehicleId.set(v.plate_number.toUpperCase(), v.id);
-          // إضافة الأرقام فقط
-          const numericOnly = v.plate_number.replace(/\D/g, '');
-          if (numericOnly.length >= 3) plateToVehicleId.set(numericOnly, v.id);
-          vehicleIdToPlate.set(v.id, v.plate_number);
-        }
-      });
-
-      const details: RelinkDetail[] = [];
-      let linked = 0;
-      let noContractFound = 0;
-      let failed = 0;
-
-      // معالجة كل مخالفة
-      for (let i = 0; i < unlinkedViolations.length; i++) {
-        const violation = unlinkedViolations[i];
-        setProgress(Math.round(((i + 1) / unlinkedViolations.length) * 100));
-
-        try {
-          // تحديد vehicle_id
-          let vehicleId = violation.vehicle_id;
-          let vehiclePlate = violation.vehicle_plate || (vehicleId ? vehicleIdToPlate.get(vehicleId) : null) || 'غير محدد';
-          if (!vehicleId && violation.vehicle_plate) {
-            vehicleId = plateToVehicleId.get(violation.vehicle_plate) ||
-                        plateToVehicleId.get(violation.vehicle_plate.replace(/\s+/g, '')) ||
-                        plateToVehicleId.get(violation.vehicle_plate.toUpperCase()) ||
-                        null;
-          }
-
-          if (!vehicleId) {
-            details.push({
-              violationId: violation.id,
-              penaltyNumber: violation.penalty_number || 'بدون رقم',
-              vehiclePlate: vehiclePlate,
-              status: 'no_vehicle',
-              reason: 'لم يتم العثور على المركبة في النظام'
-            });
-            noContractFound++;
-            continue;
-          }
-
-          // البحث عن عقد مناسب
-          const contracts = contractsByVehicle.get(vehicleId);
-          if (!contracts || contracts.length === 0) {
-            details.push({
-              violationId: violation.id,
-              penaltyNumber: violation.penalty_number || 'بدون رقم',
-              vehiclePlate: vehiclePlate,
-              status: 'no_contract',
-              reason: 'لا يوجد عقود لهذه المركبة'
-            });
-            noContractFound++;
-            continue;
-          }
-
-          // خوارزمية 4 مستويات للمطابقة
-          const matchResult = findBestContract(contracts, violation.penalty_date);
-
-          if (!matchResult) {
-            details.push({
-              violationId: violation.id,
-              penaltyNumber: violation.penalty_number || 'بدون رقم',
-              vehiclePlate: vehiclePlate,
-              status: 'no_contract',
-              reason: 'لم يتم العثور على عقد مناسب'
-            });
-            noContractFound++;
-            continue;
-          }
-          const updateData = { customer_id: matchResult.contract.customer_id, contract_id: matchResult.contract.id, vehicle_id: vehicleId };
-          const { error: updateError } = await supabase
-            .from('penalties')
-            .update(updateData)
-            .eq('id', violation.id);
-
-          if (updateError) throw updateError;
-
-          const customerName = getCustomerName(matchResult.contract.customers);
-          
-          details.push({
-            violationId: violation.id,
-            penaltyNumber: violation.penalty_number || 'بدون رقم',
-            vehiclePlate: vehiclePlate,
-            status: 'linked',
-            customerName,
-            contractNumber: matchResult.contract.contract_number,
-            confidence: matchResult.confidence,
-            reason: matchResult.reason
-          });
-          linked++;
-
-        } catch (err: any) {
-          details.push({
-            violationId: violation.id,
-            penaltyNumber: violation.penalty_number || 'بدون رقم',
-            vehiclePlate: violation.vehicle_plate || (violation.vehicle_id ? vehicleIdToPlate.get(violation.vehicle_id) : null) || 'غير محدد',
-            status: 'error',
-            reason: err.message || 'خطأ غير معروف'
-          });
-          failed++;
-        }
-      }
-
-      const finalResult: RelinkResult = {
-        totalUnlinked: unlinkedViolations.length,
-        processed: unlinkedViolations.length,
-        linked,
-        failed,
-        noContractFound,
-        details
-      };
-
-      setResult(finalResult);
-
-      // تحديث الكاش
-      queryClient.invalidateQueries({ queryKey: ['traffic-violations'] });
-      queryClient.invalidateQueries({ queryKey: ['traffic-violations-count'] });
-      queryClient.invalidateQueries({ queryKey: ['traffic-violations-dashboard-stats'] });
-      queryClient.invalidateQueries({ queryKey: ['traffic-violations-all-for-report'] });
-
-      if (linked > 0) {
-        toast.success(`تم ربط ${linked} مخالفة بنجاح من أصل ${unlinkedViolations.length}`);
-      } else {
-        toast.info('لم يتم ربط أي مخالفات جديدة');
-      }
-
-      return finalResult;
-
-    } catch (error: any) {
-      console.error('Error relinking violations:', error);
-      toast.error(`خطأ: ${error.message}`);
-      throw error;
-    } finally {
-      setIsProcessing(false);
-    }
-  }, [queryClient]);
-
-  return {
-    relinkViolations,
-    isProcessing,
-    progress,
-    result,
-    resetResult: () => setResult(null)
-  };
-}
-
-// دالة مساعدة للبحث عن أفضل عقد
-function findBestContract(
-  contracts: ContractWithCustomer[],
-  violationDate: string | null
-): { contract: ContractWithCustomer; confidence: 'high' | 'medium' | 'low'; reason: string } | null {
-  
-  if (!violationDate) {
-    // إذا لم يكن هناك تاريخ، نستخدم أحدث عقد
-    if (contracts.length > 0) {
-      return {
-        contract: contracts[0],
-        confidence: 'low',
-        reason: 'أحدث عقد (لا يوجد تاريخ للمخالفة)'
-      };
-    }
-    return null;
-  }
-
-  const vDate = new Date(violationDate);
-
-  // المستوى 1: عقد نشط مع تاريخ ضمن الفترة
-  const activeInRange = contracts.find(c => {
-    if (c.status !== 'active') return false;
-    return isDateInRange(vDate, c.start_date, c.end_date);
+export function useRelinkViolations(companyId: string | null | undefined) {
+  const client = useQueryClient();
+  const preview = useQuery({
+    queryKey: ["traffic-violation-assignment-preview", companyId],
+    enabled: Boolean(companyId),
+    retry: false,
+    staleTime: 0,
+    queryFn: async () => {
+      const { data, error } = await assignmentRpc(
+        "preview_customer_violation_assignments_v1",
+        { p_company_id: companyId }
+      );
+      if (error) throw new Error(/PGRST202|Could not find the function|schema cache/i.test(error.message)
+        ? 'ميزة الإسناد بانتظار نشر تحديث قاعدة البيانات. لم تُغيّر أي مخالفة.' : error.message);
+      if (!Array.isArray(data)) throw new Error("تعذر قراءة معاينة الإسناد");
+      return data as ViolationAssignment[];
+    },
   });
-
-  if (activeInRange) {
-    return {
-      contract: activeInRange,
-      confidence: 'high',
-      reason: `عقد نشط (${activeInRange.contract_number})`
-    };
-  }
-
-  // المستوى 2: أي عقد مع تاريخ ضمن الفترة
-  const inRange = contracts.find(c => isDateInRange(vDate, c.start_date, c.end_date));
-  
-  if (inRange) {
-    return {
-      contract: inRange,
-      confidence: 'medium',
-      reason: `عقد ${inRange.status === 'active' ? 'نشط' : inRange.status} (${inRange.contract_number})`
-    };
-  }
-
-  // المستوى 3: أقرب عقد انتهى قبل المخالفة (خلال 30 يوم)
-  const contractsBefore = contracts
-    .filter(c => {
-      const endDate = c.end_date ? new Date(c.end_date) : null;
-      return endDate && endDate < vDate;
-    })
-    .sort((a, b) => {
-      const dateA = new Date(a.end_date!);
-      const dateB = new Date(b.end_date!);
-      return dateB.getTime() - dateA.getTime();
-    });
-
-  if (contractsBefore.length > 0) {
-    const nearest = contractsBefore[0];
-    const daysDiff = daysBetween(vDate, new Date(nearest.end_date!));
-    
-    if (daysDiff <= 30) {
-      return {
-        contract: nearest,
-        confidence: daysDiff <= 7 ? 'medium' : 'low',
-        reason: `عقد انتهى قبل ${daysDiff} يوم`
-      };
-    }
-  }
-
-  // المستوى 4: أحدث عقد متوفر
-  if (contracts.length > 0) {
-    return {
-      contract: contracts[0],
-      confidence: 'low',
-      reason: 'أحدث عقد متوفر'
-    };
-  }
-
-  return null;
-}
-
-function isDateInRange(date: Date, startStr: string | null, endStr: string | null): boolean {
-  if (!startStr || !endStr) return false;
-  const start = new Date(startStr);
-  const end = new Date(endStr);
-  return date >= start && date <= end;
-}
-
-function daysBetween(date1: Date, date2: Date): number {
-  return Math.abs(Math.floor((date1.getTime() - date2.getTime()) / (1000 * 60 * 60 * 24)));
-}
-
-function getCustomerName(customer: ContractWithCustomer['customers']): string {
-  if (!customer) return 'غير محدد';
-  return customer.company_name ||
-    `${customer.first_name_ar || ''} ${customer.last_name_ar || ''}`.trim() ||
-    `${customer.first_name || ''} ${customer.last_name || ''}`.trim() ||
-    'غير محدد';
+  const assignment = useMutation({
+    mutationFn: async (items: ViolationAssignment[]) => {
+      if (
+        !companyId ||
+        items.length < 1 ||
+        items.length > 50 ||
+        items.some((item) => !item.ready)
+      ) {
+        throw new Error("اختر من 1 إلى 50 مخالفة جاهزة للإسناد");
+      }
+      const { data, error } = await assignmentRpc(
+        "assign_customer_violations_v1",
+        {
+          p_company_id: companyId,
+          p_items: items.map(({ id, token }) => ({ id, token })),
+        }
+      );
+      if (error) throw new Error(error.message);
+      return data as { assigned: number };
+    },
+    onSuccess: (data) => {
+      toast.success(`تم إسناد ${data.assigned} مخالفة للعملاء وتسجيل العملية`);
+    },
+    onError: (error: Error) => toast.error(error.message),
+    onSettled: async () => {
+      // Refresh the customer, contract, legal and financial views that consume penalties too.
+      await client.invalidateQueries({
+        predicate: ({ queryKey }) =>
+          queryKey.some(
+            (key) =>
+              typeof key === "string" &&
+              /traffic|violation|penalt|customer|contract|legal|collection/.test(
+                key
+              )
+          ),
+      });
+    },
+  });
+  return { preview, assignment };
 }

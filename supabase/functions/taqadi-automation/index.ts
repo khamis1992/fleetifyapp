@@ -3,7 +3,6 @@
  * يتحكم في متصفح سحابي عبر Browserbase لملء نموذج تقاضي تلقائياً
  */
 
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
 const BROWSERBASE_API_KEY = Deno.env.get("BROWSERBASE_API_KEY") || "";
 const BROWSERBASE_PROJECT_ID = Deno.env.get("BROWSERBASE_PROJECT_ID") || "";
@@ -886,11 +885,20 @@ runAutomation();
 `;
 }
 
-serve(async (req) => {
+Deno.serve(async (req) => {
   // Handle CORS
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }
+
+  return new Response(
+    JSON.stringify({
+      success: false,
+      error: "LEGACY_TAQADI_BYPASS_RETIRED",
+      message: "استخدم طابور taqadi_filing_jobs المحكوم ووكيل تقاضي المحلي.",
+    }),
+    { status: 410, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+  );
 
   try {
     if (!BROWSERBASE_API_KEY || !BROWSERBASE_PROJECT_ID) {

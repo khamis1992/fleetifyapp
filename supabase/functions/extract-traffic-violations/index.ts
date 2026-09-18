@@ -1,5 +1,5 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { authorizeActiveCompanyUser } from "../_shared/privileged-admin.ts";
 import { TrafficViolationRegexParser } from "./regex-parser.ts";
 import {
   buildLongCatHeaders,
@@ -258,7 +258,7 @@ async function processTextWithGPT4(text: string): Promise<Response> {
   return response;
 }
 
-serve(async (req) => {
+Deno.serve(async (req) => {
   const requestId = crypto.randomUUID();
 
   // Handle CORS preflight requests FIRST - before any other processing
@@ -337,6 +337,7 @@ serve(async (req) => {
       const startTime = performance.now();
 
       try {
+    await authorizeActiveCompanyUser(req);
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 60000); // 60 second timeout per test
 
@@ -920,3 +921,5 @@ serve(async (req) => {
     });
   }
 });
+
+

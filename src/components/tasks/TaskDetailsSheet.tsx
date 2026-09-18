@@ -1,44 +1,38 @@
-import React from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
+import {
+  ArrowUpLeft,
+  CheckSquare,
+  Edit,
+  Loader2,
+  Send,
+  Trash2,
+} from "lucide-react";
 import {
   Sheet,
   SheetContent,
   SheetHeader,
   SheetTitle,
-} from '@/components/ui/sheet';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Progress } from '@/components/ui/progress';
-import { Textarea } from '@/components/ui/textarea';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Separator } from '@/components/ui/separator';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+  SheetDescription,
+} from "@/components/ui/sheet";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Progress } from "@/components/ui/progress";
 import {
-  Task,
   useTaskComments,
   useAddTaskComment,
   useTaskActivityLog,
   useToggleChecklist,
-} from '@/hooks/useTasks';
-import { format, formatDistanceToNow } from 'date-fns';
-import { ar } from 'date-fns/locale';
-import { cn } from '@/lib/utils';
-import { systemColorPattern } from '@/lib/design-system/systemColorPattern';
+  useUpdateTaskStatus,
+  type Task,
+} from "@/hooks/useTasks";
 import {
-  Calendar,
-  User,
-  Flag,
-  MessageSquare,
-  History,
-  CheckSquare,
-  Edit,
-  Trash2,
-  Send,
-  Loader2,
-  Tag,
-  Folder,
-} from 'lucide-react';
+  taskDate,
+  taskIsOverdue,
+  taskPriorityLabels,
+  taskRelatedRecord,
+  taskStatusLabels,
+} from "./workspace/model";
 
 interface TaskDetailsSheetProps {
   task: Task | null;
@@ -47,387 +41,278 @@ interface TaskDetailsSheetProps {
   onEdit: (task: Task) => void;
   onDelete: (taskId: string) => void;
 }
-
-const priorityLabels = {
-  low: 'منخفضة',
-  medium: 'متوسطة',
-  high: 'عالية',
-  urgent: 'عاجلة',
+const personName = (person?: Task["creator"]) =>
+  person
+    ? `${person.first_name_ar || person.first_name || ""} ${
+        person.last_name_ar || person.last_name || ""
+      }`.trim()
+    : "غير محدد";
+const activityLabels: Record<string, string> = {
+  created: "إنشاء المهمة",
+  updated: "تحديث المهمة",
+  status_changed: "تغيير الحالة",
+  comment_added: "إضافة تعليق",
 };
 
-const taskTheme = systemColorPattern.colors;
-
-const priorityColors = {
-  low: '#94A3B8',
-  medium: taskTheme.info,
-  high: '#F59E0B',
-  urgent: taskTheme.alert,
-};
-
-const statusLabels = {
-  pending: 'معلقة',
-  in_progress: 'قيد التنفيذ',
-  completed: 'مكتملة',
-  cancelled: 'ملغاة',
-  on_hold: 'متوقفة',
-};
-
-const statusStyles = {
-  pending: { color: '#64748B', bg: '#F1F5F9' },
-  in_progress: { color: taskTheme.info, bg: `${taskTheme.info}14` },
-  completed: { color: taskTheme.success, bg: `${taskTheme.success}14` },
-  cancelled: { color: taskTheme.alert, bg: `${taskTheme.alert}14` },
-  on_hold: { color: '#D97706', bg: '#FFFBEB' },
-};
-
-export const TaskDetailsSheet: React.FC<TaskDetailsSheetProps> = ({
+export function TaskDetailsSheet({
   task,
   open,
   onOpenChange,
   onEdit,
   onDelete,
-}) => {
-  const [newComment, setNewComment] = React.useState('');
-  const { data: comments = [], isLoading: loadingComments } = useTaskComments(task?.id);
-  const { data: activityLog = [], isLoading: loadingActivity } = useTaskActivityLog(task?.id);
+}: TaskDetailsSheetProps) {
+  const comments = useTaskComments(task?.id);
+  const activities = useTaskActivityLog(task?.id);
   const addComment = useAddTaskComment();
   const toggleChecklist = useToggleChecklist();
-
-  const handleAddComment = async () => {
-    if (!task || !newComment.trim()) return;
-
-    await addComment.mutateAsync({
-      taskId: task.id,
-      content: newComment.trim(),
-    });
-    setNewComment('');
-  };
-
-  const handleToggleChecklist = async (checklistId: string, isCompleted: boolean) => {
-    await toggleChecklist.mutateAsync({ checklistId, isCompleted: !isCompleted });
-  };
-
-  const checklistProgress = React.useMemo(() => {
-    if (!task?.checklists || task.checklists.length === 0) return null;
-    const completed = task.checklists.filter(c => c.is_completed).length;
-    const total = task.checklists.length;
-    return { completed, total, percentage: Math.round((completed / total) * 100) };
-  }, [task?.checklists]);
-
+  const updateStatus = useUpdateTaskStatus();
+  const [draft, setDraft] = useState("");
+  useEffect(() => setDraft(""), [task?.id]);
   if (!task) return null;
-
+  const checklist = [...(task.checklists || [])].sort(
+    (a, b) => a.sort_order - b.sort_order
+  );
+  const completed = checklist.filter((item) => item.is_completed).length;
+  const related = taskRelatedRecord(task);
+  const submitComment = async (event: React.FormEvent) => {
+    event.preventDefault();
+    if (!draft.trim() || addComment.isPending) return;
+    try {
+      await addComment.mutateAsync({ taskId: task.id, content: draft.trim() });
+      setDraft("");
+    } catch {
+      /* Keep the draft; the mutation reports the error. */
+    }
+  };
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="left" className="w-full border-r border-[#E5EAF1] bg-white p-0 sm:max-w-lg overflow-hidden" dir="rtl">
-        {/* Header */}
-        <div className="border-b border-[#E5EAF1] bg-white p-6 shadow-sm">
-          <SheetHeader>
-            <div className="flex items-start justify-between">
-              <div className="flex-1">
-                <Badge
-                  variant="secondary"
-                  className="mb-2 rounded-full border-0 px-3 py-1 text-xs font-bold"
-                  style={{
-                    backgroundColor: statusStyles[task.status].bg,
-                    color: statusStyles[task.status].color,
-                  }}
-                >
-                  {statusLabels[task.status]}
-                </Badge>
-                <SheetTitle className="text-xl font-black text-[#020617]">{task.title}</SheetTitle>
-              </div>
-              <div className="flex gap-2">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-9 w-9 rounded-lg text-[#64748B] hover:bg-[#F6F8FB] hover:text-[#38BDF8]"
-                  onClick={() => {
-                    onOpenChange(false);
-                    onEdit(task);
-                  }}
-                >
-                  <Edit className="h-4 w-4" />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-9 w-9 rounded-lg text-[#64748B] hover:bg-[#FB6B7A14] hover:text-[#FB6B7A]"
-                  onClick={() => {
-                    onOpenChange(false);
-                    onDelete(task.id);
-                  }}
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-              </div>
-            </div>
-          </SheetHeader>
-        </div>
-
-        {/* Content */}
-        <div className="flex-1 space-y-6 overflow-y-auto bg-white p-6">
-          {/* Description */}
-          {task.description && (
-            <div>
-              <h4 className="mb-2 text-sm font-bold text-[#64748B]">الوصف</h4>
-              <p className="whitespace-pre-wrap rounded-lg border border-[#E5EAF1] bg-[#F6F8FB] p-3 text-sm leading-6 text-[#020617]">{task.description}</p>
-            </div>
-          )}
-
-          {/* Details Grid */}
-          <div className="grid grid-cols-2 gap-4">
-            {/* Priority */}
-            <div className="rounded-lg border border-[#E5EAF1] bg-[#F6F8FB] p-3">
-              <div className="mb-1 flex items-center gap-2 text-sm font-semibold text-[#94A3B8]">
-                <Flag className="h-4 w-4" />
-                الأولوية
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: priorityColors[task.priority] }} />
-                <span className="font-bold text-[#020617]">{priorityLabels[task.priority]}</span>
-              </div>
-            </div>
-
-            {/* Category */}
-            {task.category && (
-              <div className="rounded-lg border border-[#E5EAF1] bg-[#F6F8FB] p-3">
-                <div className="mb-1 flex items-center gap-2 text-sm font-semibold text-[#94A3B8]">
-                  <Folder className="h-4 w-4" />
-                  التصنيف
-                </div>
-                <span className="font-bold text-[#020617]">{task.category}</span>
-              </div>
-            )}
-
-            {/* Due Date */}
-            {task.due_date && (
-              <div className="rounded-lg border border-[#E5EAF1] bg-[#F6F8FB] p-3">
-                <div className="mb-1 flex items-center gap-2 text-sm font-semibold text-[#94A3B8]">
-                  <Calendar className="h-4 w-4" />
-                  تاريخ الاستحقاق
-                </div>
-                <span className="font-bold text-[#020617]">
-                  {format(new Date(task.due_date), 'd MMMM yyyy', { locale: ar })}
-                </span>
-              </div>
-            )}
-
-            {/* Assignee */}
-            <div className="rounded-lg border border-[#E5EAF1] bg-[#F6F8FB] p-3">
-              <div className="mb-1 flex items-center gap-2 text-sm font-semibold text-[#94A3B8]">
-                <User className="h-4 w-4" />
-                المسؤول
-              </div>
-              {task.assignee ? (
-                <div className="flex items-center gap-2">
-                  <Avatar className="h-6 w-6 border border-[#E5EAF1]">
-                    <AvatarImage src={task.assignee.avatar_url || ''} />
-                    <AvatarFallback className="bg-[#EAF8FE] text-xs font-bold text-[#38BDF8]">
-                      {(task.assignee.first_name_ar || task.assignee.first_name || '?')[0]}
-                    </AvatarFallback>
-                  </Avatar>
-                  <span className="font-bold text-[#020617]">
-                    {task.assignee.first_name_ar || task.assignee.first_name}{' '}
-                    {task.assignee.last_name_ar || task.assignee.last_name}
-                  </span>
-                </div>
-              ) : (
-                <span className="font-bold text-[#94A3B8]">غير معين</span>
-              )}
-            </div>
+      <SheetContent side="left" dir="rtl" className="tw-details">
+        <SheetHeader className="tw-detail-header">
+          <div className="tw-eyebrow">
+            تفاصيل المهمة <span> / </span> {task.category || "عامة"}
           </div>
-
-          {/* Tags */}
-          {task.tags && task.tags.length > 0 && (
-            <div>
-              <div className="mb-2 flex items-center gap-2 text-sm font-semibold text-[#94A3B8]">
-                <Tag className="h-4 w-4" />
-                الوسوم
+          <SheetTitle>{task.title}</SheetTitle>
+          <SheetDescription>
+            المسؤوليات والتقدّم وسجل المتابعة في مكان واحد.
+          </SheetDescription>
+          <div className="tw-detail-actions">
+            <span className={`tw-priority priority-${task.priority}`}>
+              {taskPriorityLabels[task.priority]}
+            </span>
+            <button className="tw-button" onClick={() => onEdit(task)}>
+              <Edit size={15} />
+              تعديل
+            </button>
+            <button
+              className="tw-button"
+              aria-label="حذف المهمة"
+              onClick={() => onDelete(task.id)}
+            >
+              <Trash2 size={15} />
+            </button>
+          </div>
+        </SheetHeader>
+        <div className="tw-detail-body">
+          <section>
+            <label className="tw-field">
+              حالة المهمة
+              <select
+                value={task.status}
+                disabled={updateStatus.isPending}
+                onChange={(event) =>
+                  updateStatus.mutate({
+                    taskId: task.id,
+                    status: event.target.value as Task["status"],
+                  })
+                }
+              >
+                {Object.entries(taskStatusLabels).map(([value, label]) => (
+                  <option key={value} value={value}>
+                    {label}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <dl className="tw-detail-meta">
+              <div>
+                <dt>المسؤول</dt>
+                <dd>{personName(task.assignee)}</dd>
               </div>
-              <div className="flex flex-wrap gap-2">
+              <div>
+                <dt>موعد الاستحقاق</dt>
+                <dd className={taskIsOverdue(task) ? "tw-overdue" : ""}>
+                  {taskDate(task.due_date)}
+                  {taskIsOverdue(task) && " · متأخرة"}
+                </dd>
+              </div>
+              <div>
+                <dt>تاريخ البدء</dt>
+                <dd>{taskDate(task.start_date)}</dd>
+              </div>
+              <div>
+                <dt>التصنيف</dt>
+                <dd>{task.category || "غير مصنّفة"}</dd>
+              </div>
+            </dl>
+            {related && (
+              <Link className="tw-record-link" to={related.href}>
+                {related.label}
+                <ArrowUpLeft size={16} />
+              </Link>
+            )}
+          </section>
+          <section>
+            <h3>عن المهمة</h3>
+            <p className="tw-detail-description">
+              {task.description || "لم تتم إضافة وصف لهذه المهمة."}
+            </p>
+            {!!task.tags?.length && (
+              <div className="tw-tags">
                 {task.tags.map((tag) => (
-                  <Badge key={tag} variant="secondary" className="rounded-md border border-[#D7F0FB] bg-[#EAF8FE] text-[#0284C7]">
-                    {tag}
-                  </Badge>
+                  <span key={tag}>{tag}</span>
                 ))}
               </div>
+            )}
+          </section>
+          <section>
+            <div className="tw-detail-section-title">
+              <h3>
+                <CheckSquare size={17} />
+                خطوات الإنجاز
+              </h3>
+              <span>
+                {completed} / {checklist.length}
+              </span>
             </div>
-          )}
-
-          {/* Checklists */}
-          {task.checklists && task.checklists.length > 0 && (
-            <div>
-              <div className="mb-3 flex items-center justify-between">
-                <div className="flex items-center gap-2 text-sm font-semibold text-[#94A3B8]">
-                  <CheckSquare className="h-4 w-4" />
-                  المهام الفرعية
-                </div>
-                {checklistProgress && (
-                  <span className="text-sm font-bold text-[#64748B]">
-                    {checklistProgress.completed}/{checklistProgress.total}
-                  </span>
-                )}
-              </div>
-              {checklistProgress && (
-                <Progress value={checklistProgress.percentage} className="h-2 mb-3" />
-              )}
-              <div className="space-y-2">
-                {task.checklists
-                  .sort((a, b) => a.sort_order - b.sort_order)
-                  .map((item) => (
-                    <div
+            {checklist.length ? (
+              <>
+                <Progress
+                  value={(completed / checklist.length) * 100}
+                  className="tw-check-progress"
+                />
+                <div className="tw-check-items">
+                  {checklist.map((item) => (
+                    <label
                       key={item.id}
-                      className="flex items-center gap-3 rounded-lg border border-transparent p-2 transition hover:border-[#E5EAF1] hover:bg-[#F6F8FB]"
+                      className={item.is_completed ? "is-complete" : ""}
                     >
                       <Checkbox
                         checked={item.is_completed}
-                        onCheckedChange={() => handleToggleChecklist(item.id, item.is_completed)}
+                        disabled={toggleChecklist.isPending}
+                        onCheckedChange={(value) =>
+                          toggleChecklist.mutate({
+                            checklistId: item.id,
+                            isCompleted: value === true,
+                          })
+                        }
                       />
-                      <span
-                        className={cn(
-                          'flex-1',
-                          item.is_completed && 'text-[#94A3B8] line-through'
-                        )}
-                      >
-                        {item.title}
-                      </span>
-                    </div>
-                  ))}
-              </div>
-            </div>
-          )}
-
-          <Separator />
-
-          {/* Tabs for Comments & Activity */}
-          <Tabs defaultValue="comments" className="w-full">
-            <TabsList className="grid w-full grid-cols-2 rounded-lg border border-[#E5EAF1] bg-[#F6F8FB] p-1">
-              <TabsTrigger value="comments" className="flex items-center gap-2 rounded-md text-[#64748B] data-[state=active]:bg-white data-[state=active]:text-[#38BDF8] data-[state=active]:shadow-sm">
-                <MessageSquare className="h-4 w-4" />
-                التعليقات ({comments.length})
-              </TabsTrigger>
-              <TabsTrigger value="activity" className="flex items-center gap-2 rounded-md text-[#64748B] data-[state=active]:bg-white data-[state=active]:text-[#38BDF8] data-[state=active]:shadow-sm">
-                <History className="h-4 w-4" />
-                السجل
-              </TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="comments" className="mt-4 space-y-4">
-              {/* Add Comment */}
-              <div className="flex gap-2">
-                <Textarea
-                  placeholder="أضف تعليقاً..."
-                  value={newComment}
-                  onChange={(e) => setNewComment(e.target.value)}
-                  className="min-h-[80px] flex-1 rounded-lg border-[#C8D7E8] bg-[#F6F8FB] text-[#020617] placeholder:text-[#38BDF8] focus-visible:ring-[#38BDF8]"
-                />
-              </div>
-              <Button
-                onClick={handleAddComment}
-                disabled={!newComment.trim() || addComment.isPending}
-                className="h-11 w-full rounded-lg bg-[#38BDF8] font-bold text-white shadow-sm hover:bg-[#0EA5E9]"
-              >
-                {addComment.isPending ? (
-                  <Loader2 className="h-4 w-4 animate-spin ml-2" />
-                ) : (
-                  <Send className="h-4 w-4 ml-2" />
-                )}
-                إرسال
-              </Button>
-
-              {/* Comments List */}
-              {loadingComments ? (
-                <div className="flex justify-center py-8">
-                  <Loader2 className="h-6 w-6 animate-spin text-[#38BDF8]" />
-                </div>
-              ) : comments.length === 0 ? (
-                <p className="py-8 text-center text-sm font-semibold text-[#94A3B8]">لا توجد تعليقات بعد</p>
-              ) : (
-                <div className="space-y-4">
-                  <AnimatePresence mode="popLayout">
-                    {comments.map((comment) => (
-                      <motion.div
-                        key={comment.id}
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -10 }}
-                        className="rounded-lg border border-[#E5EAF1] bg-[#F6F8FB] p-4"
-                      >
-                        <div className="flex items-center gap-2 mb-2">
-                          <Avatar className="h-6 w-6 border border-[#E5EAF1]">
-                            <AvatarImage src={comment.user?.avatar_url || ''} />
-                            <AvatarFallback className="bg-[#EAF8FE] text-xs font-bold text-[#38BDF8]">
-                              {(comment.user?.first_name_ar || comment.user?.first_name || '?')[0]}
-                            </AvatarFallback>
-                          </Avatar>
-                          <span className="text-sm font-bold text-[#020617]">
-                            {comment.user?.first_name_ar || comment.user?.first_name}{' '}
-                            {comment.user?.last_name_ar || comment.user?.last_name}
-                          </span>
-                          <span className="text-xs font-semibold text-[#94A3B8]">
-                            {formatDistanceToNow(new Date(comment.created_at), {
-                              addSuffix: true,
-                              locale: ar,
-                            })}
-                          </span>
-                        </div>
-                        <p className="whitespace-pre-wrap text-sm leading-6 text-[#020617]">{comment.content}</p>
-                      </motion.div>
-                    ))}
-                  </AnimatePresence>
-                </div>
-              )}
-            </TabsContent>
-
-            <TabsContent value="activity" className="mt-4">
-              {loadingActivity ? (
-                <div className="flex justify-center py-8">
-                  <Loader2 className="h-6 w-6 animate-spin text-[#38BDF8]" />
-                </div>
-              ) : activityLog.length === 0 ? (
-                <p className="py-8 text-center text-sm font-semibold text-[#94A3B8]">لا يوجد سجل نشاط</p>
-              ) : (
-                <div className="space-y-4">
-                  {activityLog.map((log) => (
-                    <div key={log.id} className="flex gap-3">
-                      <div className="mt-2 h-2 w-2 flex-shrink-0 rounded-full bg-[#38BDF8]" />
-                      <div className="flex-1">
-                        <p className="text-sm font-medium text-[#020617]">{log.description}</p>
-                        <p className="mt-1 text-xs font-semibold text-[#94A3B8]">
-                          {log.user?.first_name_ar || log.user?.first_name} -{' '}
-                          {formatDistanceToNow(new Date(log.created_at), {
-                            addSuffix: true,
-                            locale: ar,
-                          })}
-                        </p>
-                      </div>
-                    </div>
+                      <span>{item.title}</span>
+                    </label>
                   ))}
                 </div>
-              )}
-            </TabsContent>
-          </Tabs>
-
-          {/* Metadata */}
-          <div className="space-y-1 rounded-lg border border-[#E5EAF1] bg-[#F6F8FB] p-3 text-xs font-semibold text-[#94A3B8]">
-            <p>
-              أنشأ بواسطة: {task.creator?.first_name_ar || task.creator?.first_name}{' '}
-              {task.creator?.last_name_ar || task.creator?.last_name}
-            </p>
-            <p>
-              تاريخ الإنشاء: {format(new Date(task.created_at), 'd MMMM yyyy - HH:mm', { locale: ar })}
-            </p>
-            {task.completed_at && (
-              <p>
-                تاريخ الإكمال: {format(new Date(task.completed_at), 'd MMMM yyyy - HH:mm', { locale: ar })}
-              </p>
+              </>
+            ) : (
+              <p className="tw-muted">لا توجد خطوات فرعية لهذه المهمة.</p>
             )}
-          </div>
+          </section>
+          <section>
+            <Tabs defaultValue="comments">
+              <TabsList className="tw-detail-tabs">
+                <TabsTrigger value="comments">
+                  التعليقات{" "}
+                  {comments.data?.length ? `(${comments.data.length})` : ""}
+                </TabsTrigger>
+                <TabsTrigger value="activity">سجل النشاط</TabsTrigger>
+              </TabsList>
+              <TabsContent value="comments">
+                <div className="tw-timeline">
+                  {comments.isLoading ? (
+                    <p role="status">جاري تحميل التعليقات…</p>
+                  ) : comments.isError ? (
+                    <button
+                      className="tw-button"
+                      onClick={() => comments.refetch()}
+                    >
+                      تعذر تحميل التعليقات · إعادة المحاولة
+                    </button>
+                  ) : !comments.data?.length ? (
+                    <p className="tw-muted">ابدأ المتابعة بإضافة أول تعليق.</p>
+                  ) : (
+                    comments.data.map((comment) => (
+                      <article key={comment.id}>
+                        <header>
+                          <strong>{personName(comment.user)}</strong>
+                          <time>{taskDate(comment.created_at)}</time>
+                        </header>
+                        <p>{comment.content}</p>
+                      </article>
+                    ))
+                  )}
+                </div>
+                <form onSubmit={submitComment} className="tw-comment-form">
+                  <label htmlFor="task-comment">إضافة تعليق</label>
+                  <textarea
+                    id="task-comment"
+                    value={draft}
+                    onChange={(event) => setDraft(event.target.value)}
+                    placeholder="اكتب تحديثاً أو ملاحظة للفريق…"
+                    rows={3}
+                    disabled={addComment.isPending}
+                  />
+                  <button
+                    className="tw-button tw-primary"
+                    disabled={!draft.trim() || addComment.isPending}
+                  >
+                    {addComment.isPending ? (
+                      <Loader2 size={15} className="animate-spin" />
+                    ) : (
+                      <Send size={15} />
+                    )}
+                    إرسال التعليق
+                  </button>
+                </form>
+              </TabsContent>
+              <TabsContent value="activity">
+                <div className="tw-timeline">
+                  {activities.isLoading ? (
+                    <p role="status">جاري تحميل السجل…</p>
+                  ) : activities.isError ? (
+                    <button
+                      className="tw-button"
+                      onClick={() => activities.refetch()}
+                    >
+                      تعذر تحميل السجل · إعادة المحاولة
+                    </button>
+                  ) : !activities.data?.length ? (
+                    <p className="tw-muted">لا توجد أحداث مسجّلة بعد.</p>
+                  ) : (
+                    activities.data.map((activity) => (
+                      <article key={activity.id}>
+                        <header>
+                          <strong>{personName(activity.user)}</strong>
+                          <time>{taskDate(activity.created_at)}</time>
+                        </header>
+                        <p>
+                          {activity.description ||
+                            activityLabels[activity.action] ||
+                            "تحديث المهمة"}
+                        </p>
+                      </article>
+                    ))
+                  )}
+                </div>
+              </TabsContent>
+            </Tabs>
+          </section>
+          <footer className="tw-detail-footer">
+            أنشأها {personName(task.creator)} · {taskDate(task.created_at)}
+            {task.completed_at && (
+              <span>اكتملت في {taskDate(task.completed_at)}</span>
+            )}
+          </footer>
         </div>
       </SheetContent>
     </Sheet>
   );
-};
-
+}
 export default TaskDetailsSheet;
-

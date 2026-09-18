@@ -15,8 +15,33 @@ export interface FleetStatus {
   total: number;
 }
 
+type FleetVehicleRow = {
+  status: string | null;
+};
+
+export const summarizeFleetStatus = (vehicles: FleetVehicleRow[]): FleetStatus => {
+  const statusCounts = vehicles.reduce((counts, vehicle) => {
+    const status = vehicle.status || 'available';
+    counts[status] = (counts[status] || 0) + 1;
+    return counts;
+  }, {} as Record<string, number>);
+
+  return {
+    available: statusCounts.available || 0,
+    rented: statusCounts.rented || 0,
+    maintenance: statusCounts.maintenance || 0,
+    outOfService: statusCounts.out_of_service || 0,
+    reserved: statusCounts.reserved || 0,
+    reservedEmployee: statusCounts.reserved_employee || 0,
+    accident: statusCounts.accident || 0,
+    stolen: statusCounts.stolen || 0,
+    policeStation: statusCounts.police_station || 0,
+    total: vehicles.length,
+  };
+};
+
 export const useFleetStatus = () => {
-  const { companyId, filter } = useUnifiedCompanyAccess();
+  const { companyId } = useUnifiedCompanyAccess();
   
   return useQuery({
     queryKey: ['fleet-status', companyId],
@@ -58,62 +83,11 @@ export const useFleetStatus = () => {
         };
       }
 
-      // Get active contracts to determine rented vehicles
-      const { data: activeContracts, error: contractsError } = await supabase
-        .from('contracts')
-        .select('vehicle_id')
-        .eq('company_id', companyId)
-        .eq('status', 'active')
-        .not('vehicle_id', 'is', null);
-
-      // Log error but don't fail - use status field as fallback
-      if (contractsError) {
-        console.warn('⚠️ [FleetStatus] Error fetching active contracts, using vehicle status as fallback:', contractsError.message);
-      }
-
-      // Create a set of vehicle IDs that are in active contracts
-      const rentedVehicleIds = new Set(
-        activeContracts?.map(contract => contract.vehicle_id).filter(Boolean) || []
-      );
-
-      // Count vehicles by status
-      const statusCounts = vehicles.reduce((acc, vehicle) => {
-        const status = vehicle.status || 'available';
-        acc[status] = (acc[status] || 0) + 1;
-        return acc;
-      }, {} as Record<string, number>);
-
-      const maintenance = statusCounts.maintenance || 0;
-      const outOfService = statusCounts.out_of_service || 0;
-      const reserved = statusCounts.reserved || 0;
-      const reservedEmployee = statusCounts.reserved_employee || 0;
-      const accident = statusCounts.accident || 0;
-      const stolen = statusCounts.stolen || 0;
-      const policeStation = statusCounts.police_station || 0;
-      const total = vehicles.length;
-
-      // Calculate rented vehicles: use active contracts as source of truth
-      // If contracts query failed, fall back to status field
-      const rentedFromContracts = rentedVehicleIds.size;
-      const rentedFromStatus = statusCounts.rented || 0;
-      const rented = contractsError ? rentedFromStatus : rentedFromContracts;
-
-      // Calculate available: total - all other statuses
-      const unavailable = rented + maintenance + outOfService + reserved + reservedEmployee + accident + stolen + policeStation;
-      const available = Math.max(0, total - unavailable);
-
-      return {
-        available,
-        rented,
-        maintenance,
-        outOfService,
-        reserved,
-        reservedEmployee,
-        accident,
-        stolen,
-        policeStation,
-        total
-      };
+      // Vehicle status is the canonical operational classification. Contract
+      // linkage is repaired and enforced in the database, while protected legal
+      // statuses (police, municipality, accident, etc.) must not be counted as
+      // rented merely because a contract still exists.
+      return summarizeFleetStatus(vehicles);
     },
     enabled: !!companyId,
     staleTime: 2 * 60 * 1000, // 2 minutes - reduced for more accurate data

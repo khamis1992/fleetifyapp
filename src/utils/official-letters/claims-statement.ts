@@ -1,3 +1,4 @@
+import { renderClaimRegister } from '../legal-claim-register-render';
 /**
  * توليد كشف المطالبات المالية
  */
@@ -6,6 +7,57 @@ import { COMPANY_INFO, generateRefNumber, formatDateAr, formatNumberEn, formatDa
 import { getOfficialLetterStyles } from './styles';
 import { generateOfficialHeader, generateSignatureSection } from './templates';
 import type { ClaimsStatementData } from './types';
+
+const escapeHtml = (value: string | null | undefined): string => String(value ?? '')
+  .replace(/&/g, '&amp;')
+  .replace(/</g, '&lt;')
+  .replace(/>/g, '&gt;')
+  .replace(/"/g, '&quot;')
+  .replace(/'/g, '&#039;');
+
+function sanitizeClaimsStatementData(data: ClaimsStatementData): ClaimsStatementData {
+  return {
+    ...data,
+    customerName: escapeHtml(data.customerName),
+    nationalId: escapeHtml(data.nationalId),
+    phone: escapeHtml(data.phone),
+    contractNumber: escapeHtml(data.contractNumber),
+    contractStartDate: escapeHtml(data.contractStartDate),
+    contractEndDate: escapeHtml(data.contractEndDate),
+    amountInWords: escapeHtml(data.amountInWords),
+    caseTitle: data.caseTitle ? escapeHtml(data.caseTitle) : undefined,
+    invoices: data.invoices.map((invoice) => ({
+      ...invoice,
+      invoiceNumber: escapeHtml(invoice.invoiceNumber),
+      dueDate: escapeHtml(invoice.dueDate),
+      servicePeriodFrom: invoice.servicePeriodFrom ? escapeHtml(invoice.servicePeriodFrom) : undefined,
+      servicePeriodTo: invoice.servicePeriodTo ? escapeHtml(invoice.servicePeriodTo) : undefined,
+    })),
+    violations: data.violations?.map((violation) => ({
+      ...violation,
+      violationNumber: escapeHtml(violation.violationNumber),
+      violationDate: escapeHtml(violation.violationDate),
+      violationType: escapeHtml(violation.violationType),
+      location: escapeHtml(violation.location),
+    })),
+    damageCosts: data.damageCosts?.map((cost) => ({
+      ...cost,
+      description: escapeHtml(cost.description),
+    })),
+    retentionCompensation: data.retentionCompensation ? {
+      ...data.retentionCompensation,
+      sourceLabel: data.retentionCompensation.sourceLabel
+        ? escapeHtml(data.retentionCompensation.sourceLabel)
+        : undefined,
+    } : null,
+    contractualCompensation: data.contractualCompensation ? {
+      ...data.contractualCompensation,
+      clauseNumber: data.contractualCompensation.clauseNumber
+        ? escapeHtml(data.contractualCompensation.clauseNumber)
+        : undefined,
+    } : null,
+  };
+}
 
 /**
  * توليد فاتورة فعلية مفصلة لكل فاتورة - بنفس تصميم PaymentReceipt المعتمد
@@ -19,6 +71,7 @@ function generateActualInvoice(
   const penalty = inv.penalty || 0;
   const total = remaining + penalty;
   const invoiceDate = formatDateEn(inv.dueDate);
+  const isAccountingInvoice = !inv.source || inv.source === 'invoice';
   
   return `
     <div class="invoice-page" style="page-break-before: always; page-break-inside: avoid;">
@@ -58,7 +111,7 @@ function generateActualInvoice(
         <!-- عنوان الفاتورة -->
         <div style="text-align: center; margin-bottom: 12px;">
           <div style="display: inline-block; padding: 5px 28px; border: 2px solid #1e3a8a; border-radius: 8px; background-color: #eff6ff;">
-            <div style="font-size: 18px; font-weight: bold; color: #1e3a8a; margin: 0;">فاتورة مستحقة</div>
+            <div style="font-size: 18px; font-weight: bold; color: #1e3a8a; margin: 0;">${isAccountingInvoice ? 'فاتورة مستحقة' : 'بيان استحقاق أجرة'}</div>
             <div style="font-size: 11px; font-weight: bold; color: #4b5563; letter-spacing: 2px; margin: 0;">DUE INVOICE</div>
           </div>
         </div>
@@ -137,7 +190,7 @@ function generateActualInvoice(
           <div style="margin: 4px 6px; padding: 5px 10px; background: #fef2f2; border: 1px solid #fecaca; border-radius: 4px;">
             <table style="width: 100%; border: none;">
               <tr>
-                <td style="border: none; font-weight: bold; color: #dc2626; font-size: 11px;">غرامة التأخير (${inv.daysLate} يوم) <span style="font-size: 8px; color: #888; font-weight: normal;">Late Fee</span></td>
+            <td style="border: none; font-weight: bold; color: #dc2626; font-size: 11px;">تعويض اتفاقي موثق (${inv.daysLate} يوم) <span style="font-size: 8px; color: #888; font-weight: normal;">Contractual compensation</span></td>
                 <td style="border: none; text-align: left; direction: ltr; unicode-bidi: embed; font-weight: bold; color: #dc2626; font-size: 13px;">${penalty.toFixed(2)} QAR</td>
               </tr>
             </table>
@@ -193,12 +246,16 @@ function generateActualInvoice(
  * توليد كشف المطالبات المالية
  */
 export function generateClaimsStatementHtml(data: ClaimsStatementData): string {
+  data = sanitizeClaimsStatementData(data);
   const refNumber = generateRefNumber();
   const currentDate = formatDateAr();
   
   // حساب المجاميع
   const totalRent = data.invoices.reduce((s, i) => s + i.totalAmount, 0);
-  const totalPenalties = data.invoices.reduce((s, i) => s + (i.penalty || 0), 0);
+  const invoiceCompensation = data.invoices.reduce((s, i) => s + (i.penalty || 0), 0);
+  const totalContractualCompensation = Number(
+    data.contractualCompensation?.amount ?? invoiceCompensation,
+  );
   const totalPaid = data.invoices.reduce((s, i) => s + i.paidAmount, 0);
   const totalRemaining = data.invoices.reduce((s, i) => s + (i.totalAmount - i.paidAmount), 0);
   const totalWithPenalties = data.invoices.reduce((s, i) => s + (i.totalAmount - i.paidAmount) + (i.penalty || 0), 0);
@@ -478,10 +535,10 @@ export function generateClaimsStatementHtml(data: ClaimsStatementData): string {
         <thead>
           <tr>
             <th style="width: 25px;">م</th>
-            <th>رقم الفاتورة</th>
-            <th>تاريخ الاستحقاق</th>
+            <th>مرجع الاستحقاق</th>
+            <th>الاستحقاق وفترة الخدمة</th>
             <th>مبلغ الإيجار</th>
-            <th>الغرامة</th>
+            <th>تعويض اتفاقي</th>
             <th>المدفوع</th>
             <th>المتبقي</th>
             <th>الإجمالي</th>
@@ -496,7 +553,10 @@ export function generateClaimsStatementHtml(data: ClaimsStatementData): string {
               <tr>
                 <td>${i + 1}</td>
                 <td>${inv.invoiceNumber || '-'}</td>
-                <td style="direction: ltr; unicode-bidi: embed;">${formatDateEn(inv.dueDate)}</td>
+                <td>
+                  <div>الاستحقاق: <span dir="ltr">${formatDateEn(inv.dueDate)}</span></div>
+                  ${inv.servicePeriodFrom && inv.servicePeriodTo ? `<div>الخدمة: <span dir="ltr">${formatDateEn(inv.servicePeriodFrom)} – ${formatDateEn(inv.servicePeriodTo)}</span></div>` : ''}
+                </td>
                 <td style="direction: ltr; unicode-bidi: embed;">${formatNumberEn(inv.totalAmount)}</td>
                 <td style="direction: ltr; unicode-bidi: embed;">${formatNumberEn(penalty)}</td>
                 <td style="direction: ltr; unicode-bidi: embed;">${formatNumberEn(inv.paidAmount)}</td>
@@ -508,7 +568,7 @@ export function generateClaimsStatementHtml(data: ClaimsStatementData): string {
           <tr class="total-row">
             <td colspan="3" style="text-align: right;">المجموع</td>
             <td style="direction: ltr; unicode-bidi: embed;">${formatNumberEn(totalRent)}</td>
-            <td style="direction: ltr; unicode-bidi: embed;">${formatNumberEn(totalPenalties)}</td>
+            <td style="direction: ltr; unicode-bidi: embed;">${formatNumberEn(invoiceCompensation)}</td>
             <td style="direction: ltr; unicode-bidi: embed;">${formatNumberEn(totalPaid)}</td>
             <td style="direction: ltr; unicode-bidi: embed;">${formatNumberEn(totalRemaining)}</td>
             <td style="direction: ltr; unicode-bidi: embed;">${formatNumberEn(totalWithPenalties)} ر.ق</td>
@@ -554,6 +614,7 @@ export function generateClaimsStatementHtml(data: ClaimsStatementData): string {
     ` : ''}
     
     <!-- الإجمالي النهائي -->
+    ${data.claimRegister ? renderClaimRegister(data.claimRegister) : `
     <div class="grand-total-box">
       <div class="grand-total-header">ملخص المطالبة الكلي</div>
       <div class="grand-total-body">
@@ -563,10 +624,10 @@ export function generateClaimsStatementHtml(data: ClaimsStatementData): string {
           <div class="grand-total-value">${formatNumberEn(totalRemaining)} ر.ق</div>
         </div>
         ` : ''}
-        ${totalPenalties > 0 ? `
+        ${totalContractualCompensation > 0 ? `
         <div class="grand-total-row">
-          <div class="grand-total-label">إجمالي غرامات التأخير</div>
-          <div class="grand-total-value" style="color: #e65100;">${formatNumberEn(totalPenalties)} ر.ق</div>
+          <div class="grand-total-label">تعويض اتفاقي موثق${data.contractualCompensation?.clauseNumber ? ` — البند ${data.contractualCompensation.clauseNumber}` : ''}</div>
+          <div class="grand-total-value" style="color: #e65100;">${formatNumberEn(totalContractualCompensation)} ر.ق</div>
         </div>
         ` : ''}
         ${data.violations && data.violations.length > 0 ? `
@@ -575,9 +636,29 @@ export function generateClaimsStatementHtml(data: ClaimsStatementData): string {
           <div class="grand-total-value" style="color: #c62828;">${formatNumberEn(violationsTotal)} ر.ق</div>
         </div>
         ` : ''}
+        ${data.retentionCompensation && data.retentionCompensation.amount > 0 ? `
+        <div class="grand-total-row">
+          <div class="grand-total-label">تعويض احتباس المركبة (${data.retentionCompensation.days} يوم)${data.retentionCompensation.sourceLabel ? ` — ${data.retentionCompensation.sourceLabel}` : ''}</div>
+          <div class="grand-total-value">${formatNumberEn(data.retentionCompensation.amount)} ر.ق</div>
+        </div>
+        ` : ''}
+        ${(data.damageCosts && data.damageCosts.length > 0) || data.securityDepositDeduction ? `
+        ${data.damageCosts?.map((cost) => `
+        <div class="grand-total-row">
+          <div class="grand-total-label">مصاريف وأضرار ثابتة: ${cost.description}</div>
+          <div class="grand-total-value">${formatNumberEn(cost.amount)} ر.ق</div>
+        </div>
+        `).join('') || ''}
+        ${data.securityDepositDeduction && data.securityDepositDeduction.amount > 0 ? `
+        <div class="grand-total-row">
+          <div class="grand-total-label">يخصم: وديعة الضمان المستخدمة في التسوية</div>
+          <div class="grand-total-value" style="color: #2e7d32;">(${formatNumberEn(data.securityDepositDeduction.amount)}) ر.ق</div>
+        </div>
+        ` : ''}
+        ` : ''}
         <div class="grand-total-row grand-total-final">
-          <div class="grand-total-label">إجمالي المبالغ المستحقة</div>
-          <div class="grand-total-value">${formatNumberEn(data.totalOverdue)} ر.ق</div>
+          <div class="grand-total-label">${data.netClaimTotal != null && data.securityDepositDeduction?.amount ? 'صافي المطالبة بعد الخصم' : 'إجمالي المبالغ المستحقة'}</div>
+          <div class="grand-total-value">${formatNumberEn(data.netClaimTotal ?? data.totalOverdue)} ر.ق</div>
         </div>
         ${data.amountInWords ? `
         <div class="grand-total-words">
@@ -587,6 +668,7 @@ export function generateClaimsStatementHtml(data: ClaimsStatementData): string {
       </div>
     </div>
     
+    `}
     ${generateSignatureSection()}
   </div>
   

@@ -87,7 +87,7 @@ const VendorCategories = () => {
       </Breadcrumb>
 
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div data-finance-heading="" className="flex items-center justify-between">
         <div className="flex items-center gap-4">
           <div className="p-3 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl text-white">
             <FolderTree className="h-6 w-6" />
@@ -349,7 +349,7 @@ const CategoryForm = ({ category, onSuccess, mutation }: CategoryFormProps) => {
             <FormItem>
               <FormLabel>اسم التصنيف (بالإنجليزية) *</FormLabel>
               <FormControl>
-                <Input {...field} placeholder="Category Name" />
+                <Input {...field} placeholder="أدخل اسم الفئة بالإنجليزية" />
               </FormControl>
               <FormMessage />
             </FormItem>

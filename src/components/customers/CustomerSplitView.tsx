@@ -155,20 +155,20 @@ export const CustomerSplitView: React.FC<CustomerSplitViewProps> = ({
   // Helper functions
   const getCustomerName = (customer: Customer) => {
     if (customer.customer_type === 'individual') {
-      return `${customer.first_name || ''} ${customer.last_name || ''}`.trim() || 
-             `${customer.first_name_ar || ''} ${customer.last_name_ar || ''}`.trim() ||
+      return `${customer.first_name_ar || ''} ${customer.last_name_ar || ''}`.trim() ||
+             `${customer.first_name || ''} ${customer.last_name || ''}`.trim() ||
              'غير محدد';
     }
-    return customer.company_name || customer.company_name_ar || 'غير محدد';
+    return customer.company_name_ar || customer.company_name || 'غير محدد';
   };
 
   const getCustomerInitials = (customer: Customer) => {
     if (customer.customer_type === 'individual') {
-      const firstName = customer.first_name || customer.first_name_ar || '';
-      const lastName = customer.last_name || customer.last_name_ar || '';
+      const firstName = customer.first_name_ar || customer.first_name || '';
+      const lastName = customer.last_name_ar || customer.last_name || '';
       return (firstName[0] || '') + (lastName[0] || '');
     }
-    const companyName = customer.company_name || customer.company_name_ar || '';
+    const companyName = customer.company_name_ar || customer.company_name || '';
     return companyName.substring(0, 2);
   };
 
@@ -210,15 +210,16 @@ export const CustomerSplitView: React.FC<CustomerSplitViewProps> = ({
   }
 
   return (
-    <div className="flex h-[calc(100vh-300px)] gap-4 bg-[#f0efed] rounded-2xl overflow-hidden">
+    <div className="opw-split-view flex h-[calc(100vh-300px)] gap-4 bg-[#f0efed] rounded-2xl overflow-hidden">
       {/* Customer List - Right Side */}
-      <div className="w-80 bg-white rounded-2xl shadow-sm flex flex-col">
+      <div className="opw-split-list w-80 bg-white rounded-2xl shadow-sm flex flex-col">
         {/* Search */}
         <div className="p-4 border-b border-neutral-100">
           <div className="relative">
             <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-neutral-400" />
             <Input
-              placeholder="بحث عن عميل..."
+              aria-label="البحث في قائمة العرض المقسم"
+              placeholder="بحث في الصفحة الحالية..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="pr-10 border-neutral-200 focus:border-rose-500 focus:ring-rose-500 rounded-xl"
@@ -242,6 +243,7 @@ export const CustomerSplitView: React.FC<CustomerSplitViewProps> = ({
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: index * 0.02 }}
                   onClick={() => setSelectedCustomer(customer)}
+                  aria-pressed={selectedCustomer?.id === customer.id}
                   className={cn(
                     "w-full p-3 rounded-xl text-right transition-all",
                     "hover:bg-neutral-50 group",
@@ -284,7 +286,7 @@ export const CustomerSplitView: React.FC<CustomerSplitViewProps> = ({
       </div>
 
       {/* Customer Details - Left Side */}
-      <div className="flex-1 bg-white rounded-2xl shadow-sm overflow-hidden">
+      <div className="opw-split-details flex-1 bg-white rounded-2xl shadow-sm overflow-hidden">
         <AnimatePresence mode="wait">
           {selectedCustomer ? (
             <motion.div
@@ -297,16 +299,16 @@ export const CustomerSplitView: React.FC<CustomerSplitViewProps> = ({
               <ScrollArea className="flex-1">
                 <div className="p-6">
                   {/* Header */}
-                  <div className="flex items-start justify-between mb-6">
-                    <div className="flex items-center gap-4">
+                  <div className="opw-split-heading flex flex-wrap gap-4 items-start justify-between mb-6">
+                    <div className="flex min-w-0 items-center gap-4">
                       <div className={cn(
                         "w-16 h-16 rounded-2xl flex items-center justify-center text-white font-bold text-xl",
                         selectedCustomer.customer_type === 'individual' ? "bg-rose-500" : "bg-blue-500"
                       )}>
                         {getCustomerInitials(selectedCustomer)}
                       </div>
-                      <div>
-                        <h2 className="text-2xl font-bold text-neutral-900">
+                      <div className="min-w-0">
+                        <h2 className="break-words text-2xl font-bold text-neutral-900">
                           {getCustomerName(selectedCustomer)}
                         </h2>
                         <p className="text-neutral-500">
@@ -331,27 +333,27 @@ export const CustomerSplitView: React.FC<CustomerSplitViewProps> = ({
                   </div>
 
                   {/* Stats Cards */}
-                  <div className="grid grid-cols-4 gap-4 mb-6">
+                  <div className="opw-split-metrics grid grid-cols-2 xl:grid-cols-4 gap-3 mb-6">
                     <Card className="bg-neutral-50 border-0 rounded-xl">
                       <CardContent className="p-4 text-center">
                         <p className="text-2xl font-bold text-neutral-900">{contracts.length}</p>
-                        <p className="text-xs text-neutral-500 mt-1">العقود</p>
+                        <p className="text-xs text-neutral-500 mt-1">آخر العقود (حتى 5)</p>
                       </CardContent>
                     </Card>
                     <Card className="bg-neutral-50 border-0 rounded-xl">
                       <CardContent className="p-4 text-center">
                         <p className="text-2xl font-bold text-green-600">
-                          {paymentsSummary?.completed?.toLocaleString('en-US') || 0}
+                          {paymentsSummary?.completed?.toLocaleString('en-US') ?? '—'}
                         </p>
-                        <p className="text-xs text-neutral-500 mt-1">المدفوع</p>
+                        <p className="text-xs text-neutral-500 mt-1">دفعات مكتملة (ر.ق)</p>
                       </CardContent>
                     </Card>
                     <Card className="bg-neutral-50 border-0 rounded-xl">
                       <CardContent className="p-4 text-center">
                         <p className="text-2xl font-bold text-amber-600">
-                          {paymentsSummary?.pending?.toLocaleString('en-US') || 0}
+                          {paymentsSummary?.pending?.toLocaleString('en-US') ?? '—'}
                         </p>
-                        <p className="text-xs text-neutral-500 mt-1">المتبقي</p>
+                        <p className="text-xs text-neutral-500 mt-1">دفعات غير مكتملة (ر.ق)</p>
                       </CardContent>
                     </Card>
                     <Card className="bg-neutral-50 border-0 rounded-xl">
@@ -359,7 +361,7 @@ export const CustomerSplitView: React.FC<CustomerSplitViewProps> = ({
                         <p className="text-2xl font-bold text-coral-600">
                           {contracts.filter(c => c.status === 'active').length}
                         </p>
-                        <p className="text-xs text-neutral-500 mt-1">عقود نشطة</p>
+                        <p className="text-xs text-neutral-500 mt-1">نشطة ضمن المعروض</p>
                       </CardContent>
                     </Card>
                   </div>
@@ -369,7 +371,7 @@ export const CustomerSplitView: React.FC<CustomerSplitViewProps> = ({
                     <CardHeader className="pb-2">
                       <CardTitle className="text-lg text-neutral-900">معلومات الاتصال</CardTitle>
                     </CardHeader>
-                    <CardContent className="grid grid-cols-2 gap-4">
+                    <CardContent className="opw-split-contact grid grid-cols-1 xl:grid-cols-2 gap-4">
                       <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-lg bg-rose-100 flex items-center justify-center">
                           <Phone className="w-5 h-5 text-coral-600" />
@@ -393,7 +395,7 @@ export const CustomerSplitView: React.FC<CustomerSplitViewProps> = ({
                         </div>
                       </div>
                       {selectedCustomer.address && (
-                        <div className="flex items-center gap-3 col-span-2">
+                        <div className="flex items-center gap-3 xl:col-span-2">
                           <div className="w-10 h-10 rounded-lg bg-green-100 flex items-center justify-center">
                             <MapPin className="w-5 h-5 text-green-600" />
                           </div>
@@ -470,7 +472,7 @@ export const CustomerSplitView: React.FC<CustomerSplitViewProps> = ({
               </ScrollArea>
 
               {/* Action Buttons */}
-              <div className="p-4 border-t border-neutral-100 flex items-center justify-between">
+              <div className="p-4 border-t border-neutral-100 flex flex-wrap gap-3 items-center justify-between">
                 <div className="flex gap-2">
                   {canEdit && (
                     <Button

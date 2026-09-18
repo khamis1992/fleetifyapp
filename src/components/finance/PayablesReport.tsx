@@ -36,7 +36,7 @@ const { data: payablesData, isLoading } = usePayablesReport()
             <tr>
               <td>${item.vendor_name}</td>
               <td>${formatCurrency(item.amount)}</td>
-              <td>${new Date(item.due_date).toLocaleDateString('en-GB')}</td>
+              <td>${new Date(item.due_date).toLocaleDateString('ar-QA')}</td>
               <td>${item.overdue_days}</td>
               <td style="color: ${item.status === 'متأخر' ? '#ef4444' : '#22c55e'}">${item.status}</td>
             </tr>
@@ -87,7 +87,7 @@ const { data: payablesData, isLoading } = usePayablesReport()
               تقرير الحسابات الدائنة
             </CardTitle>
             <CardDescription>
-              المبالغ المستحقة للموردين كما في {new Date().toLocaleDateString('en-GB')}
+              المبالغ المستحقة للموردين كما في {new Date().toLocaleDateString('ar-QA')}
             </CardDescription>
           </div>
           <Button onClick={handleExportHTML} size="sm">
@@ -135,7 +135,7 @@ const { data: payablesData, isLoading } = usePayablesReport()
               <TableRow key={index}>
                 <TableCell className="font-medium">{item.vendor_name}</TableCell>
                 <TableCell className="text-right">{formatCurrency(item.amount)}</TableCell>
-                <TableCell>{new Date(item.due_date).toLocaleDateString('en-GB')}</TableCell>
+                <TableCell>{new Date(item.due_date).toLocaleDateString('ar-QA')}</TableCell>
                 <TableCell>{item.overdue_days}</TableCell>
                 <TableCell>
                   <Badge variant={item.status === 'متأخر' ? 'destructive' : 'default'}>

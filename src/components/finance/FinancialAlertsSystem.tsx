@@ -145,16 +145,16 @@ export const FinancialAlertsSystem = () => {
                       <p className="font-medium">{alert.message}</p>
                       <div className="flex items-center gap-2 text-sm text-muted-foreground">
                         <span>
-                          {alert.current_percentage.toFixed(1)}% of budget utilized
+                          {alert.current_percentage.toFixed(1)}٪ من الموازنة مستخدم
                         </span>
                         {alert.amount_exceeded > 0 && (
                           <Badge variant="outline">
-                            +{formatCurrency(alert.amount_exceeded)} exceeded
+                            +{formatCurrency(alert.amount_exceeded)} قيمة التجاوز
                           </Badge>
                         )}
                       </div>
                       <p className="text-xs text-muted-foreground">
-                        {new Date(alert.created_at).toLocaleDateString()}
+                        {new Date(alert.created_at).toLocaleDateString('ar-QA')}
                       </p>
                     </div>
                   </div>
@@ -189,7 +189,7 @@ export const FinancialAlertsSystem = () => {
                   <div>
                     <p className="font-medium text-sm">{alert.message}</p>
                     <p className="text-xs text-muted-foreground">
-                      Acknowledged on {new Date(alert.acknowledged_at || alert.created_at).toLocaleDateString()}
+                      تم الاطلاع بتاريخ {new Date(alert.acknowledged_at || alert.created_at).toLocaleDateString('ar-QA')}
                     </p>
                   </div>
                 </div>

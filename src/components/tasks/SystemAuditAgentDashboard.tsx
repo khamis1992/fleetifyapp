@@ -10,10 +10,11 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
-import { systemColorPattern } from "@/lib/design-system/systemColorPattern";
 import {
   useSystemAuditDashboard,
   useSyncSystemAuditReviewTasks,
+  useSetSystemAuditAgentControl,
+  useCancelSystemAuditRun,
   type SystemAuditDomain,
   type SystemAuditJobSummary,
   type SystemAuditRunSummary,
@@ -50,7 +51,7 @@ import {
   XCircle,
 } from "lucide-react";
 
-const colors = systemColorPattern.colors;
+const colors = { info: '#2F7966', success: '#608D43', focus: '#A4844B', alert: '#B74B43', border: '#E0E7D8' };
 const allDomains: SystemAuditDomain[] = [
   "contracts",
   "accounting",
@@ -297,6 +298,8 @@ export function SystemAuditAgentDashboard() {
     useSystemAuditDashboard();
   const { mutate: syncReviewTasks, isPending: isSyncingReviewTasks } =
     useSyncSystemAuditReviewTasks();
+  const setAgentControl = useSetSystemAuditAgentControl();
+  const cancelAgentRun = useCancelSystemAuditRun();
   const { data: decisionTasks = [], isLoading: isLoadingDecisionTasks } =
     useTasks({
       category: "system_audit_review",
@@ -392,6 +395,69 @@ export function SystemAuditAgentDashboard() {
     );
 
   const latestRun = data.latestRun;
+  const control = data.control || {
+    companyId: data.companyId,
+    ownerProfileId: null,
+    enabled: true,
+    paused: false,
+    killSwitch: false,
+    pauseReason: null,
+    pausedAt: null,
+    version: 0,
+    updatedAt: null,
+  };
+  const permissions = data.permissions || {
+    canManageAgent: false,
+    canUseKillSwitch: false,
+    canAssignOwner: false,
+  };
+  const isRunActive = ["running", "queued", "retry"].includes(latestRun.status);
+  const updateControl = (
+    next: Partial<{
+      enabled: boolean;
+      paused: boolean;
+      killSwitch: boolean;
+      reason: string;
+      ownerProfileId: string | null;
+    }>
+  ) => {
+    setAgentControl.mutate({
+      companyId: data.companyId,
+      enabled: next.enabled ?? control.enabled,
+      paused: next.paused ?? control.paused,
+      killSwitch: next.killSwitch ?? control.killSwitch,
+      reason: next.reason ?? control.pauseReason ?? undefined,
+      ownerProfileId: Object.prototype.hasOwnProperty.call(next, "ownerProfileId")
+        ? next.ownerProfileId ?? null
+        : control.ownerProfileId,
+    });
+  };
+  const handlePauseToggle = () => {
+    if (control.paused) {
+      updateControl({ paused: false, reason: "تم استئناف الوكيل" });
+      return;
+    }
+    const reason = window.prompt("اكتب سبب إيقاف وكيل التدقيق مؤقتاً:")?.trim();
+    if (!reason) return;
+    updateControl({ paused: true, reason });
+  };
+  const handleKillSwitchToggle = () => {
+    if (control.killSwitch) {
+      if (!window.confirm("هل تريد إلغاء مفتاح الطوارئ والسماح باستئناف الوكيل؟")) return;
+      updateControl({ killSwitch: false, paused: true, reason: "تم إلغاء مفتاح الطوارئ؛ الوكيل ما زال متوقفاً مؤقتاً" });
+      return;
+    }
+    if (!window.confirm("سيوقف مفتاح الطوارئ كل أعمال الوكيل الحالية ويلغي المهام الجارية. هل تريد المتابعة؟")) return;
+    const reason = window.prompt("اكتب سبب تفعيل مفتاح الطوارئ:")?.trim();
+    if (!reason) return;
+    updateControl({ killSwitch: true, paused: true, reason });
+  };
+  const handleCancelRun = () => {
+    if (!window.confirm("هل تريد إلغاء جميع مهام هذا التشغيل؟")) return;
+    const reason = window.prompt("اكتب سبب إلغاء التشغيل الحالي:")?.trim();
+    if (!reason) return;
+    cancelAgentRun.mutate({ companyId: data.companyId, runId: latestRun.id, reason });
+  };
   const latestAppliedRepair = data.recentRepairs.find(
     (repair) => repair.status === "applied"
   );
@@ -570,6 +636,102 @@ export function SystemAuditAgentDashboard() {
               }
               icon={CheckCircle2}
             />
+          </div>
+        </section>
+
+        <section
+          className={cn(
+            "rounded-lg border bg-white p-4 shadow-sm",
+            control.killSwitch && "border-[#FDA4AF] bg-[#FFF1F2]",
+            !control.killSwitch && control.paused && "border-[#FDE68A] bg-[#FFFBEB]"
+          )}
+          style={!control.killSwitch && !control.paused ? { borderColor: colors.border } : undefined}
+          aria-label="التحكم في وكيل التدقيق"
+        >
+          <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+            <div className="flex items-start gap-3">
+              <div className={cn(
+                "flex h-10 w-10 shrink-0 items-center justify-center rounded-lg",
+                control.killSwitch
+                  ? "bg-white text-[#BE123C]"
+                  : control.paused
+                  ? "bg-white text-[#B45309]"
+                  : "bg-[#ECFDF5] text-[#0F766E]"
+              )}>
+                {control.killSwitch || control.paused ? <PauseCircle className="h-5 w-5" /> : <PlayCircle className="h-5 w-5" />}
+              </div>
+              <div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <h3 className="text-sm font-bold text-[#0F172A]">التحكم التشغيلي</h3>
+                  <StatusBadge status={control.killSwitch ? "cancelled" : control.paused ? "queued" : "running"} />
+                </div>
+                <p className="mt-1 text-sm text-[#64748B]">
+                  {control.killSwitch
+                    ? "مفتاح الطوارئ مفعّل، ولا يمكن بدء أو متابعة أي مهمة."
+                    : control.paused
+                    ? `الوكيل متوقف مؤقتاً${control.pauseReason ? `: ${control.pauseReason}` : ""}`
+                    : "الوكيل متاح للتشغيل ويحترم طلبات الإلغاء بين دفعات الإصلاح."}
+                </p>
+              </div>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2">
+              {permissions.canAssignOwner && (
+                <label className="flex h-10 items-center gap-2 rounded-lg border border-[#E5EAF1] bg-white px-3 text-xs text-[#64748B]">
+                  المسؤول
+                  <select
+                    aria-label="مسؤول وكيل التدقيق"
+                    value={control.ownerProfileId || ""}
+                    disabled={setAgentControl.isPending}
+                    onChange={(event) =>
+                      updateControl({ ownerProfileId: event.target.value || null })
+                    }
+                    className="max-w-[180px] bg-transparent font-semibold text-[#0F172A] outline-none"
+                  >
+                    <option value="">غير معيّن</option>
+                    {(data.operators || []).map((operator) => (
+                      <option key={operator.id} value={operator.id}>{operator.displayName}</option>
+                    ))}
+                  </select>
+                </label>
+              )}
+              {permissions.canManageAgent && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="h-10 gap-2 rounded-lg bg-white"
+                  disabled={setAgentControl.isPending || control.killSwitch}
+                  onClick={handlePauseToggle}
+                >
+                  {setAgentControl.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : control.paused ? <PlayCircle className="h-4 w-4" /> : <PauseCircle className="h-4 w-4" />}
+                  {control.paused ? "استئناف" : "إيقاف مؤقت"}
+                </Button>
+              )}
+              {permissions.canManageAgent && isRunActive && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="h-10 gap-2 rounded-lg border-[#F8CBD0] bg-white text-[#BE123C]"
+                  disabled={cancelAgentRun.isPending}
+                  onClick={handleCancelRun}
+                >
+                  {cancelAgentRun.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <XCircle className="h-4 w-4" />}
+                  إلغاء التشغيل
+                </Button>
+              )}
+              {permissions.canUseKillSwitch && (
+                <Button
+                  type="button"
+                  variant={control.killSwitch ? "outline" : "destructive"}
+                  className="h-10 gap-2 rounded-lg"
+                  disabled={setAgentControl.isPending}
+                  onClick={handleKillSwitchToggle}
+                >
+                  <AlertTriangle className="h-4 w-4" />
+                  {control.killSwitch ? "إلغاء الطوارئ" : "إيقاف طارئ"}
+                </Button>
+              )}
+            </div>
           </div>
         </section>
 
@@ -883,7 +1045,12 @@ function HumanDecisionPanel({
   const [expandedTaskId, setExpandedTaskId] = React.useState<string | null>(
     null
   );
-  const visibleTasks = tasks.slice(0, 8);
+  const [search,setSearch] = React.useState('');
+  const [page,setPage] = React.useState(1);
+  const filteredTasks = tasks.filter(task=>`${task.title} ${task.description || ''}`.toLocaleLowerCase().includes(search.trim().toLocaleLowerCase()));
+  const pages = Math.max(1,Math.ceil(filteredTasks.length/8));
+  const currentPage = Math.min(page,pages);
+  const visibleTasks = filteredTasks.slice((currentPage-1)*8,currentPage*8);
   const trailing = tasks.length
     ? `${formatNumber(tasks.length)} قرار مفتوح`
     : pendingReviewCount
@@ -902,6 +1069,7 @@ function HumanDecisionPanel({
       />
 
       <div className="border-t p-4" style={{ borderColor: colors.border }}>
+        <div className="tw-personal-tools"><input aria-label="البحث في قرارات الوكيل" placeholder="ابحث في القرارات والبيانات المرتبطة…" value={search} onChange={event=>{setSearch(event.target.value);setPage(1);}}/><span>{formatNumber(filteredTasks.length)} قرار</span></div>
         {isLoading && tasks.length === 0 ? (
           <div className="flex min-h-[150px] items-center justify-center gap-2 rounded-lg border border-dashed border-[#CBD5E1] bg-[#F8FAFC] text-sm font-semibold text-[#64748B]">
             <Loader2 className="h-4 w-4 animate-spin text-[#38BDF8]" />
@@ -929,14 +1097,14 @@ function HumanDecisionPanel({
           <div className="flex min-h-[150px] flex-col items-center justify-center rounded-lg border border-dashed border-[#CBD5E1] bg-[#F8FAFC] px-4 text-center">
             <CheckCircle2 className="h-8 w-8 text-[#22C7A1]" />
             <h3 className="mt-3 text-sm font-bold text-[#0F172A]">
-              لا توجد قرارات مفتوحة الآن
+              {search ? 'لا توجد قرارات مطابقة للبحث' : 'لا توجد قرارات مفتوحة الآن'}
             </h3>
             <p className="mt-1 max-w-xl text-sm leading-6 text-[#64748B]">
-              عند ظهور عناصر تحتاج قرارًا بشريًا سيعرضها الوكيل هنا مع خيارات
-              المعالجة مباشرة.
+              {search ? 'غيّر عبارة البحث لعرض بقية القرارات.' : 'عند ظهور عناصر تحتاج قرارًا بشريًا سيعرضها الوكيل هنا مع خيارات المعالجة مباشرة.'}
             </p>
           </div>
         )}
+        {pages>1&&<div className="tw-pagination"><Button variant="outline" disabled={currentPage===1} onClick={()=>{setPage(currentPage-1);setExpandedTaskId(null);}}>القرارات السابقة</Button><span>{currentPage} / {pages}</span><Button variant="outline" disabled={currentPage===pages} onClick={()=>{setPage(currentPage+1);setExpandedTaskId(null);}}>القرارات التالية</Button></div>}
       </div>
     </section>
   );

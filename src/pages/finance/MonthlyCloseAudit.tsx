@@ -1,3 +1,4 @@
+import { FinanceContextActions } from "@/components/finance/workspace/FinanceContextActions";
 import React, { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import {
@@ -94,14 +95,15 @@ const MonthlyCloseAudit: React.FC = () => {
   return (
     <div className="min-h-screen bg-[#F6F8FB]" dir="rtl">
       <div className="mx-auto max-w-7xl space-y-6 p-4 sm:p-6">
+        <FinanceContextActions ids={["close"]} />
         <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+          <div data-finance-heading="" className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <div className="flex items-start gap-3">
               <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-slate-900 text-white">
                 <Brain className="h-5 w-5" />
               </div>
               <div>
-                <p className="text-xs font-bold text-slate-500">AI للتدقيق والإقفال الشهري</p>
+                <p className="text-xs font-bold text-slate-500">المساعد الذكي للتدقيق والإقفال الشهري</p>
                 <h1 className="mt-1 text-2xl font-black text-slate-950">ماذا يمنع إقفال الشهر؟</h1>
                 <p className="mt-2 max-w-3xl text-sm leading-7 text-slate-500">
                   فحص رقابي يراجع الدفعات والفواتير والقيود والعقود للشهر المحدد، ثم يعطي قرارًا واضحًا قبل الإقفال.

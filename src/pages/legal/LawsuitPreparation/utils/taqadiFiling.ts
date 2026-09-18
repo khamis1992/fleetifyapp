@@ -1,5 +1,6 @@
 import { supabase } from '@/integrations/supabase/client';
 import type { Database } from '@/integrations/supabase/types';
+import type { LegalClaimScope } from '@/types/legalClaimScope';
 
 const LIVE_CASE_STATUSES = new Set(['open', 'active', 'pending', 'on_hold', 'under_review']);
 
@@ -12,6 +13,7 @@ export interface LawsuitLegalCase {
   court_fees: number | null;
   filing_date: string | null;
   created_at: string | null;
+  claim_scope: LegalClaimScope;
 }
 
 export interface TaqadiFilingDetails {
@@ -116,7 +118,7 @@ export async function getCurrentLegalCase(
 ): Promise<LawsuitLegalCase | null> {
   const { data, error } = await supabase
     .from('legal_cases')
-    .select('id,case_number,case_status,workflow_stage,case_reference,court_fees,filing_date,created_at')
+    .select('id,case_number,case_status,workflow_stage,case_reference,court_fees,filing_date,created_at,claim_scope')
     .eq('company_id', companyId)
     .eq('contract_id', contractId)
     .order('created_at', { ascending: false })
@@ -167,6 +169,7 @@ interface RecordTaqadiFilingInput {
   caseId: string;
   workflowStage?: string | null;
   result: unknown;
+  sourceDocumentId: string;
 }
 
 export async function recordTaqadiFiling({
@@ -175,6 +178,7 @@ export async function recordTaqadiFiling({
   caseId,
   workflowStage,
   result,
+  sourceDocumentId,
 }: RecordTaqadiFilingInput) {
   const filing = extractTaqadiFilingDetails(result);
 
@@ -208,6 +212,7 @@ export async function recordTaqadiFiling({
     status: 'registered',
     submitted_at: now,
     registered_at: now,
+    source_document_id: sourceDocumentId,
   };
   if (filing.caseNumber) preparationUpdates.taqadi_case_number = filing.caseNumber;
   if (filing.referenceNumber) preparationUpdates.taqadi_reference_number = filing.referenceNumber;

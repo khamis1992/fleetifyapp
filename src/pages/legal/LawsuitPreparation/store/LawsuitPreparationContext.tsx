@@ -1,55 +1,90 @@
+import { buildLegalMemoFactsText } from '@/utils/legal-document-generator';
 /**
  * Lawsuit Preparation Context Provider
  * موفر سياق تجهيز الدعوى
  */
 
-import React, { createContext, useContext, useReducer, useCallback, useEffect, useRef } from 'react';
+import React, { createContext, useContext, useReducer, useCallback, useEffect, useMemo, useRef } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { invalidateContractDocumentDependents } from '@/utils/contractDocumentQueries';
+import { notifyRecordChange } from '@/services/recordQuerySynchronization';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
 import { calculateDelinquencyAmounts } from '@/utils/calculateDelinquencyAmounts';
-import { generateDocument as generateDocumentUtil } from '../utils/documentGenerators';
+import {
+  buildMemoDocumentData,
+  generateDocument as generateDocumentUtil,
+  isMemoSnapshotCurrent,
+  prepareCurrentFilingState,
+} from '../utils/documentGenerators';
 import { openLegalCase, registerLegalCase } from '../utils/caseRegistration';
 import { exportDocumentsAsZip } from '../utils/zipExport';
-import { selectLegalContractDocument } from '../utils/contractDocumentSelection';
+import {
+  getEffectiveLegalIdentityMatchStatus,
+  getContractDocumentReview,
+  isActiveLegalEvidenceDocument,
+  selectContractDocumentForIdentityScan,
+  selectLegalContractDocument,
+} from '../utils/contractDocumentSelection';
 import { getCurrentLegalCase } from '../utils/taqadiFiling';
 import {
-  buildTaqadiFilingPayload,
+  prepareTaqadiFilingPayload,
   enqueueTaqadiFilingJob,
   getActiveTaqadiWorker,
 } from '../utils/taqadiAutomation';
 import {
-  TAQADI_DEFAULT_DEFENDANT_ADDRESS,
-  TAQADI_DEFAULT_DEFENDANT_EMAIL,
-} from '../utils/taqadiDefaults';
-import {
-  buildFactsAdditions,
-  buildTaqadiClaims,
-  type TaqadiNarrativeInput,
+  inferTaqadiIdType,
 } from '../utils/taqadiNarrative';
+import { buildLegalMemoClaimsText } from '@/utils/legal-memo-requests';
+import {
+  buildLegalEvidenceAnalysis,
+  selectAutoAcceptable,
+} from '../utils/legalEvidenceAutomation';
+import { getFilingReadiness } from '../utils/filingReadiness';
+import { taqadiErrorMessage } from '../utils/taqadiErrorMessage';
 import { getLawsuitClaimAmounts } from '../utils/claimAmounts';
-import { isClaimableRentalInvoice } from '../utils/legalClaimInvoiceFilter';
+import { loadLegalClaimProjection } from '../utils/legalClaimSources';
+import { freezeCurrentMemoSnapshot, MemoFactsChangedError } from '../utils/memoSnapshot';
+import {
+  DEFAULT_DEFENDANT_SERVICE_ADDRESS,
+  calculateRetentionClaim,
+  getVerifiedDamageNetFromCosts,
+  resolveDefendantContact,
+  resolveLegalPath,
+} from '../utils/legalCaseWorkflow';
 import {
   buildContractDocumentStoragePath,
   getLegalDocumentUploadRoute,
   validateLegalDocumentFile,
 } from '../utils/documentUploadRouting';
 import { lawsuitService } from '@/services/LawsuitService';
+import {
+  normalizeLegalContractDocumentIdentityRow,
+  normalizeLegalIdentityMatchStatus,
+  toLegalIdentityVerification,
+  verifyLegalContractDocumentIdentity,
+} from '@/services/legalContractIdentityVerifier';
 import { formatCustomerName } from '@/utils/formatCustomerName';
 import { renderOfficialInvoicePdfBlob } from '@/utils/renderOfficialInvoicePdf';
 import { toast } from 'sonner';
+import { isTrafficViolationsOnlyScope } from '@/types/legalClaimScope';
 
-import { useFleetifyTranslation } from "@/hooks/useTranslation";
 import { 
   lawsuitPreparationReducer, 
   createInitialState 
 } from './reducer';
-import type { 
-  LawsuitPreparationContextValue, 
-  LawsuitPreparationState,
-  DocumentsState 
+import type {
+  LawsuitPreparationContextValue,
+  DocumentsState,
+  LitigationProfile,
+  FormalNotice,
+  DamageCost,
+  LegalEvidenceProposal,
+  LegalMemoSnapshot,
+  LegalCaseSummary,
+  ContractEvidenceDocument,
 } from './types';
 
 // ==========================================
@@ -58,12 +93,17 @@ import type {
 
 const LawsuitPreparationContext = createContext<LawsuitPreparationContextValue | null>(null);
 
+function normalizeLegalEvidenceState(
+  value: unknown,
+): ContractEvidenceDocument['legal_evidence_state'] {
+  return value === 'superseded' || value === 'quarantined' ? value : 'active';
+}
+
 // ==========================================
 // Hook
 // ==========================================
 
 export function useLawsuitPreparationContext() {
-  const { t } = useFleetifyTranslation("ui");
   const context = useContext(LawsuitPreparationContext);
   if (!context) {
     throw new Error('useLawsuitPreparationContext must be used within LawsuitPreparationProvider');
@@ -112,6 +152,9 @@ export function LawsuitPreparationProvider({
     violationsTransferHtml: null,
   });
   const autoGeneratedForContractRef = useRef<string | null>(null);
+  const autoAnalyzedForContractRef = useRef<string | null>(null);
+  const autoRetentionEvidenceRef = useRef<string | null>(null);
+  const autoFrozenSnapshotContractRef = useRef<string | null>(null);
   const isMountedRef = useRef(true);
 
   useEffect(() => () => {
@@ -130,9 +173,14 @@ export function LawsuitPreparationProvider({
   // ==========================================
   
   // Fetch contract data
-  const { isLoading: contractLoading } = useQuery({
-    queryKey: ['contract-details', contractId, companyId],
+  // Distinct key: this query returns a composed {contract, customer, vehicle}
+  // shape that must never be cached under the details-page 'contract-details'
+  // prefix (whose rows carry nested joins and are read by other call sites).
+  const { data: contractData, isLoading: contractLoading } = useQuery({
+    queryKey: ['lawsuit-contract-details', contractId, companyId],
     staleTime: 0,
+    refetchOnWindowFocus: true,
+    refetchInterval: 30_000,
     queryFn: async () => {
       if (!companyId) throw new Error('معرف الشركة غير موجود');
       const { data: contract, error } = await supabase
@@ -148,67 +196,57 @@ export function LawsuitPreparationProvider({
       // Fetch customer
       let customer = null;
       if (contract.customer_id) {
-        const { data: cust } = await supabase
+        const { data: cust, error: customerError } = await supabase
           .from('customers')
           .select('id, first_name, first_name_ar, last_name, last_name_ar, customer_type, company_name, company_name_ar, national_id, nationality, phone, email, address, country')
           .eq('id', contract.customer_id)
           .eq('company_id', companyId)
           .single();
+        if (customerError) throw customerError;
         customer = cust;
       }
       
       // Fetch vehicle
       let vehicle = null;
       if (contract.vehicle_id) {
-        const { data: veh } = await supabase
+        const { data: veh, error: vehicleError } = await supabase
           .from('vehicles')
           .select('make, model, year, plate_number, color, vin, status')
           .eq('id', contract.vehicle_id)
           .eq('company_id', companyId)
           .single();
+        if (vehicleError) throw vehicleError;
         vehicle = veh;
       }
-      
-      dispatch({ 
-        type: 'SET_CONTRACT_DATA', 
-        payload: { contract, customer, vehicle } 
-      });
       
       return { contract, customer, vehicle };
     },
     enabled: !!contractId && !!companyId,
   });
+
+  useEffect(() => {
+    if (contractData) dispatch({ type: 'SET_CONTRACT_DATA', payload: contractData });
+  }, [contractData]);
   
-  // Fetch overdue invoices
-  const { isLoading: invoicesLoading } = useQuery({
-    queryKey: ['overdue-invoices', contractId, companyId],
+  // Fetch the canonical legal claim: invoices first, then legacy due schedules
+  const { data: claimProjection, error: claimProjectionError, isLoading: invoicesLoading } = useQuery({
+    queryKey: ['legal-claim-projection', contractId, companyId],
+    staleTime: 0,
+    refetchOnWindowFocus: true,
+    refetchInterval: 30_000,
     queryFn: async () => {
-      if (!companyId) return [];
-      const { data, error } = await supabase
-        .from('invoices')
-        .select('*')
-        .eq('contract_id', contractId)
-        .eq('company_id', companyId)
-        .lt('due_date', new Date().toISOString().split('T')[0]);
-      
-      if (error) throw error;
-      
-      const filtered = (data || [])
-        .filter(isClaimableRentalInvoice)
-        .filter((inv) => Boolean(inv.due_date) && Number(inv.total_amount || 0) - Number(inv.paid_amount || 0) > 0)
-        .map((inv) => ({
-          id: inv.id,
-          invoice_number: inv.invoice_number,
-          due_date: inv.due_date!,
-          total_amount: Number(inv.total_amount || 0),
-          paid_amount: Number(inv.paid_amount || 0),
-        }));
-      
-      dispatch({ type: 'SET_INVOICES', payload: filtered });
-      return filtered;
+      if (!companyId) throw new Error('معرف الشركة غير موجود');
+      return loadLegalClaimProjection(contractId, companyId);
     },
     enabled: !!contractId && !!companyId,
   });
+
+  useEffect(() => {
+    dispatch({ type: 'SET_FINANCIAL_CLAIM_ERROR', payload: claimProjectionError ? (claimProjectionError instanceof Error ? claimProjectionError.message : (claimProjectionError as { message?: string }).message || 'تعذر تحميل المطالبة المالية؛ راجع الفواتير وتخصيصات السداد') : null });
+    if (!claimProjection || claimProjectionError) return;
+    dispatch({ type: 'SET_INVOICES', payload: claimProjection.rows });
+    dispatch({ type: 'SET_FINANCIAL_CLAIM_SOURCE', payload: claimProjection.summary });
+  }, [claimProjection, claimProjectionError]);
   
   // Fetch reminder history (سجل الإعذار القانوني) for this contract
   useQuery({
@@ -239,7 +277,7 @@ export function LawsuitPreparationProvider({
   });
 
   // Fetch traffic violations
-  const { isLoading: violationsLoading } = useQuery({
+  const { data: legacyViolations, isLoading: violationsLoading } = useQuery({
     queryKey: ['contract-traffic-violations', contractId, companyId],
     queryFn: async () => {
       if (!contractId || !companyId) return [];
@@ -266,12 +304,17 @@ export function LawsuitPreparationProvider({
         status: violation.status || 'pending',
       }));
 
-      dispatch({ type: 'SET_VIOLATIONS', payload: normalizedViolations });
+
       return normalizedViolations;
     },
     enabled: !!contractId && !!companyId,
   });
   
+  useEffect(() => {
+    const violations = claimProjection?.trafficViolations ?? legacyViolations;
+    if (violations) dispatch({ type: 'SET_VIOLATIONS', payload: violations });
+  }, [claimProjection, legacyViolations]);
+
   // Fetch company legal documents
   const { isLoading: companyDocumentsLoading } = useQuery({
     queryKey: ['company-legal-documents', companyId],
@@ -297,7 +340,7 @@ export function LawsuitPreparationProvider({
       
       const { data, error } = await supabase
         .from('contract_documents')
-        .select('id, file_path, document_name, document_type, mime_type')
+        .select('id, file_path, document_name, document_type, mime_type, legal_identity_match_status, legal_evidence_state, legal_identity_expected_name, legal_identity_extracted_name, legal_identity_expected_id, legal_identity_extracted_id, legal_identity_match_reason, legal_identity_checked_at')
         .eq('contract_id', contractId)
         .eq('company_id', companyId)
         .order('created_at', { ascending: false });
@@ -311,18 +354,66 @@ export function LawsuitPreparationProvider({
         return null;
       }
       
-      const contractDocument = selectLegalContractDocument(data || []);
+      dispatch({
+        type: 'SET_CONTRACT_EVIDENCE_DOCUMENTS',
+        payload: (data || []).map((document) => ({
+          id: document.id,
+          document_name: document.document_name,
+          document_type: document.document_type,
+          file_path: document.file_path,
+          mime_type: document.mime_type,
+          legal_identity_match_status: normalizeLegalIdentityMatchStatus(
+            getEffectiveLegalIdentityMatchStatus(document),
+          ),
+          legal_identity_expected_id: document.legal_identity_expected_id,
+          legal_identity_extracted_id: document.legal_identity_extracted_id,
+          legal_identity_match_reason: document.legal_identity_match_reason,
+          legal_evidence_state: normalizeLegalEvidenceState(
+            document.legal_evidence_state,
+          ),
+        })),
+      });
+
+      let contractDocument = selectLegalContractDocument(data || []);
 
       if (!contractDocument) {
-        console.warn('[Contract Document] No contract document found');
+        const scanCandidate = selectContractDocumentForIdentityScan(data || []);
+        if (scanCandidate) {
+          try {
+            const verifiedDocument = await verifyLegalContractDocumentIdentity(
+              companyId,
+              normalizeLegalContractDocumentIdentityRow(scanCandidate),
+            );
+            if (verifiedDocument.legal_identity_match_status === 'matched') {
+              contractDocument = {
+                ...scanCandidate,
+                ...verifiedDocument,
+              };
+            }
+          } catch (verificationError) {
+            console.error('[Contract Document] Identity verification failed:', verificationError);
+          }
+        }
+      }
+
+      if (!contractDocument) {
+        console.warn('[Contract Document] No identity-matched contract document found');
+        dispatch({ type: 'RESET_DOCUMENT', payload: { docId: 'contract' } });
         dispatch({
           type: 'UPLOAD_DOCUMENT_ERROR',
-          payload: { docId: 'contract', error: 'لم يتم العثور على ملف العقد. يرجى رفع ملف العقد الموقع.' }
+          payload: {
+            docId: 'contract',
+            error: getContractDocumentReview(data || []).message,
+          }
         });
         return null;
       }
       
       console.log('[Contract Document] Found document:', contractDocument.document_name, 'at path:', contractDocument.file_path);
+
+      const identityVerification = toLegalIdentityVerification(
+        normalizeLegalContractDocumentIdentityRow(contractDocument),
+      );
 
       const { data: signedUrlData, error: signedUrlError } = await supabase.storage
         .from('contract-documents')
@@ -336,7 +427,12 @@ export function LawsuitPreparationProvider({
       if (documentUrl) {
         dispatch({ 
           type: 'UPLOAD_DOCUMENT_SUCCESS', 
-          payload: { docId: 'contract', url: documentUrl }
+          payload: {
+            docId: 'contract',
+            url: documentUrl,
+            sourceDocumentId: contractDocument.id,
+            identityVerification,
+          }
         });
       } else {
         console.error('[Contract Document] Failed to generate public URL');
@@ -358,7 +454,7 @@ export function LawsuitPreparationProvider({
 
       const { data, error } = await supabase
         .from('contract_documents')
-        .select('id, document_name, file_path, mime_type')
+        .select('id, document_name, file_path, mime_type, legal_evidence_state, superseded_by_document_id')
         .eq('contract_id', contractId)
         .eq('company_id', companyId)
         .eq('document_type', 'violations_proof')
@@ -366,7 +462,7 @@ export function LawsuitPreparationProvider({
 
       if (error) throw error;
 
-      const evidenceDocuments = (await Promise.all((data || []).map(async (document) => {
+      const evidenceDocuments = (await Promise.all((data || []).filter(isActiveLegalEvidenceDocument).map(async (document) => {
         if (!document.file_path) return null;
         const { data: signedUrl, error: signedUrlError } = await supabase.storage
           .from('contract-documents')
@@ -388,102 +484,282 @@ export function LawsuitPreparationProvider({
     },
     enabled: !!contractId && !!companyId,
   });
+
+  // الملف التقاضي الموثق: استراتيجية الفسخ، الإنهاء، التسليم، الحيازة، وديعة الضمان، أجر المثل
+  const { isLoading: litigationProfileLoading } = useQuery({
+    queryKey: ['legal-case-litigation-profile', contractId, companyId],
+    queryFn: async () => {
+      if (!contractId || !companyId) return null;
+
+      const { data, error } = await supabase
+        .from('legal_case_litigation_profile')
+        .select('*')
+        .eq('contract_id', contractId)
+        .eq('company_id', companyId)
+        .maybeSingle();
+
+      if (error) throw error;
+
+      dispatch({ type: 'SET_LITIGATION_PROFILE', payload: (data as LitigationProfile) ?? null });
+      return (data as LitigationProfile) ?? null;
+    },
+    enabled: !!contractId && !!companyId,
+  });
+
+  // الإنذارات الكتابية الموثقة الوصول
+  const { isLoading: formalNoticesLoading } = useQuery({
+    queryKey: ['legal-case-formal-notices', contractId, companyId],
+    queryFn: async () => {
+      if (!contractId || !companyId) return [];
+
+      const { data, error } = await supabase
+        .from('legal_case_formal_notices')
+        .select('*')
+        .eq('contract_id', contractId)
+        .eq('company_id', companyId)
+        .order('sent_on', { ascending: true });
+
+      if (error) throw error;
+
+      const notices = (data || []) as FormalNotice[];
+      dispatch({ type: 'SET_FORMAL_NOTICES', payload: notices });
+      return notices;
+    },
+    enabled: !!contractId && !!companyId,
+  });
+
+  // بنود مصاريف الأضرار بسند مستند
+  const { isLoading: damageCostsLoading } = useQuery({
+    queryKey: ['legal-case-damage-costs', contractId, companyId],
+    queryFn: async () => {
+      if (!contractId || !companyId) return [];
+
+      const { data, error } = await supabase
+        .from('legal_case_damage_costs')
+        .select('*')
+        .eq('contract_id', contractId)
+        .eq('company_id', companyId)
+        .order('created_at', { ascending: true });
+
+      if (error) throw error;
+
+      const costs = (data || []) as DamageCost[];
+      dispatch({ type: 'SET_DAMAGE_COSTS', payload: costs });
+      return costs;
+    },
+    enabled: !!contractId && !!companyId,
+  });
+
+  const { isLoading: evidenceProposalsLoading } = useQuery({
+    queryKey: ['legal-case-evidence-proposals', contractId, companyId],
+    queryFn: async () => {
+      if (!contractId || !companyId) return [];
+      const { data, error } = await supabase
+        .from('legal_case_evidence_proposals')
+        .select('*')
+        .eq('contract_id', contractId)
+        .eq('company_id', companyId)
+        .eq('status', 'pending')
+        .order('confidence', { ascending: false });
+      if (error) throw error;
+      const proposals = (data || []) as unknown as LegalEvidenceProposal[];
+      dispatch({ type: 'SET_EVIDENCE_PROPOSALS', payload: proposals });
+      return proposals;
+    },
+    enabled: !!contractId && !!companyId,
+  });
+
+  const { isLoading: memoSnapshotsLoading } = useQuery({
+    queryKey: ['legal-case-memo-snapshots', contractId, companyId],
+    queryFn: async () => {
+      if (!contractId || !companyId) return [];
+      const { data, error } = await supabase
+        .from('legal_case_memo_snapshots')
+        .select('*')
+        .eq('contract_id', contractId)
+        .eq('company_id', companyId)
+        .order('version', { ascending: false });
+      if (error) throw error;
+      const snapshots = (data || []) as unknown as LegalMemoSnapshot[];
+      dispatch({ type: 'SET_MEMO_SNAPSHOTS', payload: snapshots });
+      return snapshots;
+    },
+    enabled: !!contractId && !!companyId,
+  });
+
+  const { isLoading: legalCaseLoading } = useQuery({
+    queryKey: ['lawsuit-legal-case', companyId, contractId],
+    queryFn: async () => {
+      if (!companyId || !contractId) return null;
+      const row = await getCurrentLegalCase(companyId, contractId);
+      const legalCase: LegalCaseSummary | null = row ? {
+        id: row.id,
+        case_number: row.case_number || '',
+        case_reference: row.case_reference,
+        filing_date: row.filing_date,
+        case_status: row.case_status || 'draft',
+        workflow_stage: row.workflow_stage || 'preparation',
+        claim_scope: row.claim_scope || 'full_outstanding',
+      } : null;
+      dispatch({ type: 'SET_LEGAL_CASE', payload: legalCase });
+      return legalCase;
+    },
+    enabled: !!companyId && !!contractId,
+  });
   
   // ==========================================
   // Derived Data (Calculations & Taqadi Data)
   // ==========================================
-  
+
+  const trafficOnlyClaim = isTrafficViolationsOnlyScope(state.legalCase?.claim_scope);
+
+  /** مكونات موثقة إضافية: مصاريف متحقق منها + وديعة ضمان مطبقة */
+  const claimExtras = useMemo(() => {
+    if (trafficOnlyClaim) {
+      return {
+        verifiedDamages: 0,
+        securityDepositDeduction: 0,
+        retentionCompensation: 0,
+      };
+    }
+    const verifiedDamages = getVerifiedDamageNetFromCosts(state.damageCosts);
+    const deposit = Number(state.litigationProfile?.security_deposit_amount || 0);
+    const applyDeposit = Boolean(state.litigationProfile?.apply_security_deposit) && deposit > 0;
+    const legalPath = resolveLegalPath(
+      state.litigationProfile,
+      state.contract?.end_date || null,
+      state.formalNotices,
+    );
+    const retention = calculateRetentionClaim(state.litigationProfile, legalPath);
+    return {
+      verifiedDamages,
+      securityDepositDeduction: applyDeposit ? deposit : 0,
+      retentionCompensation: retention.amount,
+    };
+  }, [state.contract?.end_date, state.damageCosts, state.formalNotices, state.litigationProfile, trafficOnlyClaim]);
+
   useEffect(() => {
-    if (state.overdueInvoices.length > 0 || state.trafficViolations.length > 0) {
+    if (claimProjection && !claimProjectionError && !state.financialClaimError) {
+      const contractualCompensation = !trafficOnlyClaim
+        && state.litigationProfile?.contractual_compensation_enabled
+        && state.litigationProfile.contractual_compensation_method
+        && Number(state.litigationProfile.contractual_compensation_rate) > 0
+        && state.litigationProfile.contractual_compensation_document_id
+        && state.litigationProfile.contractual_compensation_clause_number?.trim()
+        && state.litigationProfile.contractual_compensation_clause_text?.trim()
+        ? {
+            enabled: true,
+            method: state.litigationProfile.contractual_compensation_method,
+            rate: Number(state.litigationProfile.contractual_compensation_rate),
+            cap: state.litigationProfile.contractual_compensation_cap,
+          }
+        : null;
+
       const calculations = calculateDelinquencyAmounts(
-        state.overdueInvoices.map(inv => ({
+        (trafficOnlyClaim ? [] : state.overdueInvoices).map(inv => ({
           id: inv.id,
           invoice_number: inv.invoice_number || undefined,
           due_date: inv.due_date,
           total_amount: inv.total_amount || 0,
           paid_amount: inv.paid_amount || 0,
+          source: inv.source,
         })),
-        state.trafficViolations.map(v => ({
+        (state.violationEvidenceDocuments.length > 0 ? state.trafficViolations : []).map(v => ({
           id: v.id,
           violation_number: v.violation_number || undefined,
           fine_amount: Number(v.fine_amount || 0),
           total_amount: Number(v.total_amount || 0),
           status: v.status,
         })),
-        { includeDamagesFee: true }
+        {
+          contractualCompensation,
+          documentedDamagesAmount: claimExtras.verifiedDamages,
+        }
       );
-      
-      dispatch({ 
-        type: 'UPDATE_CALCULATIONS', 
+
+      if (claimProjection.summary.authoritativeAmounts) {
+        const authoritative = claimProjection.summary.authoritativeAmounts;
+        dispatch({ type: 'UPDATE_CALCULATIONS', payload: { ...calculations, ...authoritative,
+          contractualCompensationUnits: claimProjection.summary.authoritativeCompensationUnits,
+          amountInWords: lawsuitService.convertAmountToWords(authoritative.total) } });
+        return;
+      }
+      dispatch({
+        type: 'UPDATE_CALCULATIONS',
         payload: {
           ...calculations,
-          amountInWords: lawsuitService.convertAmountToWords(calculations.total),
-        } 
+          retentionCompensation: claimExtras.retentionCompensation,
+          securityDepositDeduction: claimExtras.securityDepositDeduction,
+          total: getLawsuitClaimAmounts(
+            {
+              ...calculations,
+              retentionCompensation: claimExtras.retentionCompensation,
+            },
+            { securityDepositDeduction: claimExtras.securityDepositDeduction },
+          ).cashClaimAmount,
+          amountInWords: lawsuitService.convertAmountToWords(
+            getLawsuitClaimAmounts({
+              ...calculations,
+              retentionCompensation: claimExtras.retentionCompensation,
+            }, {
+              securityDepositDeduction: claimExtras.securityDepositDeduction,
+            }).cashClaimAmount
+          ),
+        }
       });
     }
-  }, [state.overdueInvoices, state.trafficViolations]);
+  }, [
+    claimProjection,
+    claimProjectionError,
+    state.financialClaimError,
+    claimExtras.retentionCompensation,
+    claimExtras.securityDepositDeduction,
+    claimExtras.verifiedDamages,
+    state.litigationProfile,
+    state.overdueInvoices,
+    state.trafficViolations,
+    state.violationEvidenceDocuments,
+    trafficOnlyClaim,
+  ]);
   
   useEffect(() => {
     if (state.contract && state.calculations && state.customer) {
       const customerName = formatCustomerName(state.customer, { preferArabic: true }) || 'غير محدد';
-      const { cashClaimAmount, taqadiClaimAmount } = getLawsuitClaimAmounts(state.calculations);
+      const { taqadiClaimAmount } = getLawsuitClaimAmounts(state.calculations, {
+        securityDepositDeduction: claimExtras.securityDepositDeduction,
+      });
       
-      let factsText = lawsuitService.generateFactsText(
-        customerName,
-        state.contract.start_date,
-        `${state.vehicle?.make || ''} ${state.vehicle?.model || ''} ${state.vehicle?.year || ''}`,
-        cashClaimAmount
-      );
+      const factsText = buildLegalMemoFactsText(buildMemoDocumentData(state));
 
-      // الفروع الحتمية: سداد جزئي، مخالفات، إعذار قانوني، حيازة المركبة، انتهاء العقد
-      const narrativeInput: TaqadiNarrativeInput = {
-        claimAmount: cashClaimAmount,
-        violationsCount: state.calculations.violationsCount,
-        violationsFines: state.calculations.violationsFines,
-        paidTotal: state.overdueInvoices.reduce(
-          (sum, invoice) => sum + Number(invoice.paid_amount || 0),
-          0,
-        ),
-        reminders: state.paymentReminders,
-        vehicleStatus: state.vehicle?.status ?? null,
-        contractEndDate: state.contract.end_date,
-        contractStatus: state.contract.status ?? null,
-      };
-
-      const additions = buildFactsAdditions(narrativeInput);
-      if (additions.length > 0) {
-        factsText += `\n\n${additions.join('\n\n')}`;
-      }
-
-      const claimsText = buildTaqadiClaims(narrativeInput);
+      const claimsText = buildLegalMemoClaimsText(buildMemoDocumentData(state));
       
       // استخراج معلومات المدعى عليه
       const fullName = customerName;
+      const defendantContact = resolveDefendantContact(
+        state.litigationProfile,
+        state.customer,
+      );
       const nameParts = fullName.split(' ');
       const firstName = nameParts[0] || null;
       const lastName = nameParts.length > 1 ? nameParts[nameParts.length - 1] : null;
       const middleName = nameParts.length > 2 ? nameParts.slice(1, -1).join(' ') : null;
       
-      // تحديد نوع الهوية
-      let idType = 'بطاقة شخصية';
-      if (state.customer.nationality === 'Qatar' || state.customer.nationality === 'قطر') {
-        idType = 'بطاقة قطرية';
-      } else if (
-        state.customer.national_id
-        && state.customer.national_id.replace(/\D/g, '').length === 11
-      ) {
-        idType = 'رخصة مقيم';
-      }
+      const idType = inferTaqadiIdType(
+        state.customer.national_id,
+        state.customer.nationality,
+      );
       
       // معلومات السيارة
       const vehicleFullDesc = state.vehicle 
-        ? `${state.vehicle.make || ''} ${state.vehicle.model || ''} ${state.vehicle.year || ''} - ${state.vehicle.plate_number || ''}`.trim()
-        : 'غير محدد';
+        ? `${state.vehicle.make || ''} ${state.vehicle.model || ''} ${state.vehicle.year || ''} - ${state.vehicle.plate_number || state.contract.license_plate || ''}`.trim()
+        : state.contract.license_plate
+          ? `المركبة ذات اللوحة ${state.contract.license_plate}`
+          : 'غير محدد';
       
       dispatch({
         type: 'UPDATE_TAQADI_DATA',
         payload: {
-          caseTitle: lawsuitService.generateCaseTitle(customerName),
+          caseTitle: lawsuitService.generateCaseTitle(customerName, state.legalCase?.claim_scope),
           facts: factsText,
           claims: claimsText,
           amount: taqadiClaimAmount,
@@ -497,10 +773,10 @@ export function LawsuitPreparationProvider({
             lastName: lastName,
             idNumber: state.customer.national_id,
             idType: idType,
-            nationality: state.customer.nationality || state.customer.country,
+            nationality: state.customer.nationality,
             phone: state.customer.phone,
-            email: TAQADI_DEFAULT_DEFENDANT_EMAIL,
-            address: TAQADI_DEFAULT_DEFENDANT_ADDRESS,
+            email: defendantContact.email,
+            address: defendantContact.address,
           },
           
           // بيانات العقد
@@ -516,7 +792,7 @@ export function LawsuitPreparationProvider({
             make: state.vehicle?.make || null,
             model: state.vehicle?.model || null,
             year: state.vehicle?.year || null,
-            plateNumber: state.vehicle?.plate_number || null,
+            plateNumber: state.vehicle?.plate_number || state.contract.license_plate || null,
             color: state.vehicle?.color || null,
             vin: state.vehicle?.vin || null,
             fullDescription: vehicleFullDesc,
@@ -524,13 +800,26 @@ export function LawsuitPreparationProvider({
         },
       });
     }
-  }, [state.contract, state.calculations, state.customer, state.vehicle, state.overdueInvoices, state.paymentReminders]);
+  }, [
+    claimExtras.securityDepositDeduction,
+    state.calculations,
+    state.contract,
+    state.customer,
+    state.damageCosts,
+    state.formalNotices,
+    state.litigationProfile,
+    state.overdueInvoices,
+    state.paymentReminders,
+    state.vehicle,
+    state.legalCase?.claim_scope,
+    trafficOnlyClaim,
+  ]);
   
   // Update loading state
   useEffect(() => {
-    const isLoading = companyLoading || contractLoading || invoicesLoading || violationsLoading || companyDocumentsLoading || contractDocumentLoading || violationEvidenceLoading;
+    const isLoading = companyLoading || contractLoading || invoicesLoading || violationsLoading || companyDocumentsLoading || contractDocumentLoading || violationEvidenceLoading || litigationProfileLoading || evidenceProposalsLoading || formalNoticesLoading || damageCostsLoading || memoSnapshotsLoading || legalCaseLoading;
     dispatch({ type: 'SET_LOADING', payload: isLoading });
-  }, [companyLoading, contractLoading, invoicesLoading, violationsLoading, companyDocumentsLoading, contractDocumentLoading, violationEvidenceLoading]);
+  }, [companyLoading, contractLoading, invoicesLoading, violationsLoading, companyDocumentsLoading, contractDocumentLoading, violationEvidenceLoading, litigationProfileLoading, evidenceProposalsLoading, formalNoticesLoading, damageCostsLoading, memoSnapshotsLoading, legalCaseLoading]);
   
   // ==========================================
   // Actions
@@ -600,7 +889,7 @@ export function LawsuitPreparationProvider({
       const currentState = state;
       
       // Generate document using utility
-      const { url, html: originalHtml } = await generateDocumentUtil(docId, currentState);
+      const { html: originalHtml } = await generateDocumentUtil(docId, currentState);
       
       // تضمين اللوقو والتوقيع والختم في HTML
       const html = await embedImagesInHtml(originalHtml);
@@ -635,11 +924,11 @@ export function LawsuitPreparationProvider({
     try {
       const documentsToGenerate: (keyof DocumentsState)[] = ['memo', 'claims'];
       
-      if (state.trafficViolations.length > 0) {
+      if ((state.calculations?.violationsCount || 0) > 0) {
         documentsToGenerate.push('violations', 'violationsTransfer');
       }
       
-      documentsToGenerate.push('criminalComplaint', 'docsList');
+      documentsToGenerate.push('docsList');
       
       for (const docId of documentsToGenerate) {
         if (!isMountedRef.current) break;
@@ -655,7 +944,7 @@ export function LawsuitPreparationProvider({
         dispatch({ type: 'GENERATE_ALL_COMPLETE' });
       }
     }
-  }, [state.documents, state.trafficViolations, generateDocument]);
+  }, [state.documents, state.calculations?.violationsCount, generateDocument]);
   
   const uploadDocument = useCallback(async (docId: keyof DocumentsState, file: File) => {
     if (!companyId || !contractId) {
@@ -728,7 +1017,7 @@ export function LawsuitPreparationProvider({
             notes: `رُفع من حافظة تجهيز الدعوى: ${state.documents[docId].name}`,
             uploaded_by: user?.id || null,
           })
-          .select('id, document_name, mime_type')
+          .select('id, document_name, file_path, mime_type, legal_identity_match_status, legal_identity_expected_name, legal_identity_extracted_name, legal_identity_expected_id, legal_identity_extracted_id, legal_identity_match_reason, legal_identity_checked_at')
           .single();
 
         if (dbError || !savedDocument) {
@@ -743,9 +1032,39 @@ export function LawsuitPreparationProvider({
           throw signedUrlError || new Error('تعذر إنشاء رابط معاينة الملف');
         }
 
+        let identityVerification;
+        if (docId === 'contract') {
+          try {
+            const verifiedDocument = await verifyLegalContractDocumentIdentity(
+              companyId,
+              normalizeLegalContractDocumentIdentityRow(savedDocument),
+            );
+            identityVerification = toLegalIdentityVerification(verifiedDocument);
+          } catch (verificationError) {
+            identityVerification = {
+              status: 'failed' as const,
+              expectedName: state.customer
+                ? formatCustomerName(state.customer)
+                : null,
+              extractedName: null,
+              expectedId: state.customer?.national_id || null,
+              extractedId: null,
+              reason: verificationError instanceof Error
+                ? verificationError.message
+                : 'تعذر فحص هوية المستأجر في نسخة العقد',
+              checkedAt: new Date().toISOString(),
+            };
+          }
+        }
+
         dispatch({
           type: 'UPLOAD_DOCUMENT_SUCCESS',
-          payload: { docId, url: signedUrlData.signedUrl },
+          payload: {
+            docId,
+            url: signedUrlData.signedUrl,
+            sourceDocumentId: savedDocument.id,
+            identityVerification,
+          },
         });
 
         if (docId === 'violationsEvidence') {
@@ -763,15 +1082,7 @@ export function LawsuitPreparationProvider({
           });
         }
 
-        await Promise.all([
-          queryClient.invalidateQueries({
-            queryKey: ['contract-document', contractId, companyId],
-          }),
-          queryClient.invalidateQueries({
-            queryKey: ['contract-violation-evidence-documents', contractId, companyId],
-          }),
-          queryClient.invalidateQueries({ queryKey: ['contract-documents', contractId] }),
-        ]);
+        await invalidateContractDocumentDependents(queryClient, companyId, contractId);
       }
 
       toast.success(`تم رفع ${state.documents[docId].name} وحفظه في مكانه الصحيح`);
@@ -783,7 +1094,447 @@ export function LawsuitPreparationProvider({
       });
       toast.error(message);
     }
-  }, [companyId, contractId, queryClient, state.companyDocuments, state.contract?.contract_number, state.documents, state.violationEvidenceDocuments, user?.id]);
+  }, [companyId, contractId, queryClient, state.companyDocuments, state.contract?.contract_number, state.customer, state.documents, state.violationEvidenceDocuments, user?.id]);
+
+  const saveLitigationProfile = useCallback(async (
+    changes: Partial<LitigationProfile>,
+  ): Promise<LitigationProfile> => {
+    if (!companyId || !contractId || !user?.id) {
+      throw new Error('تعذر تحديد الشركة أو العقد أو المستخدم');
+    }
+
+    const current = state.litigationProfile;
+    const payload = {
+      ...(current || {}),
+      ...changes,
+      defendant_service_address: changes.defendant_service_address?.trim()
+        || current?.defendant_service_address?.trim()
+        || state.customer?.address?.trim()
+        || DEFAULT_DEFENDANT_SERVICE_ADDRESS,
+      defendant_contact_source: changes.defendant_contact_source
+        || current?.defendant_contact_source
+        || 'customer_record',
+      id: current?.id,
+      company_id: companyId,
+      contract_id: contractId,
+      created_by: user.id,
+      approved_by: changes.legal_review_status === 'approved' ? user.id : null,
+      approved_at: changes.legal_review_status === 'approved' ? new Date().toISOString() : null,
+    };
+
+    const { data, error } = await supabase
+      .from('legal_case_litigation_profile')
+      .upsert(payload, { onConflict: 'company_id,contract_id' })
+      .select('*')
+      .single();
+    if (error) throw error;
+
+    const saved = data as LitigationProfile;
+    dispatch({ type: 'SET_LITIGATION_PROFILE', payload: saved });
+    await notifyRecordChange(queryClient, { entity: 'legal', companyId, recordId: contractId });
+    toast.success('تم حفظ الملف القانوني للقضية');
+    return saved;
+  }, [companyId, contractId, queryClient, state.customer?.address, state.litigationProfile, user?.id]);
+
+  const saveFormalNotice = useCallback(async (
+    notice: Partial<FormalNotice> & Pick<FormalNotice, 'notice_type' | 'sent_on' | 'delivery_method'>,
+  ): Promise<FormalNotice> => {
+    if (!companyId || !contractId || !user?.id) {
+      throw new Error('تعذر تحديد الشركة أو العقد أو المستخدم');
+    }
+    if (notice.delivery_confirmed && (!notice.delivered_on || !notice.proof_document_id)) {
+      throw new Error('إثبات الوصول وتاريخه مطلوبان عند تأكيد تسليم الإنذار');
+    }
+
+    const payload = {
+      ...notice,
+      company_id: companyId,
+      contract_id: contractId,
+      created_by: user.id,
+    };
+    const query = notice.id
+      ? supabase
+          .from('legal_case_formal_notices')
+          .update(payload)
+          .eq('id', notice.id)
+          .eq('company_id', companyId)
+          .eq('contract_id', contractId)
+      : supabase.from('legal_case_formal_notices').insert(payload);
+    const { data, error } = await query.select('*').single();
+    if (error) throw error;
+
+    const saved = data as FormalNotice;
+    const next = notice.id
+      ? state.formalNotices.map((item) => (item.id === saved.id ? saved : item))
+      : [...state.formalNotices, saved];
+    dispatch({ type: 'SET_FORMAL_NOTICES', payload: next });
+    if (state.litigationProfile?.legal_review_status === 'approved') {
+      dispatch({
+        type: 'SET_LITIGATION_PROFILE',
+        payload: { ...state.litigationProfile, legal_review_status: 'draft', approved_by: null, approved_at: null, approval_source: null, approval_job_id: null, approval_worker_id: null },
+      });
+    }
+    await notifyRecordChange(queryClient, { entity: 'legal', companyId, recordId: contractId });
+    toast.success('تم حفظ الإنذار الموثق');
+    return saved;
+  }, [companyId, contractId, queryClient, state.formalNotices, state.litigationProfile, user?.id]);
+
+  const deleteFormalNotice = useCallback(async (noticeId: string): Promise<void> => {
+    if (!companyId || !contractId) throw new Error('تعذر تحديد الشركة أو العقد');
+    const { error } = await supabase
+      .from('legal_case_formal_notices')
+      .delete()
+      .eq('id', noticeId)
+      .eq('company_id', companyId)
+      .eq('contract_id', contractId);
+    if (error) throw error;
+    dispatch({
+      type: 'SET_FORMAL_NOTICES',
+      payload: state.formalNotices.filter((notice) => notice.id !== noticeId),
+    });
+    if (state.litigationProfile?.legal_review_status === 'approved') {
+      dispatch({ type: 'SET_LITIGATION_PROFILE', payload: { ...state.litigationProfile, legal_review_status: 'draft', approved_by: null, approved_at: null, approval_source: null, approval_job_id: null, approval_worker_id: null } });
+    }
+    await notifyRecordChange(queryClient, { entity: 'legal', companyId, recordId: contractId });
+  }, [companyId, contractId, queryClient, state.formalNotices, state.litigationProfile]);
+
+  const saveDamageCost = useCallback(async (
+    cost: Partial<DamageCost> & Pick<DamageCost, 'cost_type' | 'description' | 'amount'>,
+  ): Promise<DamageCost> => {
+    if (!companyId || !contractId || !user?.id) {
+      throw new Error('تعذر تحديد الشركة أو العقد أو المستخدم');
+    }
+    if (cost.verified && !cost.evidence_document_id) {
+      throw new Error('لا يمكن اعتماد الضرر دون مستند مؤيد مرتبط بالعقد');
+    }
+
+    const payload = {
+      ...cost,
+      company_id: companyId,
+      contract_id: contractId,
+      created_by: user.id,
+      depreciation_deduction: Math.max(0, Number(cost.depreciation_deduction || 0)),
+      insurance_recovery: Math.max(0, Number(cost.insurance_recovery || 0)),
+    };
+    const query = cost.id
+      ? supabase
+          .from('legal_case_damage_costs')
+          .update(payload)
+          .eq('id', cost.id)
+          .eq('company_id', companyId)
+          .eq('contract_id', contractId)
+      : supabase.from('legal_case_damage_costs').insert(payload);
+    const { data, error } = await query.select('*').single();
+    if (error) throw error;
+
+    const saved = data as DamageCost;
+    const next = cost.id
+      ? state.damageCosts.map((item) => (item.id === saved.id ? saved : item))
+      : [...state.damageCosts, saved];
+    dispatch({ type: 'SET_DAMAGE_COSTS', payload: next });
+    if (state.litigationProfile?.legal_review_status === 'approved') {
+      dispatch({ type: 'SET_LITIGATION_PROFILE', payload: { ...state.litigationProfile, legal_review_status: 'draft', approved_by: null, approved_at: null, approval_source: null, approval_job_id: null, approval_worker_id: null } });
+    }
+    await notifyRecordChange(queryClient, { entity: 'legal', companyId, recordId: contractId });
+    toast.success('تم حفظ بند الضرر والمستند المؤيد');
+    return saved;
+  }, [companyId, contractId, queryClient, state.damageCosts, state.litigationProfile, user?.id]);
+
+  const deleteDamageCost = useCallback(async (costId: string): Promise<void> => {
+    if (!companyId || !contractId) throw new Error('تعذر تحديد الشركة أو العقد');
+    const { error } = await supabase
+      .from('legal_case_damage_costs')
+      .delete()
+      .eq('id', costId)
+      .eq('company_id', companyId)
+      .eq('contract_id', contractId);
+    if (error) throw error;
+    dispatch({
+      type: 'SET_DAMAGE_COSTS',
+      payload: state.damageCosts.filter((cost) => cost.id !== costId),
+    });
+    if (state.litigationProfile?.legal_review_status === 'approved') {
+      dispatch({ type: 'SET_LITIGATION_PROFILE', payload: { ...state.litigationProfile, legal_review_status: 'draft', approved_by: null, approved_at: null, approval_source: null, approval_job_id: null, approval_worker_id: null } });
+    }
+    await notifyRecordChange(queryClient, { entity: 'legal', companyId, recordId: contractId });
+  }, [companyId, contractId, queryClient, state.damageCosts, state.litigationProfile]);
+
+  const freezeMemoSnapshot = useCallback(async () => {
+    if (!companyId || !contractId || !state.contract || !user?.id) {
+      throw new Error('بيانات القضية غير مكتملة');
+    }
+    let snapshot: LegalMemoSnapshot;
+    try {
+      snapshot = await freezeCurrentMemoSnapshot(companyId, contractId, state);
+    } catch (error) {
+      if (error instanceof MemoFactsChangedError) {
+        await notifyRecordChange(queryClient, { entity: 'documents', companyId, recordId: contractId });
+      }
+      throw error;
+    }
+    dispatch({ type: 'SET_MEMO_SNAPSHOTS', payload: [snapshot, ...state.memoSnapshots] });
+    await queryClient.invalidateQueries({
+      queryKey: ['legal-case-memo-snapshots', contractId, companyId],
+    });
+    toast.success('تم تثبيت نسخة المذكرة لمراجعة وكيل تقاضي');
+    return snapshot;
+  }, [companyId, contractId, queryClient, state, user?.id]);
+
+  const uploadEvidenceDocument = useCallback(async (
+    file: File,
+    documentType: string,
+    documentName?: string,
+  ) => {
+    if (!companyId || !contractId || !user?.id) {
+      throw new Error('تعذر تحديد الشركة أو العقد أو المستخدم');
+    }
+    validateLegalDocumentFile(file);
+    const filePath = buildContractDocumentStoragePath({
+      companyId,
+      contractId,
+      documentType,
+      fileName: file.name,
+    });
+    const { error: uploadError } = await supabase.storage
+      .from('contract-documents')
+      .upload(filePath, file, { upsert: false, contentType: file.type || undefined });
+    if (uploadError) throw uploadError;
+
+    const { data, error } = await supabase
+      .from('contract_documents')
+      .insert({
+        company_id: companyId,
+        contract_id: contractId,
+        document_name: documentName?.trim() || file.name,
+        document_type: documentType,
+        file_path: filePath,
+        file_size: file.size,
+        mime_type: file.type || null,
+        original_filename: file.name,
+        uploaded_by: user.id,
+        is_required: false,
+      })
+      .select('id, document_name, document_type, file_path, mime_type, legal_identity_match_status, legal_evidence_state')
+      .single();
+    if (error) {
+      await supabase.storage.from('contract-documents').remove([filePath]);
+      throw error;
+    }
+
+    const evidenceDocument: ContractEvidenceDocument = {
+      ...data,
+      legal_identity_match_status: normalizeLegalIdentityMatchStatus(
+        data.legal_identity_match_status,
+      ),
+      legal_evidence_state: normalizeLegalEvidenceState(data.legal_evidence_state),
+    };
+    dispatch({
+      type: 'SET_CONTRACT_EVIDENCE_DOCUMENTS',
+      payload: [evidenceDocument, ...state.contractEvidenceDocuments.filter((doc) => doc.id !== data.id)],
+    });
+    await queryClient.invalidateQueries({ queryKey: ['contract-document', contractId, companyId] });
+    toast.success('تم رفع مستند الإثبات وربطه بالعقد');
+    return evidenceDocument;
+  }, [companyId, contractId, queryClient, state.contractEvidenceDocuments, user?.id]);
+
+  const analyzeLegalEvidence = useCallback(async () => {
+    if (!companyId || !contractId || !user?.id) {
+      throw new Error('تعذر تحديد الشركة أو العقد أو المستخدم');
+    }
+
+    const [returnResult, pricingResult, templateResult] = await Promise.all([
+      supabase
+        .from('contract_vehicle_returns')
+        .select('id, return_date, status, notes')
+        .eq('company_id', companyId)
+        .eq('contract_id', contractId)
+        .eq('status', 'approved')
+        .order('return_date', { ascending: false })
+        .limit(1)
+        .maybeSingle(),
+      state.contract?.vehicle_id
+        ? supabase
+            .from('vehicle_pricing')
+            .select('id, daily_rate, security_deposit, effective_from')
+            .eq('vehicle_id', state.contract.vehicle_id)
+            .or(`effective_to.is.null,effective_to.gte.${new Date().toISOString().slice(0, 10)}`)
+            .order('effective_from', { ascending: false })
+            .limit(1)
+            .maybeSingle()
+        : Promise.resolve({ data: null, error: null }),
+      // قالب العقد الافتراضي للشركة عبر company_settings → contract_templates
+      supabase
+        .from('company_settings')
+        .select('default_contract_template_id')
+        .eq('company_id', companyId)
+        .maybeSingle()
+        .then(async ({ data: settings }) => {
+          const templateId = settings?.default_contract_template_id;
+          if (!templateId) return { data: null, error: null };
+          return supabase
+            .from('contract_templates')
+            .select('id, late_fee_terms_ar, termination_terms_ar, legal_clauses_ar')
+            .eq('id', templateId)
+            .eq('company_id', companyId)
+            .maybeSingle();
+        }),
+    ]);
+    if (returnResult.error) throw returnResult.error;
+    if (pricingResult.error) throw pricingResult.error;
+    if (templateResult.error) throw templateResult.error;
+
+    const templateRow = templateResult.data as {
+      id: string;
+      late_fee_terms_ar: string | null;
+      termination_terms_ar: string | null;
+      legal_clauses_ar: unknown;
+    } | null;
+
+    const analysis = buildLegalEvidenceAnalysis(state, {
+      vehicleReturn: returnResult.data,
+      vehiclePricing: pricingResult.data,
+      contractTemplate: templateRow
+        ? {
+            id: templateRow.id,
+            lateFeeTermsAr: templateRow.late_fee_terms_ar,
+            terminationTermsAr: templateRow.termination_terms_ar,
+            legalClausesAr: templateRow.legal_clauses_ar,
+          }
+        : null,
+    });
+
+    const automaticPatch = analysis.automatic.reduce<Partial<LitigationProfile>>(
+      (patch, candidate) => ({ ...patch, ...candidate.patch }),
+      {},
+    );
+
+    // القبول التلقائي: مقترحات review بثقة عالية وسند مستند مرفق — تُطبَّق فوراً
+    // وتُخزَّن كقرارات مقبولة موثقة في نفس جدول المقترحات.
+    const autoAcceptedCandidates = selectAutoAcceptable(analysis.review);
+    const autoAcceptPatch = autoAcceptedCandidates.reduce<Partial<LitigationProfile>>(
+      (patch, candidate) => ({ ...patch, ...candidate.patch }),
+      {},
+    );
+    const mergedPatch = { ...automaticPatch, ...autoAcceptPatch };
+    if (Object.keys(mergedPatch).length > 0) {
+      await saveLitigationProfile({ ...mergedPatch, legal_review_status: 'draft' });
+    }
+
+    const proposalRowFor = (candidate: (typeof analysis.review)[number], accepted: boolean) => ({
+      company_id: companyId,
+      contract_id: contractId,
+      field_key: candidate.fieldKey,
+      field_label: candidate.label,
+      value_label: candidate.valueLabel,
+      proposed_patch: JSON.parse(JSON.stringify(candidate.patch)),
+      current_value: state.litigationProfile
+        ? JSON.parse(JSON.stringify(state.litigationProfile))
+        : null,
+      automation_level: candidate.level,
+      source_kind: candidate.sourceKind,
+      source_ref: candidate.sourceRef,
+      source_label: candidate.sourceLabel,
+      source_document_id: candidate.sourceDocumentId,
+      confidence: candidate.confidence,
+      reason: accepted
+        ? `${candidate.reason} — اعتُمد تلقائياً لاكتمال سنده المستندي.`
+        : candidate.reason,
+      status: accepted ? 'accepted' : 'pending',
+      reviewed_by: accepted ? user.id : null,
+      reviewed_at: accepted ? new Date().toISOString() : null,
+      applied_at: accepted ? new Date().toISOString() : null,
+      created_by: user.id,
+    });
+
+    const autoAcceptedRows = autoAcceptedCandidates.map((candidate) => proposalRowFor(candidate, true));
+    const pendingRows = analysis.review
+      .filter((candidate) => !autoAcceptedCandidates.includes(candidate))
+      .filter((candidate) => !state.evidenceProposals.some((existing) => (
+        existing.field_key === candidate.fieldKey
+        && existing.source_kind === candidate.sourceKind
+        && existing.source_ref === candidate.sourceRef
+        && existing.status !== 'pending'
+      )))
+      .map((candidate) => proposalRowFor(candidate, false));
+
+    const rowsToUpsert = [...autoAcceptedRows, ...pendingRows];
+    if (rowsToUpsert.length > 0) {
+      const { error } = await supabase
+        .from('legal_case_evidence_proposals')
+        .upsert(rowsToUpsert, {
+          onConflict: 'company_id,contract_id,field_key,source_kind,source_ref',
+        });
+      if (error) throw error;
+    }
+
+    const { data: proposals, error: proposalsError } = await supabase
+      .from('legal_case_evidence_proposals')
+      .select('*')
+      .eq('company_id', companyId)
+      .eq('contract_id', contractId)
+      .eq('status', 'pending')
+      .order('confidence', { ascending: false });
+    if (proposalsError) throw proposalsError;
+    dispatch({
+      type: 'SET_EVIDENCE_PROPOSALS',
+      payload: (proposals || []) as unknown as LegalEvidenceProposal[],
+    });
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: ['legal-case-evidence-proposals', contractId, companyId] }),
+      queryClient.invalidateQueries({ queryKey: ['legal-case-litigation-profile', contractId, companyId] }),
+    ]);
+    toast.success(
+      autoAcceptedRows.length > 0
+        ? `تم التحقق من ${analysis.automatic.length} مصادر واعتماد ${autoAcceptedRows.length} مقترحات تلقائياً، وتجهيز ${pendingRows.length} مقترحات للمراجعة`
+        : `تم التحقق من ${analysis.automatic.length} مصادر مؤكدة وتجهيز ${pendingRows.length} مقترحات للمراجعة`,
+    );
+    return analysis;
+  }, [companyId, contractId, queryClient, saveLitigationProfile, state, user?.id]);
+
+  const reviewEvidenceProposal = useCallback(async (
+    proposalId: string,
+    decision: 'accept' | 'reject',
+  ) => {
+    if (!companyId || !contractId || !user?.id) {
+      throw new Error('تعذر تحديد الشركة أو العقد أو المستخدم');
+    }
+    const proposal = state.evidenceProposals.find((item) => item.id === proposalId);
+    if (!proposal || proposal.status !== 'pending') {
+      throw new Error('المقترح غير موجود أو تمت مراجعته مسبقاً');
+    }
+
+    if (decision === 'accept') {
+      await saveLitigationProfile({
+        ...proposal.proposed_patch,
+        legal_review_status: 'draft',
+      });
+    }
+
+    const reviewedAt = new Date().toISOString();
+    const { error } = await supabase
+      .from('legal_case_evidence_proposals')
+      .update({
+        status: decision === 'accept' ? 'accepted' : 'rejected',
+        reviewed_by: user.id,
+        reviewed_at: reviewedAt,
+        applied_at: decision === 'accept' ? reviewedAt : null,
+      })
+      .eq('id', proposalId)
+      .eq('company_id', companyId)
+      .eq('contract_id', contractId)
+      .eq('status', 'pending');
+    if (error) throw error;
+
+    dispatch({
+      type: 'SET_EVIDENCE_PROPOSALS',
+      payload: state.evidenceProposals.filter((item) => item.id !== proposalId),
+    });
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: ['legal-case-evidence-proposals', contractId, companyId] }),
+      queryClient.invalidateQueries({ queryKey: ['legal-case-litigation-profile', contractId, companyId] }),
+    ]);
+    toast.success(decision === 'accept' ? 'تم اعتماد المقترح وتطبيقه' : 'تم رفض المقترح مع حفظ القرار');
+  }, [companyId, contractId, queryClient, saveLitigationProfile, state.evidenceProposals, user?.id]);
   
   const registerCase = useCallback(async () => {
     if (!user?.id) {
@@ -915,7 +1666,7 @@ export function LawsuitPreparationProvider({
     <div class="header">
       <h1>فاتورة مستحقة</h1>
       <p>شركة العراف لتأجير السيارات</p>
-      <p>{t("alarafCarRentalCompany")}</p>
+      <p>Al-Araf Car Rental</p>
     </div>
     
     <div class="content">
@@ -969,7 +1720,7 @@ export function LawsuitPreparationProvider({
         أم صلال محمد – الشارع التجاري – مبنى (79) – الطابق الأول – مكتب (2)
       </p>
       <p style="color: #666; font-size: 12px; margin-top: 5px;">
-        هاتف: +974 4444 4444 | البريد الإلكتروني: info@alaraf.qa
+        هاتف: +974 4444 4444 | البريد الإلكتروني: khamis-1992@hotmail.com
       </p>
     </div>
   </div>
@@ -989,7 +1740,12 @@ export function LawsuitPreparationProvider({
       }
       
       dispatch({ type: 'SET_DOWNLOADING_INVOICES', payload: true });
-      toast.info('جاري تجهيز الفواتير...');
+      const containsScheduleClaims = state.overdueInvoices.some(
+        (invoice) => invoice.source === 'payment_schedule',
+      );
+      toast.info(containsScheduleClaims
+        ? 'جاري تجهيز مستندات الاستحقاق...'
+        : 'جاري تجهيز الفواتير...');
       
       // Dynamic import for heavy libraries
       const [{ default: JSZip }] = await Promise.all([
@@ -997,7 +1753,7 @@ export function LawsuitPreparationProvider({
       ]);
       
       const zip = new JSZip();
-      const invoicesFolder = zip.folder('invoices');
+      const invoicesFolder = zip.folder(containsScheduleClaims ? 'مستندات_الاستحقاق' : 'الفواتير');
       
       if (!invoicesFolder) {
         throw new Error('فشل في إنشاء مجلد الفواتير');
@@ -1007,11 +1763,12 @@ export function LawsuitPreparationProvider({
       for (let i = 0; i < state.overdueInvoices.length; i++) {
         const invoice = state.overdueInvoices[i];
         
-        toast.info(`جاري معالجة الفاتورة ${i + 1} من ${state.overdueInvoices.length}...`);
+        toast.info(`جاري معالجة مستند الاستحقاق ${i + 1} من ${state.overdueInvoices.length}...`);
         
         const customerName = formatCustomerName(state.customer) || undefined;
         const pdfBlob = await renderOfficialInvoicePdfBlob(invoice, customerName);
-        const fileName = `فاتورة_${invoice.invoice_number || i + 1}.pdf`;
+        const filePrefix = invoice.source === 'payment_schedule' ? 'استحقاق_تعاقدي' : 'فاتورة';
+        const fileName = `${filePrefix}_${invoice.invoice_number || i + 1}.pdf`;
         invoicesFolder.file(fileName, pdfBlob);
       }
       
@@ -1023,13 +1780,13 @@ export function LawsuitPreparationProvider({
       const url = URL.createObjectURL(zipBlob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `فواتير_${state.contract?.contract_number || 'العقد'}.zip`;
+      a.download = `${containsScheduleClaims ? 'مستندات_استحقاق' : 'فواتير'}_${state.contract?.contract_number || 'العقد'}.zip`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
       
-      toast.success(`تم تحميل ${state.overdueInvoices.length} فاتورة بنجاح`);
+      toast.success(`تم تحميل ${state.overdueInvoices.length} مستند استحقاق بنجاح`);
     } catch (error: any) {
       console.error('Error downloading invoices:', error);
       toast.error(`خطأ في تحميل الفواتير: ${error.message}`);
@@ -1055,6 +1812,10 @@ export function LawsuitPreparationProvider({
       if (!state.taqadiData || !companyId || !state.contract) return;
       
       const customer = state.customer;
+      const defendantContact = resolveDefendantContact(
+        state.litigationProfile,
+        state.customer,
+      );
       const fullName = formatCustomerName(customer, { preferArabic: true });
       const nameParts = fullName.split(' ');
       
@@ -1068,11 +1829,11 @@ export function LawsuitPreparationProvider({
         defendant_first_name: nameParts[0] || '',
         defendant_middle_name: nameParts.length > 2 ? nameParts.slice(1, -1).join(' ') : null,
         defendant_last_name: nameParts.length > 1 ? nameParts[nameParts.length - 1] : '',
-        defendant_nationality: customer?.nationality || customer?.country || null,
+        defendant_nationality: customer?.nationality || null,
         defendant_id_number: customer?.national_id || null,
-        defendant_address: TAQADI_DEFAULT_DEFENDANT_ADDRESS,
+        defendant_address: defendantContact.address || null,
         defendant_phone: customer?.phone || null,
-        defendant_email: TAQADI_DEFAULT_DEFENDANT_EMAIL,
+        defendant_email: defendantContact.email || null,
         contract_id: contractId,
         customer_id: customer?.id || null,
       };
@@ -1086,7 +1847,7 @@ export function LawsuitPreparationProvider({
     } finally {
       dispatch({ type: 'SEND_TO_LAWSUIT_DATA_COMPLETE' });
     }
-  }, [state.taqadiData, state.contract, state.customer, companyId, contractId]);
+  }, [state.taqadiData, state.contract, state.customer, state.litigationProfile, companyId, contractId]);
   
   const startTaqadiAutomation = useCallback(async () => {
     dispatch({ type: 'TAQADI_AUTOMATION_START' });
@@ -1096,9 +1857,30 @@ export function LawsuitPreparationProvider({
         throw new Error('تعذر تحديد الشركة أو المستخدم');
       }
 
+      const filingReadiness = getFilingReadiness(state);
+      if (!filingReadiness.canStartFiling) {
+        throw new Error(
+          `ملف الدعوى غير جاهز لبدء الإجراءات: ${filingReadiness.missingReasons.join('، ')}`,
+        );
+      }
+
+      // Freeze a current draft for the worker to review. Approval is performed
+      // later by the trusted Taqadi worker after matching the live portal
+      // review; the user is never asked to approve this snapshot.
+      let filingBaseState = state;
+      if (!state.memoSnapshots.some((snapshot) => isMemoSnapshotCurrent(state, snapshot))) {
+        const snapshot = await freezeMemoSnapshot();
+        filingBaseState = {
+          ...state,
+          memoSnapshots: [snapshot, ...state.memoSnapshots],
+        };
+      }
+
       let legalCase = await getCurrentLegalCase(companyId, contractId);
       if (!legalCase) {
-        const registered = await registerLegalCase(state, user.id);
+        const registered = await registerLegalCase(state, user.id, {
+          preparationOnly: true,
+        });
         legalCase = {
           id: registered.caseId,
           case_number: registered.caseNumber,
@@ -1108,6 +1890,7 @@ export function LawsuitPreparationProvider({
           court_fees: null,
           filing_date: null,
           created_at: null,
+          claim_scope: state.legalCase?.claim_scope ?? 'full_outstanding',
         };
       }
       const currentStage = legalCase.workflow_stage || 'preparation';
@@ -1125,7 +1908,12 @@ export function LawsuitPreparationProvider({
         type: 'TAQADI_AUTOMATION_STATUS',
         payload: 'جاري فحص الحزمة وإضافتها إلى طابور تقاضي...',
       });
-      const payload = buildTaqadiFilingPayload(state, window.location.href);
+      dispatch({
+        type: 'TAQADI_AUTOMATION_STATUS',
+        payload: 'جاري إعادة توليد الحزمة من النسخة التي سيراجعها الوكيل...',
+      });
+      const filingState = await prepareCurrentFilingState(filingBaseState);
+      const payload = await prepareTaqadiFilingPayload(filingState, window.location.href);
       const job = await enqueueTaqadiFilingJob({
         companyId,
         legalCaseId: legalCase.id,
@@ -1149,15 +1937,16 @@ export function LawsuitPreparationProvider({
     } catch (error: any) {
       dispatch({
         type: 'TAQADI_AUTOMATION_STATUS',
-        payload: `خطأ: ${error?.message || 'تعذر إضافة الدعوى إلى الطابور'}`,
+        payload: `خطأ: ${taqadiErrorMessage(error) || 'تعذر إضافة الدعوى إلى الطابور'}`,
       });
-      toast.error(error?.message || 'تعذر إضافة الدعوى إلى الطابور');
+      toast.error(taqadiErrorMessage(error) || 'تعذر إضافة الدعوى إلى الطابور');
     } finally {
       dispatch({ type: 'TAQADI_AUTOMATION_STOP' });
     }
   }, [
     companyId,
     contractId,
+    freezeMemoSnapshot,
     queryClient,
     state,
     user?.id,
@@ -1214,83 +2003,12 @@ export function LawsuitPreparationProvider({
         return;
       }
       
-      // Dynamic import for heavy libraries
-      const [{ default: html2canvas }, { jsPDF }] = await Promise.all([
-        import('html2canvas'),
-        import('jspdf'),
-      ]);
-      
-      // Create iframe for rendering
-      const iframe = document.createElement('iframe');
-      iframe.style.position = 'absolute';
-      iframe.style.left = '-9999px';
-      iframe.style.width = '794px';
-      document.body.appendChild(iframe);
-      
-      const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
-      if (!iframeDoc) {
-        document.body.removeChild(iframe);
-        toast.error('فشل في إنشاء PDF');
-        return;
-      }
-      
-      // Write HTML to iframe
-      iframeDoc.open();
-      iframeDoc.write(memoHtml);
-      iframeDoc.close();
-      
-      // Wait for rendering
-      await new Promise(resolve => setTimeout(resolve, 800));
-      
-      toast.info('جاري تحويل المذكرة إلى PDF...');
-      
-      // Capture canvas
-      const canvas = await html2canvas(iframeDoc.body, {
-        scale: 1.5,
-        useCORS: true,
-        allowTaint: true,
-        logging: false,
-        backgroundColor: '#ffffff',
-        width: 794,
-      });
-      
-      // Create PDF
-      const pdf = new jsPDF({
-        orientation: 'portrait',
-        unit: 'mm',
-        format: 'a4',
-        compress: true,
-      });
-      
-      const imgData = canvas.toDataURL('image/jpeg', 0.85);
-      const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = pdf.internal.pageSize.getHeight();
-      const imgWidth = canvas.width;
-      const imgHeight = canvas.height;
-      const ratio = pdfWidth / imgWidth;
-      const contentHeight = imgHeight * ratio;
-      
-      // Add pages if content is long
-      let heightLeft = contentHeight;
-      let position = 0;
-      let pageCount = 0;
-      
-      while (heightLeft > 0 && pageCount < 10) {
-        if (pageCount > 0) pdf.addPage();
-        pdf.addImage(imgData, 'JPEG', 0, position, pdfWidth, contentHeight, undefined, 'FAST');
-        heightLeft -= pdfHeight;
-        position -= pdfHeight;
-        pageCount++;
-      }
-      
-      // Cleanup
-      document.body.removeChild(iframe);
-      
-      // Download
+      const { htmlToPdfBlob } = await import('../utils/zipExport');
+      const blob = await htmlToPdfBlob(memoHtml);
+      if (!blob) throw new Error('تعذر إنشاء المذكرة كاملة بصيغة PDF');
+      const { saveAs } = await import('file-saver');
       const customerName = formatCustomerName(state.customer) || 'عميل';
-      const fileName = `المذكرة_الشارحة_${customerName}_${state.contract?.contract_number || ''}.pdf`;
-      pdf.save(fileName);
-      
+      saveAs(blob, 'المذكرة_الشارحة_' + customerName + '_' + (state.contract?.contract_number || '') + '.pdf');
       toast.success('تم تحميل المذكرة بصيغة PDF');
     } catch (error) {
       console.error('Error downloading memo as PDF:', error);
@@ -1414,6 +2132,32 @@ export function LawsuitPreparationProvider({
       ]);
       dispatch({ type: 'MARK_CASE_OPENED_COMPLETE' });
       toast.success('تم فتح القضية وتحديث حالتها بنجاح');
+
+      // أرشفة الحزمة النهائية تلقائياً في سجل القضية (بدون حاجة لتحميل يدوي)
+      void (async () => {
+        try {
+          const { buildDocumentsZipBlob } = await import('../utils/zipExport');
+          const { blob, fileName } = await buildDocumentsZipBlob(state, contentRefs.current);
+          const archivePath = `legal-packages/${companyId}/${state.contractId}/${Date.now()}_${fileName}`;
+          const { error: uploadError } = await supabase.storage
+            .from('contract-documents')
+            .upload(archivePath, blob, { contentType: 'application/zip' });
+          if (uploadError) throw uploadError;
+          const { error: insertError } = await supabase.from('lawsuit_documents').insert({
+            company_id: companyId,
+            contract_id: state.contractId!,
+            legal_case_id: legalCase.caseId,
+            document_type: 'filing_package',
+            document_name: `حزمة رفع الدعوى - ${fileName}`,
+            file_url: archivePath,
+            created_by: user.id,
+          });
+          if (insertError) throw insertError;
+        } catch {
+          // الأرشفة ثانوية؛ لا تُعطل مسار فتح القضية
+        }
+      })();
+
       setTimeout(() => navigate('/legal/cases?view=cases'), 1500);
       return legalCase;
     } catch (error) {
@@ -1460,7 +2204,102 @@ export function LawsuitPreparationProvider({
     state.documents.memo.status,
     state.documents.claims.status,
     state.documents.docsList.status,
+    state.documents,
     generateAllDocuments,
+  ]);
+
+  // ==========================================
+  // التشغيل التلقائي لمحلل الأدلة — بلا زر يدوي
+  // ==========================================
+
+  // 1) توليد مستند لقطة قائمة أسعار المركبة عند غياب سند أجرة المثل، ليصبح الاقتراح قابلاً للاعتماد التلقائي
+  useEffect(() => {
+    if (state.ui.isLoading || !state.contractId || !user?.id) return;
+    if (!state.contract?.vehicle_id) return;
+    if (state.litigationProfile?.retention_daily_rate) return;
+    if (state.contractEvidenceDocuments.some((document) => document.document_type === 'retention_rate_evidence')) return;
+    if (autoRetentionEvidenceRef.current === state.contractId) return;
+    autoRetentionEvidenceRef.current = state.contractId;
+
+    const vehicleId = state.contract.vehicle_id;
+    void (async () => {
+      const { data: pricing } = await supabase
+        .from('vehicle_pricing')
+        .select('id, daily_rate, effective_from')
+        .eq('vehicle_id', vehicleId)
+        .order('effective_from', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (!pricing || Number(pricing.daily_rate) <= 0) return;
+
+      const html = `<!DOCTYPE html><html dir="rtl" lang="ar"><head><meta charset="UTF-8"></head><body style="font-family: sans-serif; padding: 40px;">
+<h2>لقطة قائمة أسعار الشركة</h2>
+<p>المركبة: ${state.vehicle?.make || ''} ${state.vehicle?.model || ''} ${state.vehicle?.year || ''} - لوحة ${state.vehicle?.plate_number || '-'}</p>
+<p>الأجرة اليومية المعتمدة: <strong>${Number(pricing.daily_rate).toLocaleString('en-US')} ريال قطري</strong></p>
+<p>قائمة الأسعار رقم: ${pricing.id} — سارية من: ${pricing.effective_from || 'غير محدد'}</p>
+<p>تاريخ اللقطة: ${new Date().toLocaleDateString('en-GB')} — مولَّدة آلياً من نظام الأسعار المعتمد.</p>
+</body></html>`;
+      const file = new File(
+        [html],
+        `لقطة-قائمة-أسعار-${state.vehicle?.plate_number || vehicleId}.html`,
+        { type: 'text/html' },
+      );
+      await uploadEvidenceDocument(file, 'retention_rate_evidence', file.name);
+    })().catch(() => {
+      autoRetentionEvidenceRef.current = null;
+    });
+  }, [
+    state.ui.isLoading,
+    state.contractId,
+    state.contract?.vehicle_id,
+    state.vehicle,
+    state.litigationProfile?.retention_daily_rate,
+    state.contractEvidenceDocuments,
+    user?.id,
+    uploadEvidenceDocument,
+  ]);
+
+  // 2) تشغيل محلل الأدلة تلقائياً بعد انتقال المستندات — بلا زر يدوي
+  useEffect(() => {
+    if (state.ui.isLoading || !state.contractId || !state.contract || !state.customer || !user?.id) return;
+    if (autoAnalyzedForContractRef.current === state.contractId) return;
+
+    autoAnalyzedForContractRef.current = state.contractId;
+    void analyzeLegalEvidence().catch(() => {
+      autoAnalyzedForContractRef.current = null;
+    });
+  }, [
+    state.ui.isLoading,
+    state.contractId,
+    state.contract,
+    state.customer,
+    state.contractEvidenceDocuments,
+    user?.id,
+    analyzeLegalEvidence,
+  ]);
+
+  // 3) تثبيت مسودة لقطة المذكرة تلقائياً؛ وكيل تقاضي يعتمدها بعد مطابقة شاشة المراجعة
+  useEffect(() => {
+    if (state.ui.isLoading || !state.contractId || !state.contract || !state.calculations || !state.taqadiData) return;
+    if (autoFrozenSnapshotContractRef.current === state.contractId) return;
+    if (getFilingReadiness(state).legalStatus.issues.length > 0) return;
+    if (state.memoSnapshots.some((snapshot) => isMemoSnapshotCurrent(state, snapshot))) return;
+
+    autoFrozenSnapshotContractRef.current = state.contractId;
+    void freezeMemoSnapshot()
+      .then(() => toast.success('ثُبِّتت مسودة المذكرة تلقائياً'))
+      .catch(() => {
+        autoFrozenSnapshotContractRef.current = null;
+      });
+  }, [
+    state.ui.isLoading,
+    state.contractId,
+    state.contract,
+    state.calculations,
+    state.taqadiData,
+    state.memoSnapshots,
+    state,
+    freezeMemoSnapshot,
   ]);
   
   // ==========================================
@@ -1486,6 +2325,15 @@ export function LawsuitPreparationProvider({
       setIncludeCriminalComplaint,
       setIncludeViolationsTransfer,
       markCaseAsOpened: async () => { await markCaseAsOpened(); },
+      saveLitigationProfile,
+      saveFormalNotice,
+      deleteFormalNotice,
+      saveDamageCost,
+      deleteDamageCost,
+      freezeMemoSnapshot,
+      uploadEvidenceDocument,
+      analyzeLegalEvidence,
+      reviewEvidenceProposal,
       downloadMemoPdf,
       downloadMemoDocx,
     },

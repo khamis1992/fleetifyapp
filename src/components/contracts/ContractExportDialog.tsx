@@ -1,7 +1,7 @@
 import * as React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
@@ -29,15 +29,22 @@ import {
   Clock,
   Sparkles,
   Check,
-  ChevronsUpDown
+  ChevronsUpDown,
+  AlertTriangle,
+  ReceiptText
 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
+import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
+import type {
+  ContractReportContract,
+  ContractReportDocument,
+  ContractReportInvoice,
+  ContractReportPayment,
+} from '@/utils/contractsExcelReport';
 
-import { useFleetifyTranslation } from "@/hooks/useTranslation";
 interface ContractExportDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -66,7 +73,7 @@ const exportOptions: ExportOption[] = [
   {
     id: 'excel',
     label: 'Excel',
-    description: 'جدول بيانات CSV',
+    description: 'مصنف XLSX شامل متعدد الأوراق',
     icon: FileSpreadsheet,
     color: 'text-emerald-600',
     bgColor: 'bg-emerald-50 border-emerald-200 hover:border-emerald-400'
@@ -89,15 +96,16 @@ const statusOptions = [
   { value: 'draft', label: 'مسودة' },
   { value: 'under_review', label: 'قيد المراجعة' },
   { value: 'suspended', label: 'معلق' },
+  { value: 'pending_completion', label: 'بانتظار الإكمال' },
+  { value: 'expiring_soon', label: 'قارب الانتهاء' },
 ];
 
 export const ContractExportDialog: React.FC<ContractExportDialogProps> = ({
   open,
   onOpenChange
 }) => {
-  const { t } = useFleetifyTranslation("ui");
-  const { user } = useAuth();
-  const [exportType, setExportType] = React.useState<ExportFormat>('pdf');
+  const { companyId } = useUnifiedCompanyAccess();
+  const [exportType, setExportType] = React.useState<ExportFormat>('excel');
   const [dateRange, setDateRange] = React.useState('all');
   const { formatCurrency, currency } = useCurrencyFormatter();
   const [customStartDate, setCustomStartDate] = React.useState('');
@@ -111,24 +119,28 @@ export const ContractExportDialog: React.FC<ContractExportDialogProps> = ({
   const [includeCustomer, setIncludeCustomer] = React.useState(true);
   const [includeFinancial, setIncludeFinancial] = React.useState(true);
   const [includeVehicle, setIncludeVehicle] = React.useState(true);
+  const [includeInvoices, setIncludeInvoices] = React.useState(true);
+  const [includePayments, setIncludePayments] = React.useState(true);
+  const [includeAlerts, setIncludeAlerts] = React.useState(true);
   const [isExporting, setIsExporting] = React.useState(false);
   const [activeSection, setActiveSection] = React.useState<'format' | 'filters' | 'options'>('format');
 
   // Fetch contracts for export
   const { data: contracts, error, isLoading } = useQuery({
-    queryKey: ['contracts-export', user?.profile?.company_id, selectedStatuses, contractType, dateRange, customStartDate, customEndDate],
+    queryKey: ['contracts-export', companyId, selectedStatuses, contractType, dateRange, customStartDate, customEndDate],
     queryFn: async () => {
-      if (!user?.profile?.company_id) return [];
+      if (!companyId) return [];
       
       let baseQuery = supabase
         .from('contracts')
         .select(`
           *,
-          customer:customers(first_name, last_name, company_name, customer_type, phone, email),
-          vehicle:vehicles(plate_number, make, model, year),
-          cost_center:cost_centers(center_name, center_code)
+          customer:customers(id, first_name, last_name, first_name_ar, last_name_ar, company_name, company_name_ar, customer_type, phone, email, national_id),
+          vehicle:vehicles(id, plate_number, make, model, year, status),
+          cost_center:cost_centers(id, center_name, center_name_ar, center_code),
+          assigned_employee:profiles!contracts_assigned_to_profile_id_fkey(id, first_name, last_name, first_name_ar, last_name_ar, email)
         `)
-        .eq('company_id', user.profile.company_id);
+        .eq('company_id', companyId);
 
       // Status Filter Logic (Multiple)
       if (selectedStatuses.length > 0) {
@@ -153,7 +165,7 @@ export const ContractExportDialog: React.FC<ContractExportDialogProps> = ({
 
       baseQuery = baseQuery.order('contract_date', { ascending: false });
 
-      const allContracts: any[] = [];
+      const allContracts: ContractReportContract[] = [];
       const batchSize = 1000;
       let offset = 0;
       let hasMore = true;
@@ -168,7 +180,7 @@ export const ContractExportDialog: React.FC<ContractExportDialogProps> = ({
         }
 
         if (batch && batch.length > 0) {
-          allContracts.push(...batch);
+          allContracts.push(...(batch as unknown as ContractReportContract[]));
           offset += batchSize;
           hasMore = batch.length === batchSize;
         } else {
@@ -178,7 +190,7 @@ export const ContractExportDialog: React.FC<ContractExportDialogProps> = ({
       
       return allContracts;
     },
-    enabled: !!user?.profile?.company_id && open
+    enabled: !!companyId && open
   });
 
   React.useEffect(() => {
@@ -337,6 +349,7 @@ export const ContractExportDialog: React.FC<ContractExportDialogProps> = ({
               </thead>
               <tbody>
                 ${contracts.map(contract => {
+                  const customer = contract.customer;
                   const statusClass = contract.status === 'active' ? 'status-active' : 
                                      contract.status === 'under_legal_procedure' ? 'status-legal' : 'status-cancelled';
                   const statusText = contract.status === 'active' ? 'نشط' :
@@ -347,13 +360,13 @@ export const ContractExportDialog: React.FC<ContractExportDialogProps> = ({
                     <tr>
                       <td><strong>${contract.contract_number || 'غير محدد'}</strong></td>
                       <td><span class="status-badge ${statusClass}">${statusText}</span></td>
-                      ${includeCustomer ? `<td>${(contract.customer as any)?.customer_type === 'individual' 
-                        ? `${(contract.customer as any)?.first_name || ''} ${(contract.customer as any)?.last_name || ''}`.trim() || 'غير محدد'
-                        : (contract.customer as any)?.company_name || 'غير محدد'}</td>` : ''}
+                      ${includeCustomer ? `<td>${customer?.customer_type === 'individual'
+                        ? `${customer.first_name || ''} ${customer.last_name || ''}`.trim() || 'غير محدد'
+                        : customer?.company_name || 'غير محدد'}</td>` : ''}
                       <td>${contract.start_date ? new Date(contract.start_date).toLocaleDateString('ar-QA') : '-'}</td>
                       <td>${contract.end_date ? new Date(contract.end_date).toLocaleDateString('ar-QA') : '-'}</td>
                       ${includeFinancial ? `<td>${formatCurrency(contract.contract_amount || 0, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</td>` : ''}
-                      ${includeVehicle ? `<td>${(contract.vehicle as any)?.plate_number || '-'}</td>` : ''}
+                      ${includeVehicle ? `<td>${contract.vehicle?.plate_number || '-'}</td>` : ''}
                     </tr>
                   `;
                 }).join('')}
@@ -376,60 +389,116 @@ export const ContractExportDialog: React.FC<ContractExportDialogProps> = ({
     }
   };
 
-  const generateExcel = () => {
+  const generateExcel = async () => {
     if (!contracts || contracts.length === 0) {
-      toast.error('لا توجد عقود للتصدير');
-      return;
+      throw new Error('لا توجد عقود للتصدير');
     }
 
-    try {
-      const headers = [
-        'رقم العقد',
-        'الحالة',
-        ...(includeCustomer ? ['العميل'] : []),
-        'تاريخ البداية',
-        'تاريخ النهاية',
-        ...(includeFinancial ? [`المبلغ (${currency})`, `المبلغ الشهري (${currency})`] : []),
-        ...(includeVehicle ? ['رقم اللوحة'] : [])
-      ];
-
-      const csvData = contracts.map(contract => [
-        contract.contract_number || 'غير محدد',
-        contract.status === 'active' ? 'نشط' :
-        contract.status === 'under_legal_procedure' ? 'إجراء قانوني' :
-        contract.status === 'cancelled' ? 'ملغي' :
-        contract.status === 'expired' ? 'منتهي' : contract.status,
-        ...(includeCustomer ? [
-          (contract.customer as any)?.customer_type === 'individual' 
-            ? `${(contract.customer as any)?.first_name || ''} ${(contract.customer as any)?.last_name || ''}`.trim() || 'غير محدد'
-            : (contract.customer as any)?.company_name || 'غير محدد'
-        ] : []),
-        contract.start_date ? new Date(contract.start_date).toLocaleDateString('en-GB') : 'غير محدد',
-        contract.end_date ? new Date(contract.end_date).toLocaleDateString('en-GB') : 'غير محدد',
-        ...(includeFinancial ? [
-          contract.contract_amount || 0,
-          contract.monthly_amount || 0
-        ] : []),
-        ...(includeVehicle ? [(contract.vehicle as any)?.plate_number || 'لا يوجد'] : [])
-      ]);
-
-      const csvContent = [headers, ...csvData]
-        .map(row => row.map(cell => `"${cell}"`).join(','))
-        .join('\n');
-
-      const bom = '\uFEFF';
-      const blob = new Blob([bom + csvContent], { type: 'text/csv;charset=utf-8;' });
-      
-      const link = document.createElement('a');
-      link.setAttribute('href', URL.createObjectURL(blob));
-      link.setAttribute('download', `contracts_report_${new Date().toISOString().split('T')[0]}.csv`);
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-    } catch (error) {
-      console.error('Excel generation error:', error);
-      toast.error('حدث خطأ أثناء إنشاء تقرير Excel');
+    if (!companyId) {
+      throw new Error('تعذر تحديد الشركة الحالية');
     }
+
+    const contractIds = contracts.map((contract) => contract.id).filter(Boolean);
+    const contractIdChunks: string[][] = [];
+    for (let index = 0; index < contractIds.length; index += 150) {
+      contractIdChunks.push(contractIds.slice(index, index + 150));
+    }
+
+    const fetchPagedChunks = async <T,>(
+      countRows: (ids: string[]) => Promise<{ count: number | null; error: unknown }>,
+      fetchPage: (ids: string[], offset: number) => Promise<{ data: T[] | null; error: unknown }>,
+    ): Promise<T[]> => {
+      const chunkResults = await Promise.all(contractIdChunks.map(async (ids) => {
+        const countResult = await countRows(ids);
+        if (countResult.error) throw countResult.error;
+        const pageCount = Math.ceil(Number(countResult.count || 0) / 1000);
+        const pages = await Promise.all(Array.from({ length: pageCount }, async (_, pageIndex) => {
+          const pageResult = await fetchPage(ids, pageIndex * 1000);
+          if (pageResult.error) throw pageResult.error;
+          return pageResult.data || [];
+        }));
+        return pages.flat();
+      }));
+      return chunkResults.flat();
+    };
+
+    const fetchInvoices = async () => {
+      if (!includeInvoices) return [];
+      return fetchPagedChunks<ContractReportInvoice>(
+        async (ids) => supabase
+          .from('invoices')
+          .select('id', { count: 'exact', head: true })
+          .eq('company_id', companyId)
+          .in('contract_id', ids),
+        async (ids, offset) => supabase
+            .from('invoices')
+            .select('id, contract_id, invoice_number, invoice_month, invoice_date, due_date, invoice_type, status, payment_status, subtotal, discount_amount, tax_amount, total_amount, paid_amount, balance_due, currency, notes')
+            .eq('company_id', companyId)
+            .in('contract_id', ids)
+            .order('invoice_date', { ascending: false })
+            .range(offset, offset + 999),
+      );
+    };
+
+    const fetchPayments = async () => {
+      if (!includePayments) return [];
+      return fetchPagedChunks<ContractReportPayment>(
+        async (ids) => supabase
+          .from('payments')
+          .select('id', { count: 'exact', head: true })
+          .eq('company_id', companyId)
+          .in('contract_id', ids),
+        async (ids, offset) => supabase
+            .from('payments')
+            .select('id, contract_id, invoice_id, payment_number, payment_date, payment_month, due_date, payment_method, payment_type, payment_status, transaction_type, amount, amount_paid, remaining_amount, days_overdue, late_fine_amount, reference_number, reconciliation_status, allocation_status, currency, notes')
+            .eq('company_id', companyId)
+            .in('contract_id', ids)
+            .order('payment_date', { ascending: false })
+            .range(offset, offset + 999),
+      );
+    };
+
+    const fetchSignedDocuments = async () => {
+      return fetchPagedChunks<ContractReportDocument>(
+        async (ids) => supabase
+          .from('contract_documents')
+          .select('id', { count: 'exact', head: true })
+          .eq('company_id', companyId)
+          .in('contract_id', ids)
+          .in('document_type', ['signed_contract', 'signed_contract_image']),
+        async (ids, offset) => supabase
+            .from('contract_documents')
+            .select('id, contract_id, document_type, document_name, file_path, processing_status, legal_evidence_state, legal_identity_match_status, uploaded_at')
+            .eq('company_id', companyId)
+            .in('contract_id', ids)
+            .in('document_type', ['signed_contract', 'signed_contract_image'])
+            .range(offset, offset + 999),
+      );
+    };
+
+    const [invoices, payments, documents, companyResult] = await Promise.all([
+      fetchInvoices(),
+      fetchPayments(),
+      fetchSignedDocuments(),
+      supabase.from('companies').select('name, name_ar, currency').eq('id', companyId).maybeSingle(),
+    ]);
+    if (companyResult.error) throw companyResult.error;
+
+    const { exportContractsExcelReport } = await import('@/utils/contractsExcelReport');
+    await exportContractsExcelReport({
+      contracts,
+      invoices,
+      payments,
+      documents,
+      companyName: companyResult.data?.name_ar || companyResult.data?.name || 'Fleetify',
+      currency: companyResult.data?.currency || currency || 'QAR',
+      includeCustomer,
+      includeFinancial,
+      includeVehicle,
+      includeInvoices,
+      includePayments,
+      includeAlerts,
+    });
   };
 
   const generateJSON = () => {
@@ -492,7 +561,7 @@ export const ContractExportDialog: React.FC<ContractExportDialogProps> = ({
       if (exportType === 'pdf') {
         generatePDF();
       } else if (exportType === 'excel') {
-        generateExcel();
+        await generateExcel();
       } else if (exportType === 'json') {
         generateJSON();
       }
@@ -501,7 +570,8 @@ export const ContractExportDialog: React.FC<ContractExportDialogProps> = ({
       onOpenChange(false);
     } catch (error) {
       console.error('Export error:', error);
-      toast.error('حدث خطأ أثناء التصدير');
+      const message = error instanceof Error ? error.message : 'حدث خطأ أثناء التصدير';
+      toast.error(message);
     } finally {
       setIsExporting(false);
     }
@@ -520,12 +590,13 @@ export const ContractExportDialog: React.FC<ContractExportDialogProps> = ({
                 <Download className="w-6 h-6" />
               </div>
               <div>
-                <h2 className="text-xl font-bold">تصدير تقرير العقود</h2>
-                <p className="text-teal-100 text-sm">اختر التنسيق والفلاتر المناسبة</p>
+                <DialogTitle className="text-xl font-bold text-white">تصدير تقرير العقود</DialogTitle>
+                <p className="text-teal-100 text-sm">Excel شامل لكل العقود مع فلاتر وصيغ بديلة</p>
               </div>
             </div>
             <button 
               onClick={() => onOpenChange(false)}
+              aria-label="إغلاق نافذة التصدير"
               className="w-8 h-8 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center transition-colors"
             >
               <X className="w-4 h-4" />
@@ -557,14 +628,14 @@ export const ContractExportDialog: React.FC<ContractExportDialogProps> = ({
         <div className="p-6 space-y-6 max-h-[60vh] overflow-y-auto">
           {/* Section Tabs */}
           <div className="flex gap-2 p-1 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/50">
-            {[
+            {([
               { id: 'format', label: 'نوع الملف', icon: FileText },
               { id: 'filters', label: 'الفلاتر', icon: Filter },
               { id: 'options', label: 'الخيارات', icon: Settings2 }
-            ].map((section) => (
+            ] satisfies Array<{ id: typeof activeSection; label: string; icon: React.ElementType }>).map((section) => (
               <button
                 key={section.id}
-                onClick={() => setActiveSection(section.id as any)}
+                onClick={() => setActiveSection(section.id)}
                 className={cn(
                   "flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all",
                   activeSection === section.id
@@ -839,27 +910,74 @@ export const ContractExportDialog: React.FC<ContractExportDialogProps> = ({
                         <p className="text-xs text-slate-500">رقم اللوحة، الموديل، السنة</p>
                       </div>
                     </label>
+
+                    {exportType === 'excel' && (
+                      <>
+                        <div className="border-t border-slate-200 pt-4">
+                          <p className="text-sm font-semibold text-slate-700">أوراق Excel التفصيلية</p>
+                          <p className="mt-1 text-xs text-slate-500">ورقتا الملخص وجميع العقود مضمنتان دائماً.</p>
+                        </div>
+
+                        <label className="flex items-center gap-3 p-3 rounded-xl bg-slate-50/50 hover:bg-slate-100/50 cursor-pointer transition-colors">
+                          <Checkbox
+                            checked={includeInvoices}
+                            onCheckedChange={(checked) => setIncludeInvoices(checked === true)}
+                            className="data-[state=checked]:bg-teal-500 data-[state=checked]:border-teal-500"
+                          />
+                          <ReceiptText className="w-5 h-5 text-slate-400" />
+                          <div>
+                            <p className="font-medium text-slate-700">ورقة الفواتير</p>
+                            <p className="text-xs text-slate-500">تفاصيل فواتير كل عقد وحالة السداد</p>
+                          </div>
+                        </label>
+
+                        <label className="flex items-center gap-3 p-3 rounded-xl bg-slate-50/50 hover:bg-slate-100/50 cursor-pointer transition-colors">
+                          <Checkbox
+                            checked={includePayments}
+                            onCheckedChange={(checked) => setIncludePayments(checked === true)}
+                            className="data-[state=checked]:bg-teal-500 data-[state=checked]:border-teal-500"
+                          />
+                          <Banknote className="w-5 h-5 text-slate-400" />
+                          <div>
+                            <p className="font-medium text-slate-700">ورقة المدفوعات</p>
+                            <p className="text-xs text-slate-500">الدفعات والتسويات والغرامات والمراجع</p>
+                          </div>
+                        </label>
+
+                        <label className="flex items-center gap-3 p-3 rounded-xl bg-slate-50/50 hover:bg-slate-100/50 cursor-pointer transition-colors">
+                          <Checkbox
+                            checked={includeAlerts}
+                            onCheckedChange={(checked) => setIncludeAlerts(checked === true)}
+                            className="data-[state=checked]:bg-teal-500 data-[state=checked]:border-teal-500"
+                          />
+                          <AlertTriangle className="w-5 h-5 text-slate-400" />
+                          <div>
+                            <p className="font-medium text-slate-700">ورقة التنبيهات</p>
+                            <p className="text-xs text-slate-500">العقود المتأخرة والناقصة والقانونية وقريبة الانتهاء</p>
+                          </div>
+                        </label>
+                      </>
+                    )}
                   </div>
                 </div>
 
-                {/* Future Improvements Suggestion */}
-                <div className="bg-gradient-to-br from-amber-50 to-orange-50 rounded-2xl border border-amber-200/50 p-4">
-                  <h4 className="font-semibold text-amber-800 mb-3 flex items-center gap-2">
+                <div className="bg-gradient-to-br from-teal-50 to-cyan-50 rounded-2xl border border-teal-200/50 p-4">
+                  <h4 className="font-semibold text-teal-800 mb-3 flex items-center gap-2">
                     <Sparkles className="w-4 h-4" />
-                    مقترحات للتطوير المستقبلي
+                    محتوى المصنف الشامل
                   </h4>
-                  <ul className="space-y-2 text-sm text-amber-700">
+                  <ul className="space-y-2 text-sm text-teal-700">
                     <li className="flex items-center gap-2">
-                      <Clock className="w-3 h-3" />
-                      جدولة التقارير التلقائية (يومي/أسبوعي/شهري)
+                      <BarChart3 className="w-3 h-3" />
+                      ملخص تنفيذي بصيغ قابلة لإعادة الحساب ومؤشرات مرئية
                     </li>
                     <li className="flex items-center gap-2">
                       <TrendingUp className="w-3 h-3" />
-                      إضافة رسوم بيانية ومخططات تحليلية
+                      جميع العقود مع التحصيل والمركبات والمسؤولين والمستندات
                     </li>
                     <li className="flex items-center gap-2">
-                      <Users className="w-3 h-3" />
-                      إرسال التقارير عبر البريد الإلكتروني
+                      <Clock className="w-3 h-3" />
+                      فلاتر، تجميد للعناوين، تنسيق RTL وتواريخ وقيم رقمية فعلية
                     </li>
                   </ul>
                 </div>
@@ -903,7 +1021,7 @@ export const ContractExportDialog: React.FC<ContractExportDialogProps> = ({
                 ) : (
                   <>
                     <Download className="w-4 h-4 ml-2" />
-                    تصدير
+                    {exportType === 'excel' ? 'تحميل Excel' : 'تصدير'}
                   </>
                 )}
               </Button>

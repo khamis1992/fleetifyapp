@@ -194,7 +194,7 @@ export default function FinancialRatios() {
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
       >
-        <div className="flex items-center justify-between flex-wrap gap-4">
+        <div data-finance-heading="" className="flex items-center justify-between flex-wrap gap-4">
           <div className="flex items-center gap-4">
             <div className="w-14 h-14 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center">
               <Percent className="w-7 h-7 text-white" />
@@ -293,7 +293,7 @@ export default function FinancialRatios() {
           <StatCard
             title="نسبة التداول"
             value={keyRatios.currentRatio.toFixed(2)}
-            subtitle="Current Ratio"
+            subtitle="تغطية الالتزامات المتداولة"
             icon={Scale}
             iconBg="bg-gradient-to-br from-blue-500 to-cyan-500"
             status={getRatioStatus(keyRatios.currentRatio, 'currentRatio')}
@@ -302,7 +302,7 @@ export default function FinancialRatios() {
           <StatCard
             title="النسبة السريعة"
             value={keyRatios.quickRatio.toFixed(2)}
-            subtitle="Quick Ratio"
+            subtitle="السيولة دون المخزون"
             icon={Gauge}
             iconBg="bg-gradient-to-br from-purple-500 to-indigo-500"
             status={getRatioStatus(keyRatios.quickRatio, 'quickRatio')}
@@ -311,7 +311,7 @@ export default function FinancialRatios() {
           <StatCard
             title="هامش الربح الصافي"
             value={`${keyRatios.profitMargin.toFixed(1)}%`}
-            subtitle="Net Profit Margin"
+            subtitle="صافي الربح من الإيرادات"
             icon={TrendingUp}
             iconBg="bg-gradient-to-br from-green-500 to-emerald-500"
             status={getRatioStatus(keyRatios.profitMargin, 'profitMargin')}
@@ -320,7 +320,7 @@ export default function FinancialRatios() {
           <StatCard
             title="نسبة الدين للأصول"
             value={`${keyRatios.debtRatio.toFixed(1)}%`}
-            subtitle="Debt to Assets"
+            subtitle="الديون إلى الأصول"
             icon={Building2}
             iconBg="bg-gradient-to-br from-amber-500 to-orange-500"
             status={getRatioStatus(keyRatios.debtRatio, 'debtRatio')}

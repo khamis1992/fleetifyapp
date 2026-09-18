@@ -5,56 +5,39 @@
  */
 
 import { useMemo } from 'react';
-import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { DollarSign, TrendingUp, AlertCircle, Wallet, CheckCircle, Clock, ArrowUpRight, ArrowDownRight } from 'lucide-react';
+import { ContractSectionHeading } from './contract-details-v3/ContractSection';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { cn } from '@/lib/utils';
 import type { Contract } from '@/types/contracts';
-import { calculateContractTotalAmount } from '@/utils/contractCalculations';
-
-interface Invoice {
-  id: string;
-  total_amount?: number;
-  paid_amount?: number;
-  balance_due?: number;
-  payment_status?: string;
-  status?: string;
-}
+import type { ContractFinancialSnapshot } from './contract-details-v3/tokens';
 
 interface FinancialDashboardProps {
   contract: Contract;
   formatCurrency: (amount: number) => string;
-  invoices?: Invoice[];
+  snapshot: ContractFinancialSnapshot;
 }
 
-export const FinancialDashboard = ({ contract, formatCurrency, invoices = [] }: FinancialDashboardProps) => {
-  // حساب البيانات المالية من الفواتير (مصدر موحد)
+export const FinancialDashboard = ({ contract, formatCurrency, snapshot }: FinancialDashboardProps) => {
+  // جميع بطاقات الصفحة تعتمد اللقطة المالية المركزية نفسها.
   const financialData = useMemo(() => {
-    const contractAmount = calculateContractTotalAmount(contract);
+    const contractAmount = snapshot.contractTotal;
     const monthlyAmount = contract.monthly_amount || 0;
-    
-    // حساب المدفوع من الفواتير (نفس طريقة حساب تبويب الفواتير)
-    const totalPaidFromInvoices = invoices.reduce((sum, inv) => sum + (inv.paid_amount || 0), 0);
-    
-    // استخدام المدفوع من الفواتير إذا كانت موجودة، وإلا استخدام قيمة العقد
-    const totalPaid = invoices.length > 0 ? totalPaidFromInvoices : (contract.total_paid || 0);
-    
-    // حساب المتبقي
-    const balanceDue = Math.max(0, contractAmount - totalPaid);
+    const totalPaid = snapshot.paidTotal;
+    const balanceDue = snapshot.remainingTotal;
 
     // نسبة الدفع
-    const paymentPercentage = contractAmount > 0 ? Math.min(100, Math.round((totalPaid / contractAmount) * 100)) : 0;
+    const paymentPercentage = contractAmount > 0 ? Math.min(balanceDue > 0 ? 99 : 100, Math.floor((totalPaid / contractAmount) * 100)) : 0;
 
     // المبالغ الإضافية (إذا تجاوز المدفوع قيمة العقد)
-    const extraPayments = Math.max(0, totalPaid - contractAmount);
+    const extraPayments = Math.max(0, snapshot.activePaymentsTotal - contractAmount);
 
     // حالة الدفع
     const getPaymentStatus = () => {
-      if (paymentPercentage >= 100) return { label: 'مسدد بالكامل', variant: 'default' as const, color: 'text-green-600', bg: 'bg-green-50' };
-      if (paymentPercentage >= 50) return { label: 'مسدد جزئياً', variant: 'secondary' as const, color: 'text-amber-600', bg: 'bg-amber-50' };
-      return { label: 'مسدد قليلاً', variant: 'secondary' as const, color: 'text-orange-600', bg: 'bg-orange-50' };
+      if (snapshot.financialReviewRequired) return { label: 'يحتاج مطابقة', variant: 'secondary' as const, color: 'text-[#B45309]', bg: 'bg-[#FFFBEB]' };
+      if (contractAmount > 0 && balanceDue === 0) return { label: 'مسدد بالكامل', variant: 'default' as const, color: 'text-[#0E9E7E]', bg: 'bg-[#ECFDF9]' };
+      if (paymentPercentage >= 50) return { label: 'مسدد جزئياً', variant: 'secondary' as const, color: 'text-[#B45309]', bg: 'bg-[#FFFBEB]' };
+      if (totalPaid <= 0.01) return { label: 'غير مسدد', variant: 'secondary' as const, color: 'text-[#BE123C]', bg: 'bg-[#FFF5F6]' };
+      return { label: 'مسدد قليلاً', variant: 'secondary' as const, color: 'text-[#B45309]', bg: 'bg-[#FFFBEB]' };
     };
 
     return {
@@ -66,320 +49,35 @@ export const FinancialDashboard = ({ contract, formatCurrency, invoices = [] }: 
       extraPayments,
       paymentStatus: getPaymentStatus(),
     };
-  }, [contract, invoices]);
+  }, [contract.monthly_amount, snapshot]);
 
-  // بيانات الرسم البياني الدائري
-  const chartData = useMemo(() => {
-    const data = [
-      {
-        name: 'المدفوع',
-        value: financialData.totalPaid,
-        fill: '#10b981',
-      },
-    ];
 
-    if (financialData.extraPayments > 0) {
-      data.push({
-        name: 'إضافي',
-        value: financialData.extraPayments,
-        fill: '#f97316',
-      });
-    }
-
-    if (financialData.balanceDue > 0) {
-      data.push({
-        name: 'المتبقي',
-        value: financialData.balanceDue,
-        fill: '#e5e7eb',
-      });
-    }
-
-    return data.filter(item => item.value > 0);
-  }, [financialData]);
-
-  return (
-    <div className="space-y-5">
-      {/* البطاقات الإحصائية العلوية */}
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        {/* بطاقة قيمة العقد */}
-        <Card className="rounded-xl border-[#DDE5EF] shadow-sm transition-colors hover:border-[#173A63]">
-          <CardContent className="p-5">
-            <div className="flex items-start justify-between">
-              <div className="flex-1">
-                <p className="text-sm font-medium text-slate-600 mb-2">قيمة العقد</p>
-                <p className="text-2xl font-bold text-slate-900 mb-1">
-                  {formatCurrency(financialData.contractAmount)}
-                </p>
-                {financialData.monthlyAmount > 0 && (
-                  <p className="text-xs text-slate-500">
-                    {formatCurrency(financialData.monthlyAmount)} / شهر
-                  </p>
-                )}
-              </div>
-              <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-[#EEF5FB] text-[#173A63]">
-                <DollarSign className="h-6 w-6" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* بطاقة المدفوع */}
-        <Card className="rounded-xl border-[#DDE5EF] shadow-sm transition-colors hover:border-[#173A63]">
-          <CardContent className="p-5">
-            <div className="flex items-start justify-between">
-              <div className="flex-1">
-                <p className="text-sm font-medium text-slate-600 mb-2">المدفوع</p>
-                <div className="flex items-center gap-2 mb-1">
-                  <p className="text-2xl font-bold text-green-600">
-                    {formatCurrency(financialData.totalPaid)}
-                  </p>
-                  <Badge variant="secondary" className="text-xs bg-green-100 text-green-700 hover:bg-green-100">
-                    {financialData.paymentPercentage}%
-                  </Badge>
-                </div>
-                <div className="flex items-center gap-1 text-xs text-green-600">
-                  <ArrowUpRight className="w-3 h-3" />
-                  <span>{financialData.paymentStatus.label}</span>
-                </div>
-              </div>
-              <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-[#EEF5FB] text-[#173A63]">
-                <Wallet className="h-6 w-6" />
-              </div>
-            </div>
-            {/* شريط التقدم */}
-            <div className="mt-3">
-              <Progress value={financialData.paymentPercentage} className="h-2" />
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* بطاقة المتبقي */}
-        <Card className={cn(
-          "rounded-xl border-[#DDE5EF] shadow-sm transition-colors hover:border-[#173A63]",
-          financialData.balanceDue > 0
-            ? "border-red-200/50 hover:border-red-300"
-            : "border-slate-200/50 hover:border-slate-300"
-        )}>
-          <CardContent className="p-5">
-            <div className="flex items-start justify-between">
-              <div className="flex-1">
-                <p className="text-sm font-medium text-slate-600 mb-2">المتبقي</p>
-                <p className={cn(
-                  "text-2xl font-bold mb-1",
-                  financialData.balanceDue > 0 ? "text-red-600" : "text-slate-400"
-                )}>
-                  {formatCurrency(financialData.balanceDue)}
-                </p>
-                {financialData.balanceDue > 0 ? (
-                  <div className="flex items-center gap-1 text-xs text-red-600">
-                    <Clock className="w-3 h-3" />
-                    <span>قيد الانتظار</span>
-                  </div>
-                ) : (
-                  <div className="flex items-center gap-1 text-xs text-green-600">
-                    <CheckCircle className="w-3 h-3" />
-                    <span>تم السداد</span>
-                  </div>
-                )}
-              </div>
-              <div className={cn(
-                "flex h-12 w-12 items-center justify-center rounded-lg",
-                financialData.balanceDue > 0
-                  ? "bg-red-50"
-                  : "bg-[#EEF5FB]"
-              )}>
-                <AlertCircle className={cn(
-                  "w-6 h-6",
-                  financialData.balanceDue > 0 ? "text-red-600" : "text-slate-400"
-                )} />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-      </div>
-
-      {/* الرسم البياني والتفاصيل */}
-      <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
-        {/* الرسم البياني الدائري */}
-        <Card className="rounded-xl border-[#DDE5EF] shadow-sm lg:col-span-1">
-          <CardHeader className="pb-4">
-            <CardTitle className="text-lg flex items-center gap-2">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#EEF5FB] text-[#173A63]">
-                <DollarSign className="h-4 w-4" />
-              </div>
-              توزيع المدفوعات
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {chartData.length > 0 ? (
-              <div className="space-y-4">
-                <ResponsiveContainer width="100%" height={250}>
-                  <PieChart>
-                    <Pie
-                      data={chartData}
-                      cx="50%"
-                      cy="50%"
-                      labelLine={false}
-                      label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                      outerRadius={80}
-                      fill="#8884d8"
-                      dataKey="value"
-                      className="text-sm"
-                    >
-                      {chartData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.fill} />
-                      ))}
-                    </Pie>
-                    <Tooltip
-                      formatter={(value) => formatCurrency(value as number)}
-                      contentStyle={{
-                        backgroundColor: '#fff',
-                        border: '1px solid #e5e7eb',
-                        borderRadius: '12px',
-                        padding: '12px',
-                        boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
-                      }}
-                    />
-                  </PieChart>
-                </ResponsiveContainer>
-
-                {/* Legend مخصص */}
-                <div className="space-y-2">
-                  {chartData.map((item, index) => (
-                    <div key={index} className="flex items-center justify-between text-sm">
-                      <div className="flex items-center gap-2">
-                        <div
-                          className="w-3 h-3 rounded-full"
-                          style={{ backgroundColor: item.fill }}
-                        />
-                        <span className="text-slate-600">{item.name}</span>
-                      </div>
-                      <span className="font-semibold text-slate-900">
-                        {formatCurrency(item.value)}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            ) : (
-              <div className="h-[250px] flex flex-col items-center justify-center text-slate-500">
-                <Wallet className="w-12 h-12 text-slate-300 mb-3" />
-                <p className="text-sm">لا توجد بيانات للعرض</p>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* ملخص تفصيلي */}
-        <Card className="rounded-xl border-[#DDE5EF] shadow-sm lg:col-span-2">
-          <CardHeader className="pb-4">
-            <CardTitle className="text-lg flex items-center gap-2">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#EEF5FB] text-[#173A63]">
-                <TrendingUp className="h-4 w-4" />
-              </div>
-              تفاصيل المدفوعات
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              {/* صف قيمة العقد */}
-              <div className="flex items-center justify-between rounded-xl border border-[#DDE5EF] bg-[#FCFDFE] p-4 transition-colors hover:border-[#173A63]">
-                <div className="flex items-center gap-3">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#EEF5FB] text-[#173A63]">
-                    <DollarSign className="h-5 w-5" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-slate-700">قيمة العقد الأساسية</p>
-                    <p className="text-xs text-slate-500">المبلغ الإجمالي المتفق عليه</p>
-                  </div>
-                </div>
-                <div className="text-left">
-                  <p className="text-lg font-bold text-teal-700">{formatCurrency(financialData.contractAmount)}</p>
-                  {financialData.monthlyAmount > 0 && (
-                    <p className="text-xs text-slate-500">{formatCurrency(financialData.monthlyAmount)} شهرياً</p>
-                  )}
-                </div>
-              </div>
-
-              {/* صف المدفوع */}
-              <div className="flex items-center justify-between rounded-xl border border-[#DDE5EF] bg-[#FCFDFE] p-4 transition-colors hover:border-[#173A63]">
-                <div className="flex items-center gap-3">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#EEF5FB] text-[#173A63]">
-                    <Wallet className="h-5 w-5" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-slate-700">المدفوع حتى الآن</p>
-                    <p className="text-xs text-slate-500">نسبة السداد: {financialData.paymentPercentage}%</p>
-                  </div>
-                </div>
-                <div className="text-left">
-                  <p className="text-lg font-bold text-green-700">{formatCurrency(financialData.totalPaid)}</p>
-                  <Badge className="bg-green-100 text-green-700 hover:bg-green-100">
-                    {financialData.paymentStatus.label}
-                  </Badge>
-                </div>
-              </div>
-
-              {/* صف المبالغ الإضافية */}
-              {financialData.extraPayments > 0 && (
-                <div className="flex items-center justify-between rounded-xl border border-amber-200 bg-amber-50 p-4 transition-colors hover:border-amber-300">
-                  <div className="flex items-center gap-3">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-amber-100">
-                      <TrendingUp className="w-5 h-5 text-orange-600" />
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium text-slate-700">مبالغ إضافية</p>
-                      <p className="text-xs text-slate-500">فوق قيمة العقد الأساسية</p>
-                    </div>
-                  </div>
-                  <div className="text-left">
-                    <p className="text-lg font-bold text-orange-700">{formatCurrency(financialData.extraPayments)}</p>
-                    <p className="text-xs text-orange-600">+ {formatCurrency(financialData.totalPaid)} إجمالي</p>
-                  </div>
-                </div>
-              )}
-
-              {/* صف المتبقي */}
-              {financialData.balanceDue > 0 && (
-                <div className="flex items-center justify-between rounded-xl border border-red-200 bg-red-50 p-4 transition-colors hover:border-red-300">
-                  <div className="flex items-center gap-3">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-red-100">
-                      <AlertCircle className="w-5 h-5 text-red-600" />
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium text-slate-700">المبلغ المتبقي</p>
-                      <p className="text-xs text-slate-500">يجب سداده</p>
-                    </div>
-                  </div>
-                  <div className="text-left">
-                    <p className="text-lg font-bold text-red-700">{formatCurrency(financialData.balanceDue)}</p>
-                    <Badge variant="outline" className="border-red-200 text-red-600">
-                      قيد الانتظار
-                    </Badge>
-                  </div>
-                </div>
-              )}
-
-              {/* صف الإجمالي الكلي */}
-              <div className="flex items-center justify-between rounded-xl border border-[#DDE5EF] bg-white p-4 transition-colors hover:border-[#173A63]">
-                <div className="flex items-center gap-3">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#EEF5FB] text-[#173A63]">
-                    <CheckCircle className="h-5 w-5" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-bold text-slate-800">الإجمالي الكلي</p>
-                    <p className="text-xs text-slate-500">جميع المدفوعات</p>
-                  </div>
-                </div>
-                <div className="text-left">
-                  <p className="text-xl font-bold text-slate-900">{formatCurrency(financialData.totalPaid)}</p>
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+  return <div className="space-y-6">
+    <ContractSectionHeading number="02" title="الموقف المالي" description="ملخص التحصيل والرصيد المتبقي من البيانات المثبتة للعقد." />
+    {!snapshot.hasFinancialCoverage && <div role="alert" className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">بيانات التحصيل غير مكتملة؛ راجع الفواتير والإيصالات قبل اعتماد الرصيد.</div>}
+    {snapshot.financialReviewRequired && <div role="alert" className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">توجد فروقات تحتاج مطابقة قبل اعتماد الملخص المالي.</div>}
+    <div className="grid gap-5 xl:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)]">
+      <section className="rounded-2xl border border-[#c5dcd0] bg-[#edf6f0] p-6 sm:p-8" aria-label="تقدم التحصيل">
+        <div className="flex flex-wrap items-center justify-between gap-3"><h3 className="text-sm font-semibold text-teal-900">المحصل من قيمة العقد</h3><Badge variant="outline" className="border-teal-200 bg-white text-teal-800">{financialData.paymentStatus.label}</Badge></div>
+        <p className="mt-8 break-words text-3xl font-semibold tracking-tight text-teal-900">{formatCurrency(financialData.totalPaid)}</p>
+        <p className="mt-2 text-sm text-teal-800">من {formatCurrency(financialData.contractAmount)}</p>
+        <div className="mt-8 flex items-end justify-between gap-3"><span className="text-xs text-teal-800">نسبة التحصيل</span><strong className="text-2xl text-teal-900">{financialData.paymentPercentage}%</strong></div>
+        <Progress aria-label="نسبة التحصيل" value={financialData.paymentPercentage} className="mt-3 h-2 bg-white [&>div]:bg-teal-700" />
+        <div className="mt-8 border-t border-teal-200 pt-5"><p className="text-xs text-teal-800">المتبقي على العقد</p><p className="mt-2 text-xl font-semibold text-teal-950">{formatCurrency(financialData.balanceDue)}</p></div>
+      </section>
+      <section className="rounded-2xl border border-[#dce5e1] bg-white p-6" aria-label="تفاصيل الموقف المالي">
+        <h3 className="mb-2 text-lg font-semibold">تفاصيل الرصيد</h3>
+        <dl className="divide-y divide-[#e7eeea]">
+          {[
+            ['قيمة العقد الأساسية',financialData.contractAmount],
+            ['القيمة الشهرية',financialData.monthlyAmount],
+            ['المسدد من قيمة العقد',financialData.totalPaid],
+            ['المبلغ المتبقي',financialData.balanceDue],
+            ['الإجمالي الكلي',snapshot.activePaymentsTotal],
+          ].map(([label,value])=><div key={String(label)} className="flex flex-wrap items-center justify-between gap-3 py-5"><dt className="text-sm text-[#64756e]">{label}</dt><dd className="font-semibold tabular-nums">{formatCurrency(Number(value))}</dd></div>)}
+        </dl>
+        {financialData.extraPayments > 0 && <div className="mt-4 rounded-xl bg-amber-50 p-4 text-sm text-amber-900"><p>مبالغ إضافية</p><p className="mt-1">فوق قيمة العقد: {formatCurrency(financialData.extraPayments)}</p></div>}
+      </section>
     </div>
-  );
+  </div>;
 };

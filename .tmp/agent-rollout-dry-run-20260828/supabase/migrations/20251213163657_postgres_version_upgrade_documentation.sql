@@ -1,0 +1,49 @@
+
+-- =====================================================
+-- MANUAL ACTION REQUIRED: POSTGRES VERSION UPGRADE
+-- =====================================================
+--
+-- CURRENT SITUATION:
+-- Current Version: supabase-postgres-17.4.1.064
+-- Status: Security patches available
+-- Impact: HIGH - Security vulnerabilities present
+--
+-- UPGRADE INSTRUCTIONS:
+-- ====================
+--
+-- 1. REVIEW RELEASE NOTES
+--    URL: https://supabase.com/docs/guides/platform/upgrading
+--    Check for breaking changes and new features
+--
+-- 2. SCHEDULE MAINTENANCE WINDOW
+--    - Upgrades cause brief downtime
+--    - Notify users of scheduled maintenance
+--    - Recommended: Off-peak hours
+--
+-- 3. BACKUP DATABASE (CRITICAL)
+--    Path: Dashboard > Database > Backups
+--    Action: Create manual backup before upgrade
+--    Wait for backup to complete
+--
+-- 4. PERFORM UPGRADE
+--    Path: Dashboard > Settings > Infrastructure
+--    Action: Click "Upgrade" next to Postgres version
+--    Monitor: Watch upgrade progress in dashboard
+--
+-- 5. POST-UPGRADE VERIFICATION
+--    - Test critical application flows
+--    - Check database connection
+--    - Verify all queries work as expected
+--    - Monitor error logs
+--
+-- IMPORTANT NOTES:
+-- - Upgrades cannot be rolled back, backup is essential
+-- - Extensions may require recompilation
+-- - Some queries may need optimization after upgrade
+-- - Read documentation for version-specific changes
+--
+-- =====================================================
+
+-- Log this upgrade reminder
+SELECT 'URGENT: Postgres version upgrade required for security patches' as notice;
+;

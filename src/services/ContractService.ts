@@ -16,6 +16,7 @@ import type {
 } from '@/types/contracts';
 import { supabase } from '@/integrations/supabase/client';
 import { logger } from '@/lib/logger';
+import { assertRentalEligible } from './rentalEligibilityGuard';
 
 export class ContractService extends BaseService<Contract> {
   private contractRepo: ContractRepository;
@@ -111,6 +112,10 @@ export class ContractService extends BaseService<Contract> {
       throw new Error(`Contract with id ${id} not found`);
     }
 
+    if (status === 'active' && existing.vehicle_id) {
+      await assertRentalEligible({ companyId: existing.company_id, vehicleId: existing.vehicle_id, customerId: existing.customer_id });
+    }
+
     return this.contractRepo.updateStatus(id, status);
   }
 
@@ -174,6 +179,8 @@ export class ContractService extends BaseService<Contract> {
     // Verify vehicle if provided
     if (data.vehicle_id) {
       await this.verifyVehicle(data.vehicle_id, companyId);
+      const eligibility = await assertRentalEligible({ companyId, vehicleId: data.vehicle_id, customerId: data.customer_id });
+      if (eligibility.level === 'warn') logger.warn('Rental eligibility warning', { message: eligibility.message });
     }
 
     // Check account mapping exists

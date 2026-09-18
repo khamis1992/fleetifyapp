@@ -29,8 +29,17 @@ export interface TaqadiNarrativeInput {
   reminders: ReminderSummary;
   /** حالة المركبة من جدول vehicles (available / rented / maintenance ...) */
   vehicleStatus: string | null;
+  /** الحيازة المؤكدة في الملف القانوني؛ لا تُستنتج من vehicleStatus */
+  vehicleCustody?: VehicleCustody;
   contractEndDate: string | null;
   contractStatus: string | null;
+  legalPath?: 'natural_expiry' | 'documented_termination' | 'judicial_rescission';
+  terminationDate?: string | null;
+  formalNoticeCount?: number;
+  retentionCompensation?: number;
+  documentedDamages?: number;
+  monetaryDelayDamage?: number;
+  contractualCompensation?: number;
   /** قابل للحقن في الاختبارات */
   today?: Date;
 }
@@ -54,14 +63,25 @@ const formatDate = (isoDate: string): string => {
 };
 
 /**
- * يحدد حيازة المركبة من حالتها:
- * - rented  → ما زالت مع المدعى عليه
- * - available / maintenance / أي حالة أخرى معروفة → عادت للشركة
- * - لا مركبة أو لا حالة → غير معروف (لا يُذكر في الصحيفة)
+ * رقم البطاقة الشخصية القطرية مكوّن من 11 رقماً سواء كان حاملها قطرياً
+ * أو مقيماً؛ لا يجوز وصفه بأنه «رخصة مقيم».
  */
+export function inferTaqadiIdType(
+  nationalId: string | null | undefined,
+  nationality: string | null | undefined,
+): string {
+  const digits = nationalId?.replace(/\D/g, '') || '';
+  const normalizedNationality = nationality?.trim().toLowerCase() || '';
+  if (digits.length === 11 || ['qatar', 'قطر', 'قطري'].includes(normalizedNationality)) {
+    return 'بطاقة شخصية قطرية';
+  }
+  return nationalId?.trim() ? 'هوية أو جواز سفر' : 'غير محدد';
+}
+
+/** لا تُستنتج الحيازة القانونية من الحالة التشغيلية للمركبة. */
 export function getVehicleCustody(vehicleStatus: string | null | undefined): VehicleCustody {
-  if (!vehicleStatus) return 'unknown';
-  return vehicleStatus === 'rented' ? 'with_defendant' : 'returned';
+  void vehicleStatus;
+  return 'unknown';
 }
 
 export function isContractActive(contractStatus: string | null | undefined): boolean {
@@ -79,12 +99,16 @@ export function isContractEnded(
 
 /**
  * يبني الفقرات التكميلية للوقائع (تُلحق بالنص الأساسي المعتمد).
- * الترتيب: السداد الجزئي → المخالفات → الإعذار → حيازة المركبة/انتهاء العقد.
+ * الترتيب: السداد الجزئي → المخالفات → الإعذار → انتهاء العقد أو الرد الموثق.
+ * لا تنسب الصحيفة استمرار الحيازة للمدعى عليه كواقعة مستقلة لمجرد اختيارها
+ * في الملف القانوني؛ يظل أثرها محصوراً في الطلبات المشروطة بالرد والاحتباس.
  */
 export function buildFactsAdditions(input: TaqadiNarrativeInput): string[] {
   const today = input.today ?? new Date();
-  const custody = getVehicleCustody(input.vehicleStatus);
-  const ended = isContractEnded(input.contractEndDate, today);
+  const custody = input.vehicleCustody ?? 'unknown';
+  const effectiveEndDate = input.terminationDate || input.contractEndDate;
+  const ended = input.legalPath === 'natural_expiry'
+    && isContractEnded(effectiveEndDate, today);
   const paragraphs: string[] = [];
 
   // 1) المدفوعات الجزئية
@@ -101,7 +125,7 @@ export function buildFactsAdditions(input: TaqadiNarrativeInput): string[] {
     );
   }
 
-  // 3) الإعذار القانوني بسجل الإشعارات
+  // 3) رسائل المتابعة الآلية ليست إنذاراً رسمياً
   if (input.reminders.count > 0) {
     // نذكر فقط القنوات المعروفة حتى لا يتسرب نص إنجليزي خام إلى الصحيفة
     const methods = input.reminders.sendMethods
@@ -113,22 +137,20 @@ export function buildFactsAdditions(input: TaqadiNarrativeInput): string[] {
       ? `، وكان آخرها بتاريخ ${formatDate(input.reminders.lastSentDate)}`
       : '';
     paragraphs.push(
-      `وقد أعذرت المدعية المدعى عليه وأشعرته بالمديونية بعدد (${input.reminders.count}) إشعارًا${viaText}${lastDateText}، ورغم ذلك لم يقم بسداد ما في ذمته حتى تاريخه.`,
+      `وقد أرسلت المدعية إلى المدعى عليه عدد (${input.reminders.count}) من رسائل المتابعة بالسداد${viaText}${lastDateText}، وذلك دون وصفها بإنذار رسمي ما لم يثبت وصول إنذار مستقل بالمستندات.`,
     );
   }
+  if ((input.formalNoticeCount || 0) > 0) {
+    paragraphs.push(`كما ثبت بملف القضية توجيه عدد (${input.formalNoticeCount}) من الإنذارات أو المطالبات الكتابية المؤيدة بإثبات الوصول.`);
+  }
 
-  // 4) حيازة المركبة وانتهاء العقد
-  if (ended && custody === 'with_defendant') {
+  // 4) انتهاء العقد أو الرد؛ لا تُنشأ واقعة استمرار حيازة غير مؤيدة تلقائياً.
+  if (ended && effectiveEndDate) {
     paragraphs.push(
-      `وانتهت مدة عقد الإيجار بتاريخ ${formatDate(input.contractEndDate!)}، ولا تزال المركبة محل العقد في حوزة المدعى عليه رغم انتهاء العقد ومطالبته بإعادتها.`,
+      `وانتهت مدة عقد الإيجار بتاريخ ${formatDate(effectiveEndDate)} دون أن يسدد المدعى عليه مستحقاته.`,
     );
-  } else if (custody === 'with_defendant') {
-    paragraphs.push('ولا تزال المركبة محل العقد في حوزة المدعى عليه حتى تاريخه.');
-  } else if (ended && custody === 'unknown') {
-    paragraphs.push(
-      `وانتهت مدة عقد الإيجار بتاريخ ${formatDate(input.contractEndDate!)} دون أن يسدد المدعى عليه مستحقاته.`,
-    );
-  } else if (custody === 'returned') {
+  }
+  if (custody === 'returned') {
     paragraphs.push('وقد استلمت المدعية المركبة محل العقد من المدعى عليه.');
   }
 
@@ -137,7 +159,7 @@ export function buildFactsAdditions(input: TaqadiNarrativeInput): string[] {
 
 /**
  * يبني قائمة الطلبات مرقّمة، بنفس الصياغات المعتمدة ومع فروع:
- * تحويل المخالفات، تسليم المركبة، وفسخ العقد (للعقود القائمة فقط).
+ * المطالبة المالية بقيمة المخالفات، تسليم المركبة، وفسخ العقد (للعقود القائمة فقط).
  */
 export function buildTaqadiClaims(input: TaqadiNarrativeInput): string {
   const claims: string[] = [
@@ -145,16 +167,25 @@ export function buildTaqadiClaims(input: TaqadiNarrativeInput): string {
   ];
 
   if (input.violationsCount > 0) {
-    claims.push('الأمر بتحويل المخالفات المرورية المسجلة على المركبة إلى الرقم الشخصي للمدعى عليه.');
+    claims.push(
+      'إلزام المدعى عليه بأداء قيمة المخالفات المرورية المسجلة على المركبة والثابتة بالمستخرج الرسمي، دون تعليق طلبات الدعوى على إجراء التحويل الإداري.',
+    );
   }
 
-  if (getVehicleCustody(input.vehicleStatus) === 'with_defendant') {
+  if ((input.vehicleCustody ?? 'unknown') === 'with_defendant') {
     claims.push('إلزام المدعى عليه بتسليم المركبة محل العقد إلى المدعية.');
   }
 
-  // الفسخ يُطلب للعقود القائمة؛ عند غياب الحالة نحافظ على السلوك السابق (إدراجه)
-  if (input.contractStatus == null || isContractActive(input.contractStatus)) {
+  if (input.legalPath === 'natural_expiry') {
+    claims.push('ثبوت انتهاء عقد الإيجار بانقضاء مدته، مع ما يترتب على ذلك من آثار.');
+  } else if (input.legalPath === 'documented_termination') {
+    claims.push('ثبوت انفساخ عقد الإيجار لإعمال الشرط الفاسخ الصريح، وعلى سبيل الاحتياط الحكم بفسخه قضائياً.');
+  } else {
     claims.push('الحكم بفسخ عقد الإيجار.');
+  }
+
+  if ((input.retentionCompensation || 0) > 0) {
+    claims.push(`إلزام المدعى عليه بمبلغ (${formatQarNumber(input.retentionCompensation || 0)}) ريال قطري تعويضاً عن احتباس المركبة حتى تاريخ إعداد المطالبة، وبما يستجد حتى الرد الفعلي دون ازدواج مع الأجرة.`);
   }
 
   claims.push('إلزام المدعى عليه بالرسوم والمصاريف ومقابل أتعاب المحاماة.');

@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
+import { contractDocumentsKey, invalidateContractDocumentDependents } from '@/utils/contractDocumentQueries';
 
 export interface ContractDocument {
   id: string;
@@ -22,8 +23,21 @@ export interface ContractDocument {
   updated_at: string | null;
   // Added field to distinguish document source bucket
   sourceBucket?: 'contract-documents' | 'documents';
+  /** The table that owns this row. The storage bucket alone is not enough to distinguish it. */
+  sourceType?: 'contract' | 'customer' | 'vehicle';
+  /** customer_id or vehicle_id for documents inherited from those records. */
+  sourceOwnerId?: string;
   preview_url?: string | null;
+  legal_identity_match_status?: string | null;
+  legal_identity_match_reason?: string | null;
+  legal_evidence_state?: string | null;
+  legal_identity_details?: unknown;
 }
+
+export type ContractViewDocumentDeleteTarget = Pick<
+  ContractDocument,
+  'id' | 'contract_id' | 'sourceType' | 'sourceOwnerId'
+>;
 
 export interface CreateDocumentData {
   contract_id: string;
@@ -41,18 +55,19 @@ export function useContractDocuments(contractId?: string, customerId?: string, v
   const { companyId } = useUnifiedCompanyAccess();
 
   return useQuery({
-    queryKey: ['contract-documents', contractId, customerId, vehicleId],
+    queryKey: [...contractDocumentsKey(companyId, contractId), customerId, vehicleId],
     queryFn: async () => {
       if (!contractId) return [];
+      if (!companyId) throw new Error('تعذر تحديد الشركة الحالية');
 
       // Run all queries in parallel for better performance
       const [contractResult, customerResult, vehicleResult] = await Promise.all([
         // Fetch contract documents
         supabase
           .from('contract_documents')
-          .select('id, company_id, contract_id, document_type, document_name, file_path, file_size, mime_type, uploaded_by, uploaded_at, notes, is_required, condition_report_id, created_at, updated_at')
+          .select('id, company_id, contract_id, document_type, document_name, file_path, file_size, mime_type, uploaded_by, uploaded_at, notes, is_required, condition_report_id, created_at, updated_at, legal_identity_match_status, legal_identity_match_reason, legal_evidence_state, legal_identity_details')
           .eq('contract_id', contractId)
-          .eq('company_id', companyId!)
+          .eq('company_id', companyId)
           .order('created_at', { ascending: false }),
         
         // Fetch customer documents (only if customerId provided)
@@ -61,22 +76,35 @@ export function useContractDocuments(contractId?: string, customerId?: string, v
               .from('customer_documents')
               .select('id, company_id, document_type, document_name, file_path, file_size, mime_type, uploaded_by, uploaded_at, notes, is_required, created_at, updated_at')
               .eq('customer_id', customerId)
-              .eq('company_id', companyId!)
+              .eq('company_id', companyId)
               .order('created_at', { ascending: false })
           : Promise.resolve({ data: null, error: null }),
         
         // Fetch vehicle documents (only if vehicleId provided)
         vehicleId
-          ? supabase
-              .from('vehicle_documents')
-              .select('id, document_type, document_name, document_url, created_at, updated_at')
-              .eq('vehicle_id', vehicleId)
-              .order('created_at', { ascending: false })
+          ? (async () => {
+              // vehicle_documents has no company_id; authorize through the parent vehicle.
+              const { error: vehicleOwnerError } = await supabase
+                .from('vehicles')
+                .select('id')
+                .eq('id', vehicleId)
+                .eq('company_id', companyId)
+                .single();
+              if (vehicleOwnerError) return { data: null, error: vehicleOwnerError };
+
+              return supabase
+                .from('vehicle_documents')
+                .select('id, document_type, document_name, document_url, created_at, updated_at')
+                .eq('vehicle_id', vehicleId)
+                .order('created_at', { ascending: false });
+            })()
           : Promise.resolve({ data: null, error: null })
       ]);
 
       // Handle contract documents
       if (contractResult.error) throw contractResult.error;
+      if (customerResult.error) throw customerResult.error;
+      if (vehicleResult.error) throw vehicleResult.error;
       const contractDocuments = await Promise.all(
         (contractResult.data || []).map(async (doc) => {
           const isImage = Boolean(doc.mime_type?.startsWith('image/'));
@@ -98,6 +126,7 @@ export function useContractDocuments(contractId?: string, customerId?: string, v
             ...doc,
             contract_id: doc.contract_id || contractId,
             sourceBucket: 'contract-documents' as const,
+            sourceType: 'contract' as const,
             preview_url: previewUrl,
           };
         }),
@@ -105,7 +134,7 @@ export function useContractDocuments(contractId?: string, customerId?: string, v
 
       // Handle customer documents
       let customerDocuments: ContractDocument[] = [];
-      if (customerResult.data && !customerResult.error) {
+      if (customerResult.data) {
         customerDocuments = customerResult.data.map(doc => ({
           id: doc.id,
           company_id: doc.company_id,
@@ -122,15 +151,15 @@ export function useContractDocuments(contractId?: string, customerId?: string, v
           condition_report_id: undefined,
           created_at: doc.created_at,
           updated_at: doc.updated_at,
-          sourceBucket: 'documents' as const
+          sourceBucket: 'documents' as const,
+          sourceType: 'customer' as const,
+          sourceOwnerId: customerId,
         }));
-      } else if (customerResult.error) {
-        console.error('Error fetching customer documents:', customerResult.error);
       }
 
       // Handle vehicle documents
       let vehicleDocuments: ContractDocument[] = [];
-      if (vehicleResult.data && !vehicleResult.error) {
+      if (vehicleResult.data) {
         vehicleDocuments = vehicleResult.data.map(doc => ({
           id: doc.id,
           company_id: companyId || '',
@@ -147,10 +176,10 @@ export function useContractDocuments(contractId?: string, customerId?: string, v
           condition_report_id: undefined,
           created_at: doc.created_at || '',
           updated_at: doc.updated_at || '',
-          sourceBucket: 'documents' as const
+          sourceBucket: 'documents' as const,
+          sourceType: 'vehicle' as const,
+          sourceOwnerId: vehicleId,
         }));
-      } else if (vehicleResult.error) {
-        console.error('Error fetching vehicle documents:', vehicleResult.error);
       }
 
       // Combine and sort by created_at
@@ -167,6 +196,7 @@ export function useContractDocuments(contractId?: string, customerId?: string, v
 }
 
 export function useExportConditionDiagram() {
+  const queryClient = useQueryClient();
   const { user } = useAuth();
   const { companyId } = useUnifiedCompanyAccess();
 
@@ -219,7 +249,8 @@ export function useExportConditionDiagram() {
     onError: (error) => {
       console.error('Error exporting diagram:', error);
       toast.error('فشل في تصدير المخطط');
-    }
+    },
+    onSuccess: (document) => invalidateContractDocumentDependents(queryClient, document.company_id, document.contract_id),
   });
 }
 
@@ -231,6 +262,23 @@ export function useCreateContractDocument() {
   return useMutation({
     mutationFn: async (data: CreateDocumentData) => {
       if (!user || !companyId) throw new Error('User or company is not available');
+
+      const signed = ['signed_contract', 'signed_contract_image'].includes(data.document_type);
+      if (signed) {
+        if (!data.file) throw new Error('أرفق نسخة العقد الموقعة للمراجعة');
+        const { data: contract, error: contractError } = await supabase.from('contracts')
+          .select('contract_number, customer:customers!customer_id(first_name, last_name, first_name_ar, last_name_ar, national_id), vehicle:vehicles!vehicle_id(plate_number)')
+          .eq('id', data.contract_id).eq('company_id', companyId).single();
+        if (contractError || !contract) throw contractError || new Error('تعذر قراءة العقد للمطابقة');
+        const { reviewSignedContract } = await import('@/components/contracts/SignedContractReview');
+        const file = await reviewSignedContract(data.file, {
+          contractNumber: contract.contract_number,
+          customerName: [contract.customer?.first_name_ar || contract.customer?.first_name, contract.customer?.last_name_ar || contract.customer?.last_name].filter(Boolean).join(' '),
+          nationalId: contract.customer?.national_id || undefined,
+          vehiclePlate: contract.vehicle?.plate_number || undefined,
+        });
+        data = { ...data, file, notes: [data.notes, `مراجعة الصفحات والاتجاه قبل الرفع: ${new Date().toISOString()}`].filter(Boolean).join('\n') };
+      }
 
       let filePath: string | undefined;
 
@@ -266,11 +314,29 @@ export function useCreateContractDocument() {
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        if (filePath) await supabase.storage.from('contract-documents').remove([filePath]);
+        throw error;
+      }
+      if (signed) {
+        try {
+          const { verifyLegalContractDocumentIdentity, normalizeLegalContractDocumentIdentityRow } = await import('@/services/legalContractIdentityVerifier');
+          const result = await verifyLegalContractDocumentIdentity(companyId, normalizeLegalContractDocumentIdentityRow(document));
+          return { ...document, ...result, legal_identity_match_status: result.legal_identity_match_status };
+        } catch {
+          // The upload succeeded. Keep the pending copy for review; do not retry the upload or claim a match.
+        }
+      }
       return document;
     },
-    onSuccess: (document, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['contract-documents', document.contract_id] });
+    onSuccess: async (document, variables) => {
+      await invalidateContractDocumentDependents(queryClient, document.company_id, document.contract_id);
+      if (['signed_contract', 'signed_contract_image'].includes(variables.document_type)) {
+        if (document.legal_identity_match_status === 'matched') toast.success('حُفظت النسخة واجتازت فحص هوية العميل');
+        else if (document.legal_identity_match_status === 'mismatch') toast.error('النسخة لا تطابق هوية العميل؛ حُفظت للمراجعة ولم تُعتمد. ارفع النسخة الصحيحة.');
+        else toast.warning('حُفظت النسخة بانتظار التحقق من الهوية؛ تحتاج مراجعة قبل الاعتماد.');
+        return;
+      }
       if (!variables.suppressSuccessToast) {
         toast.success('تم إضافة المستند بنجاح');
       }
@@ -292,7 +358,7 @@ export function useDeleteContractDocument() {
       // Get document info first
       const { data: document, error: documentError } = await supabase
         .from('contract_documents')
-        .select('file_path, contract_id')
+        .select('file_path, contract_id, company_id')
         .eq('id', documentId)
         .eq('company_id', companyId)
         .single();
@@ -319,16 +385,178 @@ export function useDeleteContractDocument() {
       }
       return document;
     },
-    onSuccess: (document) => {
+    onSuccess: async (document) => {
       if (document) {
-        queryClient.invalidateQueries({ queryKey: ['contract-documents', document.contract_id] });
+        await invalidateContractDocumentDependents(queryClient, document.company_id, document.contract_id);
       }
       toast.success('تم حذف المستند بنجاح');
     },
     onError: (error) => {
       console.error('Error deleting document:', error);
+      const message = error instanceof Error
+        ? error.message
+        : typeof error === 'object' && error !== null && 'message' in error
+          ? String((error as { message?: unknown }).message || '')
+          : '';
+
+      if (message.includes('SIGNED_CONTRACT_REPLACEMENT_REQUIRED')) {
+        toast.error('لا يمكن حذف النسخة أثناء الإجراء القانوني دون بديل صالح. ارفع نسخة أخرى وتأكد من اجتياز مطابقة الهوية أولاً.');
+        return;
+      }
+
+      if (message.includes('SIGNED_CONTRACT_EVIDENCE_BUSY')) {
+        toast.error('يجري تعديل مستندات العقد في عملية أخرى. حدّث الصفحة ثم أعد المحاولة.');
+        return;
+      }
+
+      if (typeof error === 'object' && error !== null && 'code' in error && error.code === '23503') {
+        toast.error('لا يمكن حذف المستند لأنه مرتبط بسجلات أخرى في النظام. لم يُحذف الملف؛ راجع ارتباطاته من الملف المعني.');
+        return;
+      }
+
       toast.error('فشل في حذف المستند');
     }
+  });
+}
+
+/**
+ * Deletes any document shown in the contract documents view from its actual owner table.
+ * Customer and vehicle documents are shared records, so the caller must confirm that wider
+ * effect in the UI before invoking this mutation.
+ */
+export function useDeleteContractViewDocument() {
+  const queryClient = useQueryClient();
+  const { companyId } = useUnifiedCompanyAccess();
+
+  return useMutation({
+    mutationFn: async (target: ContractViewDocumentDeleteTarget) => {
+      if (!companyId) throw new Error('تعذر تحديد الشركة');
+
+      const sourceType = target.sourceType || 'contract';
+      let filePath: string | null = null;
+
+      if (sourceType === 'contract') {
+        const { data: document, error: fetchError } = await supabase
+          .from('contract_documents')
+          .select('file_path, contract_id, company_id')
+          .eq('id', target.id)
+          .eq('contract_id', target.contract_id)
+          .eq('company_id', companyId)
+          .single();
+        if (fetchError || !document) throw fetchError || new Error('المستند غير موجود');
+
+        const { error: deleteError } = await supabase
+          .from('contract_documents')
+          .delete()
+          .eq('id', target.id)
+          .eq('contract_id', target.contract_id)
+          .eq('company_id', companyId)
+          .select('id')
+          .single();
+        if (deleteError) throw deleteError;
+        filePath = document.file_path;
+      } else if (sourceType === 'customer') {
+        if (!target.sourceOwnerId) throw new Error('تعذر تحديد العميل مالك المستند');
+
+        const { data: document, error: fetchError } = await supabase
+          .from('customer_documents')
+          .select('file_path, customer_id, company_id')
+          .eq('id', target.id)
+          .eq('customer_id', target.sourceOwnerId)
+          .eq('company_id', companyId)
+          .single();
+        if (fetchError || !document) throw fetchError || new Error('المستند غير موجود');
+
+        const { error: deleteError } = await supabase
+          .from('customer_documents')
+          .delete()
+          .eq('id', target.id)
+          .eq('customer_id', target.sourceOwnerId)
+          .eq('company_id', companyId)
+          .select('id')
+          .single();
+        if (deleteError) throw deleteError;
+        filePath = document.file_path;
+      } else {
+        if (!target.sourceOwnerId) throw new Error('تعذر تحديد المركبة مالكة المستند');
+
+        // vehicle_documents has no company_id, so authorize through its parent vehicle first.
+        const { error: vehicleError } = await supabase
+          .from('vehicles')
+          .select('id')
+          .eq('id', target.sourceOwnerId)
+          .eq('company_id', companyId)
+          .single();
+        if (vehicleError) throw vehicleError;
+
+        const { data: document, error: fetchError } = await supabase
+          .from('vehicle_documents')
+          .select('document_url, vehicle_id')
+          .eq('id', target.id)
+          .eq('vehicle_id', target.sourceOwnerId)
+          .single();
+        if (fetchError || !document) throw fetchError || new Error('المستند غير موجود');
+
+        const { error: deleteError } = await supabase
+          .from('vehicle_documents')
+          .delete()
+          .eq('id', target.id)
+          .eq('vehicle_id', target.sourceOwnerId)
+          .select('id')
+          .single();
+        if (deleteError) throw deleteError;
+        filePath = document.document_url;
+      }
+
+      if (filePath) {
+        const bucket = sourceType === 'contract' ? 'contract-documents' : 'documents';
+        const { error: storageError } = await supabase.storage.from(bucket).remove([filePath]);
+        if (storageError) {
+          console.warn('[useDeleteContractViewDocument] orphaned storage file', storageError.message);
+        }
+      }
+
+      return { ...target, sourceType, companyId };
+    },
+    onSuccess: async (result) => {
+      await invalidateContractDocumentDependents(queryClient, result.companyId, result.contract_id);
+
+      if (result.sourceType === 'customer' && result.sourceOwnerId) {
+        await queryClient.invalidateQueries({ queryKey: ['customer-documents', result.sourceOwnerId] });
+      }
+      if (result.sourceType === 'vehicle' && result.sourceOwnerId) {
+        await Promise.all([
+          queryClient.invalidateQueries({ queryKey: ['vehicle-document-files', result.companyId, result.sourceOwnerId] }),
+          queryClient.invalidateQueries({ queryKey: ['vehicle-documents'] }),
+          queryClient.invalidateQueries({ queryKey: ['fleet-insurance-registration-report'] }),
+        ]);
+      }
+
+      toast.success('تم حذف المستند بنجاح');
+    },
+    onError: (error) => {
+      console.error('Error deleting document from contract view:', error);
+      const message = error instanceof Error
+        ? error.message
+        : typeof error === 'object' && error !== null && 'message' in error
+          ? String((error as { message?: unknown }).message || '')
+          : '';
+
+      if (message.includes('SIGNED_CONTRACT_REPLACEMENT_REQUIRED')) {
+        toast.error('لا يمكن حذف النسخة أثناء الإجراء القانوني دون بديل صالح. ارفع نسخة أخرى وتأكد من اجتياز مطابقة الهوية أولاً.');
+        return;
+      }
+      if (message.includes('SIGNED_CONTRACT_EVIDENCE_BUSY')) {
+        toast.error('يجري تعديل مستندات العقد في عملية أخرى. حدّث الصفحة ثم أعد المحاولة.');
+        return;
+      }
+      if (typeof error === 'object' && error !== null && 'code' in error && error.code === '23503') {
+        toast.error('لا يمكن حذف المستند لأنه مرتبط بسجلات أخرى في النظام. لم يُحذف الملف؛ راجع ارتباطاته من الملف المعني.');
+        return;
+      }
+
+      toast.error(message || 'فشل في حذف المستند');
+    },
   });
 }
 

@@ -8,16 +8,17 @@ import { supabase } from '@/integrations/supabase/client';
 import {
   generateDocumentsListHtml,
   generateClaimsStatementHtml,
-  generateCriminalComplaintHtml,
   generateViolationsTransferHtml,
-  type ClaimsStatementData,
   type DocumentsListData,
-  type CriminalComplaintData,
   type ViolationsTransferData,
 } from './official-letter-generator';
-import { generateLegalComplaintHTML, type LegalDocumentData } from './legal-document-generator';
-import { lawsuitService } from '@/services/LawsuitService';
-import { formatDateForDocument } from '@/utils/dateFormatter';
+import { generateLegalComplaintHTML } from './legal-document-generator';
+import {
+  buildClaimsStatementData,
+  buildMemoDocumentData,
+  getMemoDocumentDataForGeneration,
+  loadCanonicalLawsuitState,
+} from '@/pages/legal/LawsuitPreparation/utils/documentGenerators';
 import { 
   extractLawsuitData, 
   createLawsuitExcelFile,
@@ -378,10 +379,6 @@ async function fetchCustomerFullData(contractId: string) {
 /**
  * تحويل المبلغ إلى كلمات عربية
  */
-function convertAmountToWords(amount: number): string {
-  return lawsuitService.convertAmountToWords(amount);
-}
-
 /**
  * إنشاء المستندات لعميل واحد
  * يستخدم نفس منطق التوليد الموجود في صفحة تجهيز الدعوى
@@ -399,7 +396,7 @@ async function generateCustomerDocuments(
     violationsTransfer: false // طلب تحويل المخالفات اختياري - لا يتم تحميله تلقائياً
   }
 ): Promise<CustomerDocuments> {
-  const { contract, invoices, violations, companyInfo } = await fetchCustomerFullData(customer.contract_id);
+  const { contract, violations } = await fetchCustomerFullData(customer.contract_id);
 
   const customerData = contract.customers;
   const vehicleData = contract.vehicles;
@@ -411,86 +408,18 @@ async function generateCustomerDocuments(
   const nationalId = customerData?.national_id || customer.national_id || 'غير محدد';
   const phone = customerData?.phone || customer.phone || 'غير محدد';
 
-  // حساب المبالغ المستحقة - نفس المنطق المستخدم في صفحة تجهيز الدعوى
-  const unpaidInvoices = invoices.filter(inv =>
-    (inv.total_amount || 0) - (inv.paid_amount || 0) > 0
-  );
-  
-  // حساب غرامات التأخير لكل فاتورة (120 ريال/يوم، حد أقصى 3000)
-  const invoicesWithPenalties = unpaidInvoices.map(inv => {
-    const dueDate = inv.due_date ? new Date(inv.due_date) : new Date();
-    const today = new Date();
-    const daysLate = Math.max(0, Math.floor((today.getTime() - dueDate.getTime()) / (1000 * 60 * 60 * 24)));
-    const remaining = (inv.total_amount || 0) - (inv.paid_amount || 0);
-    const penalty = remaining > 0 ? Math.min(daysLate * 120, 3000) : 0;
-    
-    return {
-      ...inv,
-      daysLate,
-      penalty,
-      remaining,
-    };
-  });
-  
-  const totalOverdue = invoicesWithPenalties.reduce((sum, inv) => sum + inv.remaining, 0);
-  const totalPenalties = invoicesWithPenalties.reduce((sum, inv) => sum + inv.penalty, 0);
-  const violationsTotal = violations.reduce((sum, v) => sum + (Number(v.total_amount) || Number(v.fine_amount) || 0), 0);
-  const damagesFee = 10000; // رسوم الأضرار الثابتة
-  
-  // الإجمالي الكلي (بدون المخالفات للمطالبة الأساسية)
-  const claimAmount = totalOverdue + totalPenalties + damagesFee;
-  const grandTotal = claimAmount + violationsTotal;
+  // إعادة بناء نفس حالة صفحة تجهيز الدعوى: لا غرامة ولا مخالفة ولا ضرر بلا سند.
+  const legalState = await loadCanonicalLawsuitState(companyId, customer.contract_id);
+  if (!legalState.calculations) {
+    throw new Error('تعذر بناء الحساب القانوني الموحد للعقد');
+  }
+  const claimAmount = legalState.calculations.total;
+  const violationsTotal = legalState.calculations.violationsFines;
 
   const documents: CustomerDocuments['documents'] = [];
 
   // 1. المذكرة الشارحة - نفس التنسيق المستخدم في صفحة تجهيز الدعوى
-  // Prepare memo data outside if block so it's accessible in documentsList section
-  const daysOverdue = contract.start_date 
-    ? Math.floor((new Date().getTime() - new Date(contract.start_date).getTime()) / (1000 * 60 * 60 * 24))
-    : 0;
-
-  const documentData: LegalDocumentData = {
-    customer: {
-      customer_name: customerFullName,
-      customer_code: customerData?.id || customer.customer_id || '',
-      id_number: nationalId,
-      phone: phone,
-      email: customerData?.email || '',
-      contract_number: contract.contract_number || customer.contract_number,
-      contract_start_date: contract.start_date || '',
-      vehicle_plate: vehicleData?.plate_number || 'غير محدد',
-      monthly_rent: Number(contract.monthly_amount) || 0,
-      months_unpaid: unpaidInvoices.length,
-      overdue_amount: totalOverdue,
-      late_penalty: totalPenalties,
-      days_overdue: daysOverdue,
-      violations_count: violations.length,
-      violations_amount: violationsTotal,
-      total_debt: claimAmount, // المبلغ بدون المخالفات
-    } as any,
-    companyInfo: {
-      name_ar: 'شركة العراف لتأجير السيارات',
-      name_en: 'Al-Araf Car Rental',
-      address: 'أم صلال محمد – الشارع التجاري – مبنى (79) – الطابق الأول – مكتب (2)',
-      cr_number: '146832',
-    },
-    vehicleInfo: {
-      plate: vehicleData?.plate_number || 'غير محدد',
-      make: vehicleData?.make || '',
-      model: vehicleData?.model || '',
-      year: vehicleData?.year || 0,
-    },
-    contractInfo: {
-      contract_number: contract.contract_number || customer.contract_number,
-      start_date: contract.start_date 
-        ? formatDateForDocument(contract.start_date)
-        : '',
-      monthly_rent: Number(contract.monthly_amount) || 0,
-    },
-    damages: damagesFee,
-  };
-
-  const memoHtml = generateLegalComplaintHTML(documentData);
+  const memoHtml = generateLegalComplaintHTML(getMemoDocumentDataForGeneration(legalState));
   
   if (options.explanatoryMemo) {
     // إضافة نسخة HTML
@@ -515,32 +444,7 @@ async function generateCustomerDocuments(
 
   // 2. كشف المطالبات - نفس التنسيق المستخدم في صفحة تجهيز الدعوى
   // Define claimsData outside the if block so it's accessible in documentsList section
-  const claimsData: ClaimsStatementData = {
-    customerName: customerFullName,
-    nationalId,
-    phone,
-    contractNumber: contract.contract_number || customer.contract_number,
-    contractStartDate: contract.start_date || '',  // نفس صفحة تجهيز الدعوى
-    contractEndDate: contract.end_date || '',  // نفس صفحة تجهيز الدعوى
-    invoices: invoicesWithPenalties.map(inv => ({
-      invoiceNumber: inv.invoice_number || `INV-${inv.id.slice(0, 8)}`,
-      dueDate: inv.due_date || '',  // نفس صفحة تجهيز الدعوى - تُمرر كـ string
-      totalAmount: inv.total_amount || 0,
-      paidAmount: inv.paid_amount || 0,
-      daysLate: inv.daysLate,
-      penalty: inv.penalty,
-    })),
-    violations: violations.map(v => ({
-      violationNumber: v.violation_number || 'غير محدد',
-      violationDate: v.violation_date || '',  // نفس صفحة تجهيز الدعوى - تُمرر كـ string
-      violationType: v.violation_type || 'مخالفة مرورية',
-      location: v.location || 'غير محدد',
-      fineAmount: Number(v.total_amount) || Number(v.fine_amount) || 0,
-    })),
-    totalOverdue: totalOverdue + violationsTotal + totalPenalties, // نفس صفحة تجهيز الدعوى
-    amountInWords: convertAmountToWords(totalOverdue + violationsTotal + totalPenalties),
-    caseTitle: `قضية تحصيل مستحقات - ${customerFullName}`,
-  };
+  const claimsData = buildClaimsStatementData(legalState);
 
   if (options.claimsStatement) {
     documents.push({
@@ -672,36 +576,13 @@ async function generateCustomerDocuments(
   // ملاحظة: كشف المخالفات المرورية مدمج داخل كشف المطالبات المالية
   // لا حاجة لمستند منفصل - نفس منطق صفحة تجهيز الدعوى
   
-  // 5. بلاغ سرقة المركبة - نفس التنسيق المستخدم في صفحة تجهيز الدعوى
+  // البلاغ الجنائي لا يولد في المسار الجماعي لأنه يتطلب مراجعة أدلة كل قضية.
   if (options.criminalComplaint) {
-    const complaintData: CriminalComplaintData = {
-      customerName: customerFullName,
-      customerNationality: customerData?.nationality || '',
-      customerId: nationalId,
-      customerMobile: phone,
-      contractDate: contract.start_date 
-        ? new Date(contract.start_date).toLocaleDateString('ar-QA')
-        : 'غير محدد',
-      contractEndDate: contract.end_date 
-        ? new Date(contract.end_date).toLocaleDateString('ar-QA')
-        : 'غير محدد',
-      vehicleType: vehicleData 
-        ? `${vehicleData.make || ''} ${vehicleData.model || ''} ${vehicleData.year || ''}`.trim()
-        : 'غير محدد',
-      plateNumber: vehicleData?.plate_number || 'غير محدد',
-      plateType: 'خصوصي',
-      manufactureYear: vehicleData?.year?.toString() || '',
-      chassisNumber: vehicleData?.vin || '',
-    };
-
-    documents.push({
-      name: 'بلاغ_سرقة_المركبة.html',
-      content: generateCriminalComplaintHtml(complaintData),
-    });
+    throw new Error('البلاغ الجنائي مستند استثنائي ويجب توليده من صفحة تجهيز الدعوى بعد اعتماد أدلة التسليم والانتهاء والمطالبة بالرد.');
   }
 
   // 6. طلب تحويل المخالفات - نفس التنسيق المستخدم في صفحة تجهيز الدعوى
-  if (options.violationsTransfer && violations.length > 0) {
+  if (options.violationsTransfer && legalState.violationEvidenceDocuments.length > 0 && violations.length > 0) {
     const transferData: ViolationsTransferData = {
       customerName: customerFullName,
       customerId: nationalId,

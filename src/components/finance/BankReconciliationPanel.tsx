@@ -393,7 +393,7 @@ export function BankReconciliationPanel() {
                 <h3 className="text-sm font-black text-[#020617]">استيراد كشف بنكي</h3>
               </div>
               <p className="text-xs font-medium text-[#94A3B8]">
-                ارفع CSV أو Excel، راجع الأسطر الصالحة، ثم احفظها كدفعة تسوية رسمية قابلة للتدقيق.
+                ارفع CSV أو إكسل، راجع الأسطر الصالحة، ثم احفظها كدفعة تسوية رسمية قابلة للتدقيق.
               </p>
             </div>
 
@@ -413,7 +413,7 @@ export function BankReconciliationPanel() {
               </select>
 
               <label className="flex h-11 cursor-pointer items-center justify-between gap-3 rounded-xl border border-dashed border-slate-300 bg-white px-3 text-sm font-bold text-[#64748B] hover:border-[#22C7A1]">
-                <span className="truncate">{importFileName || "CSV / Excel"}</span>
+                <span className="truncate">{importFileName || "ملف إكسل أو CSV"}</span>
                 <Upload className="h-4 w-4 text-[#22C7A1]" />
                 <input
                   type="file"

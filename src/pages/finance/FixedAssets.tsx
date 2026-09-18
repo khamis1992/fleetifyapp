@@ -307,7 +307,7 @@ const FixedAssets = () => {
   return (
     <div className="p-6" dir="rtl">
       <div className="max-w-7xl mx-auto space-y-6">
-        <div className="flex items-center justify-between">
+        <div data-finance-heading="" className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold text-slate-900">الأصول الثابتة</h1>
             <p className="text-sm text-slate-500 mt-1">إدارة الأصول والإهلاك والصيانة</p>
@@ -440,10 +440,10 @@ const FixedAssets = () => {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <StatCard title="إجمالي الأصول" value={stats.totalAssets} subtitle="Total Assets" icon={Package} variant="coral" delay={0.1} />
-          <StatCard title="القيمة الإجمالية" value={formatCurrency(stats.totalValue)} subtitle="Purchase Cost" icon={DollarSign} variant="sky" delay={0.15} />
-          <StatCard title="الإهلاك المتراكم" value={formatCurrency(stats.totalDepreciation)} subtitle="Accumulated Depreciation" icon={TrendingDown} variant="amber" trend="down" change="إهلاك" delay={0.2} />
-          <StatCard title="القيمة الدفترية" value={formatCurrency(stats.totalBookValue)} subtitle="Book Value" icon={Calculator} variant="emerald" delay={0.25} />
+          <StatCard title="إجمالي الأصول" value={stats.totalAssets} subtitle="الأصول المسجلة" icon={Package} variant="coral" delay={0.1} />
+          <StatCard title="القيمة الإجمالية" value={formatCurrency(stats.totalValue)} subtitle="تكلفة الشراء" icon={DollarSign} variant="sky" delay={0.15} />
+          <StatCard title="الإهلاك المتراكم" value={formatCurrency(stats.totalDepreciation)} subtitle="مجموع الإهلاك" icon={TrendingDown} variant="amber" trend="down" change="إهلاك" delay={0.2} />
+          <StatCard title="القيمة الدفترية" value={formatCurrency(stats.totalBookValue)} subtitle="بعد خصم الإهلاك" icon={Calculator} variant="emerald" delay={0.25} />
         </div>
 
         <motion.div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
@@ -538,7 +538,7 @@ const FixedAssets = () => {
                         <TableCell className="text-center">
                           <div className="flex items-center justify-center gap-1 text-slate-600">
                             <Calendar className="w-4 h-4" />
-                            {new Date(asset.purchase_date).toLocaleDateString('en-GB')}
+                            {new Date(asset.purchase_date).toLocaleDateString('ar-QA')}
                           </div>
                         </TableCell>
                         <TableCell className="text-center font-medium">{formatCurrency(asset.purchase_cost)}</TableCell>
@@ -605,7 +605,7 @@ const FixedAssets = () => {
                 <div className="p-3 bg-slate-50 rounded-xl"><Label className="text-xs text-slate-500">الفئة</Label><p className="font-medium">{getCategoryLabel(selectedAsset.category)}</p></div>
                 {selectedAsset.serial_number && <div className="p-3 bg-slate-50 rounded-xl"><Label className="text-xs text-slate-500">الرقم التسلسلي</Label><p className="font-medium">{selectedAsset.serial_number}</p></div>}
                 {selectedAsset.location && <div className="p-3 bg-slate-50 rounded-xl"><Label className="text-xs text-slate-500">الموقع</Label><p className="font-medium flex items-center gap-1"><MapPin className="w-4 h-4" />{selectedAsset.location}</p></div>}
-                <div className="p-3 bg-slate-50 rounded-xl"><Label className="text-xs text-slate-500">تاريخ الشراء</Label><p className="font-medium">{new Date(selectedAsset.purchase_date).toLocaleDateString('en-GB')}</p></div>
+                <div className="p-3 bg-slate-50 rounded-xl"><Label className="text-xs text-slate-500">تاريخ الشراء</Label><p className="font-medium">{new Date(selectedAsset.purchase_date).toLocaleDateString('ar-QA')}</p></div>
                 <div className="p-3 bg-slate-50 rounded-xl"><Label className="text-xs text-slate-500">تكلفة الشراء</Label><p className="font-medium">{formatCurrency(selectedAsset.purchase_cost)}</p></div>
                 <div className="p-3 bg-slate-50 rounded-xl"><Label className="text-xs text-slate-500">القيمة التخريدية</Label><p className="font-medium">{formatCurrency(selectedAsset.salvage_value || 0)}</p></div>
                 <div className="p-3 bg-slate-50 rounded-xl"><Label className="text-xs text-slate-500">العمر الإنتاجي</Label><p className="font-medium">{selectedAsset.useful_life_years} سنوات</p></div>

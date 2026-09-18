@@ -7,25 +7,26 @@
  * Body: { companyId, amount, payerName?, paymentDate?, notes?, limit? }
  */
 
-import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { callKimiJson, KIMI_MODEL } from "../_shared/kimi.ts";
 import {
   agentCorsHeaders,
-  authorizeAgent,
+  authorizeGovernedAgent,
   createServiceClient,
+  finishAgentExecution,
   jsonResponse,
   storeAgentReview,
+  type AgentInvocationContext,
 } from "../_shared/agent.ts";
 
-serve(async (req) => {
+Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: agentCorsHeaders });
 
+  let invocation: AgentInvocationContext | null = null;
+  const supabase = createServiceClient();
   try {
-    await authorizeAgent(req);
     const body = await req.json().catch(() => ({}));
     if (!body.companyId || !body.amount) throw new Error("companyId and amount are required");
-
-    const supabase = createServiceClient();
+    invocation = await authorizeGovernedAgent(req, "payment-match-agent", body.companyId);
     const amount = Number(body.amount);
     const payerName = String(body.payerName || "").trim();
 
@@ -48,6 +49,7 @@ serve(async (req) => {
 
     const candidates = (invoices || []) as Array<Record<string, any>>;
     if (candidates.length === 0) {
+      await finishAgentExecution(supabase, invocation, true, { matched: false, candidates: 0 });
       return jsonResponse({ success: true, matched: false, reason: "لا توجد فواتير مفتوحة قريبة من المبلغ" });
     }
 
@@ -103,6 +105,10 @@ serve(async (req) => {
       });
     }
 
+    await finishAgentExecution(supabase, invocation, true, {
+      matched: Boolean(chosen),
+      confidence,
+    });
     return jsonResponse({
       success: true,
       matched: Boolean(chosen && confidence >= 0.6),
@@ -115,6 +121,10 @@ serve(async (req) => {
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unknown error";
+    if (invocation) {
+      await finishAgentExecution(supabase, invocation, false, {}, "payment_match_failed")
+        .catch(() => undefined);
+    }
     return jsonResponse({ success: false, error: message }, message === "Unauthorized" ? 401 : 500);
   }
 });

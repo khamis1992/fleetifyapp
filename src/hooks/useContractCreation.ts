@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { createContractWithHandoff, type VehicleHandoffConsent } from '@/services/contractVehicleHandoff'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/integrations/supabase/client'
 import { toast } from 'sonner'
@@ -7,6 +8,8 @@ import { useEssentialAccountMappings } from './useEssentialAccountMappings'
 import { generateContractPdf } from '@/utils/contractPdfGenerator'
 import { useCreateContractDocument } from './useContractDocuments'
 import { useContractDocumentSaving } from './useContractDocumentSaving'
+import { useRentalViolationOverride } from '@/contexts/RentalViolationOverrideContext'
+import { RentalEligibilityConfirmationCancelledError } from '@/contexts/rentalViolationOverrideErrors'
 
 export interface ContractCreationStep {
   id: string
@@ -34,6 +37,7 @@ interface PerformanceBreakdown {
 }
 
 interface ContractInputData {
+  vehicle_handoff?: VehicleHandoffConsent;
   customer_id: string
   vehicle_id?: string | null
   contract_type?: string
@@ -42,6 +46,7 @@ interface ContractInputData {
   contract_date?: string
   contract_amount: number | string
   monthly_amount?: number | string
+  deposit_amount?: number | string
   description?: string | null
   terms?: string | null
   cost_center_id?: string | null
@@ -78,6 +83,7 @@ export const useContractCreation = () => {
   const queryClient = useQueryClient()
   const { mutateAsync: createDocument } = useCreateContractDocument()
   const { saveDocuments, isProcessing: isDocumentSaving } = useContractDocumentSaving()
+  const { confirmRentalEligibility } = useRentalViolationOverride()
   const { 
     mappingStatus, 
     hasMissingMappings, 
@@ -192,6 +198,17 @@ export const useContractCreation = () => {
           throw new Error('مبلغ العقد يجب أن يكون رقماً صحيحاً وأكبر من صفر')
         }
 
+        let acceptedUnpaidViolations = false
+        if (inputContractData.vehicle_id && inputContractData.vehicle_id !== 'none') {
+          const confirmation = await confirmRentalEligibility({
+            companyId,
+            vehicleId: inputContractData.vehicle_id,
+            customerId: inputContractData.customer_id,
+          })
+          if (!confirmation) throw new RentalEligibilityConfirmationCancelledError()
+          acceptedUnpaidViolations = confirmation.acceptedUnpaidViolations
+        }
+
         // التحقق من البيانات المطلوبة مع تسجيل مفصل
         // Keep one key for the whole logical attempt. React Query may retry the
         // same object after a lost response; reusing the key makes that replay
@@ -218,6 +235,8 @@ export const useContractCreation = () => {
           p_created_by: inputContractData.created_by || user?.id || undefined,
           p_created_via: 'web',
           p_idempotency_key: idempotencyKey,
+          p_accept_unpaid_violations: acceptedUnpaidViolations,
+          p_deposit_amount: Number(inputContractData.deposit_amount || 0),
         }
         
         console.log('📋 [CONTRACT_CREATION] معاملات RPC:', rpcParams)
@@ -263,8 +282,7 @@ export const useContractCreation = () => {
         updateStepStatus('activation', 'processing')
         console.log('[CONTRACT_CREATION] Creating contract and billing graph atomically...')
 
-        const { data: contractRpcResult, error: createError } = await supabase
-          .rpc('create_contract_with_billing_graph_atomic', rpcParams)
+        const { data: contractRpcResult, error: createError } = await createContractWithHandoff(rpcParams, inputContractData.vehicle_handoff)
 
         // معالجة أخطاء الاتصال بقاعدة البيانات
         if (createError) {
@@ -488,6 +506,10 @@ export const useContractCreation = () => {
         return createdContractData
 
       } catch (error: unknown) {
+        if (error instanceof RentalEligibilityConfirmationCancelledError) {
+          setCreationState(prev => ({ ...prev, isProcessing: false, canRetry: false }))
+          throw error
+        }
         console.error('❌ [CONTRACT_CREATION] فشلت العملية:', error)
 
         // معالجة محسنة للأخطاء وتسجيلها
@@ -552,6 +574,7 @@ export const useContractCreation = () => {
       console.log('✅ [CONTRACT_CREATION] تم إنشاء العقد بنجاح:', data)
     },
     onError: (error: unknown) => {
+      if (error instanceof RentalEligibilityConfirmationCancelledError) return
       const errorMessage = error instanceof Error ? error.message : 'فشل في إنشاء العقد'
       console.error('❌ [CONTRACT_CREATION] فشل في الطفرة:', error)
 

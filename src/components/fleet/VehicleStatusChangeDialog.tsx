@@ -54,6 +54,7 @@ interface VehicleStatusChangeDialogProps {
   currentStatus?: string;
   currentNotes?: string;
   onSuccess?: () => void;
+  occupancyNotice?: string;
 }
 
 export function VehicleStatusChangeDialog({
@@ -63,6 +64,7 @@ export function VehicleStatusChangeDialog({
   currentStatus,
   currentNotes,
   onSuccess,
+  occupancyNotice,
 }: VehicleStatusChangeDialogProps) {
   const updateVehicle = useUpdateVehicle();
   const { toast } = useToast();
@@ -125,6 +127,7 @@ export function VehicleStatusChangeDialog({
             <FeatureTourButton tour={statusTour} onStart={setActiveTour} />
           </div>
         </DialogHeader>
+        {occupancyNotice && <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm leading-7 text-amber-900" role="note">{occupancyNotice}<p>حالة «مؤجرة» والإتاحة ترتبطان بالعقود والصيانة والحجوزات. تغيير الحالة يدوياً لا يسجل إرجاع المركبة من العقد.</p></div>}
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             <FormField

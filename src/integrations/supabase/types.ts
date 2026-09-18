@@ -4176,6 +4176,12 @@ export type Database = {
         }
         Relationships: []
       }
+      contract_identity_assessments: {
+        Row: { id: string; company_id: string; contract_id: string; document_id: string; recorded_at: string; actor_id: string | null; method: string; previous_result: Json; result: Json }
+        Insert: { id?: string; company_id: string; contract_id: string; document_id: string; recorded_at?: string; actor_id?: string | null; method: string; previous_result: Json; result: Json }
+        Update: { id?: string; company_id?: string; contract_id?: string; document_id?: string; recorded_at?: string; actor_id?: string | null; method?: string; previous_result?: Json; result?: Json }
+        Relationships: []
+      }
       contract_documents: {
         Row: {
           ai_match_confidence: number | null
@@ -4191,6 +4197,19 @@ export type Database = {
           id: string
           id_scan_status: string
           is_required: boolean | null
+          legal_identity_details: Json | null
+          legal_identity_engine_version: string | null
+          legal_identity_checked_at: string | null
+          legal_identity_expires_at: string | null
+          legal_evidence_state: string
+          legal_identity_expected_id: string | null
+          legal_identity_expected_name: string | null
+          legal_identity_extracted_id: string | null
+          legal_identity_extracted_name: string | null
+          legal_identity_match_reason: string | null
+          legal_identity_match_status: string
+          ocr_quality_score: number | null
+          ocr_review_reason: string | null
           match_notes: string | null
           matched_at: string | null
           matched_by: string | null
@@ -4199,6 +4218,7 @@ export type Database = {
           original_filename: string | null
           processing_error: string | null
           processing_status: string | null
+          superseded_by_document_id: string | null
           updated_at: string | null
           upload_batch_id: string | null
           uploaded_at: string | null
@@ -4220,6 +4240,19 @@ export type Database = {
           id?: string
           id_scan_status?: string
           is_required?: boolean | null
+          legal_identity_details?: Json | null
+          legal_identity_engine_version?: string | null
+          legal_identity_checked_at?: string | null
+          legal_identity_expires_at?: string | null
+          legal_evidence_state?: string
+          legal_identity_expected_id?: string | null
+          legal_identity_expected_name?: string | null
+          legal_identity_extracted_id?: string | null
+          legal_identity_extracted_name?: string | null
+          legal_identity_match_reason?: string | null
+          legal_identity_match_status?: string
+          ocr_quality_score?: number | null
+          ocr_review_reason?: string | null
           match_notes?: string | null
           matched_at?: string | null
           matched_by?: string | null
@@ -4228,6 +4261,7 @@ export type Database = {
           original_filename?: string | null
           processing_error?: string | null
           processing_status?: string | null
+          superseded_by_document_id?: string | null
           updated_at?: string | null
           upload_batch_id?: string | null
           uploaded_at?: string | null
@@ -4249,6 +4283,19 @@ export type Database = {
           id?: string
           id_scan_status?: string
           is_required?: boolean | null
+          legal_identity_details?: Json | null
+          legal_identity_engine_version?: string | null
+          legal_identity_checked_at?: string | null
+          legal_identity_expires_at?: string | null
+          legal_evidence_state?: string
+          legal_identity_expected_id?: string | null
+          legal_identity_expected_name?: string | null
+          legal_identity_extracted_id?: string | null
+          legal_identity_extracted_name?: string | null
+          legal_identity_match_reason?: string | null
+          legal_identity_match_status?: string
+          ocr_quality_score?: number | null
+          ocr_review_reason?: string | null
           match_notes?: string | null
           matched_at?: string | null
           matched_by?: string | null
@@ -4257,6 +4304,7 @@ export type Database = {
           original_filename?: string | null
           processing_error?: string | null
           processing_status?: string | null
+          superseded_by_document_id?: string | null
           updated_at?: string | null
           upload_batch_id?: string | null
           uploaded_at?: string | null
@@ -4306,6 +4354,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "invoice_payment_timeline"
             referencedColumns: ["contract_id"]
+          },
+          {
+            foreignKeyName: "contract_documents_superseded_by_document_id_fkey"
+            columns: ["superseded_by_document_id"]
+            isOneToOne: false
+            referencedRelation: "contract_documents"
+            referencedColumns: ["id"]
           },
           {
             foreignKeyName: "contract_documents_verified_by_fkey"
@@ -4615,6 +4670,7 @@ export type Database = {
           company_id: string
           contract_id: string
           id: string
+          idempotency_key: string | null
           new_values: Json | null
           notes: string | null
           old_values: Json | null
@@ -4627,6 +4683,7 @@ export type Database = {
           company_id: string
           contract_id: string
           id?: string
+          idempotency_key?: string | null
           new_values?: Json | null
           notes?: string | null
           old_values?: Json | null
@@ -4639,6 +4696,7 @@ export type Database = {
           company_id?: string
           contract_id?: string
           id?: string
+          idempotency_key?: string | null
           new_values?: Json | null
           notes?: string | null
           old_values?: Json | null
@@ -5114,6 +5172,7 @@ export type Database = {
           creation_idempotency_key: string | null
           customer_id: string
           days_overdue: number | null
+          deposit_amount: number
           description: string | null
           end_date: string
           expired_at: string | null
@@ -5162,6 +5221,7 @@ export type Database = {
           creation_idempotency_key?: string | null
           customer_id: string
           days_overdue?: number | null
+          deposit_amount?: number
           description?: string | null
           end_date: string
           expired_at?: string | null
@@ -5210,6 +5270,7 @@ export type Database = {
           creation_idempotency_key?: string | null
           customer_id?: string
           days_overdue?: number | null
+          deposit_amount?: number
           description?: string | null
           end_date?: string
           expired_at?: string | null
@@ -13057,6 +13118,7 @@ export type Database = {
           paid_amount: number | null
           payment_id: string | null
           payment_status: string
+          penalty_id: string | null
           rejected_at: string | null
           rejected_by: string | null
           scanned_image_url: string | null
@@ -13100,6 +13162,7 @@ export type Database = {
           paid_amount?: number | null
           payment_id?: string | null
           payment_status?: string
+          penalty_id?: string | null
           rejected_at?: string | null
           rejected_by?: string | null
           scanned_image_url?: string | null
@@ -13143,6 +13206,7 @@ export type Database = {
           paid_amount?: number | null
           payment_id?: string | null
           payment_status?: string
+          penalty_id?: string | null
           rejected_at?: string | null
           rejected_by?: string | null
           scanned_image_url?: string | null
@@ -14567,6 +14631,7 @@ export type Database = {
           prepared_at: string | null
           prepared_by: string | null
           registered_at: string | null
+          source_document_id: string | null
           status: string | null
           submitted_at: string | null
           taqadi_case_number: string | null
@@ -14598,6 +14663,7 @@ export type Database = {
           prepared_at?: string | null
           prepared_by?: string | null
           registered_at?: string | null
+          source_document_id?: string | null
           status?: string | null
           submitted_at?: string | null
           taqadi_case_number?: string | null
@@ -14629,6 +14695,7 @@ export type Database = {
           prepared_at?: string | null
           prepared_by?: string | null
           registered_at?: string | null
+          source_document_id?: string | null
           status?: string | null
           submitted_at?: string | null
           taqadi_case_number?: string | null
@@ -15866,6 +15933,1160 @@ export type Database = {
           },
         ]
       }
+      legal_case_claim_items: {
+        Row: {
+          id: string
+          company_id: string
+          contract_id: string
+          case_id: string | null
+          kind: string
+          disposition: string
+          description: string
+          period_from: string | null
+          period_to: string | null
+          requested_amount: number | null
+          avoided_costs: number
+          third_party_recovery: number
+          evidence_ids: string[]
+          calculation_basis: string
+          causation_notes: string
+          alternative_to: string | null
+          independence_notes: string
+          opportunity_requested_on: string | null
+          opportunity_probability: string
+          alternative_unavailable_reason: string
+          overlap_group: string
+          recovery_reference: string
+          opportunity_reference: string
+          review_status: string
+          exclusion_reason: string
+          created_by: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          company_id: string
+          contract_id: string
+          case_id?: string | null
+          kind: string
+          disposition?: string
+          description?: string
+          period_from?: string | null
+          period_to?: string | null
+          requested_amount?: number | null
+          avoided_costs?: number
+          third_party_recovery?: number
+          evidence_ids?: string[]
+          calculation_basis?: string
+          causation_notes?: string
+          alternative_to?: string | null
+          independence_notes?: string
+          opportunity_requested_on?: string | null
+          opportunity_probability?: string
+          alternative_unavailable_reason?: string
+          overlap_group?: string
+          recovery_reference?: string
+          opportunity_reference?: string
+          review_status?: string
+          exclusion_reason?: string
+          created_by?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          company_id?: string
+          contract_id?: string
+          case_id?: string | null
+          kind?: string
+          disposition?: string
+          description?: string
+          period_from?: string | null
+          period_to?: string | null
+          requested_amount?: number | null
+          avoided_costs?: number
+          third_party_recovery?: number
+          evidence_ids?: string[]
+          calculation_basis?: string
+          causation_notes?: string
+          alternative_to?: string | null
+          independence_notes?: string
+          opportunity_requested_on?: string | null
+          opportunity_probability?: string
+          alternative_unavailable_reason?: string
+          overlap_group?: string
+          recovery_reference?: string
+          opportunity_reference?: string
+          review_status?: string
+          exclusion_reason?: string
+          created_by?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      legal_case_damage_costs: {
+        Row: {
+          amount: number
+          case_id: string | null
+          company_id: string
+          contract_id: string
+          cost_date: string | null
+          cost_type: string
+          created_at: string
+          created_by: string | null
+          causation_notes: string | null
+          depreciation_deduction: number
+          description: string
+          evidence_document_id: string | null
+          evidence_url: string | null
+          id: string
+          insurance_recovery: number
+          notes: string | null
+          updated_at: string
+          verified: boolean
+        }
+        Insert: {
+          amount: number
+          case_id?: string | null
+          company_id: string
+          contract_id: string
+          cost_date?: string | null
+          cost_type: string
+          created_at?: string
+          created_by?: string | null
+          causation_notes?: string | null
+          depreciation_deduction?: number
+          description: string
+          evidence_document_id?: string | null
+          evidence_url?: string | null
+          id?: string
+          insurance_recovery?: number
+          notes?: string | null
+          updated_at?: string
+          verified?: boolean
+        }
+        Update: {
+          amount?: number
+          case_id?: string | null
+          company_id?: string
+          contract_id?: string
+          cost_date?: string | null
+          cost_type?: string
+          created_at?: string
+          created_by?: string | null
+          causation_notes?: string | null
+          depreciation_deduction?: number
+          description?: string
+          evidence_document_id?: string | null
+          evidence_url?: string | null
+          id?: string
+          insurance_recovery?: number
+          notes?: string | null
+          updated_at?: string
+          verified?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lawsuit_preparations_direct_source_document_fkey"
+            columns: ["company_id", "contract_id", "source_document_id"]
+            isOneToOne: false
+            referencedRelation: "contract_documents"
+            referencedColumns: ["company_id", "contract_id", "id"]
+          },
+          {
+            foreignKeyName: "legal_case_damage_costs_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "legal_cases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "legal_case_damage_costs_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "legal_judgment_settlements_v1"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "legal_case_damage_costs_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "legal_case_damage_costs_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "dispute_dashboard_stats"
+            referencedColumns: ["company_id"]
+          },
+          {
+            foreignKeyName: "legal_case_damage_costs_contract_id_fkey"
+            columns: ["contract_id"]
+            isOneToOne: false
+            referencedRelation: "contract_payment_health_dashboard"
+            referencedColumns: ["contract_id"]
+          },
+          {
+            foreignKeyName: "legal_case_damage_costs_contract_id_fkey"
+            columns: ["contract_id"]
+            isOneToOne: false
+            referencedRelation: "contract_payment_summary"
+            referencedColumns: ["contract_id"]
+          },
+          {
+            foreignKeyName: "legal_case_damage_costs_contract_id_fkey"
+            columns: ["contract_id"]
+            isOneToOne: false
+            referencedRelation: "contracts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "legal_case_damage_costs_contract_id_fkey"
+            columns: ["contract_id"]
+            isOneToOne: false
+            referencedRelation: "contracts_complete"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "legal_case_damage_costs_contract_id_fkey"
+            columns: ["contract_id"]
+            isOneToOne: false
+            referencedRelation: "invoice_payment_timeline"
+            referencedColumns: ["contract_id"]
+          },
+          {
+            foreignKeyName: "legal_case_damage_costs_evidence_document_id_fkey"
+            columns: ["evidence_document_id"]
+            isOneToOne: false
+            referencedRelation: "contract_documents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "legal_case_damage_costs_evidence_document_id_fkey"
+            columns: ["evidence_document_id"]
+            isOneToOne: false
+            referencedRelation: "pending_contract_matches"
+            referencedColumns: ["document_id"]
+          },
+        ]
+      }
+      legal_case_enforcements: {
+        Row: {
+          authority_name: string | null
+          case_id: string
+          collected_amount: number
+          company_id: string
+          created_at: string
+          created_by: string | null
+          enforceable_amount: number
+          enforcement_number: string | null
+          filed_at: string | null
+          id: string
+          next_action_date: string | null
+          notes: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          authority_name?: string | null
+          case_id: string
+          collected_amount?: number
+          company_id: string
+          created_at?: string
+          created_by?: string | null
+          enforceable_amount?: number
+          enforcement_number?: string | null
+          filed_at?: string | null
+          id?: string
+          next_action_date?: string | null
+          notes?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          authority_name?: string | null
+          case_id?: string
+          collected_amount?: number
+          company_id?: string
+          created_at?: string
+          created_by?: string | null
+          enforceable_amount?: number
+          enforcement_number?: string | null
+          filed_at?: string | null
+          id?: string
+          next_action_date?: string | null
+          notes?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "legal_case_enforcements_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "legal_cases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "legal_case_enforcements_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "legal_judgment_settlements_v1"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "legal_case_enforcements_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "legal_case_enforcements_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "dispute_dashboard_stats"
+            referencedColumns: ["company_id"]
+          },
+        ]
+      }
+      legal_case_evidence_proposals: {
+        Row: {
+          applied_at: string | null
+          automation_level: string
+          company_id: string
+          confidence: number
+          contract_id: string
+          created_at: string
+          created_by: string | null
+          current_value: Json | null
+          field_key: string
+          field_label: string
+          id: string
+          proposed_patch: Json
+          reason: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          source_document_id: string | null
+          source_kind: string
+          source_label: string
+          source_ref: string
+          status: string
+          updated_at: string
+          value_label: string
+        }
+        Insert: {
+          applied_at?: string | null
+          automation_level?: string
+          company_id: string
+          confidence: number
+          contract_id: string
+          created_at?: string
+          created_by?: string | null
+          current_value?: Json | null
+          field_key: string
+          field_label: string
+          id?: string
+          proposed_patch: Json
+          reason: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          source_document_id?: string | null
+          source_kind: string
+          source_label: string
+          source_ref?: string
+          status?: string
+          updated_at?: string
+          value_label: string
+        }
+        Update: {
+          applied_at?: string | null
+          automation_level?: string
+          company_id?: string
+          confidence?: number
+          contract_id?: string
+          created_at?: string
+          created_by?: string | null
+          current_value?: Json | null
+          field_key?: string
+          field_label?: string
+          id?: string
+          proposed_patch?: Json
+          reason?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          source_document_id?: string | null
+          source_kind?: string
+          source_label?: string
+          source_ref?: string
+          status?: string
+          updated_at?: string
+          value_label?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "legal_case_evidence_proposals_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "legal_case_evidence_proposals_contract_id_fkey"
+            columns: ["contract_id"]
+            isOneToOne: false
+            referencedRelation: "contracts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "legal_case_evidence_proposals_source_document_id_fkey"
+            columns: ["source_document_id"]
+            isOneToOne: false
+            referencedRelation: "contract_documents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      legal_case_formal_notices: {
+        Row: {
+          case_id: string | null
+          company_id: string
+          contract_id: string
+          created_at: string
+          created_by: string | null
+          delivered_on: string | null
+          delivery_confirmed: boolean
+          delivery_method: string
+          grace_period_days: number | null
+          id: string
+          notes: string | null
+          notice_type: string
+          proof_document_id: string | null
+          sent_on: string
+          updated_at: string
+        }
+        Insert: {
+          case_id?: string | null
+          company_id: string
+          contract_id: string
+          created_at?: string
+          created_by?: string | null
+          delivered_on?: string | null
+          delivery_confirmed?: boolean
+          delivery_method: string
+          grace_period_days?: number | null
+          id?: string
+          notes?: string | null
+          notice_type: string
+          proof_document_id?: string | null
+          sent_on: string
+          updated_at?: string
+        }
+        Update: {
+          case_id?: string | null
+          company_id?: string
+          contract_id?: string
+          created_at?: string
+          created_by?: string | null
+          delivered_on?: string | null
+          delivery_confirmed?: boolean
+          delivery_method?: string
+          grace_period_days?: number | null
+          id?: string
+          notes?: string | null
+          notice_type?: string
+          proof_document_id?: string | null
+          sent_on?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "legal_case_formal_notices_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "legal_cases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "legal_case_formal_notices_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "legal_judgment_settlements_v1"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "legal_case_formal_notices_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "legal_case_formal_notices_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "dispute_dashboard_stats"
+            referencedColumns: ["company_id"]
+          },
+          {
+            foreignKeyName: "legal_case_formal_notices_contract_id_fkey"
+            columns: ["contract_id"]
+            isOneToOne: false
+            referencedRelation: "contract_payment_health_dashboard"
+            referencedColumns: ["contract_id"]
+          },
+          {
+            foreignKeyName: "legal_case_formal_notices_contract_id_fkey"
+            columns: ["contract_id"]
+            isOneToOne: false
+            referencedRelation: "contract_payment_summary"
+            referencedColumns: ["contract_id"]
+          },
+          {
+            foreignKeyName: "legal_case_formal_notices_contract_id_fkey"
+            columns: ["contract_id"]
+            isOneToOne: false
+            referencedRelation: "contracts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "legal_case_formal_notices_contract_id_fkey"
+            columns: ["contract_id"]
+            isOneToOne: false
+            referencedRelation: "contracts_complete"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "legal_case_formal_notices_contract_id_fkey"
+            columns: ["contract_id"]
+            isOneToOne: false
+            referencedRelation: "invoice_payment_timeline"
+            referencedColumns: ["contract_id"]
+          },
+          {
+            foreignKeyName: "legal_case_formal_notices_proof_document_id_fkey"
+            columns: ["proof_document_id"]
+            isOneToOne: false
+            referencedRelation: "contract_documents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "legal_case_formal_notices_proof_document_id_fkey"
+            columns: ["proof_document_id"]
+            isOneToOne: false
+            referencedRelation: "pending_contract_matches"
+            referencedColumns: ["document_id"]
+          },
+        ]
+      }
+      legal_case_hearings: {
+        Row: {
+          case_id: string
+          circuit_name: string | null
+          company_id: string
+          court_name: string | null
+          created_at: string
+          created_by: string | null
+          decision: string | null
+          document_id: string | null
+          hearing_date: string
+          hearing_type: string | null
+          id: string
+          judge_name: string | null
+          next_hearing_date: string | null
+          notes: string | null
+          requirements: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          case_id: string
+          circuit_name?: string | null
+          company_id: string
+          court_name?: string | null
+          created_at?: string
+          created_by?: string | null
+          decision?: string | null
+          document_id?: string | null
+          hearing_date: string
+          hearing_type?: string | null
+          id?: string
+          judge_name?: string | null
+          next_hearing_date?: string | null
+          notes?: string | null
+          requirements?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          case_id?: string
+          circuit_name?: string | null
+          company_id?: string
+          court_name?: string | null
+          created_at?: string
+          created_by?: string | null
+          decision?: string | null
+          document_id?: string | null
+          hearing_date?: string
+          hearing_type?: string | null
+          id?: string
+          judge_name?: string | null
+          next_hearing_date?: string | null
+          notes?: string | null
+          requirements?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "legal_case_hearings_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "legal_cases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "legal_case_hearings_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "legal_judgment_settlements_v1"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "legal_case_hearings_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "legal_case_hearings_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "dispute_dashboard_stats"
+            referencedColumns: ["company_id"]
+          },
+          {
+            foreignKeyName: "legal_case_hearings_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "legal_case_documents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      legal_case_litigation_profile: {
+        Row: {
+          fixed_compensation_requested: boolean
+          retention_calculation_basis: string
+          retention_proration_basis: string
+          approved_at: string | null
+          approved_by: string | null
+          approval_job_id: string | null
+          approval_source: string | null
+          approval_worker_id: string | null
+          apply_security_deposit: boolean
+          case_id: string | null
+          company_id: string
+          contract_id: string
+          contractual_compensation_cap: number | null
+          contractual_compensation_clause_number: string | null
+          contractual_compensation_clause_text: string | null
+          contractual_compensation_document_id: string | null
+          contractual_compensation_enabled: boolean
+          contractual_compensation_method: string | null
+          contractual_compensation_rate: number | null
+          created_at: string
+          created_by: string | null
+          delivery_handover_date: string | null
+          delivery_handover_document_id: string | null
+          defendant_contact_document_id: string | null
+          defendant_contact_source: string | null
+          defendant_email: string | null
+          defendant_email_status: string
+          defendant_service_address: string | null
+          id: string
+          legal_review_status: string
+          notes: string | null
+          notice_exception_clause_or_reason: string | null
+          notice_exception_document_id: string | null
+          notice_exception_type: string | null
+          payment_clause_number: string | null
+          rescission_strategy: string
+          renewed_end_date: string | null
+          renewal_applies: boolean
+          rent_due_day: number | null
+          return_clause_number: string | null
+          retention_daily_rate: number | null
+          retention_rate_source: string | null
+          retention_rate_source_ref: string | null
+          retention_rate_source_document_id: string | null
+          security_deposit_amount: number | null
+          termination_date: string | null
+          termination_clause_number: string | null
+          termination_clause_text: string | null
+          termination_date_source: string | null
+          termination_date_status: string
+          termination_supporting_document_id: string | null
+          termination_type: string | null
+          updated_at: string
+          vehicle_custody: string
+          vehicle_return_document_id: string | null
+          vehicle_returned_at: string | null
+          violations_clause_number: string | null
+        }
+        Insert: {
+          retention_calculation_basis?: string
+          retention_proration_basis?: string
+          approved_at?: string | null
+          approved_by?: string | null
+          approval_job_id?: string | null
+          approval_source?: string | null
+          approval_worker_id?: string | null
+          apply_security_deposit?: boolean
+          case_id?: string | null
+          company_id: string
+          contract_id: string
+          contractual_compensation_cap?: number | null
+          contractual_compensation_clause_number?: string | null
+          contractual_compensation_clause_text?: string | null
+          contractual_compensation_document_id?: string | null
+          contractual_compensation_enabled?: boolean
+          fixed_compensation_requested?: boolean
+          contractual_compensation_method?: string | null
+          contractual_compensation_rate?: number | null
+          created_at?: string
+          created_by?: string | null
+          delivery_handover_date?: string | null
+          delivery_handover_document_id?: string | null
+          defendant_contact_document_id?: string | null
+          defendant_contact_source?: string | null
+          defendant_email?: string | null
+          defendant_email_status?: string
+          defendant_service_address?: string | null
+          id?: string
+          legal_review_status?: string
+          notes?: string | null
+          notice_exception_clause_or_reason?: string | null
+          notice_exception_document_id?: string | null
+          notice_exception_type?: string | null
+          payment_clause_number?: string | null
+          rescission_strategy?: string
+          renewed_end_date?: string | null
+          renewal_applies?: boolean
+          rent_due_day?: number | null
+          return_clause_number?: string | null
+          retention_daily_rate?: number | null
+          retention_rate_source?: string | null
+          retention_rate_source_ref?: string | null
+          retention_rate_source_document_id?: string | null
+          security_deposit_amount?: number | null
+          termination_date?: string | null
+          termination_clause_number?: string | null
+          termination_clause_text?: string | null
+          termination_date_source?: string | null
+          termination_date_status?: string
+          termination_supporting_document_id?: string | null
+          termination_type?: string | null
+          updated_at?: string
+          vehicle_custody?: string
+          vehicle_return_document_id?: string | null
+          vehicle_returned_at?: string | null
+          violations_clause_number?: string | null
+        }
+        Update: {
+          retention_calculation_basis?: string
+          retention_proration_basis?: string
+          approved_at?: string | null
+          approved_by?: string | null
+          approval_job_id?: string | null
+          approval_source?: string | null
+          approval_worker_id?: string | null
+          apply_security_deposit?: boolean
+          case_id?: string | null
+          company_id?: string
+          contract_id?: string
+          contractual_compensation_cap?: number | null
+          contractual_compensation_clause_number?: string | null
+          contractual_compensation_clause_text?: string | null
+          contractual_compensation_document_id?: string | null
+          contractual_compensation_enabled?: boolean
+          fixed_compensation_requested?: boolean
+          contractual_compensation_method?: string | null
+          contractual_compensation_rate?: number | null
+          created_at?: string
+          created_by?: string | null
+          delivery_handover_date?: string | null
+          delivery_handover_document_id?: string | null
+          defendant_contact_document_id?: string | null
+          defendant_contact_source?: string | null
+          defendant_email?: string | null
+          defendant_email_status?: string
+          defendant_service_address?: string | null
+          id?: string
+          legal_review_status?: string
+          notes?: string | null
+          notice_exception_clause_or_reason?: string | null
+          notice_exception_document_id?: string | null
+          notice_exception_type?: string | null
+          payment_clause_number?: string | null
+          rescission_strategy?: string
+          renewed_end_date?: string | null
+          renewal_applies?: boolean
+          rent_due_day?: number | null
+          return_clause_number?: string | null
+          retention_daily_rate?: number | null
+          retention_rate_source?: string | null
+          retention_rate_source_ref?: string | null
+          retention_rate_source_document_id?: string | null
+          security_deposit_amount?: number | null
+          termination_date?: string | null
+          termination_clause_number?: string | null
+          termination_clause_text?: string | null
+          termination_date_source?: string | null
+          termination_date_status?: string
+          termination_supporting_document_id?: string | null
+          termination_type?: string | null
+          updated_at?: string
+          vehicle_custody?: string
+          vehicle_return_document_id?: string | null
+          vehicle_returned_at?: string | null
+          violations_clause_number?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "legal_case_litigation_profile_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "legal_cases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "legal_case_litigation_profile_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "legal_judgment_settlements_v1"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "legal_case_litigation_profile_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "legal_case_litigation_profile_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "dispute_dashboard_stats"
+            referencedColumns: ["company_id"]
+          },
+          {
+            foreignKeyName: "legal_case_litigation_profile_contract_id_fkey"
+            columns: ["contract_id"]
+            isOneToOne: false
+            referencedRelation: "contract_payment_health_dashboard"
+            referencedColumns: ["contract_id"]
+          },
+          {
+            foreignKeyName: "legal_case_litigation_profile_contract_id_fkey"
+            columns: ["contract_id"]
+            isOneToOne: false
+            referencedRelation: "contract_payment_summary"
+            referencedColumns: ["contract_id"]
+          },
+          {
+            foreignKeyName: "legal_case_litigation_profile_contract_id_fkey"
+            columns: ["contract_id"]
+            isOneToOne: false
+            referencedRelation: "contracts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "legal_case_litigation_profile_contract_id_fkey"
+            columns: ["contract_id"]
+            isOneToOne: false
+            referencedRelation: "contracts_complete"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "legal_case_litigation_profile_contract_id_fkey"
+            columns: ["contract_id"]
+            isOneToOne: false
+            referencedRelation: "invoice_payment_timeline"
+            referencedColumns: ["contract_id"]
+          },
+          {
+            foreignKeyName: "legal_case_litigation_profile_delivery_handover_document_i_fkey"
+            columns: ["delivery_handover_document_id"]
+            isOneToOne: false
+            referencedRelation: "contract_documents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "legal_case_litigation_profile_delivery_handover_document_i_fkey"
+            columns: ["delivery_handover_document_id"]
+            isOneToOne: false
+            referencedRelation: "pending_contract_matches"
+            referencedColumns: ["document_id"]
+          },
+          {
+            foreignKeyName: "legal_case_litigation_profile_termination_supporting_docum_fkey"
+            columns: ["termination_supporting_document_id"]
+            isOneToOne: false
+            referencedRelation: "contract_documents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "legal_case_litigation_profile_termination_supporting_docum_fkey"
+            columns: ["termination_supporting_document_id"]
+            isOneToOne: false
+            referencedRelation: "pending_contract_matches"
+            referencedColumns: ["document_id"]
+          },
+        ]
+      }
+      legal_case_memo_snapshots: {
+        Row: {
+          approved_at: string | null
+          approved_by: string | null
+          approval_job_id: string | null
+          approval_source: string | null
+          approval_worker_id: string | null
+          case_id: string | null
+          company_id: string
+          contract_id: string
+          created_at: string
+          created_by: string | null
+          document_reference: string
+          facts_as_of_date: string
+          filing_date: string | null
+          id: string
+          legal_path: string
+          payload: Json
+          readiness_issues: string[]
+          readiness_status: string
+          template_version: string
+          version: number
+        }
+        Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
+          approval_job_id?: string | null
+          approval_source?: string | null
+          approval_worker_id?: string | null
+          case_id?: string | null
+          company_id: string
+          contract_id: string
+          created_at?: string
+          created_by?: string | null
+          document_reference: string
+          facts_as_of_date: string
+          filing_date?: string | null
+          id?: string
+          legal_path: string
+          payload: Json
+          readiness_issues?: string[]
+          readiness_status: string
+          template_version?: string
+          version: number
+        }
+        Update: {
+          approved_at?: string | null
+          approved_by?: string | null
+          approval_job_id?: string | null
+          approval_source?: string | null
+          approval_worker_id?: string | null
+          case_id?: string | null
+          company_id?: string
+          contract_id?: string
+          created_at?: string
+          created_by?: string | null
+          document_reference?: string
+          facts_as_of_date?: string
+          filing_date?: string | null
+          id?: string
+          legal_path?: string
+          payload?: Json
+          readiness_issues?: string[]
+          readiness_status?: string
+          template_version?: string
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "legal_case_memo_snapshots_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "legal_cases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "legal_case_memo_snapshots_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "legal_case_memo_snapshots_contract_id_fkey"
+            columns: ["contract_id"]
+            isOneToOne: false
+            referencedRelation: "contracts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      legal_case_payment_allocations: {
+        Row: {
+          allocated_amount: number
+          case_id: string
+          company_id: string
+          confidence: number | null
+          created_at: string
+          id: string
+          link_reason: string | null
+          link_source: string
+          linked_at: string
+          linked_by: string | null
+          payment_id: string
+          reversal_reason: string | null
+          reversed_at: string | null
+          reversed_by: string | null
+          source_legal_case_payment_id: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          allocated_amount: number
+          case_id: string
+          company_id: string
+          confidence?: number | null
+          created_at?: string
+          id?: string
+          link_reason?: string | null
+          link_source?: string
+          linked_at?: string
+          linked_by?: string | null
+          payment_id: string
+          reversal_reason?: string | null
+          reversed_at?: string | null
+          reversed_by?: string | null
+          source_legal_case_payment_id?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          allocated_amount?: number
+          case_id?: string
+          company_id?: string
+          confidence?: number | null
+          created_at?: string
+          id?: string
+          link_reason?: string | null
+          link_source?: string
+          linked_at?: string
+          linked_by?: string | null
+          payment_id?: string
+          reversal_reason?: string | null
+          reversed_at?: string | null
+          reversed_by?: string | null
+          source_legal_case_payment_id?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "legal_case_payment_allocation_source_legal_case_payment_id_fkey"
+            columns: ["source_legal_case_payment_id"]
+            isOneToOne: true
+            referencedRelation: "legal_case_payments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "legal_case_payment_allocations_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "legal_cases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "legal_case_payment_allocations_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "legal_judgment_settlements_v1"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "legal_case_payment_allocations_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "legal_case_payment_allocations_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "dispute_dashboard_stats"
+            referencedColumns: ["company_id"]
+          },
+          {
+            foreignKeyName: "legal_case_payment_allocations_linked_by_fkey"
+            columns: ["linked_by"]
+            isOneToOne: false
+            referencedRelation: "employee_capacity_view"
+            referencedColumns: ["employee_id"]
+          },
+          {
+            foreignKeyName: "legal_case_payment_allocations_linked_by_fkey"
+            columns: ["linked_by"]
+            isOneToOne: false
+            referencedRelation: "employee_performance_view"
+            referencedColumns: ["employee_id"]
+          },
+          {
+            foreignKeyName: "legal_case_payment_allocations_linked_by_fkey"
+            columns: ["linked_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "legal_case_payment_allocations_payment_id_fkey"
+            columns: ["payment_id"]
+            isOneToOne: false
+            referencedRelation: "payments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "legal_case_payment_allocations_reversed_by_fkey"
+            columns: ["reversed_by"]
+            isOneToOne: false
+            referencedRelation: "employee_capacity_view"
+            referencedColumns: ["employee_id"]
+          },
+          {
+            foreignKeyName: "legal_case_payment_allocations_reversed_by_fkey"
+            columns: ["reversed_by"]
+            isOneToOne: false
+            referencedRelation: "employee_performance_view"
+            referencedColumns: ["employee_id"]
+          },
+          {
+            foreignKeyName: "legal_case_payment_allocations_reversed_by_fkey"
+            columns: ["reversed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       legal_cases: {
         Row: {
           billing_status: string | null
@@ -15877,6 +17098,7 @@ export type Database = {
           case_title_ar: string | null
           case_type: string
           case_value: number | null
+          claim_scope: string
           closed_at: string | null
           closure_reason: string | null
           client_email: string | null
@@ -15934,6 +17156,7 @@ export type Database = {
           case_title_ar?: string | null
           case_type?: string
           case_value?: number | null
+          claim_scope?: string
           closed_at?: string | null
           closure_reason?: string | null
           client_email?: string | null
@@ -15991,6 +17214,7 @@ export type Database = {
           case_title_ar?: string | null
           case_type?: string
           case_value?: number | null
+          claim_scope?: string
           closed_at?: string | null
           closure_reason?: string | null
           client_email?: string | null
@@ -16651,6 +17875,145 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      legal_notice_agent_jobs: {
+        Row: {
+          amount_due: number
+          attempts: number
+          company_id: string
+          contract_id: string
+          contract_number: string
+          created_at: string
+          customer_id: string
+          customer_name: string
+          cycle_key: string
+          delivered_at: string | null
+          formal_notice_id: string | null
+          grace_period_days: number
+          id: string
+          last_error: string | null
+          message_body: string
+          message_sha256: string
+          notice_type: string
+          oldest_due_date: string
+          phone_e164: string
+          proof_document_id: string | null
+          provider: string
+          provider_message_id: string | null
+          provider_payload: Json
+          provider_status: string | null
+          read_at: string | null
+          sent_at: string | null
+          source_invoice_ids: string[]
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          amount_due: number
+          attempts?: number
+          company_id: string
+          contract_id: string
+          contract_number: string
+          created_at?: string
+          customer_id: string
+          customer_name: string
+          cycle_key: string
+          delivered_at?: string | null
+          formal_notice_id?: string | null
+          grace_period_days?: number
+          id?: string
+          last_error?: string | null
+          message_body: string
+          message_sha256: string
+          notice_type?: string
+          oldest_due_date: string
+          phone_e164: string
+          proof_document_id?: string | null
+          provider?: string
+          provider_message_id?: string | null
+          provider_payload?: Json
+          provider_status?: string | null
+          read_at?: string | null
+          sent_at?: string | null
+          source_invoice_ids: string[]
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          amount_due?: number
+          attempts?: number
+          company_id?: string
+          contract_id?: string
+          contract_number?: string
+          created_at?: string
+          customer_id?: string
+          customer_name?: string
+          cycle_key?: string
+          delivered_at?: string | null
+          formal_notice_id?: string | null
+          grace_period_days?: number
+          id?: string
+          last_error?: string | null
+          message_body?: string
+          message_sha256?: string
+          notice_type?: string
+          oldest_due_date?: string
+          phone_e164?: string
+          proof_document_id?: string | null
+          provider?: string
+          provider_message_id?: string | null
+          provider_payload?: Json
+          provider_status?: string | null
+          read_at?: string | null
+          sent_at?: string | null
+          source_invoice_ids?: string[]
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "legal_notice_agent_jobs_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "legal_notice_agent_jobs_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "dispute_dashboard_stats"
+            referencedColumns: ["company_id"]
+          },
+          {
+            foreignKeyName: "legal_notice_agent_jobs_contract_id_fkey"
+            columns: ["contract_id"]
+            isOneToOne: false
+            referencedRelation: "contracts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "legal_notice_agent_jobs_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "legal_notice_agent_jobs_formal_notice_id_fkey"
+            columns: ["formal_notice_id"]
+            isOneToOne: false
+            referencedRelation: "legal_case_formal_notices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "legal_notice_agent_jobs_proof_document_id_fkey"
+            columns: ["proof_document_id"]
+            isOneToOne: false
+            referencedRelation: "contract_documents"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       legal_repayment_plans: {
         Row: {
@@ -18593,6 +19956,9 @@ export type Database = {
           amount: number
           company_id: string
           company_paid_date: string | null
+          case_follow_up: boolean
+          case_follow_up_at: string | null
+          case_follow_up_source: string | null
           contract_id: string | null
           created_at: string | null
           created_by: string | null
@@ -18605,6 +19971,7 @@ export type Database = {
           payment_status: string | null
           penalty_date: string
           penalty_number: string
+          responsibility_party: string | null
           reason: string | null
           status: string | null
           updated_at: string | null
@@ -18616,6 +19983,9 @@ export type Database = {
           amount?: number
           company_id: string
           company_paid_date?: string | null
+          case_follow_up?: boolean
+          case_follow_up_at?: string | null
+          case_follow_up_source?: string | null
           contract_id?: string | null
           created_at?: string | null
           created_by?: string | null
@@ -18628,6 +19998,7 @@ export type Database = {
           payment_status?: string | null
           penalty_date: string
           penalty_number: string
+          responsibility_party?: string | null
           reason?: string | null
           status?: string | null
           updated_at?: string | null
@@ -18639,6 +20010,9 @@ export type Database = {
           amount?: number
           company_id?: string
           company_paid_date?: string | null
+          case_follow_up?: boolean
+          case_follow_up_at?: string | null
+          case_follow_up_source?: string | null
           contract_id?: string | null
           created_at?: string | null
           created_by?: string | null
@@ -18651,6 +20025,7 @@ export type Database = {
           payment_status?: string | null
           penalty_date?: string
           penalty_number?: string
+          responsibility_party?: string | null
           reason?: string | null
           status?: string | null
           updated_at?: string | null
@@ -23233,6 +24608,7 @@ export type Database = {
           liability_journal_entry_id: string | null
           liability_recognized_at: string | null
           location: string | null
+          manual_request_id: string | null
           match_confidence: string | null
           notes: string | null
           original_contract_number: string | null
@@ -23267,6 +24643,7 @@ export type Database = {
           liability_journal_entry_id?: string | null
           liability_recognized_at?: string | null
           location?: string | null
+          manual_request_id?: string | null
           match_confidence?: string | null
           notes?: string | null
           original_contract_number?: string | null
@@ -23301,6 +24678,7 @@ export type Database = {
           liability_journal_entry_id?: string | null
           liability_recognized_at?: string | null
           location?: string | null
+          manual_request_id?: string | null
           match_confidence?: string | null
           notes?: string | null
           original_contract_number?: string | null
@@ -26738,6 +28116,30 @@ export type Database = {
       }
     }
     Views: {
+      active_revenue_payments_v1: {
+        Row: {
+          amount: number | null
+          company_id: string | null
+          contract_id: string | null
+          contract_number: string | null
+          contract_status: string | null
+          created_at: string | null
+          currency: string | null
+          customer_id: string | null
+          id: string | null
+          invoice_id: string | null
+          payment_date: string | null
+          payment_method: string | null
+          payment_number: string | null
+          payment_status: string | null
+          payment_type: string | null
+          transaction_type:
+            | Database["public"]["Enums"]["transaction_type"]
+            | null
+          vendor_id: string | null
+        }
+        Relationships: []
+      }
       ab_test_comparison: {
         Row: {
           avg_click_rate: number | null
@@ -28539,6 +29941,53 @@ export type Database = {
       }
     }
     Functions: {
+      check_taqadi_filing_control_v1: {
+        Args: { p_job_id: string; p_worker_id: string; p_acknowledge?: boolean }
+        Returns: Json
+      }
+      sync_taqadi_approved_case_value_v1: {
+        Args: { p_job_id: string; p_worker_id: string }
+        Returns: undefined
+      }
+      review_contract_document_identity_v1: {
+        Args: {
+          p_company_id: string
+          p_contract_id: string
+          p_document_id: string
+          p_revision?: string
+          p_observed_id?: string
+          p_reason?: string
+          p_confirmed?: boolean
+        }
+        Returns: Json
+      }
+      amend_contract_vehicle_and_extension_atomic: {
+        Args: {
+          p_company_id: string
+          p_contract_id: string
+          p_expected_updated_at: string
+          p_vehicle_id: string
+          p_end_date: string
+          p_description: string | null
+        }
+        Returns: Json
+      }
+      freeze_legal_case_memo_snapshot: {
+        Args: {
+          p_approve?: boolean
+          p_case_id: string | null
+          p_company_id: string
+          p_contract_id: string
+          p_facts_as_of_date: string
+          p_filing_date: string | null
+          p_legal_path: string
+          p_payload: Json
+          p_readiness_issues: string[]
+          p_readiness_status: string
+          p_template_version?: string
+        }
+        Returns: Database["public"]["Tables"]["legal_case_memo_snapshots"]["Row"]
+      }
       act_on_financial_approval_step: {
         Args: {
           p_action: string
@@ -29448,6 +30897,30 @@ export type Database = {
         }
         Returns: Json
       }
+      create_contract_with_violation_override_atomic: {
+        Args: {
+          p_accept_unpaid_violations?: boolean
+          p_assigned_to_profile_id?: string
+          p_auto_renew_enabled?: boolean
+          p_company_id: string
+          p_contract_amount?: number
+          p_contract_date?: string
+          p_contract_type?: string
+          p_cost_center_id?: string
+          p_created_by?: string
+          p_created_via?: string
+          p_customer_id: string
+          p_description?: string
+          p_deposit_amount?: number
+          p_end_date?: string
+          p_idempotency_key?: string
+          p_monthly_amount?: number
+          p_start_date?: string
+          p_terms?: string
+          p_vehicle_id?: string
+        }
+        Returns: Json
+      }
       claim_automated_invoice_reminder_delivery: {
         Args: {
           p_cadence_date: string
@@ -29459,6 +30932,13 @@ export type Database = {
       }
       activate_contract_with_billing_graph_atomic: {
         Args: { p_contract_id: string }
+        Returns: Json
+      }
+      reactivate_cancelled_contract_atomic_v1: {
+        Args: {
+          p_accept_unpaid_violations?: boolean
+          p_contract_id: string
+        }
         Returns: Json
       }
       renew_contract_with_billing_graph_atomic: {
@@ -29772,6 +31252,21 @@ export type Database = {
         }
         Returns: Database["public"]["Tables"]["purchase_orders"]["Row"]
       }
+      create_manual_contract_traffic_violation_v1: {
+        Args: {
+          p_company_id: string
+          p_contract_id: string
+          p_description?: string | null
+          p_fine_amount: number
+          p_idempotency_key: string
+          p_location?: string | null
+          p_vehicle_id: string
+          p_violation_date: string
+          p_violation_number?: string | null
+          p_violation_type: string
+        }
+        Returns: Json
+      }
       create_traffic_violation_payment_with_journal: {
         Args: {
           p_actor_id?: string
@@ -30041,6 +31536,24 @@ export type Database = {
         }
         Returns: string
       }
+      finalize_automatic_formal_notice_delivery_v1: {
+        Args: {
+          p_event_at: string
+          p_job_id: string
+          p_proof_document_id: string
+          p_provider_payload?: Json
+          p_provider_status: string
+        }
+        Returns: undefined
+      }
+      finalize_automatic_formal_notice_dispatch_v1: {
+        Args: {
+          p_job_id: string
+          p_provider_message_id: string
+          p_provider_payload?: Json
+        }
+        Returns: string
+      }
       financial_controls_bypass_enabled: { Args: never; Returns: boolean }
       financial_health_report: {
         Args: never
@@ -30301,6 +31814,10 @@ export type Database = {
         Args: { p_contract_id: string; p_invoice_month: string }
         Returns: Json
       }
+      generate_contract_billing_graph_v2: {
+        Args: { p_contract_id: string }
+        Returns: Json
+      }
       generate_invoices_from_payment_schedule: {
         Args: { p_contract_id: string }
         Returns: number
@@ -30471,6 +31988,21 @@ export type Database = {
           months_behind: number
           outstanding_balance: number
           total_paid: number
+        }[]
+      }
+      get_automatic_formal_notice_live_invoices_v1: {
+        Args: {
+          p_company_id: string
+          p_contract_id: string
+          p_customer_id: string
+          p_invoice_ids: string[]
+        }
+        Returns: {
+          balance_due: number
+          due_date: string
+          id: string
+          invoice_number: string
+          total_amount: number
         }[]
       }
       get_available_customer_accounts: {
@@ -31061,6 +32593,14 @@ export type Database = {
         Args: { p_company_id: string }
         Returns: Json
       }
+      get_financial_workspace_v1: {
+        Args: { p_company_id: string; p_as_of?: string }
+        Returns: Json
+      }
+      get_income_statement_accounts_v1: {
+        Args: { p_company_id: string; p_date_from: string; p_date_to?: string }
+        Returns: Json
+      }
       get_financial_summary: {
         Args: { company_id_param: string; date_from?: string; date_to?: string }
         Returns: {
@@ -31182,6 +32722,13 @@ export type Database = {
       get_learning_stats: {
         Args: { p_company_id: string; p_days?: number }
         Returns: Json
+      }
+      get_legal_notice_webhook_configuration_v1: {
+        Args: never
+        Returns: {
+          webhook_secret: string
+          webhook_url: string
+        }[]
       }
       get_legal_account_mapping: {
         Args: {
@@ -31898,6 +33445,41 @@ export type Database = {
         }
         Returns: Database["public"]["Tables"]["odometer_readings"]["Row"]
       }
+      record_contract_vehicle_return_v1: {
+        Args: {
+          p_actor_id?: string | null
+          p_condition_items?: Json
+          p_contract_id: string
+          p_damage_items?: Json
+          p_damage_points?: Json
+          p_fuel_level: number
+          p_inspection_date: string
+          p_mileage_reading: number
+          p_notes?: string | null
+          p_overall_condition: string
+          p_photos?: Json
+        }
+        Returns: Json
+      }
+      cancel_contract_with_return_and_penalties_v2: {
+        Args: {
+          p_actor_id?: string | null
+          p_company_id: string
+          p_contract_id: string
+          p_reason: string
+          p_return_payload?: Json | null
+          p_transfer_open_penalties_to_company?: boolean
+        }
+        Returns: Json
+      }
+      cancel_traffic_violation_atomic_v1: {
+        Args: {
+          p_actor_id?: string | null
+          p_reason: string
+          p_violation_id: string
+        }
+        Returns: Json
+      }
       post_manual_journal_entry_v1: {
         Args: { p_actor_id?: string; p_company_id: string; p_entry_id: string }
         Returns: Database["public"]["Tables"]["journal_entries"]["Row"]
@@ -31915,6 +33497,16 @@ export type Database = {
       }
       revert_contract_from_legal_v1: {
         Args: { p_actor_id?: string; p_company_id: string; p_contract_id: string; p_reason: string }
+        Returns: Json
+      }
+      revert_contract_from_legal_v2: {
+        Args: {
+          p_actor_id?: string | null
+          p_company_id: string
+          p_contract_id: string
+          p_idempotency_key: string
+          p_reason: string
+        }
         Returns: Json
       }
       resolve_contract_financial_review_v1: {
@@ -31957,6 +33549,21 @@ export type Database = {
         Args: {
           p_actor_id?: string
           p_company_id: string
+          p_customer_name: string
+          p_end_date: string
+          p_notes: string
+          p_reservation_id: string | null
+          p_start_date: string
+          p_status: string
+          p_vehicle_id: string
+        }
+        Returns: Database["public"]["Tables"]["vehicle_reservations"]["Row"]
+      }
+      save_vehicle_reservation_v2: {
+        Args: {
+          p_actor_id?: string
+          p_company_id: string
+          p_customer_id: string
           p_customer_name: string
           p_end_date: string
           p_notes: string
@@ -32054,6 +33661,20 @@ export type Database = {
         Returns: undefined
       }
       refresh_company_stats_cache: { Args: never; Returns: undefined }
+      // Local migration 20260903222544; deployment is verified separately.
+      get_canonical_rental_month_summary_v1: {
+        Args: { p_company_id: string; p_month: string }
+        Returns: Json
+      }
+      get_canonical_rental_arrears_v1: {
+        Args: { p_company_id: string; p_due_as_of?: string }
+        Returns: Json
+      }
+      // Declared by local migration 20260903085138; deployment is checked separately.
+      refresh_contract_financial_state_v1: {
+        Args: { p_contract_id: string }
+        Returns: Json
+      }
       refresh_customer_summary: { Args: never; Returns: undefined }
       regenerate_all_cancelled_contract_invoices: {
         Args: never
@@ -33048,6 +34669,10 @@ export type Database = {
       verify_account_deletion_integrity: {
         Args: { company_id_param: string }
         Returns: Json
+      }
+      verify_ultramsg_webhook_secret_v1: {
+        Args: { p_supplied_secret: string }
+        Returns: boolean
       }
       void_financial_report_snapshot: {
         Args: { p_reason: string; p_snapshot_id: string }

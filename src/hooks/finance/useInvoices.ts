@@ -12,6 +12,7 @@ import { queryKeys } from "@/utils/queryKeys";
 import * as Sentry from '@sentry/react';
 import { useFinanceAccessGuard } from "@/hooks/finance/useFinanceAccessGuard";
 import type { Database } from "@/integrations/supabase/types";
+import { readFinancialPages } from '@/services/financialReporting';
 
 type InvoiceInsert = Database["public"]["Tables"]["invoices"]["Insert"];
 type InvoiceUpdate = Database["public"]["Tables"]["invoices"]["Update"];
@@ -65,6 +66,7 @@ interface InvoiceFilters {
   contractId?: string;
   page?: number;
   pageSize?: number;
+  allPages?: boolean;
 }
 
 // Selected fields for better performance
@@ -114,7 +116,7 @@ export const useInvoices = (filters?: InvoiceFilters) => {
   const { hasPermission } = useSimplePermissions();
 
   return useQuery({
-    queryKey: queryKeys.invoices.list(filters),
+    queryKey: [...queryKeys.invoices.list(filters), companyId],
     queryFn: async () => {
       // Wait for initialization to complete before checking companyId
       if (isInitializing) {
@@ -159,6 +161,7 @@ export const useInvoices = (filters?: InvoiceFilters) => {
           if (filters?.customerId) {
             countQuery = countQuery.eq("customer_id", filters.customerId);
           }
+          if (filters?.contractId) countQuery = countQuery.eq('contract_id', filters.contractId);
 
           const { count, error: countError } = await countQuery;
           if (countError) {
@@ -172,7 +175,7 @@ export const useInvoices = (filters?: InvoiceFilters) => {
 
         let query = supabase
           .from("invoices")
-          .select(INVOICE_SELECT_FIELDS)
+          .select(INVOICE_SELECT_FIELDS, { count: 'exact' })
           .eq("company_id", companyId);
 
         if (filters?.type) {
@@ -187,6 +190,7 @@ export const useInvoices = (filters?: InvoiceFilters) => {
         if (filters?.customerId) {
           query = query.eq("customer_id", filters.customerId);
         }
+        if (filters?.contractId) query = query.eq('contract_id', filters.contractId);
 
         // Apply pagination
         if (filters?.page || filters?.pageSize) {
@@ -195,9 +199,11 @@ export const useInvoices = (filters?: InvoiceFilters) => {
           query = query.range(from, to);
         }
 
-        query = query.order("invoice_date", { ascending: false });
+        query = query.order("invoice_date", { ascending: false }).order('id');
 
-        const { data, error } = await query;
+        const { data, error } = filters?.allPages
+          ? { data: await readFinancialPages((from, to) => query.range(from, to)), error: null }
+          : await query;
         if (error) {
           Sentry.captureException(error, {
             tags: { operation: 'fetch_invoices' }

@@ -19,6 +19,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { calculateCanonicalBillingMonths } from '@/utils/contractCalculations';
+import { useRentalViolationOverride } from '@/contexts/RentalViolationOverrideContext';
+import { RentalEligibilityBanner, RentalEligibilityNotice } from '@/components/contracts/RentalEligibilityBanner';
 
 import { useFleetifyTranslation } from "@/hooks/useTranslation";
 interface Customer {
@@ -72,6 +74,7 @@ const MobileContractWizard: React.FC = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const { confirmRentalEligibility } = useRentalViolationOverride();
   const [currentStep, setCurrentStep] = useState<Step>(1);
   const [loading, setLoading] = useState(false);
   const contractCreationKeyRef = useRef<string | null>(null);
@@ -213,12 +216,19 @@ const MobileContractWizard: React.FC = () => {
     try {
       const companyId = user?.profile?.company_id || user?.company?.id || '';
 
+      const confirmation = await confirmRentalEligibility({
+        companyId,
+        vehicleId: formData.vehicleId,
+        customerId: formData.customerId,
+      });
+      if (!confirmation) return;
+
       const contractAmount = calculateTotalAmount();
       const monthlyAmount = formData.contractType === 'monthly'
         ? formData.monthlyAmount
         : contractAmount;
       const { data: creationResult, error } = await supabase.rpc(
-        'create_contract_with_billing_graph_atomic',
+        'create_contract_with_violation_override_atomic',
         {
           p_company_id: companyId,
           p_customer_id: formData.customerId,
@@ -235,6 +245,7 @@ const MobileContractWizard: React.FC = () => {
           p_created_via: 'mobile',
           p_idempotency_key: contractCreationKeyRef.current
             ?? (contractCreationKeyRef.current = `contract:${crypto.randomUUID()}`),
+          p_accept_unpaid_violations: confirmation.acceptedUnpaidViolations,
         },
       );
 
@@ -249,7 +260,7 @@ const MobileContractWizard: React.FC = () => {
       navigate('/mobile/contracts');
     } catch (error) {
       console.error('Error creating contract:', error);
-      alert('فشل إنشاء العقد');
+      alert(error instanceof Error ? error.message : 'فشل إنشاء العقد');
     } finally {
       setLoading(false);
     }
@@ -299,6 +310,13 @@ const MobileContractWizard: React.FC = () => {
 
       {/* Content */}
       <div className="px-4 py-6" style={{ paddingBottom: 'calc(80px + env(safe-area-inset-bottom))' }}>
+        {currentStep === 1 && <RentalEligibilityNotice className="mb-4" />}
+        <RentalEligibilityBanner
+          companyId={user?.profile?.company_id || user?.company?.id}
+          vehicleId={formData.vehicleId}
+          customerId={formData.customerId}
+          className="mb-4"
+        />
         <AnimatePresence mode="wait">
           {currentStep === 1 && (
             <Step1CustomerVehicle

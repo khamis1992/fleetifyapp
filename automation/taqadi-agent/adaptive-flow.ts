@@ -45,6 +45,10 @@ export interface AdaptivePortalPlan {
   reason: string;
 }
 
+export function requiresExistingDraft(resumeRequested: boolean, progress: number, action: AdaptivePortalAction) {
+  return resumeRequested && progress >= 44 && action === 'open_new_case';
+}
+
 function isUncontested(position: TaqadiPortalPosition) {
   const runnerUp = position.candidates?.[1];
   if (!runnerUp) return true;
@@ -108,4 +112,16 @@ export function stageReached(
   const actualIndex = stageOrderIndex(actual);
   const expectedIndex = stageOrderIndex(expected);
   return actualIndex >= expectedIndex && expectedIndex >= 0;
+}
+
+export function shouldSubmitFinalAutomatically(input: {
+  canary: boolean;
+  workerFinalApproval: boolean;
+  jobFinalApproval: boolean;
+  payloadFinalApproval: boolean;
+}) {
+  return !input.canary
+    && input.workerFinalApproval
+    && input.jobFinalApproval
+    && input.payloadFinalApproval;
 }

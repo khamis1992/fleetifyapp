@@ -9,23 +9,26 @@
  * Body: { companyId }
  */
 
-import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2";
 import {
   agentCorsHeaders,
-  authorizeAgent,
+  AgentInvocationContext,
+  authorizeScheduledAgent,
   createServiceClient,
+  finishAgentExecution,
   jsonResponse,
   storeAgentReview,
 } from "../_shared/agent.ts";
 
-serve(async (req) => {
+Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: agentCorsHeaders });
 
+  let invocation: AgentInvocationContext | null = null;
+  let executionFailed = false;
   try {
-    await authorizeAgent(req);
     const body = await req.json().catch(() => ({}));
     if (!body.companyId) throw new Error("companyId is required");
+    invocation = await authorizeScheduledAgent(req, "nightly-ops-auditor", body.companyId);
 
     const supabase = createServiceClient();
     const findings = await collectFindings(supabase, body.companyId);
@@ -50,8 +53,16 @@ serve(async (req) => {
 
     return jsonResponse({ success: true, findings: findings.length, tasksCreated });
   } catch (error) {
+    executionFailed = true;
     const message = error instanceof Error ? error.message : "Unknown error";
     return jsonResponse({ success: false, error: message }, message === "Unauthorized" ? 401 : 500);
+  } finally {
+    if (invocation) {
+      await finishAgentExecution(
+        createServiceClient(), invocation, !executionFailed, {},
+        executionFailed ? "nightly_ops_audit_failed" : null,
+      ).catch(() => undefined);
+    }
   }
 });
 

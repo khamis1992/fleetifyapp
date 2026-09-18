@@ -12,13 +12,13 @@ import {
   Eye,
   Edit,
   Trash2,
-  Filter,
   Search
 } from "lucide-react";
 import { format } from "date-fns";
 import { ar } from "date-fns/locale";
+import { OperationsPanel } from '@/components/operations/OperationsWorkspace';
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -92,9 +92,8 @@ const requestTypeConfig = {
   other: "أخرى"
 };
 
-export function DispatchPermitsList({ onEditPermit }: { onEditPermit?: (permitId: string) => void }) {
+export function DispatchPermitsList({ onEditPermit }: { onEditPermit: (permitId: string) => void }) {
   const [selectedPermit, setSelectedPermit] = useState<string | null>(null);
-  const [permitToEdit, setPermitToEdit] = useState<string | null>(null);
   const [permitToDelete, setPermitToDelete] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
@@ -114,7 +113,7 @@ export function DispatchPermitsList({ onEditPermit }: { onEditPermit?: (permitId
         description: "تم حذف تصريح الحركة بنجاح",
       });
       setPermitToDelete(null);
-    } catch (error) {
+    } catch {
       toast({
         title: "خطأ في الحذف",
         description: "حدث خطأ أثناء حذف تصريح الحركة",
@@ -123,12 +122,12 @@ export function DispatchPermitsList({ onEditPermit }: { onEditPermit?: (permitId
     }
   };
 
-  const canEdit = (permit: any) => {
+  const canEdit = (permit: { status: string }) => {
     // يمكن التعديل فقط إذا كان التصريح في حالة pending أو rejected
     return permit.status === 'pending' || permit.status === 'rejected';
   };
 
-  const canDelete = (permit: any) => {
+  const canDelete = (permit: { status: string }) => {
     // يمكن الحذف فقط إذا لم يكن التصريح مكتملاً أو قيد التنفيذ
     return permit.status !== 'completed' && permit.status !== 'in_progress';
   };
@@ -167,28 +166,20 @@ export function DispatchPermitsList({ onEditPermit }: { onEditPermit?: (permitId
 
   return (
     <div className="space-y-6" dir="rtl">
-      {/* Filters */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Filter className="h-5 w-5" />
-            البحث والتصفية
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+      <OperationsPanel title="سجل تصاريح الحركة" description="ابحث عن تصريح أو مركبة، وصفِّ السجل حسب الحالة والأولوية.">
+          <div className="ad-dispatch-filters">
+            <div className="opw-search">
+              <Search className="h-4 w-4" />
               <Input
-                placeholder="البحث برقم التصريح، الغرض، المركبة..."
+                aria-label="البحث في تصاريح الحركة" placeholder="رقم التصريح، الغرض، المركبة..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
+                className="pr-10"
               />
             </div>
             
             <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger>
+              <SelectTrigger aria-label="حالة التصريح">
                 <SelectValue placeholder="الحالة" />
               </SelectTrigger>
               <SelectContent>
@@ -202,7 +193,7 @@ export function DispatchPermitsList({ onEditPermit }: { onEditPermit?: (permitId
             </Select>
 
             <Select value={priorityFilter} onValueChange={setPriorityFilter}>
-              <SelectTrigger>
+              <SelectTrigger aria-label="أولوية التصريح">
                 <SelectValue placeholder="الأولوية" />
               </SelectTrigger>
               <SelectContent>
@@ -215,17 +206,14 @@ export function DispatchPermitsList({ onEditPermit }: { onEditPermit?: (permitId
               </SelectContent>
             </Select>
 
-            <div className="flex items-center text-sm text-muted-foreground">
-              عدد النتائج: {filteredPermits.length}
-            </div>
+            <p className="text-xs text-muted-foreground" role="status">{filteredPermits.length} تصريح</p>
           </div>
-        </CardContent>
-      </Card>
+      </OperationsPanel>
 
       {/* Permits List */}
-      <div className="grid gap-4">
+      <div className="ad-dispatch-grid">
         {filteredPermits.length === 0 ? (
-          <Card>
+          <Card className="col-span-full">
             <CardContent className="flex flex-col items-center justify-center py-12">
               <FileText className="h-12 w-12 text-muted-foreground mb-4" />
               <h3 className="text-lg font-semibold mb-2">لا توجد تصاريح</h3>
@@ -241,16 +229,14 @@ export function DispatchPermitsList({ onEditPermit }: { onEditPermit?: (permitId
             const StatusIcon = statusInfo?.icon || AlertCircle;
 
             return (
-              <Card key={permit.id} className="hover:shadow-md transition-shadow">
+              <Card key={permit.id} className="ad-permit-card">
                 <CardContent className="p-6">
-                  <div className="flex items-start justify-between mb-4">
+                  <div className="ad-permit-heading">
                     <div className="flex items-center gap-3">
                       <div className="flex flex-col">
                         <div className="flex items-center gap-2">
                           <FileText className="h-5 w-5 text-primary" />
-                          <span className="font-semibold text-lg">
-                            {permit.permit_number}
-                          </span>
+                          <button className="ad-permit-number" onClick={() => setSelectedPermit(permit.id)} aria-label={`فتح التصريح ${permit.permit_number}`}><bdi>{permit.permit_number}</bdi></button>
                         </div>
                         <div className="flex items-center gap-2 text-sm text-muted-foreground">
                           <Calendar className="h-4 w-4" />
@@ -271,7 +257,7 @@ export function DispatchPermitsList({ onEditPermit }: { onEditPermit?: (permitId
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+                  <div className="ad-permit-details">
                     <div className="flex items-center gap-2">
                       <Car className="h-4 w-4 text-muted-foreground" />
                       <div>
@@ -317,7 +303,7 @@ export function DispatchPermitsList({ onEditPermit }: { onEditPermit?: (permitId
 
                   <Separator className="my-4" />
 
-                  <div className="flex items-center justify-between">
+                  <div className="ad-permit-footer">
                     <div className="flex items-center gap-4 text-sm text-muted-foreground">
                       <div className="flex items-center gap-1">
                         <Calendar className="h-4 w-4" />
@@ -336,6 +322,7 @@ export function DispatchPermitsList({ onEditPermit }: { onEditPermit?: (permitId
                       <Button
                         variant="outline"
                         size="sm"
+                        aria-label={`عرض تفاصيل التصريح ${permit.permit_number}`}
                         onClick={() => setSelectedPermit(permit.id)}
                       >
                         <Eye className="h-4 w-4 mr-1" />
@@ -346,13 +333,8 @@ export function DispatchPermitsList({ onEditPermit }: { onEditPermit?: (permitId
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => {
-                            if (onEditPermit) {
-                              onEditPermit(permit.id);
-                            } else {
-                              setPermitToEdit(permit.id);
-                            }
-                          }}
+                          aria-label={`تعديل التصريح ${permit.permit_number}`}
+                          onClick={() => onEditPermit(permit.id)}
                         >
                           <Edit className="h-4 w-4 mr-1" />
                           تعديل
@@ -363,7 +345,7 @@ export function DispatchPermitsList({ onEditPermit }: { onEditPermit?: (permitId
                         <Button
                           variant="destructive"
                           size="sm"
-                          onClick={() => setPermitToDelete(permit.id)}
+                          aria-label={`حذف التصريح ${permit.permit_number}`} onClick={() => setPermitToDelete(permit.id)}
                         >
                           <Trash2 className="h-4 w-4 mr-1" />
                           حذف

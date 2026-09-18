@@ -83,21 +83,24 @@ export const QuickNotes: React.FC<QuickNotesProps> = ({
   });
   const [selectedColor, setSelectedColor] = React.useState(noteColors[0]);
 
-  const { data: notes = [], isLoading } = useQuickNotes(showArchived);
+  const [archiveView,setArchiveView] = React.useState(showArchived);
+  const [search,setSearch] = React.useState('');
+  const { data: notes = [], isLoading, isError, refetch } = useQuickNotes(archiveView);
   const createNote = useCreateNote();
   const togglePin = useToggleNotePin();
   const archiveNote = useArchiveNote();
   const deleteNote = useDeleteNote();
 
-  const displayedNotes = limit ? notes.slice(0, limit) : notes;
+  const filteredNotes = notes.filter(note=>note.is_archived === archiveView && note.content.toLocaleLowerCase().includes(search.trim().toLocaleLowerCase()));
+  const displayedNotes = limit ? filteredNotes.slice(0, limit) : filteredNotes;
 
   const handleAddNote = async () => {
     if (!newNote.content.trim()) return;
 
-    await createNote.mutateAsync({
+    try { await createNote.mutateAsync({
       ...newNote,
       color: selectedColor,
-    });
+    }); } catch { return; }
 
     setNewNote({ content: '', note_type: 'other' });
     setSelectedColor(noteColors[0]);
@@ -222,6 +225,8 @@ export const QuickNotes: React.FC<QuickNotesProps> = ({
       </CardHeader>
 
       <CardContent className={cn(compact && 'px-0 pb-0')}>
+        {!compact&&<div className="tw-personal-tools" role="group" aria-label="عرض الملاحظات"><button aria-pressed={!archiveView} onClick={()=>setArchiveView(false)}>الملاحظات</button><button aria-pressed={archiveView} onClick={()=>setArchiveView(true)}>الأرشيف</button><input aria-label="البحث في الملاحظات" placeholder="ابحث في ملاحظاتك…" value={search} onChange={event=>setSearch(event.target.value)}/></div>}
+        {isError&&<div role="alert" className="tw-query-error">تعذر تحميل الملاحظات <Button variant="outline" onClick={()=>refetch()}>إعادة المحاولة</Button></div>}
         {displayedNotes.length === 0 ? (
           <div className="text-center py-8 text-slate-400">
             <StickyNote className="h-8 w-8 mx-auto mb-2 opacity-50" />

@@ -20,6 +20,7 @@ import NotFound from '@/pages/NotFound';
 // Public pages
 const AboutUs = lazy(() => import('@/pages/AboutUs'));
 const Careers = lazy(() => import('@/pages/Careers'));
+const ContractPdfUploadPage = lazy(() => import('@/pages/public/ContractPdfUploadPage'));
 
 // Demo pages - lazy loaded
 const NativeMobileDemo = lazy(() => import('@/pages/NativeMobileDemo'));
@@ -77,7 +78,7 @@ const InvoiceScannerPage = lazy(() => import('@/pages/InvoiceScannerPage'));
 const FinancialTracking = lazy(() => import('@/pages/FinancialTracking'));
 const SyncPaymentsToLedger = lazy(() => import('@/pages/SyncPaymentsToLedger'));
 const PaymentRegistration = lazy(() => import('@/pages/PaymentRegistration'));
-const QuickPayment = lazy(() => import('@/pages/payments/QuickPayment'));
+const LegacyFinanceRedirect = lazy(() => import('@/pages/finance/LegacyFinanceRedirect'));
 const ExcelPaymentImport = lazy(() => import('@/pages/payments/ExcelPaymentImport'));
 
 // Super Admin pages
@@ -172,6 +173,7 @@ const PrivacyPolicy = lazy(() => import('@/pages/legal/PrivacyPolicy'));
 const TermsAndConditions = lazy(() => import('@/pages/legal/TermsAndConditions'));
 const LegalCasesTracking = lazy(() => import('@/pages/legal/LegalCasesTracking'));
 const DefaultersList = lazy(() => import('@/pages/legal/DefaultersList'));
+const ContractsWithoutSignedLease = lazy(() => import('@/pages/legal/ContractsWithoutSignedLease'));
 const LegalReports = lazy(() => import('@/pages/legal/LegalReports'));
 const LateFees = lazy(() => import('@/pages/legal/LateFees'));
 const WhatsAppReminders = lazy(() => import('@/pages/legal/WhatsAppReminders'));
@@ -302,6 +304,19 @@ const routeConfigs: RouteConfig[] = [
     description: 'Careers and job openings',
     group: 'public',
     priority: 3,
+  },
+  {
+    path: '/contract-upload',
+    component: ContractPdfUploadPage,
+    lazy: true,
+    exact: true,
+    title: 'رفع نسخة العقد الموقعة',
+    description: 'Secure one-time signed contract PDF upload',
+    group: 'public',
+    priority: 4,
+    protected: false,
+    layout: 'none',
+    seo: { noindex: true, nofollow: true },
   },
 
 
@@ -886,7 +901,7 @@ const routeConfigs: RouteConfig[] = [
   },
   {
     path: '/finance/payments/quick',
-    component: QuickPayment,
+    component: LegacyFinanceRedirect,
     lazy: true,
     exact: true,
     title: 'Quick Payment',
@@ -1899,6 +1914,19 @@ const routeConfigs: RouteConfig[] = [
     description: 'Defaulters list',
     group: 'legal',
     priority: 123,
+    protected: true,
+    layout: 'bento',
+    requiredRole: 'admin',
+  },
+  {
+    path: '/legal/contracts-without-signed-lease',
+    component: ContractsWithoutSignedLease,
+    lazy: true,
+    exact: true,
+    title: 'عقود بلا عقد موقع',
+    description: 'Contracts in legal status without signed lease',
+    group: 'legal',
+    priority: 123.5,
     protected: true,
     layout: 'bento',
     requiredRole: 'admin',

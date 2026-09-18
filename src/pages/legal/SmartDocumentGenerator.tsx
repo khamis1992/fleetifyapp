@@ -1,3 +1,4 @@
+import { LegalPageHeader } from '@/components/legal/workspace/LegalPageHeader';
 /**
  * مساعد الكتب الرسمية الذكي
  * Smart Official Document Generator
@@ -237,41 +238,7 @@ export default function SmartDocumentGenerator() {
   return (
     <div className="legal-system min-h-screen">
       <div className="container mx-auto p-6 max-w-4xl">
-        {/* Header */}
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="mb-6"
-        >
-          <Card className="border-0 shadow-card bg-card">
-            <CardContent className="py-5 px-6">
-              <div className="flex items-center gap-4">
-                <div className="p-3 bg-primary rounded-xl">
-                  <Bot className="h-7 w-7 text-primary-foreground" />
-                </div>
-                <div className="flex-1">
-                  <h1 className="text-xl font-bold text-foreground">
-                    مساعد الكتب الرسمية
-                  </h1>
-                  <p className="text-sm text-muted-foreground">
-                    إنشاء الكتب الرسمية بالذكاء الاصطناعي
-                  </p>
-                </div>
-                {messages.length > 0 && (
-                  <Button
-                    onClick={handleRestart}
-                    variant="outline"
-                    size="sm"
-                    className="text-muted-foreground hover:text-foreground"
-                  >
-                    <RefreshCw className="h-4 w-4 ml-2" />
-                    بداية جديدة
-                  </Button>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        </motion.div>
+        <LegalPageHeader title="مساعد الكتب الرسمية" icon={Bot} description="اختر نوع الكتاب، أكمل البيانات، ثم راجع المسودة قبل تنزيلها." actions={messages.length > 0 ? <Button onClick={handleRestart} variant="outline"><RefreshCw className="h-4 w-4 ml-2" />بداية جديدة</Button> : undefined} />
 
         {/* Progress Bar */}
         {selectedTemplate && !isPreview && (
@@ -431,7 +398,7 @@ export default function SmartDocumentGenerator() {
                     onClick={handleSend} 
                     disabled={!inputValue.trim()}
                     className="bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl h-12 px-5 disabled:opacity-50 transition-all"
-                  >
+                   aria-label="إرسال الإجابة" title="إرسال الإجابة">
                     <Send className="h-5 w-5" />
                   </Button>
                 </div>

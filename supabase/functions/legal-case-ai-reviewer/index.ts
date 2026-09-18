@@ -11,31 +11,34 @@
  * Body: { legalCaseId } | { companyId, limit? }
  */
 
-import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { callKimiJson, KIMI_MODEL } from "../_shared/kimi.ts";
 import {
   agentCorsHeaders,
-  authorizeAgent,
+  authorizeGovernedAgent,
   createServiceClient,
+  finishAgentExecution,
   jsonResponse,
   storeAgentReview,
+  type AgentInvocationContext,
 } from "../_shared/agent.ts";
 
-serve(async (req) => {
+Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: agentCorsHeaders });
 
+  let invocation: AgentInvocationContext | null = null;
+  const supabase = createServiceClient();
   try {
-    await authorizeAgent(req);
     const body = await req.json().catch(() => ({}));
-    const supabase = createServiceClient();
+    if (!body.companyId) throw new Error("companyId is required");
+    invocation = await authorizeGovernedAgent(req, "legal-case-ai-reviewer", body.companyId);
 
     if (body.legalCaseId) {
-      const result = await reviewCase(supabase, body.legalCaseId);
+      const result = await reviewCase(supabase, body.companyId, body.legalCaseId);
+      await finishAgentExecution(supabase, invocation, true, { reviewed: 1, verdict: result.verdict });
       return jsonResponse({ success: true, ...result });
     }
 
-    if (!body.companyId) throw new Error("companyId is required");
     const { data: cases, error } = await supabase
       .from("legal_cases")
       .select("id")
@@ -48,7 +51,7 @@ serve(async (req) => {
     const summary = { reviewed: 0, ready: 0, warnings: 0, notReady: 0, errors: 0 };
     for (const legalCase of cases || []) {
       try {
-        const result = await reviewCase(supabase, legalCase.id);
+        const result = await reviewCase(supabase, body.companyId, legalCase.id);
         summary.reviewed++;
         if (result.verdict === "ready") summary.ready++;
         else if (result.verdict === "warning") summary.warnings++;
@@ -58,18 +61,24 @@ serve(async (req) => {
         console.error(`Legal case review failed for ${legalCase.id}:`, caseError);
       }
     }
+    await finishAgentExecution(supabase, invocation, true, summary);
     return jsonResponse({ success: true, ...summary });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unknown error";
+    if (invocation) {
+      await finishAgentExecution(supabase, invocation, false, {}, "legal_case_review_failed")
+        .catch(() => undefined);
+    }
     return jsonResponse({ success: false, error: message }, message === "Unauthorized" ? 401 : 500);
   }
 });
 
-async function reviewCase(supabase: SupabaseClient, legalCaseId: string) {
+async function reviewCase(supabase: SupabaseClient, companyId: string, legalCaseId: string) {
   const { data: legalCase, error } = await supabase
     .from("legal_cases")
     .select("id, company_id, contract_id, client_id, case_number, case_value, client_name, case_status")
     .eq("id", legalCaseId)
+    .eq("company_id", companyId)
     .single();
   if (error || !legalCase) throw new Error("Legal case not found");
 
@@ -94,6 +103,7 @@ async function reviewCase(supabase: SupabaseClient, legalCaseId: string) {
     .from("contracts")
     .select("contract_number, late_fine_amount, customer_id")
     .eq("id", legalCase.contract_id)
+    .eq("company_id", legalCase.company_id)
     .single();
 
   const expectedClaim = invoiceBalance + Number(contract?.late_fine_amount || 0);
@@ -107,13 +117,17 @@ async function reviewCase(supabase: SupabaseClient, legalCaseId: string) {
 
   const { data: documents } = await supabase
     .from("contract_documents")
-    .select("document_type")
+    .select("document_type, legal_identity_match_status")
     .eq("company_id", legalCase.company_id)
     .eq("contract_id", legalCase.contract_id)
     .not("file_path", "is", null);
   const docTypes = new Set((documents || []).map((d) => d.document_type));
-  if (!docTypes.has("signed_contract") && !docTypes.has("signed_contract_image")) {
-    missing.push("نسخة العقد الموقعة غير موجودة");
+  const hasIdentityMatchedSignedContract = (documents || []).some((document) =>
+    ["signed_contract", "signed_contract_image"].includes(document.document_type) &&
+    document.legal_identity_match_status === "matched"
+  );
+  if (!hasIdentityMatchedSignedContract) {
+    missing.push("نسخة عقد موقعة مطابقة لهوية المدعى عليه غير موجودة");
   }
 
   const { count: violationCount } = await supabase
@@ -129,6 +143,7 @@ async function reviewCase(supabase: SupabaseClient, legalCaseId: string) {
     .from("customers")
     .select("national_id, first_name_ar, last_name_ar")
     .eq("id", legalCase.client_id || contract?.customer_id || "")
+    .eq("company_id", legalCase.company_id)
     .maybeSingle();
   if (!customer?.national_id) missing.push("الرقم الشخصي للعميل غير مسجل");
 

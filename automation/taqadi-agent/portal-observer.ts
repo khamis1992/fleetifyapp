@@ -1,5 +1,6 @@
 import type { Page } from 'playwright';
 import type { FilingPayload } from './types';
+import { rememberPortalObservation } from './scrapling-client';
 
 export interface ObservedControl {
   tag: string;
@@ -255,7 +256,7 @@ export async function observeTaqadiPage(
     };
   }, knownValues);
 
-  return {
+  const observation: PortalObservation = {
     capturedAt: new Date().toISOString(),
     url: page.url(),
     title: snapshot.title,
@@ -271,6 +272,10 @@ export async function observeTaqadiPage(
     activeWizardSteps: unique(snapshot.activeWizardSteps),
     activePanels: unique(snapshot.activePanels),
   };
+  // Adaptive memory is optional and fail-open. Never delay page perception or
+  // filing because the local sidecar is absent.
+  void rememberPortalObservation(observation);
+  return observation;
 }
 
 export function summarizeObservation(observation: PortalObservation) {

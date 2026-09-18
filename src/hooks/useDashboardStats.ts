@@ -132,9 +132,9 @@ export const useDashboardStats = () => {
       // Vehicles queries (if enabled)
       if (isVehiclesEnabled) {
         countQueries.push(
+          supabase.from('vehicles').select('*', { count: 'exact', head: true }).eq('company_id', company_id).eq('is_active', true).abortSignal(signal!),
           supabase.from('vehicles').select('*', { count: 'exact', head: true }).eq('company_id', company_id).abortSignal(signal!),
-          supabase.from('vehicles').select('*', { count: 'exact', head: true }).eq('company_id', company_id).abortSignal(signal!),
-          supabase.from('vehicles').select('*', { count: 'exact', head: true }).eq('company_id', company_id).lte('created_at', lastDayPrevMonth.toISOString()).abortSignal(signal!),
+          supabase.from('vehicles').select('*', { count: 'exact', head: true }).eq('company_id', company_id).eq('is_active', true).lte('created_at', lastDayPrevMonth.toISOString()).abortSignal(signal!),
           supabase.from('contracts').select('*', { count: 'exact', head: true }).eq('company_id', company_id).eq('status', 'active').abortSignal(signal!),
           supabase.from('contracts').select('*', { count: 'exact', head: true }).eq('company_id', company_id).abortSignal(signal!),
           supabase.from('contracts').select('*', { count: 'exact', head: true }).eq('company_id', company_id).eq('status', 'active').lte('start_date', lastDayPrevMonth.toISOString().split('T')[0]).or(`end_date.gte.${lastDayPrevMonth.toISOString().split('T')[0]},end_date.is.null`).abortSignal(signal!)
@@ -151,8 +151,8 @@ export const useDashboardStats = () => {
 
       // Customers queries (always run)
       countQueries.push(
-        supabase.from('customers').select('*', { count: 'exact', head: true }).eq('company_id', company_id).abortSignal(signal!),
-        supabase.from('customers').select('*', { count: 'exact', head: true }).eq('company_id', company_id).lte('created_at', lastDayPrevMonth.toISOString()).abortSignal(signal!)
+        supabase.from('customers').select('*', { count: 'exact', head: true }).eq('company_id', company_id).eq('is_active', true).abortSignal(signal!),
+        supabase.from('customers').select('*', { count: 'exact', head: true }).eq('company_id', company_id).eq('is_active', true).lte('created_at', lastDayPrevMonth.toISOString()).abortSignal(signal!)
       );
       
       // Execute all count queries in parallel
@@ -160,8 +160,8 @@ export const useDashboardStats = () => {
       try {
         results = await Promise.all(countQueries);
         console.log('[useDashboardStats] Query results:', {
-          vehiclesCount: results[0]?.count,
-          activeVehiclesCount: results[1]?.count,
+          activeVehiclesCount: results[0]?.count,
+          vehiclesCount: results[1]?.count,
           previousMonthVehicles: results[2]?.count,
           contractsCount: results[3]?.count,
           totalContractsCount: results[4]?.count,
@@ -207,13 +207,14 @@ export const useDashboardStats = () => {
 
       // Vehicle rental revenue (if vehicles module enabled)
       // ✅ تحسين: حساب الإيرادات الفعلية من المدفوعات المستلمة (موحد مع التقارير المالية)
+      // ✅ يستخدم الرؤية الكانونية active_revenue_payments_v1 لاستبعاد دفعات العقود الملغاة
+      //    حتى لا تضخم استيرادات تاريخية إيراد الشهر الجاري
       if (isVehiclesEnabled) {
         // الإيرادات الفعلية = المدفوعات المستلمة في الشهر الحالي
         const { data: currentMonthPayments } = await supabase
-          .from('payments')
-          .select('amount, payment_status')
+          .from('active_revenue_payments_v1')
+          .select('amount')
           .eq('company_id', company_id)
-          .in('payment_status', ['completed', 'paid', 'confirmed'])
           .gte('payment_date', firstDayOfMonth.toISOString().split('T')[0])
           .lte('payment_date', lastDayOfMonth.toISOString().split('T')[0])
           .abortSignal(signal!);
@@ -236,10 +237,9 @@ export const useDashboardStats = () => {
 
         // حساب إيرادات الشهر السابق للمقارنة
         const { data: prevMonthPayments } = await supabase
-          .from('payments')
-          .select('amount, payment_status')
+          .from('active_revenue_payments_v1')
+          .select('amount')
           .eq('company_id', company_id)
-          .in('payment_status', ['completed', 'paid', 'confirmed'])
           .gte('payment_date', firstDayPrevMonth.toISOString().split('T')[0])
           .lte('payment_date', lastDayPrevMonth.toISOString().split('T')[0])
           .abortSignal(signal!);

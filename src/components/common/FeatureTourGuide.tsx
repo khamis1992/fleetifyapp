@@ -1,11 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
 import { CheckCircle2, ChevronLeft, ChevronRight, HelpCircle, MousePointerClick, PlayCircle } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { WorkspaceButton as Button, WorkspaceDialogContent as DialogContent, WorkspaceDialogHeader as DialogHeader } from '@/components/employee-workspace/WorkspacePresentation';
 import {
   Dialog,
-  DialogContent,
   DialogDescription,
-  DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
 

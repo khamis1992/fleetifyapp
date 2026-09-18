@@ -8,14 +8,13 @@
  * Trigger: Cron job or manual invoke
  */
 
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 // ============================================
 // CONFIGURATION
 // ============================================
-const ULTRAMSG_INSTANCE_ID = 'instance148672';
-const ULTRAMSG_TOKEN = 'rls3i8flwugsei1j';
+const ULTRAMSG_INSTANCE_ID = Deno.env.get('ULTRAMSG_INSTANCE_ID') || '';
+const ULTRAMSG_TOKEN = Deno.env.get('ULTRAMSG_TOKEN') || '';
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 
@@ -364,7 +363,7 @@ async function fetchWeeklyReportData(supabase: any, companyId: string): Promise<
 /**
  * Main Edge Function handler
  */
-serve(async (req) => {
+Deno.serve(async (req) => {
   const startTime = Date.now();
 
   try {
@@ -378,6 +377,14 @@ serve(async (req) => {
         }
       });
     }
+
+    return new Response(JSON.stringify({
+      success: false,
+      error: 'Legacy weekly WhatsApp report agent retired',
+    }), {
+      status: 410,
+      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+    });
 
     const body = await req.json().catch(() => ({}));
     

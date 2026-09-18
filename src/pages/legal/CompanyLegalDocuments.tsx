@@ -1,3 +1,4 @@
+import { LegalPageHeader } from '@/components/legal/workspace/LegalPageHeader';
 import React, { useCallback, useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -58,10 +59,10 @@ const legalColors = {
   text: '#020617',
   muted: '#94A3B8',
   surface: '#F6F8FB',
-  success: '#22C7A1',
-  info: '#38BDF8',
-  focus: '#7C83F6',
-  danger: '#FB6B7A',
+  success: '#28755D',
+  info: '#315B70',
+  focus: '#946B3F',
+  danger: '#B2443B',
 };
 
 const DOCUMENT_TYPE_ICONS: Record<LegalDocumentType, React.ReactNode> = {
@@ -254,41 +255,8 @@ export default function CompanyLegalDocuments() {
   return (
     <main className="min-h-screen bg-[#F6F8FB] px-4 py-5 text-[#020617]" dir="rtl">
       <div className="mx-auto w-full max-w-7xl space-y-5">
-        <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-            <div className="flex items-start gap-3">
-              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#22C7A1]/10 text-[#22C7A1]">
-                <ShieldCheck className="h-6 w-6" />
-              </div>
-              <div>
-                <p className="text-sm font-semibold text-[#22C7A1]">المستندات القانونية</p>
-                <h1 className="mt-1 text-2xl font-bold tracking-normal text-[#020617]">
-                  مستندات الشركة القانونية
-                </h1>
-                <p className="mt-1 max-w-2xl text-sm leading-6 text-[#94A3B8]">
-                  مركز موحد لرفع ومتابعة المستندات الثابتة المطلوبة قبل تجهيز ملفات الدعاوى والتكامل مع تقاضي.
-                </p>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-2 sm:flex">
-              <Button
-                variant="outline"
-                onClick={() => refetch()}
-                className="min-h-[42px] border-slate-200 bg-white text-[#020617] hover:bg-[#F6F8FB]"
-              >
-                <RefreshCw className="ml-2 h-4 w-4" />
-                تحديث
-              </Button>
-              <Button
-                onClick={() => openUploadDialog()}
-                className="min-h-[42px] bg-[#22C7A1] text-white shadow-sm hover:bg-[#1fb391]"
-              >
-                <Plus className="ml-2 h-4 w-4" />
-                رفع مستند
-              </Button>
-            </div>
-          </div>
+        <section className="space-y-5">
+          <LegalPageHeader title="مستندات الشركة" icon={ShieldCheck} description="احفظ المستندات القانونية، تابع صلاحيتها، واستكمل المتطلبات المشتركة لملفات الدعاوى." actions={<><Button variant="outline" onClick={() => refetch()}><RefreshCw className="ml-2 h-4 w-4" />تحديث</Button><Button onClick={() => openUploadDialog()}><Plus className="ml-2 h-4 w-4" />رفع مستند</Button></>} />
 
           <div className="mt-5 grid gap-3 md:grid-cols-4">
             <StatusTile
@@ -430,13 +398,13 @@ export default function CompanyLegalDocuments() {
                   </div>
 
                   <div className="flex gap-1 justify-self-start md:justify-self-end">
-                    <Button variant="ghost" size="icon" onClick={() => setViewUrl(doc.file_url)}>
+                    <Button variant="ghost" size="icon" aria-label={`معاينة ${doc.document_name}`} title="معاينة المستند" onClick={() => setViewUrl(doc.file_url)}>
                       <Eye className="h-4 w-4" />
                     </Button>
-                    <Button variant="ghost" size="icon" onClick={() => window.open(doc.file_url, '_blank')}>
+                    <Button variant="ghost" size="icon" aria-label={`فتح ${doc.document_name} في نافذة جديدة`} title="فتح المستند" onClick={() => window.open(doc.file_url, '_blank')}>
                       <Download className="h-4 w-4" />
                     </Button>
-                    <Button variant="ghost" size="icon" onClick={() => deleteMutation.mutate(doc.id)}>
+                    <Button variant="ghost" size="icon" aria-label={`حذف ${doc.document_name}`} title="حذف المستند" onClick={() => deleteMutation.mutate(doc.id)}>
                       <Trash2 className="h-4 w-4 text-[#FB6B7A]" />
                     </Button>
                   </div>
@@ -458,12 +426,12 @@ export default function CompanyLegalDocuments() {
 
           <div className="space-y-4 py-2">
             <div className="space-y-2">
-              <Label>نوع المستند</Label>
+              <Label htmlFor="legal-document-type">نوع المستند</Label>
               <Select
                 value={selectedDocType}
                 onValueChange={(value) => setSelectedDocType(value as LegalDocumentType)}
               >
-                <SelectTrigger className="h-11 rounded-xl border-slate-200 bg-[#F6F8FB]">
+                <SelectTrigger id="legal-document-type" className="h-11 rounded-xl border-slate-200 bg-[#F6F8FB]">
                   <SelectValue placeholder="اختر نوع المستند" />
                 </SelectTrigger>
                 <SelectContent>
@@ -477,29 +445,33 @@ export default function CompanyLegalDocuments() {
             </div>
 
             <div className="space-y-2">
-              <Label>{selectedDocType === 'commercial_register' ? 'الملفات (صور أو PDF)' : 'الملف (PDF)'}</Label>
-              <Input
+              <Label htmlFor="legal-document-file">{selectedDocType === 'commercial_register' ? 'الملفات (صور أو PDF)' : 'الملف (PDF)'}</Label>
+              <input
+                id="legal-document-file"
+                aria-label="اختيار ملف المستند"
                 type="file"
                 accept={selectedDocType === 'commercial_register' ? 'image/*,.pdf' : '.pdf'}
                 multiple={selectedDocType === 'commercial_register'}
-                className="h-11 rounded-xl border-slate-200 bg-[#F6F8FB]"
+                className="sr-only peer"
                 onChange={(event) => {
                   if (event.target.files) {
                     setSelectedFiles(Array.from(event.target.files));
                   }
                 }}
               />
+              <label htmlFor="legal-document-file" className="lw-upload-area peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2"><Upload size={23} /><strong>{selectedFiles.length ? 'تغيير الملفات المختارة' : 'اختر ملف المستند'}</strong><span>{selectedDocType === 'commercial_register' ? 'صور أو ملف PDF' : 'ملف بصيغة PDF'}</span></label>
               {selectedFiles.length > 0 && (
                 <div className="rounded-xl bg-[#38BDF8]/10 px-3 py-2 text-xs text-[#0284C7]">
-                  تم اختيار {selectedFiles.length} ملف
+                  تم اختيار {selectedFiles.length} ملف · {selectedFiles.map(file => file.name).join('، ')}
                 </div>
               )}
             </div>
 
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
-                <Label>تاريخ الانتهاء (اختياري)</Label>
+                <Label htmlFor="legal-document-expiry">تاريخ الانتهاء (اختياري)</Label>
                 <Input
+                  id="legal-document-expiry"
                   type="date"
                   value={expiryDate}
                   onChange={(event) => setExpiryDate(event.target.value)}
@@ -515,8 +487,9 @@ export default function CompanyLegalDocuments() {
             </div>
 
             <div className="space-y-2">
-              <Label>ملاحظات (اختياري)</Label>
+              <Label htmlFor="legal-document-notes">ملاحظات (اختياري)</Label>
               <Textarea
+                id="legal-document-notes"
                 value={notes}
                 onChange={(event) => setNotes(event.target.value)}
                 placeholder="أي ملاحظات إضافية..."
@@ -604,14 +577,14 @@ function DocumentRequirementCard({
   onUpload: () => void;
   onDelete: (id: string) => void;
 }) {
-  const statusColor = status.exists ? (status.needsAttention ? '#FB6B7A' : '#22C7A1') : '#94A3B8';
+  const statusColor = status.exists ? (status.needsAttention ? '#B2443B' : '#28755D') : '#64727A';
   const statusLabel = status.exists ? (status.needsAttention ? 'يحتاج متابعة' : 'مكتمل') : 'ناقص';
 
   return (
     <motion.div
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
-      className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm transition hover:border-[#22C7A1]/40"
+      className="lw-document-card rounded-lg border border-slate-200 bg-white p-4 shadow-sm transition"
     >
       <div className="flex items-start justify-between gap-3">
         <div className="flex min-w-0 items-start gap-3">
@@ -636,19 +609,19 @@ function DocumentRequirementCard({
           </div>
         </div>
 
-        <div className="flex shrink-0 gap-1">
+        <div className="lw-document-actions flex shrink-0 gap-1">
           {status.document ? (
             <>
-              <Button variant="ghost" size="icon" onClick={() => onPreview(status.document!.file_url)}>
+              <Button variant="ghost" size="icon" aria-label={`معاينة ${DOCUMENT_TYPE_NAMES[status.type]}`} title="معاينة المستند" onClick={() => onPreview(status.document!.file_url)}>
                 <Eye className="h-4 w-4" />
               </Button>
-              <Button variant="ghost" size="icon" onClick={() => window.open(status.document!.file_url, '_blank')}>
+              <Button variant="ghost" size="icon" aria-label={`فتح ${DOCUMENT_TYPE_NAMES[status.type]} في نافذة جديدة`} title="فتح المستند" onClick={() => window.open(status.document!.file_url, '_blank')}>
                 <Download className="h-4 w-4" />
               </Button>
-              <Button variant="ghost" size="icon" onClick={onUpload}>
+              <Button variant="ghost" size="icon" aria-label={`تحديث ${DOCUMENT_TYPE_NAMES[status.type]}`} title="رفع نسخة جديدة" onClick={onUpload}>
                 <Upload className="h-4 w-4" />
               </Button>
-              <Button variant="ghost" size="icon" onClick={() => onDelete(status.document!.id)}>
+              <Button variant="ghost" size="icon" aria-label={`حذف ${DOCUMENT_TYPE_NAMES[status.type]}`} title="حذف المستند" onClick={() => onDelete(status.document!.id)}>
                 <Trash2 className="h-4 w-4 text-[#FB6B7A]" />
               </Button>
             </>
@@ -677,7 +650,7 @@ function ExpiryBadge({
     return <span className="text-sm text-[#94A3B8]">بدون تاريخ انتهاء</span>;
   }
 
-  const color = expired ? '#FB6B7A' : expiringSoon ? '#38BDF8' : '#22C7A1';
+  const color = expired ? '#B2443B' : expiringSoon ? '#89622C' : '#28755D';
   const label = expired ? 'منتهي' : expiringSoon ? 'قريب الانتهاء' : 'ساري';
 
   return (

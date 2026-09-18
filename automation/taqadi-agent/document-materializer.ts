@@ -2,6 +2,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { chromium, type Browser } from 'playwright';
 import { agentConfig } from './config';
+import { documentSourceVersion, mapDocuments } from './document-work';
 import {
   createMemoDocxBuffer,
   isValidDocxBuffer,
@@ -174,9 +175,11 @@ async function normalizePdfForTaqadi(
         Math.ceil(viewport.height),
       );
       const canvasContext = canvas.getContext('2d');
+      // PDF.js declares browser canvas types; the existing Node adapter
+      // implements the rendering surface used here without DOM-only methods.
       await pdfPage.render({
-        canvas,
-        canvasContext,
+        canvas: canvas as unknown as HTMLCanvasElement,
+        canvasContext: canvasContext as unknown as CanvasRenderingContext2D,
         viewport,
       }).promise;
       pageImages.push(
@@ -304,14 +307,14 @@ async function materializeMemoWord(
 export async function materializeFilingDocuments(
   job: FilingJob,
 ): Promise<MaterializedDocument[]> {
-  const jobDir = path.join(agentConfig.jobsDir, job.id, 'documents');
+  const jobDir = path.join(agentConfig.jobsDir, job.id, 'documents', documentSourceVersion(job.payload));
   await fs.mkdir(jobDir, { recursive: true });
 
   const browser = await chromium.launch({ headless: true });
   try {
-    const results: MaterializedDocument[] = [];
-    for (let index = 0; index < job.payload.documents.length; index += 1) {
-      const document = job.payload.documents[index];
+    const groups = await mapDocuments(job.payload.documents, 2, async (document, index) => {
+      const startedAt = Date.now();
+      const results: MaterializedDocument[] = [];
       if (document.required && !document.ready) {
         throw new Error(`Required document is not ready: ${document.name}`);
       }
@@ -420,8 +423,10 @@ export async function materializeFilingDocuments(
           mimeType: MEMO_DOCX_MIME,
         });
       }
-    }
-    return results;
+      console.log('[TaqadiAgent] document prepared:', JSON.stringify({ jobId: job.id, documentKey: document.key, durationMs: Date.now() - startedAt, cached: reusable }));
+      return results;
+    });
+    return groups.flat();
   } finally {
     await browser.close();
   }

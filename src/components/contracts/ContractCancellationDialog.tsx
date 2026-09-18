@@ -14,37 +14,47 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { AlertTriangle, XCircle, Loader2, Car, ChevronDown, ChevronUp } from 'lucide-react';
-import { useUpdateContractStatus } from '@/hooks/useContractRenewal';
-import { useCreateContractVehicleReturn } from '@/hooks/useContractVehicleReturn';
+import {
+  useContractCancellationImpact,
+  useUpdateContractStatus,
+} from '@/hooks/useContractRenewal';
 import { toast } from 'sonner';
-import { cn } from '@/lib/utils';
+import { ContractCancellationImpactPanel } from './ContractCancellationImpactPanel';
+import type { Contract } from '@/types/contracts';
 
 interface ContractCancellationDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  contract: any;
+  contract: Contract;
+  onCancelled?: () => void | Promise<void>;
 }
+
+type VehicleCondition = 'excellent' | 'good' | 'fair' | 'poor';
 
 export const ContractCancellationDialog: React.FC<ContractCancellationDialogProps> = ({
   open,
   onOpenChange,
-  contract
+  contract,
+  onCancelled,
 }) => {
   const [cancellationReason, setCancellationReason] = React.useState('');
   const [recordVehicleCondition, setRecordVehicleCondition] = React.useState(false);
   const [showVehicleSection, setShowVehicleSection] = React.useState(false);
   
   // Vehicle condition state
-  const [vehicleCondition, setVehicleCondition] = React.useState<'excellent' | 'good' | 'fair' | 'poor'>('good');
+  const [vehicleCondition, setVehicleCondition] = React.useState<VehicleCondition>('good');
   const [fuelLevel, setFuelLevel] = React.useState(50);
   const [odometerReading, setOdometerReading] = React.useState<number | undefined>(undefined);
   const [damagesNotes, setDamagesNotes] = React.useState('');
   
   const updateContractStatus = useUpdateContractStatus();
-  const createVehicleReturn = useCreateContractVehicleReturn();
+  const cancellationImpact = useContractCancellationImpact({
+    contractId: contract?.id,
+    companyId: contract?.company_id,
+    enabled: open,
+  });
 
-  const isProcessing = updateContractStatus.isPending || createVehicleReturn.isPending;
-
+  const isProcessing = updateContractStatus.isPending;
   // Reset state when dialog closes
   React.useEffect(() => {
     if (!open) {
@@ -56,7 +66,7 @@ export const ContractCancellationDialog: React.FC<ContractCancellationDialogProp
       setOdometerReading(undefined);
       setDamagesNotes('');
     }
-  }, [open]);
+  }, [open, contract?.id]);
 
   // Don't render anything if dialog is closed
   if (!open) {
@@ -64,57 +74,52 @@ export const ContractCancellationDialog: React.FC<ContractCancellationDialogProp
   }
 
   const handleCancellation = async () => {
-    if (!cancellationReason.trim()) {
-      toast.error('يرجى إدخال سبب الإلغاء');
+    if (cancellationReason.trim().length < 5) {
+      toast.error('يرجى إدخال سبب إلغاء واضح من 5 أحرف على الأقل');
+      return;
+    }
+    if (recordVehicleCondition && (!odometerReading || odometerReading <= 0)) {
+      toast.error('أدخل قراءة عداد صحيحة قبل تسجيل إرجاع المركبة');
       return;
     }
     
     try {
-      // Record vehicle condition if enabled
-      if (recordVehicleCondition && contract.vehicle_id) {
-        await createVehicleReturn.mutateAsync({
-          contract_id: contract.id,
-          vehicle_id: contract.vehicle_id,
-          return_date: new Date().toISOString().split('T')[0],
-          vehicle_condition: vehicleCondition,
-          fuel_level: fuelLevel,
-          odometer_reading: odometerReading,
-          notes: damagesNotes || undefined,
-          damages: damagesNotes ? [{
-            type: 'ملاحظات',
-            description: damagesNotes,
-            severity: 'minor'
-          }] : []
-        });
-      }
-
-      // Cancel the contract
+      // Cancel first through the atomic financial/penalty path. A condition
+      // report must never make an active contract look returned if cancellation
+      // is later rejected by a financial guard.
       await updateContractStatus.mutateAsync({
         contractId: contract.id,
         status: 'cancelled',
-        reason: cancellationReason.trim()
+        reason: cancellationReason.trim(),
+        companyId: contract.company_id,
+        transferTrafficViolationsToCompany: false,
+        vehicleReturn: recordVehicleCondition && contract.vehicle_id
+          ? {
+              inspection_date: new Date().toISOString(),
+              vehicle_condition: vehicleCondition,
+              fuel_level: fuelLevel,
+              odometer_reading: odometerReading,
+              notes: damagesNotes || null,
+              damages: damagesNotes ? [{
+                type: 'ملاحظات',
+                description: damagesNotes,
+                severity: 'minor',
+              }] : [],
+            }
+          : null,
       });
-      
+
+      await onCancelled?.();
       onOpenChange(false);
     } catch (error) {
       console.error('Error cancelling contract:', error);
     }
   };
 
-  const getConditionLabel = (condition: string) => {
-    switch (condition) {
-      case 'excellent': return 'ممتازة';
-      case 'good': return 'جيدة';
-      case 'fair': return 'مقبولة';
-      case 'poor': return 'سيئة';
-      default: return condition;
-    }
-  };
-
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
+      <DialogContent dir="rtl" className="w-[calc(100%-2rem)] max-w-lg max-h-[90dvh] overflow-y-auto rounded-2xl bg-white text-slate-900">
+        <DialogHeader className="pr-8 text-right">
           <DialogTitle className="flex items-center gap-2 text-red-600">
             <XCircle className="h-5 w-5" />
             إلغاء العقد
@@ -129,8 +134,8 @@ export const ContractCancellationDialog: React.FC<ContractCancellationDialogProp
           <Alert variant="destructive" className="border-red-200 bg-red-50">
             <AlertTriangle className="h-4 w-4" />
             <AlertDescription className="text-red-800">
-              <strong>تحذير:</strong> هذا الإجراء سيؤدي إلى إلغاء العقد نهائياً. 
-              لا يمكن التراجع عن هذا الإجراء.
+              سيصبح العقد ملغيًا مع الاحتفاظ بسجله. تخضع إعادة التفعيل لصلاحية المدة وتوفر المركبة.
+              راجع أدناه أثر الإلغاء على الفواتير والأقساط قبل التأكيد.
             </AlertDescription>
           </Alert>
 
@@ -139,8 +144,8 @@ export const ContractCancellationDialog: React.FC<ContractCancellationDialogProp
             <div className="flex justify-between">
               <span className="text-slate-600">العميل:</span>
               <span className="font-medium">
-                {contract?.customers?.first_name_ar || contract?.customers?.first_name || 
-                 contract?.customers?.company_name_ar || contract?.customers?.company_name || 'غير محدد'}
+                {contract?.customer?.first_name_ar || contract?.customer?.first_name ||
+                 contract?.customer?.company_name_ar || contract?.customer?.company_name || 'غير محدد'}
               </span>
             </div>
             <div className="flex justify-between">
@@ -154,6 +159,13 @@ export const ContractCancellationDialog: React.FC<ContractCancellationDialogProp
               </span>
             </div>
           </div>
+
+          <ContractCancellationImpactPanel
+            impact={cancellationImpact.data}
+            isLoading={cancellationImpact.isLoading || cancellationImpact.isFetching}
+            error={cancellationImpact.error}
+            disabled={isProcessing}
+          />
 
           {/* Cancellation Reason */}
           <div className="space-y-2">
@@ -169,6 +181,9 @@ export const ContractCancellationDialog: React.FC<ContractCancellationDialogProp
               className="resize-none"
               disabled={isProcessing}
             />
+            {cancellationReason.trim().length > 0 && cancellationReason.trim().length < 5 && (
+              <p className="text-xs text-red-600">اكتب سببًا واضحًا من 5 أحرف على الأقل.</p>
+            )}
           </div>
 
           {/* Vehicle Condition Toggle */}
@@ -213,7 +228,7 @@ export const ContractCancellationDialog: React.FC<ContractCancellationDialogProp
                       {/* Vehicle Condition */}
                       <div className="space-y-2">
                         <Label>حالة المركبة</Label>
-                        <Select value={vehicleCondition} onValueChange={(v: any) => setVehicleCondition(v)}>
+                        <Select value={vehicleCondition} onValueChange={(value) => setVehicleCondition(value as VehicleCondition)}>
                           <SelectTrigger>
                             <SelectValue />
                           </SelectTrigger>
@@ -245,14 +260,20 @@ export const ContractCancellationDialog: React.FC<ContractCancellationDialogProp
 
                       {/* Odometer */}
                       <div className="space-y-2">
-                        <Label htmlFor="odometer">قراءة العداد (كم)</Label>
+                        <Label htmlFor="odometer">
+                          قراءة العداد (كم) <span className="text-red-500">*</span>
+                        </Label>
                         <Input
                           id="odometer"
                           type="number"
+                          min={1}
                           placeholder="مثال: 50000"
                           value={odometerReading || ''}
                           onChange={(e) => setOdometerReading(e.target.value ? parseInt(e.target.value) : undefined)}
                         />
+                        {(!odometerReading || odometerReading <= 0) && (
+                          <p className="text-xs text-red-600">القراءة الفعلية مطلوبة لتوثيق الإرجاع.</p>
+                        )}
                       </div>
 
                       {/* Damages Notes */}
@@ -287,7 +308,14 @@ export const ContractCancellationDialog: React.FC<ContractCancellationDialogProp
           <Button 
             variant="destructive" 
             onClick={handleCancellation}
-            disabled={isProcessing || !cancellationReason.trim()}
+            disabled={
+              isProcessing
+              || cancellationImpact.isLoading
+              || cancellationImpact.isFetching
+              || !!cancellationImpact.error
+              || cancellationReason.trim().length < 5
+              || (recordVehicleCondition && (!odometerReading || odometerReading <= 0))
+            }
           >
             {isProcessing ? (
               <>

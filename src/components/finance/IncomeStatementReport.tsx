@@ -54,7 +54,6 @@ export function IncomeStatementReport() {
     const end = endOfMonth(date).toISOString().split('T')[0];
     periods.push({
       month: format(date, 'MMMM yyyy', { locale: ar }),
-      monthEn: format(date, 'MMM yyyy'),
       startDate: start,
       endDate: end
     });
@@ -82,7 +81,7 @@ export function IncomeStatementReport() {
 
   // Prepare chart data
   const chartData = periodsData.map((period) => ({
-    month: period.monthEn,
+    month: period.month,
     revenue: period.data?.totalCredits || 0,
     expenses: period.data?.totalDebits || 0,
     netIncome: period.data?.netIncome || 0
@@ -323,7 +322,7 @@ export function IncomeStatementReport() {
             <div>
               <CardTitle className="flex items-center gap-2">
                 <TrendingUp className="h-5 w-5" />
-                قائمة الدخل (Income Statement)
+                قائمة الدخل
               </CardTitle>
               <CardDescription>
                 عرض الإيرادات والمصروفات وصافي الربح للفترة المحددة
@@ -497,7 +496,7 @@ export function IncomeStatementReport() {
                             <TableCell colSpan={3} className="font-bold text-green-700">
                               <div className="flex items-center gap-2">
                                 <TrendingUp className="h-4 w-4" />
-                                الإيرادات (Revenue)
+                                الإيرادات
                               </div>
                             </TableCell>
                           </TableRow>
@@ -527,7 +526,7 @@ export function IncomeStatementReport() {
                             <TableCell colSpan={3} className="font-bold text-red-700">
                               <div className="flex items-center gap-2">
                                 <TrendingDown className="h-4 w-4" />
-                                المصروفات (Expenses)
+                                المصروفات
                               </div>
                             </TableCell>
                           </TableRow>
@@ -550,7 +549,7 @@ export function IncomeStatementReport() {
                           {/* Net Income */}
                           <TableRow className={`${netIncome >= 0 ? 'bg-blue-100' : 'bg-red-200'} font-bold text-lg`}>
                             <TableCell colSpan={2} className="py-6">
-                              صافي الدخل (Net Income)
+                              صافي الدخل
                             </TableCell>
                             <TableCell className={`text-right py-6 ${netIncome >= 0 ? 'text-blue-700' : 'text-red-700'}`}>
                               {formatCurrency(netIncome)}

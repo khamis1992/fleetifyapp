@@ -51,7 +51,7 @@ interface AccountFormData {
 const chartManagementTheme = systemColorPattern.colors;
 
 const accountTypeFilters = [
-  { value: 'all', label: 'الكل', helper: 'All', color: chartManagementTheme.success },
+  { value: 'all', label: 'الكل', helper: 'كل الحسابات', color: chartManagementTheme.success },
   { value: 'assets', label: 'الأصول', helper: '1xxx', color: chartManagementTheme.success },
   { value: 'liabilities', label: 'الخصوم', helper: '2xxx', color: chartManagementTheme.alert },
   { value: 'equity', label: 'حقوق الملكية', helper: '3xxx', color: chartManagementTheme.info },
@@ -533,7 +533,7 @@ export const EnhancedChartOfAccountsManagement: React.FC = () => {
         <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
           <div>
             <div className="flex items-center gap-2">
-              <h2 className="text-xl font-black tracking-normal">مركز دليل الحسابات</h2>
+              <h1 className="text-xl font-black tracking-normal">دليل الحسابات</h1>
               <HelpIcon topic="chartOfAccounts" />
             </div>
             <p className="mt-1 text-sm">
@@ -757,7 +757,7 @@ export const EnhancedChartOfAccountsManagement: React.FC = () => {
                     ['طبيعة الرصيد', viewingAccount.balance_type === 'debit' ? 'مدين' : 'دائن'],
                     ['المستوى', viewingAccount.account_level],
                     ['حساب إجمالي', viewingAccount.is_header ? 'نعم' : 'لا'],
-                    ['تاريخ الإنشاء', viewingAccount.created_at ? new Date(viewingAccount.created_at).toLocaleDateString('en-GB', {
+                    ['تاريخ الإنشاء', viewingAccount.created_at ? new Date(viewingAccount.created_at).toLocaleDateString('ar-QA', {
                       year: 'numeric',
                       month: '2-digit',
                       day: '2-digit'

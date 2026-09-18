@@ -12,7 +12,7 @@
  */
 
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { authorizeActiveCompanyUser } from "../_shared/privileged-admin.ts";
 import { buildLongCatHeaders, getLongCatApiKey, LONGCAT_CHAT_COMPLETIONS_URL, LONGCAT_MODEL } from "../_shared/longcat.ts";
 
 const corsHeaders = {
@@ -36,13 +36,14 @@ interface OCRResponse {
   error?: string;
 }
 
-serve(async (req) => {
+Deno.serve(async (req) => {
   // Handle CORS preflight
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
+    await authorizeActiveCompanyUser(req);
     const { imageDataUrls, language = 'ar', detail = 'high', provider = 'longcat' }: OCRRequest = await req.json();
 
     console.log('📄 DeepSeek/Qwen OCR Request received:', {
@@ -296,3 +297,5 @@ function calculateConfidence(text: string, language: string): number {
 
   return Math.min(confidence, 1.0);
 }
+
+

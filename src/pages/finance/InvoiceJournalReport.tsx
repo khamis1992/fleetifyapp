@@ -1,21 +1,14 @@
 import { PageCustomizer } from "@/components/PageCustomizer";
 import { InvoiceJournalLinkingReport } from "@/components/finance/InvoiceJournalLinkingReport";
 import { Link as LinkIcon } from "lucide-react";
+import { FinancePageHeader } from '@/components/ui/FinancePageHeader';
 
 export default function InvoiceJournalReport() {
   return (
     <PageCustomizer pageId="invoice-journal-report" title="" titleAr="">
       <div className="space-y-6">
         {/* Header */}
-        <div>
-          <h1 className="text-3xl font-bold flex items-center gap-2">
-            <LinkIcon className="h-8 w-8 text-primary" />
-            تقرير ربط الفواتير بالقيود المحاسبية
-          </h1>
-          <p className="text-muted-foreground mt-1">
-            عرض شامل لجميع الفواتير وقيودها المحاسبية المرتبطة مع إحصائيات تفصيلية
-          </p>
-        </div>
+        <FinancePageHeader title="ربط الفواتير بالقيود" description="تتبّع القيد المرتبط بكل فاتورة وراجع الروابط غير المكتملة." icon={LinkIcon} />
 
         {/* Report Component */}
         <InvoiceJournalLinkingReport />

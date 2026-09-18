@@ -21,11 +21,13 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { readFinancialPages } from '@/services/financialReporting';
 import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
 import { usePermissions } from '@/hooks/usePermissions';
 import { usePaymentOperations } from '@/hooks/business/usePaymentOperations';
 import * as Sentry from '@sentry/react';
 import { toast } from 'sonner';
+import { PaymentRecordedReadError, readPaymentAfterCommit } from '@/services/paymentCommitResult';
 
 // ============================================================================
 // Types
@@ -186,9 +188,9 @@ export const usePayments = (filters?: PaymentFilters) => {
             contracts (
               contract_number
             )
-          `)
+          `, { count: 'exact' })
           .eq('company_id', companyId)
-          .order('payment_date', { ascending: false });
+          .order('payment_date', { ascending: false }).order('id');
 
         // Apply filters
         if (filters?.method) {
@@ -222,32 +224,7 @@ export const usePayments = (filters?: PaymentFilters) => {
           query = query.lte('payment_date', filters.payment_date_lte);
         }
 
-        const { data, error } = await query;
-
-        if (error) {
-          Sentry.captureException(error, {
-            tags: {
-              feature: 'payments',
-              action: 'read',
-              component: 'usePayments.unified'
-            },
-            extra: { 
-              userId: user?.id, 
-              companyId, 
-              filters,
-              errorCode: error.code,
-              errorMessage: error.message
-            }
-          });
-
-          // Check if it's an authentication error
-          if (error.message?.includes('JWT') || error.message?.includes('auth') || error.code === 'PGRST301') {
-            throw new Error('انتهت جلسة العمل. يرجى تسجيل الدخول مرة أخرى');
-          }
-
-          throw new Error(`خطأ في تحميل المدفوعات: ${error.message}`);
-        }
-
+        const data = await readFinancialPages((from, to) => query.range(from, to));
         return (data || []) as Payment[];
       } catch (error) {
         // Log unexpected errors
@@ -367,6 +344,9 @@ export const useCreatePayment = () => {
   });
   
   return useMutation({
+    // App defaults retry mutations. Retrying this command can create a new
+    // receipt/key after the server committed but the acknowledgement/read failed.
+    retry: false,
     mutationFn: async (paymentData: CreatePaymentData) => {
       // Permission check
       if (!hasPermission('payments:create')) {
@@ -428,18 +408,12 @@ export const useCreatePayment = () => {
             throw paymentError;
           }
 
-          const { data: createdPayment, error: fetchError } = await supabase
+          return await readPaymentAfterCommit(paymentId, companyId, (confirmedId) => supabase
             .from('payments')
             .select('*')
-            .eq('id', paymentId)
+            .eq('id', confirmedId)
             .eq('company_id', companyId)
-            .single();
-
-          if (fetchError) {
-            throw fetchError;
-          }
-
-          return createdPayment;
+            .single());
         }
 
         return await createCentralPayment.mutateAsync({
@@ -528,6 +502,12 @@ export const useCreatePayment = () => {
       });
     },
     onError: (error: Error) => {
+      if (error instanceof PaymentRecordedReadError) {
+        queryClient.invalidateQueries({ queryKey: paymentKeys.all });
+        queryClient.invalidateQueries({ queryKey: ['invoices'] });
+        toast.warning('تم تسجيل الدفعة، وتعذر تحديث العرض', { description: error.message });
+        return;
+      }
       toast.error("خطأ في تسجيل الدفع", {
         description: error.message
       });

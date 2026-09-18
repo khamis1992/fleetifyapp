@@ -259,11 +259,6 @@ export const AccountsTreeView: React.FC<AccountsTreeViewProps> = ({
               <span className="font-medium truncate">
                 {node.accountNameAr || node.accountName}
               </span>
-              {node.accountName && node.accountNameAr && (
-                <span className="text-sm text-slate-500 truncate">
-                  ({node.accountName})
-                </span>
-              )}
             </div>
           </div>
 

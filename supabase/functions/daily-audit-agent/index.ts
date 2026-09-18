@@ -107,6 +107,16 @@ serve(async (req) => {
     authorizeAgent(req);
 
     const body = await readJson<AuditRequest>(req);
+    if (body.dryRun === false) {
+      return new Response(JSON.stringify({
+        ok: false,
+        error: "Legacy daily-audit writer retired",
+        replacement: "system-audit-orchestrator",
+      }), {
+        status: 410,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
     const dryRun = body.dryRun !== false;
     const maxCompanies = clampInt(body.maxCompanies, 1, 50, 10);
     const maxContractsPerCompany = clampInt(body.maxContractsPerCompany, 1, 500, 80);
@@ -433,7 +443,7 @@ async function auditCompany({
   });
 
   await safeStep(result, "detect_contract_overpayments", async () => {
-    const overpaidContracts = await detectContractOverpayments(supabase, company.id, maxContractsPerCompany, targetContractIds);
+    const overpaidContracts = await detectContractOverpayments(supabase, company.id, maxContractsPerCompany, targetContractIds, result.reviewItems);
     if (overpaidContracts > 0) {
       result.reviewItems.push(`${overpaidContracts} contracts have completed payments greater than contract amount and need credit/refund review.`);
     }
@@ -443,6 +453,13 @@ async function auditCompany({
     const duplicatePayments = await detectDuplicatePayments(supabase, company.id, maxContractsPerCompany, targetContractIds);
     if (duplicatePayments > 0) {
       result.reviewItems.push(`${duplicatePayments} possible duplicate payments need receipt/bank reference review.`);
+    }
+  });
+
+  await safeStep(result, "detect_wrong_value_schedule_invoice_links", async () => {
+    const wrongValueLinks = await detectWrongValueScheduleInvoiceLinks(supabase, company.id, maxContractsPerCompany, targetContractIds, result.reviewItems);
+    if (wrongValueLinks > 0) {
+      result.reviewItems.push(`${wrongValueLinks} rent schedule installments are linked to invoices with a different value (often traffic-fine invoices); relink to the matching unlinked month invoice via contract health auto-fix.`);
     }
   });
 
@@ -1176,15 +1193,131 @@ async function syncSchedulePaymentStates(
   return synced;
 }
 
+// كشف روابط الأقساط الخاطئة قيمةً: قسط نشط مربوط بفاتورة قيمتها تختلف عن قيمة
+// القسط بينما توجد فاتورة أخرى لنفس العقد ونفس الشهر قيمتها مطابقة للقسط وغير
+// مرتبطة بأي قسط. النمط الفعلي (LTO202437): أقساط إيجار رُبطت بفواتير مخالفات TV.
+// قاعدة الأمان: يُبلَّغ فقط عن النمط الآمن للإصلاح (فاتورة حالية غير إيجارية TV
+// وبديل إيجاري مطابق). نمط أقساط المخالفات المربوطة بفواتير إيجار أكبر يُبلَّغ
+// كمراجعة معتمدة لأن فك الربط قد ييتم فاتورة إيجار مدفوعة.
+// الكشف فقط — الإصلاح عبر زر صحة العقد (repairWrongValueScheduleInvoiceLinks).
+async function detectWrongValueScheduleInvoiceLinks(
+  supabase: any,
+  companyId: string,
+  limit: number,
+  targetContractIds: string[] | null,
+  reviewItems: string[],
+) {
+  const contracts = await loadContractsForAudit(supabase, companyId, limit, targetContractIds, false);
+  const contractIds = contracts.map((contract: any) => contract.id);
+  if (contractIds.length === 0) return 0;
+
+  const { data: schedules, error: schedulesError } = await supabase
+    .from("contract_payment_schedules")
+    .select("id, contract_id, installment_number, due_date, amount, status, invoice_id")
+    .eq("company_id", companyId)
+    .in("contract_id", contractIds)
+    .limit(limit * 60);
+
+  if (schedulesError) throw schedulesError;
+
+  const activeSchedules = (schedules || []).filter(
+    (schedule: any) => !isCancelledStatus(schedule.status) && schedule.invoice_id && Number(schedule.amount || 0) > 0,
+  );
+  if (activeSchedules.length === 0) return 0;
+
+  const linkedInvoiceIds = Array.from(new Set(activeSchedules.map((schedule: any) => schedule.invoice_id)));
+  const { data: linkedInvoices, error: linkedError } = await supabase
+    .from("invoices")
+    .select("id, invoice_number, total_amount, invoice_month")
+    .in("id", linkedInvoiceIds)
+    .eq("company_id", companyId);
+
+  if (linkedError) throw linkedError;
+
+  const contractIdsWithMismatch = Array.from(new Set(
+    activeSchedules
+      .filter((schedule: any) => {
+        const linkedInvoice = (linkedInvoices || []).find((invoice: any) => invoice.id === schedule.invoice_id);
+        return Boolean(linkedInvoice)
+          && Math.abs(Number(schedule.amount || 0) - Number(linkedInvoice.total_amount || 0)) > 0.01;
+      })
+      .map((schedule: any) => schedule.contract_id),
+  ));
+  if (contractIdsWithMismatch.length === 0) return 0;
+
+  // جلب كل فواتير العقود المشتبه بها لتحديد إن كانت فاتورة بديلة مطابقة موجودة
+  const { data: contractInvoices, error: contractInvoicesError } = await supabase
+    .from("invoices")
+    .select("id, contract_id, invoice_number, total_amount, invoice_month, status")
+    .eq("company_id", companyId)
+    .in("contract_id", contractIdsWithMismatch)
+    .not("status", "in", "(cancelled,void,deleted)");
+
+  if (contractInvoicesError) throw contractInvoicesError;
+
+  const invoiceIdsBoundToSchedules = new Set(
+    (schedules || [])
+      .filter((schedule: any) => schedule.invoice_id)
+      .map((schedule: any) => schedule.invoice_id),
+  );
+
+  const isNonRentInvoiceNumber = (invoiceNumber: any) =>
+    String(invoiceNumber || "").startsWith("TV-");
+
+  let wrongLinkCount = 0;
+  for (const schedule of activeSchedules) {
+    const linkedInvoice = (linkedInvoices || []).find((invoice: any) => invoice.id === schedule.invoice_id);
+    if (!linkedInvoice) continue;
+    const scheduleAmount = Number(schedule.amount || 0);
+    if (Math.abs(scheduleAmount - Number(linkedInvoice.total_amount || 0)) <= 0.01) continue;
+
+    // النمط الآمن للإصلاح فقط: الفاتورة الحالية مخالفة TV.
+    if (!isNonRentInvoiceNumber(linkedInvoice.invoice_number)) continue;
+
+    const contract = contracts.find((item: any) => item.id === schedule.contract_id);
+    const candidateMonths = Array.from(new Set(
+      [
+        String(linkedInvoice.invoice_month || "").slice(0, 7),
+        String(schedule.due_date || "").slice(0, 7),
+      ].filter(Boolean),
+    ));
+
+    const matchingCandidate = (contractInvoices || []).find((invoice: any) =>
+      invoice.contract_id === schedule.contract_id
+      && !invoiceIdsBoundToSchedules.has(invoice.id)
+      && !isNonRentInvoiceNumber(invoice.invoice_number)
+      && candidateMonths.includes(String(invoice.invoice_month || "").slice(0, 7))
+      && Math.abs(Number(invoice.total_amount || 0) - scheduleAmount) <= 0.01,
+    );
+
+    if (matchingCandidate) {
+      wrongLinkCount += 1;
+      reviewItems.push(
+        `Contract ${contract?.contract_number || schedule.contract_id}: installment ${schedule.installment_number || "-"} (${scheduleAmount} QAR) is linked to traffic invoice ${linkedInvoice.invoice_number} (${linkedInvoice.total_amount} QAR) while matching rent invoice ${matchingCandidate.invoice_number} is unlinked — relink via contract health auto-fix.`,
+      );
+    }
+  }
+
+  return wrongLinkCount;
+}
+
 async function detectDuplicatePayments(
   supabase: any,
   companyId: string,
   limit: number,
   targetContractIds: string[] | null,
 ) {
+  // A duplicate means the SAME invoice (or unallocated bucket) received the
+  // same amount on the same date twice. Grouping by contract alone is wrong:
+  // one monthly payment settles a different invoice each click, so the
+  // contract+date+amount key flags legitimate catch-up payments as duplicates.
+  // The same-import signature now uses the BILLING MONTH instead of the exact
+  // payment date: the cancelled-contracts file and Payment-By-Client recorded
+  // different payment dates for the same source month, letting duplicates
+  // slip past a date±1day comparison.
   let query = supabase
     .from("payments")
-    .select("id, contract_id, payment_date, amount, payment_status, reference_number")
+    .select("id, contract_id, invoice_id, payment_date, amount, payment_status, reference_number, notes")
     .eq("company_id", companyId)
     .limit(limit * 20);
 
@@ -1198,9 +1331,64 @@ async function detectDuplicatePayments(
 
   for (const payment of data || []) {
     if (isInactivePaymentStatus(payment.payment_status)) continue;
-    const key = `${payment.contract_id || ""}:${payment.payment_date || ""}:${roundMoney(Number(payment.amount || 0))}:${payment.reference_number || ""}`;
+    const key = `${payment.contract_id || ""}:${payment.invoice_id || "unallocated"}:${payment.payment_date || ""}:${roundMoney(Number(payment.amount || 0))}:${payment.reference_number || ""}`;
     if (seen.has(key)) duplicates += 1;
     seen.add(key);
+  }
+
+  // Same-source-month duplicate: two imported payments (PAY-XLS / PBC / xls)
+  // for the same contract and the same source month whose combined amount
+  // exceeds the month's rent (monthly_amount) signal a double import even
+  // when payment dates differ by weeks.
+  const monthlyRentByContract = new Map<string, number>();
+  const monthAgg = new Map<string, { total: number; count: number }>();
+
+  for (const payment of data || []) {
+    if (isInactivePaymentStatus(payment.payment_status)) continue;
+    if (!payment.contract_id) continue;
+    const paymentNumber = String(payment.payment_number || "");
+    const isImported = paymentNumber.startsWith("PAY-XLS-")
+      || paymentNumber.startsWith("PBC-")
+      || String(payment.reference_number || "").startsWith("xls:");
+    if (!isImported) continue;
+
+    const notes = String(payment.notes || "");
+    const monthMatch = notes.match(/شهر\s+(\d{1,2})-(\d{4})/);
+    let sourceMonth: string | null = null;
+    if (monthMatch) {
+      const month = monthMatch[1].padStart(2, "0");
+      sourceMonth = `${monthMatch[2]}-${month}`;
+    } else {
+      sourceMonth = String(payment.payment_date || "").slice(0, 7);
+    }
+
+    const aggKey = `${payment.contract_id}:${sourceMonth}`;
+    const agg = monthAgg.get(aggKey) || { total: 0, count: 0 };
+    agg.total = roundMoney(agg.total + Number(payment.amount || 0));
+    agg.count += 1;
+    monthAgg.set(aggKey, agg);
+  }
+
+  if (monthAgg.size > 0) {
+    const contractIds = Array.from(new Set(
+      Array.from(monthAgg.keys()).map((key) => key.split(":")[0])
+    ));
+    const { data: contractRows } = await supabase
+      .from("contracts")
+      .select("id, monthly_amount")
+      .eq("company_id", companyId)
+      .in("id", contractIds);
+    for (const contract of contractRows || []) {
+      monthlyRentByContract.set(contract.id, roundMoney(Number(contract.monthly_amount || 0)));
+    }
+
+    for (const [aggKey, agg] of monthAgg.entries()) {
+      if (agg.count < 2) continue;
+      const [contractId, sourceMonth] = aggKey.split(":");
+      const monthlyRent = monthlyRentByContract.get(contractId) || 0;
+      if (monthlyRent <= 0) continue;
+      if (agg.total - monthlyRent > 1) duplicates += 1;
+    }
   }
 
   return duplicates;
@@ -1258,6 +1446,7 @@ async function detectContractOverpayments(
   companyId: string,
   limit: number,
   targetContractIds: string[] | null,
+  reviewItems: string[],
 ) {
   const contracts = await loadContractsForAudit(supabase, companyId, limit, targetContractIds, true);
   const contractIds = contracts.map((contract: any) => contract.id);
@@ -1271,11 +1460,25 @@ async function detectContractOverpayments(
     paidByContract.set(payment.contract_id, roundMoney((paidByContract.get(payment.contract_id) || 0) + Number(payment.amount || 0)));
   }
 
-  return contracts.filter((contract: any) => {
+  let overpaidCount = 0;
+  for (const contract of contracts) {
+    // A zero/negative principal cannot be overpaid. Most such rows are
+    // cancelled imports (contract_amount = 0) that previously flooded the
+    // review queue with phantom excess.
     const amount = roundMoney(Number(contract.contract_amount || 0));
+    if (amount <= 0.01) continue;
+
     const paid = roundMoney(paidByContract.get(contract.id) || 0);
-    return amount > 0 && paid - amount > 1;
-  }).length;
+    const excess = roundMoney(paid - amount);
+    if (excess <= 1) continue;
+
+    overpaidCount += 1;
+    reviewItems.push(
+      `Contract ${contract.contract_number} collected ${paid} against principal ${amount} (excess ${excess} QAR) — needs reclassification review.`,
+    );
+  }
+
+  return overpaidCount;
 }
 
 async function cleanupCancelledContractZeroInvoices(

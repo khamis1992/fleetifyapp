@@ -1,0 +1,17 @@
+/* Scope direction and icon sizing against legacy global RTL/mobile selectors. */
+.finance-workspace,
+.finance-workspace-nav { --muted-foreground: 215 16% 43%; text-align: start; }
+.finance-workspace[dir="ltr"], .finance-workspace-nav[dir="ltr"] { direction: ltr; }
+.finance-workspace[dir="rtl"], .finance-workspace-nav[dir="rtl"] { direction: rtl; }
+.finance-workspace *:not([dir]):not(bdi), .finance-workspace-nav *:not([dir]):not(bdi) { direction: inherit; }
+.finance-workspace :is(p,h1,h2,h3,summary,dt,dd), .finance-workspace-nav a { text-align: start; }
+.finance-workspace [dir="ltr"] { direction: ltr; }
+.finance-workspace bdi { direction: ltr; unicode-bidi: isolate; }
+.finance-workspace .lucide, .finance-workspace-nav .lucide {
+  width: 1.1rem; height: 1.1rem; min-width: 0; min-height: 0; flex-shrink: 0;
+}
+.finance-workspace .recharts-wrapper, .finance-workspace .recharts-surface { min-height: 0; }
+.finance-workspace details { overflow-x: auto; }
+.finance-workspace table { min-width: 0; }
+.finance-workspace table :is(th,td) { white-space: normal; }
+.dark .finance-workspace, .dark .finance-workspace-nav { --muted-foreground: 215 20% 70%; }

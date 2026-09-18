@@ -1,3 +1,4 @@
+import { LegalPageHeader } from '@/components/legal/workspace/LegalPageHeader';
 /**
  * Late Fee Management Page
  * 
@@ -19,13 +20,8 @@ import '@/styles/legal-system.css';
 const LateFees: React.FC = () => {
   return (
     <div className="legal-system min-h-screen p-4 md:p-6">
-      <div className="legal-hero mb-6 p-4">
-        <h1 className="text-3xl font-bold">إدارة غرامات التأخير</h1>
-        <p className="text-muted-foreground mt-2">
-          معالجة تلقائية يومية للفواتير المتأخرة وتطبيق الغرامات حسب سياسة الشركة
-        </p>
-      </div>
-      
+      <LegalPageHeader title="غرامات التأخير" description="راجع الغرامات وحالات الإعفاء وقرارات المعالجة حسب سياسة الشركة." />
+
       <LateFeeManagement />
     </div>
   );

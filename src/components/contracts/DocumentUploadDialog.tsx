@@ -27,6 +27,7 @@ import {
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { useTourGuide } from '@/components/tour-guide';
+import { contractDocumentTypes as documentTypes } from '@/utils/contractDocumentTypes';
 
 import { useFleetifyTranslation } from "@/hooks/useTranslation";
 export interface DocumentUploadData {
@@ -43,22 +44,6 @@ interface DocumentUploadDialogProps {
   onSubmit: (data: DocumentUploadData) => Promise<void>;
   isSubmitting?: boolean;
 }
-
-const documentTypes = [
-  { value: 'general', label: 'عام' },
-  { value: 'contract', label: 'عقد' },
-  { value: 'signed_contract', label: 'عقد موقع' },
-  { value: 'signed_contract_image', label: 'صورة عقد موقع' },
-  { value: 'draft_contract', label: 'مسودة عقد' },
-  { value: 'condition_report', label: 'تقرير حالة المركبة' },
-  { value: 'signature', label: 'توقيع' },
-  { value: 'insurance', label: 'تأمين' },
-  { value: 'identity', label: 'هوية' },
-  { value: 'license', label: 'رخصة' },
-  { value: 'receipt', label: 'إيصال' },
-  { value: 'violations_proof', label: 'إثبات مخالفات مرورية' },
-  { value: 'other', label: 'أخرى' }
-];
 
 const MAX_FILE_SIZE = 100 * 1024 * 1024; // 100MB
 const ACCEPTED_FILE_TYPES = [

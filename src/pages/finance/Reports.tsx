@@ -1,4 +1,4 @@
-﻿/**
+/**
  * صفحة التقارير المالية - تصميم جديد متوافق مع الداشبورد
  */
 import { useState, useMemo } from "react";
@@ -211,7 +211,7 @@ const Reports = () => {
         <StatCard
           title="آخر تحديث"
           value="اليوم"
-          subtitle={new Date().toLocaleDateString('en-US')}
+          subtitle={new Date().toLocaleDateString('ar-QA')}
           icon={Calendar}
           variant="sky"
           delay={0.15}
@@ -219,7 +219,7 @@ const Reports = () => {
         <StatCard
           title="إجمالي الأصول"
           value={formatCurrency(stats.totalAssets)}
-          subtitle="Total Assets"
+          subtitle="الأصول المسجلة"
           icon={BarChart3}
           variant="success"
           delay={0.2}
@@ -227,7 +227,7 @@ const Reports = () => {
         <StatCard
           title="صافي الربح"
           value={formatCurrency(stats.netIncome)}
-          subtitle="Net Income"
+          subtitle="صافي نتيجة الفترة"
           icon={DollarSign}
           variant="violet"
           delay={0.25}

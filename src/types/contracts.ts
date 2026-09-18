@@ -19,7 +19,7 @@ export type ContractCustomer = Pick<
   | 'phone'
   | 'email'
   | 'national_id'
->
+> & Partial<Pick<CustomerRow, 'nationality' | 'address' | 'country'>>
 
 export type ContractVehicle = Pick<
   VehicleRow,
@@ -69,6 +69,7 @@ export type Contract = Pick<ContractRow, RequiredContractFields> &
     customer?: ContractCustomer | null
     vehicle?: ContractVehicle | null
     assigned_employee?: ContractAssignedEmployee | null
+    deposit_amount?: number | null
   }
 
 export type LegalStatus = 
@@ -123,6 +124,7 @@ export interface ContractCreationData {
   end_date: string
   contract_amount: number
   monthly_amount?: number
+  deposit_amount?: number
   description?: string
   terms?: string
   cost_center_id?: string | null

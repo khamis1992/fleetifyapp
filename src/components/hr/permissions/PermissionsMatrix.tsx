@@ -27,6 +27,7 @@ import {
 import { useUserPermissions } from '@/hooks/useUserPermissions';
 import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
+import { getPermissionArabicCopy } from './permissionArabicCopy';
 
 type PermissionOverrideValue = boolean | null;
 
@@ -115,10 +116,12 @@ export default function PermissionsMatrix({
   const filteredPermissions = useMemo(() => {
     const term = searchTerm.trim().toLowerCase();
     return PERMISSIONS.filter((permission) => {
+      const arabic = getPermissionArabicCopy(permission);
       const matchesCategory = selectedCategory === 'all' || permission.category.id === selectedCategory;
       const matchesSearch =
         !term ||
         permission.id.toLowerCase().includes(term) ||
+        arabic.name.includes(term) || arabic.description.includes(term) ||
         permission.name.toLowerCase().includes(term) ||
         permission.description.toLowerCase().includes(term) ||
         permission.category.nameAr.toLowerCase().includes(term);
@@ -142,7 +145,7 @@ export default function PermissionsMatrix({
   const getPermissionState = (permissionId: string) => {
     const override = overrideMap.get(permissionId);
     const inherited = baseRolePermissions.has(permissionId);
-    const granted = override === true || (override === undefined && inherited);
+    const granted = override === true || (override == null && inherited);
     const mode: 'inherit' | 'allow' | 'deny' =
       override === true ? 'allow' : override === false ? 'deny' : 'inherit';
     return { override, inherited, granted, mode };
@@ -163,7 +166,7 @@ export default function PermissionsMatrix({
   }
 
   return (
-    <div className="space-y-4" dir="rtl">
+    <div className="ad-permission-matrix space-y-4" dir="rtl">
       {selectedUser && (
         <div className="rounded-lg border border-slate-200 bg-white p-4">
           <div className="mb-4 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
@@ -178,7 +181,7 @@ export default function PermissionsMatrix({
             </div>
           </div>
 
-          <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
+          <div className="ad-role-options grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
             {(Object.keys(ROLE_PERMISSIONS) as UserRole[]).map((role) => {
               const active = effectiveRoles.includes(role);
               const disabled = readOnly || !assignableRoles.includes(role);
@@ -187,6 +190,7 @@ export default function PermissionsMatrix({
                   key={role}
                   type="button"
                   disabled={disabled}
+                  aria-pressed={active}
                   onClick={() => onRoleChange?.(role, true)}
                   className={cn(
                     'flex min-h-[74px] items-center justify-between rounded-xl border p-3 text-right transition',
@@ -219,16 +223,17 @@ export default function PermissionsMatrix({
             <Input
               value={searchTerm}
               onChange={(event) => setSearchTerm(event.target.value)}
-              placeholder="ابحث باسم الصلاحية أو الكود..."
+              aria-label="البحث في الصلاحيات" placeholder="ابحث باسم الصلاحية أو الكود..."
               className="h-11 rounded-xl border-slate-200 bg-[#F6F8FB] pr-10 text-[#020617]"
             />
           </div>
         </div>
 
-        <div className="mb-4 flex gap-2 overflow-x-auto pb-1">
+        <div className="ad-permission-categories">
           <Button
             type="button"
             variant={selectedCategory === 'all' ? 'default' : 'outline'}
+            aria-pressed={selectedCategory === 'all'}
             onClick={() => setSelectedCategory('all')}
             className={cn('h-10 shrink-0 rounded-xl', selectedCategory === 'all' && 'bg-[#22C7A1] hover:bg-[#1DAE8D]')}
           >
@@ -241,6 +246,7 @@ export default function PermissionsMatrix({
                 key={category.id}
                 type="button"
                 variant={selectedCategory === category.id ? 'default' : 'outline'}
+                aria-pressed={selectedCategory === category.id}
                 onClick={() => setSelectedCategory(category.id)}
                 className={cn('h-10 shrink-0 gap-2 rounded-xl', selectedCategory === category.id && 'bg-[#22C7A1] hover:bg-[#1DAE8D]')}
               >
@@ -253,6 +259,7 @@ export default function PermissionsMatrix({
 
         <div className="space-y-3">
           {filteredPermissions.map((permission) => {
+            const arabic = getPermissionArabicCopy(permission);
             const level = getLevelMeta(permission.level);
             const LevelIcon = level.icon;
             const state = getPermissionState(permission.id);
@@ -272,10 +279,10 @@ export default function PermissionsMatrix({
                       : 'border-slate-200 bg-[#F8FAFC]'
                 )}
               >
-                <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+                <div className="ad-permission-row">
                   <div className="min-w-0 flex-1">
                     <div className="mb-2 flex flex-wrap items-center gap-2">
-                      <span className="font-black text-[#020617]">{permission.name}</span>
+                      <span className="font-black text-[#020617]">{arabic.name}</span>
                       <Badge variant="outline" className={cn('gap-1 rounded-lg', level.className)}>
                         <LevelIcon className="h-3 w-3" />
                         {level.label}
@@ -289,7 +296,8 @@ export default function PermissionsMatrix({
                       {state.mode === 'allow' && <Badge className="rounded-lg bg-[#E8FBF6] text-[#22C7A1] hover:bg-[#E8FBF6]">سماح خاص</Badge>}
                       {state.mode === 'deny' && <Badge className="rounded-lg bg-[#FFF0F2] text-[#FB6B7A] hover:bg-[#FFF0F2]">منع خاص</Badge>}
                     </div>
-                    <p className="text-sm font-bold leading-6 text-[#64748B]">{permission.description}</p>
+                    <p className="text-sm font-bold leading-6 text-[#64748B]">{arabic.description}</p>
+                    <p className="mt-2 text-xs font-bold">{state.granted ? 'مسموح بها' : 'غير مسموح بها'}</p>
                     <div className="mt-2 flex flex-wrap items-center gap-2 text-xs font-bold text-[#94A3B8]">
                       <span className="rounded-lg bg-white px-2 py-1">{permission.id}</span>
                       {roleSources.length > 0 ? (
@@ -300,7 +308,7 @@ export default function PermissionsMatrix({
                     </div>
                   </div>
 
-                  <div className="grid min-w-full grid-cols-3 gap-2 rounded-xl bg-white p-1 xl:min-w-[330px]">
+                  <div className="ad-permission-modes grid grid-cols-3 gap-2 rounded-xl bg-white p-1">
                     {[
                       { value: 'inherit' as const, label: 'يرث', icon: Minus },
                       { value: 'allow' as const, label: 'سماح', icon: Check },
@@ -313,6 +321,8 @@ export default function PermissionsMatrix({
                           key={option.value}
                           type="button"
                           disabled={disabled}
+                          aria-pressed={active}
+                          aria-label={`${option.label}: ${arabic.name}`}
                           onClick={() => handlePermissionMode(permission.id, option.value)}
                           className={cn(
                             'flex h-10 items-center justify-center gap-2 rounded-lg text-sm font-black transition',

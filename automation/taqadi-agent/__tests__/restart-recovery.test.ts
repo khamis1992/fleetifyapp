@@ -12,6 +12,10 @@ const baseJob = {
 };
 
 describe('Taqadi restart recovery policy', () => {
+  it('keeps a manual stop across a crash and treats a submitting stop as uncertain', () => {
+    expect(decideRestartRecovery({ ...baseJob, error_code: 'MANUAL_STOP_REQUESTED' }, staleBefore)).toBe('manual_stop');
+    expect(decideRestartRecovery({ ...baseJob, status: 'submitting', error_code: 'MANUAL_STOP_REQUESTED' }, staleBefore)).toBe('verify_submission');
+  });
   it('requeues stale work that stopped before submission', () => {
     expect(decideRestartRecovery({
       ...baseJob,

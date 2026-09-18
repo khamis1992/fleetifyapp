@@ -328,7 +328,7 @@ export function InvoiceEditDialog({ open, onOpenChange, invoice, onSave }: Invoi
           <div className="invoice-edit-scroll">
             <section className="invoice-edit-summary">
               <div>
-                <p className="text-xs font-black uppercase tracking-[0.16em] text-[#94A3B8]">Invoice Total</p>
+                <p className="text-xs font-black uppercase tracking-[0.16em] text-[#94A3B8]">إجمالي الفاتورة</p>
                 <h3 className="mt-1 text-2xl font-black text-[#020617]">
                   {formatCurrency(total, { currency: invoiceData.currency })}
                 </h3>

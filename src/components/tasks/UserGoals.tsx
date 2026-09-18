@@ -39,7 +39,6 @@ import {
   Target,
   MoreVertical,
   Trash2,
-  TrendingUp,
   CheckCircle2,
   Loader2,
   Minus,
@@ -82,17 +81,19 @@ export const UserGoals: React.FC<UserGoalsProps> = ({ compact = false, limit }) 
     period_type: 'daily',
   });
 
-  const { data: goals = [], isLoading } = useActiveGoals();
+  const [period,setPeriod] = React.useState('all');
+  const { data: goals = [], isLoading, isError, refetch } = useActiveGoals();
   const createGoal = useCreateGoal();
   const incrementProgress = useIncrementGoalProgress();
   const deleteGoal = useDeleteGoal();
 
-  const displayedGoals = limit ? goals.slice(0, limit) : goals;
+  const filteredGoals = goals.filter(goal=>period==='all'||goal.period_type===period);
+  const displayedGoals = limit ? filteredGoals.slice(0, limit) : filteredGoals;
 
   const handleAddGoal = async () => {
     if (!newGoal.title.trim() || newGoal.target_count < 1) return;
 
-    await createGoal.mutateAsync(newGoal);
+    try { await createGoal.mutateAsync(newGoal); } catch { return; }
 
     setNewGoal({ title: '', target_count: 10, period_type: 'daily' });
     setShowAddDialog(false);
@@ -240,6 +241,8 @@ export const UserGoals: React.FC<UserGoalsProps> = ({ compact = false, limit }) 
       </CardHeader>
 
       <CardContent className={cn(compact && 'px-0 pb-0')}>
+        {!compact&&<div className="tw-personal-tools" role="group" aria-label="فترة الأهداف">{Object.entries({all:'كل الأهداف',...periodLabels}).map(([value,label])=><button key={value} aria-pressed={period===value} onClick={()=>setPeriod(value)}>{label}</button>)}<span>{displayedGoals.length} هدف</span></div>}
+        {isError&&<div role="alert" className="tw-query-error">تعذر تحميل الأهداف <Button variant="outline" onClick={()=>refetch()}>إعادة المحاولة</Button></div>}
         {displayedGoals.length === 0 ? (
           <div className="text-center py-8 text-slate-400">
             <Target className="h-8 w-8 mx-auto mb-2 opacity-50" />

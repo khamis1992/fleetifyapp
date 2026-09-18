@@ -75,7 +75,7 @@ const NewEntry = () => {
     >
       <div className="container mx-auto p-6 space-y-6" dir="rtl">
         {/* Header */}
-        <div className="flex justify-between items-center">
+        <div data-finance-heading="" className="flex justify-between items-center">
           <div className="flex items-center gap-4">
             <div className="p-3 bg-gradient-to-br from-primary to-primary/80 rounded-xl text-primary-foreground">
               <Plus className="h-6 w-6" />

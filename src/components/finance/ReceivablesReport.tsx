@@ -35,7 +35,7 @@ const { data: receivablesData, isLoading } = useReceivablesReport()
             <tr>
               <td>${item.customer_name}</td>
               <td>${formatCurrency(item.amount)}</td>
-              <td>${new Date(item.due_date).toLocaleDateString('en-GB')}</td>
+              <td>${new Date(item.due_date).toLocaleDateString('ar-QA')}</td>
               <td>${item.overdue_days}</td>
               <td style="color: ${item.status === 'متأخر' ? '#ef4444' : '#22c55e'}">${item.status}</td>
             </tr>
@@ -86,7 +86,7 @@ const { data: receivablesData, isLoading } = useReceivablesReport()
               تقرير الحسابات المدينة
             </CardTitle>
             <CardDescription>
-              المبالغ المستحقة من العملاء كما في {new Date().toLocaleDateString('en-GB')}
+              المبالغ المستحقة من العملاء كما في {new Date().toLocaleDateString('ar-QA')}
             </CardDescription>
           </div>
           <Button onClick={handleExportHTML} size="sm">
@@ -134,7 +134,7 @@ const { data: receivablesData, isLoading } = useReceivablesReport()
               <TableRow key={index}>
                 <TableCell className="font-medium">{item.customer_name}</TableCell>
                 <TableCell className="text-right">{formatCurrency(item.amount)}</TableCell>
-                <TableCell>{new Date(item.due_date).toLocaleDateString('en-GB')}</TableCell>
+                <TableCell>{new Date(item.due_date).toLocaleDateString('ar-QA')}</TableCell>
                 <TableCell>{item.overdue_days}</TableCell>
                 <TableCell>
                   <Badge variant={item.status === 'متأخر' ? 'destructive' : 'default'}>

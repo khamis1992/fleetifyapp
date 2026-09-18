@@ -10,7 +10,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import BentoSidebar from '@/components/dashboard/bento/BentoSidebar';
 import { PageBreadcrumb } from '@/components/ui/page-breadcrumb';
-import { motion, AnimatePresence } from 'framer-motion';
+import { Sheet, SheetContent, SheetTitle, SheetDescription } from '@/components/ui/sheet';
 import { Menu, X, Search, LayoutDashboard, Wallet, Car, Users, Settings } from 'lucide-react';
 import { TaskNotificationBell } from '@/components/tasks/TaskNotificationBell';
 import { TourProvider } from '@/components/tour-guide';
@@ -20,6 +20,9 @@ import { NotificationBell } from '@/components/ui/NotificationBell';
 import { GlobalSearch } from '@/components/common/GlobalSearch';
 import { cn } from '@/lib/utils';
 import { ThemeToggle } from '@/components/ui/ThemeToggle';
+import { FinanceWorkspaceNav } from '@/components/finance/workspace/FinanceWorkspaceNav';
+import { LegalWorkspace } from '@/components/legal/workspace/LegalWorkspace';
+import '@/components/finance/workspace/finance-system.css';
 
 import { useFleetifyTranslation } from "@/hooks/useTranslation";
 // Lazy load AI Chat Widget for performance
@@ -36,7 +39,6 @@ const bottomNavItems = [
 
 // Mobile Bottom Navigation Component
 const MobileBottomNav: React.FC = () => {
-  const { t } = useFleetifyTranslation("ui");
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -79,10 +81,20 @@ export const BentoLayout: React.FC<BentoLayoutProps> = ({ children }) => {
   const { t } = useFleetifyTranslation("ui");
   const { user, loading } = useAuth();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(() => {
+    try { return localStorage.getItem('fleetify:sidebar-collapsed') === 'true'; } catch { return false; }
+  });
+  const mobileMenuButton = React.useRef<HTMLButtonElement>(null);
+  const changeSidebarCollapsed = (value: boolean) => {
+    setIsSidebarCollapsed(value);
+    try { localStorage.setItem('fleetify:sidebar-collapsed', String(value)); } catch { /* Layout remains usable without storage. */ }
+  };
   const location = useLocation();
+  const isFinance = location.pathname === '/finance' || location.pathname.startsWith('/finance/');
+  const isLegal = location.pathname === '/legal' || location.pathname.startsWith('/legal/');
+  const isOperationsPage = ['/fleet/maintenance', '/customers', '/customers/crm', '/settings/permissions', '/hr/reports', '/hr/daily-closeouts', '/fleet/dispatch-permits'].includes(location.pathname);
   const [hasMounted, setHasMounted] = useState(false);
-  const usesCanonicalOperationalPalette = ['/finance', '/fleet', '/legal'].some(
+  const usesCanonicalOperationalPalette = !isOperationsPage && ['/fleet'].some(
     (prefix) => location.pathname === prefix || location.pathname.startsWith(`${prefix}/`),
   );
 
@@ -94,7 +106,13 @@ export const BentoLayout: React.FC<BentoLayoutProps> = ({ children }) => {
   // Close mobile menu on route change
   useEffect(() => {
     setIsMobileMenuOpen(false);
-  }, [location.pathname]);
+  }, [location.pathname, location.search]);
+
+  useEffect(() => {
+    if (isFinance) document.body.setAttribute('data-finance-active', '');
+    else document.body.removeAttribute('data-finance-active');
+    return () => document.body.removeAttribute('data-finance-active');
+  }, [isFinance]);
 
   // Close mobile menu when clicking outside
   useEffect(() => {
@@ -136,6 +154,7 @@ export const BentoLayout: React.FC<BentoLayoutProps> = ({ children }) => {
       <div
         className={cn(
           "min-h-screen flex bg-neutral-50 dark:bg-neutral-950",
+          isFinance && "finance-layout",
           usesCanonicalOperationalPalette && "dashboard-system-colors bg-[#F6F8FB]",
         )}
         dir="rtl"
@@ -144,6 +163,7 @@ export const BentoLayout: React.FC<BentoLayoutProps> = ({ children }) => {
         <header className="lg:hidden fixed top-0 left-0 right-0 h-14 bg-white dark:bg-neutral-900 border-b border-neutral-200 dark:border-neutral-800 z-40 flex items-center justify-between px-4">
           <button
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+            ref={mobileMenuButton}
             className="p-2 rounded-lg hover:bg-neutral-100 text-neutral-600"
             aria-label={isMobileMenuOpen ? "إغلاق القائمة" : "فتح القائمة"}
             aria-expanded={isMobileMenuOpen}
@@ -154,7 +174,7 @@ export const BentoLayout: React.FC<BentoLayoutProps> = ({ children }) => {
           <span className="font-bold text-neutral-900">{t("fleetify")}</span>
           <div className="flex items-center gap-1">
             <button
-              onClick={() => document.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', metaKey: true }))}
+              onClick={() => document.dispatchEvent(new Event('fleetify:open-global-search'))}
               className="p-2 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-800 text-neutral-600 dark:text-neutral-300"
               aria-label="بحث"
             >
@@ -167,36 +187,19 @@ export const BentoLayout: React.FC<BentoLayoutProps> = ({ children }) => {
         </header>
 
         {/* Mobile Sidebar Overlay */}
-        <AnimatePresence>
-          {isMobileMenuOpen && (
-            <>
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                onClick={() => setIsMobileMenuOpen(false)}
-                className="lg:hidden fixed inset-0 bg-black/50 z-40"
-                aria-hidden="true"
-              />
-              <motion.div
-                initial={{ x: '100%' }}
-                animate={{ x: 0 }}
-                exit={{ x: '100%' }}
-                transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-                className="lg:hidden fixed top-0 right-0 bottom-0 w-72 z-50"
-              >
-                <nav role="navigation" aria-label="التنقل السريع" id="mobile-navigation">
-                  <BentoSidebar isMobile onCloseMobile={() => setIsMobileMenuOpen(false)} />
-                </nav>
-              </motion.div>
-            </>
-          )}
-        </AnimatePresence>
+        <Sheet modal open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
+          <SheetContent side="right" className="sw-mobile-sheet" id="mobile-navigation"
+            onCloseAutoFocus={event => { event.preventDefault(); mobileMenuButton.current?.focus(); }}>
+            <SheetTitle className="sr-only">القائمة الرئيسية</SheetTitle>
+            <SheetDescription className="sr-only">تصفح أقسام النظام أو ابحث عن القسم المطلوب.</SheetDescription>
+            <BentoSidebar isMobile onCloseMobile={() => setIsMobileMenuOpen(false)} />
+          </SheetContent>
+        </Sheet>
 
         {/* Desktop Sidebar - Fixed Position */}
         <div className="hidden lg:block fixed top-3 right-3 bottom-3 z-30">
           <aside role="complementary" aria-label="القائمة الجانبية">
-            <BentoSidebar />
+            <BentoSidebar collapsed={isSidebarCollapsed} onCollapsedChange={changeSidebarCollapsed} />
           </aside>
         </div>
         
@@ -204,15 +207,15 @@ export const BentoLayout: React.FC<BentoLayoutProps> = ({ children }) => {
         <main
           role="main"
           aria-label="المحتوى الرئيسي"
-          className="flex-1 overflow-y-auto overflow-x-hidden pt-14 lg:pt-0 pb-20 lg:pb-0 lg:mr-[288px]"
+          className={cn("bento-workspace-main min-w-0 flex-1 overflow-y-auto overflow-x-hidden pt-14 lg:pt-0 pb-20 lg:pb-0", isSidebarCollapsed && "sidebar-is-collapsed")}
           style={{ WebkitOverflowScrolling: 'touch' }}
         >
           <div className="p-4 md:p-6 min-h-screen">
             {/* Breadcrumb Navigation */}
-            <nav role="navigation" aria-label="التنقل الرئيسي">
+            {!isFinance && !isLegal && !isOperationsPage && <nav role="navigation" aria-label="التنقل الرئيسي">
               <PageBreadcrumb className="mb-4" />
-            </nav>
-            {children}
+            </nav>}
+            {isFinance ? <div className="finance-system"><FinanceWorkspaceNav /><div className="finance-page-body">{children}</div></div> : isLegal ? <LegalWorkspace>{children}</LegalWorkspace> : children}
           </div>
         </main>
 

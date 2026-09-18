@@ -46,13 +46,13 @@ describe('CashReceiptVoucher', () => {
     expect(screen.getByText('REC-2025-00144')).toBeInTheDocument();
     
     // Check date
-    expect(screen.getByLabelText('التاريخ | Date')).toHaveValue('2025-01-15');
+    expect(screen.getByLabelText('التاريخ')).toHaveValue('2025-01-15');
     
     // Check amount
     expect(screen.getByText('1500.000 QAR')).toBeInTheDocument();
     
     // Check payment method
-    expect(screen.getByText('نقداً | By Cash')).toBeInTheDocument();
+    expect(screen.getByText('نقداً')).toBeInTheDocument();
   });
 
   it('renders correctly with cheque payment', () => {
@@ -66,7 +66,7 @@ describe('CashReceiptVoucher', () => {
     render(<CashReceiptVoucher payment={chequePayment} />);
     
     // Check that cheque details are visible
-    expect(screen.getByText('شيك | By Cheque')).toBeInTheDocument();
+    expect(screen.getByText('شيك')).toBeInTheDocument();
     expect(screen.getByDisplayValue('CHK-12345')).toBeInTheDocument();
     expect(screen.getByDisplayValue('Bank Account 123')).toBeInTheDocument();
   });
@@ -75,6 +75,6 @@ describe('CashReceiptVoucher', () => {
     render(<CashReceiptVoucher payment={mockPayment} />);
     
     // Check that amount in words is displayed (simplified check)
-    expect(screen.getByLabelText('مبلغ وقدره ( ريال قطري ) | The Sum of (Q.Rls.)')).toBeInTheDocument();
+    expect(screen.getByLabelText('مبلغ وقدره ( ريال قطري )')).toBeInTheDocument();
   });
 });

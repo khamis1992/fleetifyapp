@@ -10,11 +10,20 @@
 
 import i18n from 'i18next';
 import { initReactI18next } from 'react-i18next';
-import LanguageDetector from 'i18next-browser-languagedetector';
 import Backend from 'i18next-http-backend';
+import { LANGUAGE_STORAGE_KEY, readLanguagePreference, saveLanguagePreference } from './languagePreference';
 
 // Import locale configurations
-import { LocaleConfig, localeConfigs } from './locales';
+import { localeConfigs } from './locales';
+
+// Ship the official language with the app so every namespace is available on first render.
+const arabicFiles = import.meta.glob<Record<string, unknown>>('../../../public/locales/ar/*.json', {
+  eager: true,
+  import: 'default',
+});
+const arabicResources = Object.fromEntries(Object.entries(arabicFiles).map(([path, resource]) => [
+  path.slice(path.lastIndexOf('/') + 1, -5), resource,
+]));
 
 // Translation namespaces
 export const TRANSLATION_NAMESPACES = {
@@ -100,8 +109,8 @@ export const SUPPORTED_LANGUAGES = {
 export type SupportedLanguage = keyof typeof SUPPORTED_LANGUAGES;
 
 // Default language configuration
-export const DEFAULT_LANGUAGE: SupportedLanguage = 'en';
-export const FALLBACK_LANGUAGE: SupportedLanguage = 'en';
+export const DEFAULT_LANGUAGE: SupportedLanguage = 'ar';
+export const FALLBACK_LANGUAGE: SupportedLanguage = 'ar';
 
 // i18n initialization
 export const initializeI18n = async (): Promise<void> => {
@@ -110,22 +119,16 @@ export const initializeI18n = async (): Promise<void> => {
     return;
   }
 
-  // Get stored language preference or browser language
-  const storedLanguage = localStorage.getItem('fleetify-language');
-  const browserLanguage = navigator.language.split('-')[0] as SupportedLanguage;
-
-  // Determine initial language
+  // Arabic is official. Only a deliberate language choice overrides it.
   let initialLanguage: SupportedLanguage = DEFAULT_LANGUAGE;
-
-  if (storedLanguage && Object.keys(SUPPORTED_LANGUAGES).includes(storedLanguage)) {
-    initialLanguage = storedLanguage as SupportedLanguage;
-  } else if (Object.keys(SUPPORTED_LANGUAGES).includes(browserLanguage)) {
-    initialLanguage = browserLanguage;
-  }
+  try {
+    initialLanguage = readLanguagePreference(localStorage);
+    localStorage.setItem(LANGUAGE_STORAGE_KEY, initialLanguage);
+  } catch { /* Arabic remains available when browser storage is blocked. */ }
+  applyLocaleConfig(initialLanguage);
 
   await i18n
     .use(Backend)
-    .use(LanguageDetector)
     .use(initReactI18next)
     .init({
       lng: initialLanguage,
@@ -142,13 +145,6 @@ export const initializeI18n = async (): Promise<void> => {
       backend: {
         loadPath: '/locales/{{lng}}/{{ns}}.json',
         addPath: '/locales/{{lng}}/{{ns}}.json'
-      },
-
-      // Language detection
-      detection: {
-        order: ['localStorage', 'navigator', 'htmlTag'],
-        caches: ['localStorage'],
-        lookupLocalStorage: 'fleetify-language'
       },
 
       // Interpolation
@@ -173,34 +169,12 @@ export const initializeI18n = async (): Promise<void> => {
       keySeparator: '.',
       nsSeparator: ':',
 
-      // Resources (static fallbacks for instant availability — backend loads the rest)
-      resources: {
-        en: {
-          ui: {
-            pageNotFound: 'Page not found',
-            goToDashboard: 'Go to Dashboard',
-            loading: 'Loading...',
-            fleetify: 'Fleetify',
-            aiAssistant: 'AI Assistant',
-            excel: 'Excel',
-          },
-        },
-        ar: {
-          ui: {
-            pageNotFound: 'الصفحة غير موجودة',
-            goToDashboard: 'الذهاب إلى لوحة التحكم',
-            loading: 'جاري التحميل...',
-            fleetify: 'Fleetify',
-            aiAssistant: 'المساعد الذكي',
-          },
-        },
-      },
+      resources: { ar: arabicResources },
+      partialBundledLanguages: true,
 
       // Performance
       load: 'languageOnly',
-      // Only preload languages that have translation files (en, ar)
-      // Other languages (fr, es, de, zh, hi, ja) will fall back to en
-      preload: ['en', 'ar'],
+      preload: ['ar'],
 
       // Return empty string for missing keys instead of the key itself
       returnEmptyString: false,
@@ -251,7 +225,7 @@ export const formatCurrency = (
       minimumFractionDigits: config.currency.decimals,
       maximumFractionDigits: config.currency.decimals
     }).format(value);
-  } catch (error) {
+  } catch {
     // Fallback formatting
     const symbol = config.currency.symbol;
     return `${symbol}${value.toFixed(config.currency.decimals)}`;
@@ -266,7 +240,7 @@ export const formatNumber = (
 
   try {
     return new Intl.NumberFormat(config.number.locale).format(value);
-  } catch (error) {
+  } catch {
     // Fallback formatting
     return value.toLocaleString();
   }
@@ -292,7 +266,7 @@ export const formatDate = (
 
   try {
     return new Intl.DateTimeFormat(config.date.locale, formatOptions).format(date);
-  } catch (error) {
+  } catch {
     // Fallback formatting
     return date.toISOString().split('T')[0];
   }
@@ -326,7 +300,7 @@ export const formatTime = (
       minute: '2-digit',
       hour12: config.time.use12Hour
     }).format(date);
-  } catch (error) {
+  } catch {
     // Fallback formatting
     return date.toTimeString().slice(0, 5);
   }
@@ -337,13 +311,14 @@ export { i18n };
 
 // Export current language getter
 export const getCurrentLanguage = (): SupportedLanguage => {
-  return (i18n.language as SupportedLanguage) || DEFAULT_LANGUAGE;
+  const language = (i18n.resolvedLanguage || i18n.language || DEFAULT_LANGUAGE).split('-')[0];
+  return language === 'en' ? 'en' : DEFAULT_LANGUAGE;
 };
 
 // Export language change function
 export const changeLanguage = async (language: SupportedLanguage): Promise<void> => {
   await i18n.changeLanguage(language);
-  localStorage.setItem('fleetify-language', language);
+  try { saveLanguagePreference(localStorage, language); } catch { /* Session-only preference. */ }
   applyLocaleConfig(language);
 };
 

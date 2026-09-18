@@ -12,6 +12,8 @@ const collectionAgent = read('supabase/functions/collection-message-agent/index.
 const autofillAgent = read('supabase/functions/customer-id-autofill-agent/index.ts');
 const matchAgent = read('supabase/functions/payment-match-agent/index.ts');
 const verifierAgent = read('supabase/functions/correction-verifier-agent/index.ts');
+const formalNoticeAgent = read('supabase/functions/legal-notice-agent/index.ts');
+const intelligentContractProcessor = read('supabase/functions/intelligent-contract-processor/index.ts');
 const hook = read('src/hooks/useAgentReviews.ts');
 
 describe('Kimi K3 agents hub', () => {
@@ -29,7 +31,8 @@ describe('Kimi K3 agents hub', () => {
 
   it('legal case reviewer checks claim amount against invoices and documents', () => {
     expect(legalAgent).toContain('مبلغ المطالبة');
-    expect(legalAgent).toContain('نسخة العقد الموقعة غير موجودة');
+    expect(legalAgent).toContain('نسخة عقد موقعة مطابقة لهوية المدعى عليه غير موجودة');
+    expect(legalAgent).toContain('hasIdentityMatchedSignedContract');
     expect(legalAgent).toContain('violations_proof');
   });
 
@@ -58,13 +61,30 @@ describe('Kimi K3 agents hub', () => {
     expect(verifierAgent).toContain('raw_text');
   });
 
+  it('formal notice agent sends automatically and waits for delivery evidence', () => {
+    expect(formalNoticeAgent).toContain('prepareAndSend');
+    expect(formalNoticeAgent).toContain('ensureAcknowledgementWebhook');
+    expect(formalNoticeAgent).toContain('providerMessageId');
+  });
+
   it('routes every agent type to its edge function', () => {
     for (const fn of [
       'journal-entry-ai-reviewer', 'legal-case-ai-reviewer', 'daily-closeout-ai-reviewer',
       'collection-message-agent', 'customer-id-autofill-agent', 'payment-match-agent',
-      'correction-verifier-agent',
+      'correction-verifier-agent', 'legal-notice-agent',
     ]) {
       expect(hook).toContain(fn);
     }
+    expect(hook).toContain('body: { ...body, companyId: scopedCompanyId }');
+  });
+
+  it('keeps contract normalization authenticated, governed, and free of raw PII logs', () => {
+    expect(intelligentContractProcessor).toContain('authorizeGovernedAgent');
+    expect(intelligentContractProcessor).toContain("'intelligent-contract-processor'");
+    expect(intelligentContractProcessor).toContain('finishAgentExecution');
+    expect(intelligentContractProcessor).toContain('options.autoApplyFixes === true');
+    expect(intelligentContractProcessor).toContain('تاريخ نهاية العقد يسبق تاريخ البداية');
+    expect(intelligentContractProcessor).toContain('قيمة الإيجار الشهري غير صالحة');
+    expect(intelligentContractProcessor).not.toContain("Processing contract data:', contract_data");
   });
 });

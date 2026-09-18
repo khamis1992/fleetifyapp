@@ -440,6 +440,21 @@ Deno.serve(async (req: Request) => {
     });
   }
 
+  return new Response(
+    JSON.stringify({
+      success: false,
+      error: 'LEGACY_TAQADI_BYPASS_RETIRED',
+      message: 'استخدم طابور taqadi_filing_jobs المحكوم؛ هذه الواجهة القديمة لا تتحقق من القضية والعقد والمستند والإعذار.',
+    }),
+    {
+      status: 410,
+      headers: {
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*',
+      },
+    },
+  );
+
   try {
     if (req.method !== 'POST') {
       return new Response(

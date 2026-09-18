@@ -113,7 +113,7 @@ export function sanitizeLegalDocumentFileName(fileName: string): string {
 export function buildContractDocumentStoragePath(input: {
   companyId: string;
   contractId: string;
-  documentType: 'signed_contract' | 'violations_proof';
+  documentType: string;
   fileName: string;
   uniqueId?: string;
 }): string {

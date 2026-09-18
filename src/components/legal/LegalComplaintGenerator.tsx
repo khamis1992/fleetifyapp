@@ -570,7 +570,7 @@ export const LegalComplaintGenerator: React.FC<LegalComplaintGeneratorProps> = (
               <div>شركة العراف لتأجير السيارات ذ.م.م - AL-ARAF CAR RENTAL L.L.C</div>
               <div class="footer-contacts">
                 <span>📞 +974 XXXX XXXX</span>
-                <span>📧 info@alaraf.qa</span>
+                <span>📧 khamis-1992@hotmail.com</span>
                 <span>🌐 www.alaraf.online</span>
               </div>
             </div>
@@ -801,10 +801,10 @@ export const LegalComplaintGenerator: React.FC<LegalComplaintGeneratorProps> = (
                           <Button size="sm" variant="ghost" onClick={handleCopy}>
                             {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
                           </Button>
-                          <Button size="sm" variant="ghost" onClick={handlePrint}>
+                          <Button size="sm" variant="ghost" onClick={handlePrint} aria-label="طباعة المستند" title="طباعة المستند">
                             <Printer className="w-4 h-4" />
                           </Button>
-                          <Button size="sm" variant="ghost" onClick={handleDownload}>
+                          <Button size="sm" variant="ghost" onClick={handleDownload} aria-label="تحميل المستند" title="تحميل المستند">
                             <Download className="w-4 h-4" />
                           </Button>
                         </div>

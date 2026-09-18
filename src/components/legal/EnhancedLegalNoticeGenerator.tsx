@@ -570,10 +570,11 @@ export const EnhancedLegalNoticeGenerator: React.FC<EnhancedLegalNoticeGenerator
               </div>
             </CardHeader>
             <CardContent>
-              <div className="grid max-h-[520px] gap-3 overflow-y-auto pr-1 md:grid-cols-2">
+              <div className="lw-notice-templates grid max-h-[520px] gap-3 overflow-y-auto pr-1 md:grid-cols-2">
                 {templates.map((template) => (
                   <button
                     key={template.id}
+                    aria-pressed={selectedTemplate === template.id}
                     onClick={() => setSelectedTemplate(template.id)}
                     className={`rounded-lg border p-4 text-right transition-colors ${
                       selectedTemplate === template.id

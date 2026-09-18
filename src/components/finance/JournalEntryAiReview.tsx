@@ -64,7 +64,7 @@ export function JournalEntryAiReviewMenuItem({ entryId, entryNumber }: {
         {runReview.isPending
           ? <Loader2 className="ml-2 h-4 w-4 animate-spin" />
           : <Brain className="ml-2 h-4 w-4 text-[#3730A3]" />}
-        مراجعة الوكيل (Kimi)
+        مراجعة المساعد الذكي
       </DropdownMenuItem>
 
       <Dialog open={open} onOpenChange={setOpen}>

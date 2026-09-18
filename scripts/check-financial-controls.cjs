@@ -1,6 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 const { createClient } = require('@supabase/supabase-js');
+const { selectInBatches } = require('./utils/select-in-batches.cjs');
 
 function readEnv(name) {
   if (process.env[name]) return process.env[name];
@@ -205,11 +206,11 @@ async function checkCancellationReversals(issues) {
   }
 
   const paymentIds = cancelledPayments.map((payment) => payment.id);
-  const referencedEntries = await selectAll(
+  const referencedEntries = await selectInBatches(paymentIds, ids => selectAll(
     'journal_entries',
     'id,company_id,entry_number,status,reference_type,reference_id,reversal_entry_id',
-    (query) => query.in('reference_id', paymentIds)
-  );
+    (query) => query.in('reference_id', ids).order('id')
+  ));
 
   const entriesByPaymentId = new Map();
   for (const entry of referencedEntries) {
@@ -219,11 +220,11 @@ async function checkCancellationReversals(issues) {
 
   const directEntryIds = cancelledPayments.map((payment) => payment.journal_entry_id).filter(Boolean);
   const directEntries = directEntryIds.length > 0
-    ? await selectAll(
+    ? await selectInBatches(directEntryIds, ids => selectAll(
       'journal_entries',
       'id,company_id,entry_number,status,reference_type,reference_id,reversal_entry_id',
-      (query) => query.in('id', directEntryIds)
-    )
+      (query) => query.in('id', ids).order('id')
+    ))
     : [];
   const directById = new Map(directEntries.map((entry) => [entry.id, entry]));
 

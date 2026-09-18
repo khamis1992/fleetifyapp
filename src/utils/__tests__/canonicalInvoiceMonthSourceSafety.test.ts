@@ -38,9 +38,11 @@ describe('canonical invoice-month source safety', () => {
     expect(contractPayments).toMatch(
       /payment\.invoice\?\.invoice_month\s*\|\|\s*payment\.invoice\?\.invoice_date/,
     );
-    expect(contractPayments).toContain(
-      'invoice_number, invoice_month, invoice_date, due_date',
-    );
+    // Invoice presentation now comes from the parent's scoped evidence, not a
+    // second Supabase join with a separately refreshed version of the invoice.
+    expect(contractPayments).toContain('const invoiceById = new Map(invoices.map(');
+    expect(contractPayments).toContain('invoice: invoice ? { ...invoice, due_date: invoice.due_date || null }');
+    expect(contractPayments).not.toContain('invoice:invoices!invoice_id');
     expect(quickPayment).toContain(
       'parseDateOnly(getInvoiceBillingDate(invoice))',
     );
@@ -127,8 +129,11 @@ describe('canonical invoice-month source safety', () => {
     );
     const config = readSource('supabase/config.toml');
 
-    expect(generator).toContain('authorizeInvoiceGenerator(req)');
-    expect(generator).toContain('INVOICE_GENERATOR_SECRET');
+    expect(generator).toContain('authorizeScheduledAgent');
+    expect(generator).toContain('"generate-monthly-invoices"');
+    expect(generator).toContain('companyId is required');
+    expect(generator).toContain('finishAgentExecution');
+    expect(generator).not.toContain('INVOICE_GENERATOR_SECRET');
     expect(generator).toContain('generate_invoice_for_contract_month_outcome');
     expect(generator).toContain('outcome?.created !== true');
     expect(generator).not.toContain('findActivePositiveInvoiceForMonth');
@@ -184,7 +189,7 @@ describe('canonical invoice-month source safety', () => {
     );
 
     expect(dailyAgent).toContain('const auditedContracts = await loadContractsForAudit(');
-    expect(dailyAgent).toContain('auditedContracts\n      .filter(');
+    expect(dailyAgent).toMatch(/auditedContracts\s*\.filter\(/);
     expect(dailyAgent).toContain('.map((contract: any) => contract.id)');
     expect(systemWorker).toContain('contract.missing_billing_graph');
     expect(systemWorker).toContain('activeInvoices.length === 0');
@@ -290,10 +295,12 @@ describe('canonical invoice-month source safety', () => {
     );
 
     expect(contractCreation).not.toContain("await supabase.from('invoices').insert");
-    expect(contractCreation).toContain(".rpc('create_contract_with_billing_graph_atomic'");
+    expect(contractCreation).toContain(".rpc('create_contract_with_violation_override_atomic'");
+    expect(contractCreation).toContain('p_accept_unpaid_violations: acceptedUnpaidViolations');
     expect(contractCreation).not.toContain(".rpc('create_contract_with_journal_entry'");
     expect(contractCreation).not.toContain(".rpc('generate_invoices_from_payment_schedule'");
-    expect(wizard).toContain("'create_contract_with_billing_graph_atomic'");
+    expect(wizard).toContain("'create_contract_with_violation_override_atomic'");
+    expect(wizard).toContain('p_accept_unpaid_violations: acceptedUnpaidViolations');
     expect(wizard).not.toContain("supabase.from('contracts').insert");
     expect(wizard).not.toContain("'generate_payment_schedules_for_contract'");
   });
@@ -301,12 +308,14 @@ describe('canonical invoice-month source safety', () => {
   it('does not leave known active contract writers outside the atomic command', () => {
     const mobile = readSource('src/pages/mobile/MobileContractWizard.tsx');
     const quotations = readSource('src/pages/Quotations.tsx');
+    const salesQuoteConversion = readSource('src/hooks/useQuoteToContract.ts');
     const financialTracking = readSource('src/pages/FinancialTracking.tsx');
     const smartUpload = readSource('src/hooks/useUnifiedContractUpload.ts');
     const csvImport = readSource('src/pages/Import.tsx');
 
-    for (const source of [mobile, quotations]) {
-      expect(source).toContain("'create_contract_with_billing_graph_atomic'");
+    for (const source of [mobile, quotations, salesQuoteConversion]) {
+      expect(source).toContain("'create_contract_with_violation_override_atomic'");
+      expect(source).toContain('p_accept_unpaid_violations:');
       expect(source).not.toContain(".from('contracts')\n        .insert");
     }
     expect(financialTracking).toContain("supabase.rpc('create_customer_with_contract_idempotent'");
@@ -337,7 +346,7 @@ describe('canonical invoice-month source safety', () => {
 
     expect(wizard).toContain('const billingDefinitionChanged =');
     expect(wizard).toContain(
-      'تعديل العميل أو شروط الفوترة متوقف من هذه الشاشة لحماية الفواتير والقيود',
+      'تعديل العميل أو المركبة أو شروط الفوترة متوقف من هذه الشاشة لحماية الفواتير والقيود',
     );
     expect(wizard).not.toContain('subtotal: newMonthlyAmount');
     expect(wizard).not.toContain('total_amount: newMonthlyAmount');
@@ -359,12 +368,15 @@ describe('canonical invoice-month source safety', () => {
     const list = readSource('src/pages/ContractsRedesigned.tsx');
     const details = readSource('src/components/contracts/ContractDetailsPageRedesigned.tsx');
     const legal = readSource('src/hooks/useConvertToLegal.ts');
+    const reactivation = readSource('src/services/contractReactivationService.ts');
 
-    expect(details).toContain('const canReactivate = false');
+    expect(details).toContain('await reactivateCancelledContract({');
     expect(details).not.toMatch(/executeReactivateContract[\s\S]*?status:\s*'active'/);
-    expect(details).toContain("show: contract.status === 'active'");
+    expect(reactivation).toContain("'reactivate_cancelled_contract_atomic_v1'");
+    expect(reactivation).not.toContain(".update({ status: 'active' })");
     expect(list).not.toContain("status: 'active',\n        reason:");
-    expect(legal).toContain("params.contract.status !== 'active'");
+    expect(legal).toContain("const eligibleStatuses = new Set(['active', 'cancelled', 'canceled', 'closed', 'expired'])");
+    expect(legal).toContain("'convert_contract_to_legal_collection_v2'");
   });
 
   it('keeps financially touched schedule mismatches review-only in contract health repair', () => {

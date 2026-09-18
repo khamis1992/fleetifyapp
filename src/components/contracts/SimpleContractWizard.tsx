@@ -1,3 +1,4 @@
+import { WorkspaceDialogContent as DialogContent, WorkspaceDialogHeader as DialogHeader, WorkspaceButton as Button } from '@/components/employee-workspace/WorkspacePresentation';
 /**
  * Simple Contract Wizard - 3 Steps Version
  * Redesigned to match Dashboard color scheme (teal-500 theme)
@@ -8,12 +9,14 @@
  * 3. المراجعة والإرسال (Review & Submit)
  */
 
-import React, { CSSProperties, useState, useEffect, useRef } from 'react';
+import React, { CSSProperties, useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { z } from 'zod';
+import { VehicleContractHandoffPanel, type HandoffReview } from './VehicleContractHandoffPanel';
+import { createContractWithHandoff } from '@/services/contractVehicleHandoff';
 import { toast } from 'sonner';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
+import { Dialog, DialogTitle } from '@/components/ui/dialog';
+
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -50,6 +53,13 @@ import { useCurrentCompanyId } from '@/hooks/useUnifiedCompanyAccess';
 import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
 import { systemColorPattern } from '@/lib/design-system/systemColorPattern';
 import { calculateCanonicalBillingMonths } from '@/utils/contractCalculations';
+import { assertRentalEligible } from '@/services/rentalEligibilityGuard';
+import { saveContractNotes, saveContractVehicleAndExtension } from '@/services/contractQuickEditService';
+import { contractExtensionAmount } from '@/utils/contractExtension';
+import { useRentalViolationOverride } from '@/contexts/RentalViolationOverrideContext';
+import { RentalEligibilityConfirmationCancelledError } from '@/contexts/rentalViolationOverrideErrors';
+import { RentalEligibilityBanner, RentalEligibilityNotice } from './RentalEligibilityBanner';
+import { ContractEditWorkspace } from './contract-edit/ContractEditWorkspace';
 
 // Import our new components
 import { EnhancedCustomerDialog } from '@/components/customers/EnhancedCustomerForm';
@@ -75,7 +85,8 @@ const wizardSystemStyle = {
 const contractSchema = z.object({
   customer_id: z.string().min(1, 'يجب اختيار العميل'),
   vehicle_id: z.string().optional(),
-  contract_type: z.enum(['daily', 'weekly', 'monthly', 'yearly', 'corporate']),
+  vehicle_handoff: z.object({ contractId: z.string().uuid(), updatedAt: z.string(), reason: z.string().min(5) }).optional(),
+  contract_type: z.enum(['daily', 'weekly', 'monthly', 'yearly', 'corporate', 'rental']),
   start_date: z.string().min(1, 'تاريخ البدء مطلوب'),
   end_date: z.string().min(1, 'تاريخ الانتهاء مطلوب'),
   rental_days: z.number().min(1, 'مدة الإيجار مطلوبة'),
@@ -88,7 +99,7 @@ const contractSchema = z.object({
   late_fine_grace_period: z.number().optional(),
 });
 
-type ContractFormData = z.infer<typeof contractSchema>;
+export type ContractFormData = z.infer<typeof contractSchema>;
 
 // === Types ===
 interface SimpleContractWizardProps {
@@ -201,7 +212,7 @@ const Step1CustomerVehicle: React.FC<{
   const filteredCustomers = customers;
 
   const availableVehicles = vehicles.filter(v => 
-    v.status === 'available' &&
+    ['available', 'rented'].includes(v.status || '') &&
     (v.plate_number.includes(vehicleSearch) ||
      `${v.make} ${v.model}`.toLowerCase().includes(vehicleSearch.toLowerCase()))
   );
@@ -421,6 +432,7 @@ const Step1CustomerVehicle: React.FC<{
                             {vehicle.make} {vehicle.model}
                           </p>
                           <p className="text-xs text-neutral-500">{vehicle.plate_number}</p>
+                          {vehicle.status === 'rented' && <span className="text-xs text-amber-700">مرتبطة بعقد — تتطلب مراجعة النقل</span>}
                         </div>
                       </div>
                       {vehicle.daily_rate && (
@@ -471,8 +483,17 @@ const Step1CustomerVehicle: React.FC<{
 const Step2DetailsPricing: React.FC<{
   formData: Partial<ContractFormData>;
   onUpdate: (data: Partial<ContractFormData>) => void;
-}> = ({ formData, onUpdate }) => {
+  preserveStoredContractAmount?: boolean;
+  expectedContractAmount?: number;
+}> = ({ formData, onUpdate, preserveStoredContractAmount = false, expectedContractAmount }) => {
   const { formatCurrency } = useCurrencyFormatter();
+  const canonicalBillingMonths = calculateCanonicalBillingMonths(formData.start_date, formData.end_date);
+  const canonicalContractAmount = expectedContractAmount ?? Number(formData.monthly_amount || 0) * canonicalBillingMonths;
+  const hasContractAmountConflict =
+    canonicalBillingMonths > 0
+    && Number(formData.monthly_amount || 0) > 0
+    && Number(formData.contract_amount || 0) > 0
+    && Math.abs(Number(formData.contract_amount || 0) - canonicalContractAmount) > 1;
 
   useEffect(() => {
     if (formData.start_date && formData.end_date) {
@@ -485,16 +506,27 @@ const Step2DetailsPricing: React.FC<{
           formData.start_date,
           formData.end_date,
         );
-        const totalAmount = formData.monthly_amount ? formData.monthly_amount * months : formData.contract_amount;
-        onUpdate({ 
-          rental_days: days,
-          contract_amount: totalAmount
-        });
+        const totalAmount = expectedContractAmount ?? (formData.monthly_amount ? formData.monthly_amount * months : formData.contract_amount);
+        onUpdate(
+          preserveStoredContractAmount
+            ? { rental_days: days }
+            : { rental_days: days, contract_amount: totalAmount },
+        );
       }
     }
-  }, [formData.start_date, formData.end_date, formData.monthly_amount]);
+  }, [
+    formData.contract_amount,
+    formData.end_date,
+    formData.monthly_amount,
+    formData.rental_days,
+    formData.start_date,
+    onUpdate,
+    preserveStoredContractAmount,
+    expectedContractAmount,
+  ]);
 
   const contractTypes = [
+    ...(formData.contract_type === 'rental' ? [{ value: 'rental', label: 'تأجير', icon: '🚗' }] : []),
     { value: 'daily', label: 'يومي', icon: '📅' },
     { value: 'weekly', label: 'أسبوعي', icon: '📆' },
     { value: 'monthly', label: 'شهري', icon: '🗓️' },
@@ -588,6 +620,31 @@ const Step2DetailsPricing: React.FC<{
         </AnimatePresence>
       </div>
 
+      {hasContractAmountConflict && (
+        <div className="rounded-xl border border-amber-300 bg-amber-50 p-4 text-amber-900">
+          <div className="flex items-start gap-3">
+            <AlertCircle className="mt-0.5 h-5 w-5 shrink-0" />
+            <div className="flex-1">
+              <p className="text-sm font-black">تعارض بين مدة العقد وقيمته</p>
+              <p className="mt-1 text-sm font-semibold leading-6">
+                القيمة المسجلة {formatCurrency(Number(formData.contract_amount || 0))}، بينما {formatCurrency(Number(formData.monthly_amount || 0))}
+                {' × '}{canonicalBillingMonths} شهراً = {formatCurrency(canonicalContractAmount)}.
+                صحح أحد التاريخين أو اعتمد القيمة المحسوبة قبل الحفظ.
+              </p>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => onUpdate({ contract_amount: canonicalContractAmount })}
+                className="mt-3 border-amber-400 bg-white text-amber-900 hover:bg-amber-100"
+              >
+                اعتماد {formatCurrency(canonicalContractAmount)}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Pricing Suggestions */}
       {formData.contract_type && formData.rental_days && formData.rental_days > 0 && (
         <PricingSuggestions
@@ -650,7 +707,7 @@ const Step2DetailsPricing: React.FC<{
                   <div>
                     <p className="text-sm text-neutral-600">إجمالي قيمة العقد</p>
                     <p className="text-xs text-neutral-500">
-                      {formData.monthly_amount} × {calculateCanonicalBillingMonths(formData.start_date, formData.end_date)} شهر
+                      {formData.monthly_amount} × {Number((Number(formData.contract_amount || 0) / formData.monthly_amount).toFixed(2))} شهر
                     </p>
                   </div>
                 </div>
@@ -752,6 +809,7 @@ const Step3Review: React.FC<{
     daily: 'يومي',
     weekly: 'أسبوعي',
     monthly: 'شهري',
+    rental: 'تأجير',
     yearly: 'سنوي',
     corporate: 'شركات',
   };
@@ -879,7 +937,7 @@ const Step3Review: React.FC<{
               <span className="font-medium">المبلغ الإجمالي</span>
               {formData.monthly_amount && formData.rental_days && (
                 <p className="text-xs text-white/70">
-                  {formData.monthly_amount} × {calculateCanonicalBillingMonths(formData.start_date, formData.end_date)} شهر
+                  {formData.monthly_amount} × {Number((Number(formData.contract_amount || 0) / formData.monthly_amount).toFixed(2))} شهر
                 </p>
               )}
             </div>
@@ -914,7 +972,7 @@ const Step3Review: React.FC<{
 };
 
 // === Main Component ===
-export const SimpleContractWizard: React.FC<SimpleContractWizardProps> = ({ open,
+const ContractCreationWizard: React.FC<SimpleContractWizardProps> = ({ open,
   onOpenChange,
   onSubmit,
   preselectedCustomerId,
@@ -923,10 +981,12 @@ export const SimpleContractWizard: React.FC<SimpleContractWizardProps> = ({ open
   showAssistant = true,
   editContract, }) => {
   const isEditMode = !!editContract;
+  const { confirmRentalEligibility } = useRentalViolationOverride();
   const { user } = useAuth();
   const companyId = useCurrentCompanyId();
   const [currentStep, setCurrentStep] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [isLoadingCustomers, setIsLoadingCustomers] = useState(true);
@@ -935,6 +995,7 @@ export const SimpleContractWizard: React.FC<SimpleContractWizardProps> = ({ open
   const [customersRefreshKey, setCustomersRefreshKey] = useState(0);
   const [customerSearch, setCustomerSearch] = useState('');
   const contractCreationKeyRef = useRef<string | null>(null);
+  const editVersionRef = useRef<{ id: string; companyId: string; updatedAt: string } | null>(null);
 
   // Initialize form data - prioritize editContract over preselected values
   const getInitialFormData = (): Partial<ContractFormData> => {
@@ -971,6 +1032,13 @@ export const SimpleContractWizard: React.FC<SimpleContractWizardProps> = ({ open
   useEffect(() => {
     if (open) {
       setFormData(getInitialFormData());
+      // Capture the version together with the displayed form. A background
+      // refetch must not silently grant an old form the newer row's version.
+      editVersionRef.current = editContract ? {
+        id: editContract.id,
+        companyId: editContract.company_id,
+        updatedAt: editContract.updated_at,
+      } : null;
       setCurrentStep(0); // Reset to first step
     }
   }, [open, editContract?.id, preselectedCustomerId, preselectedVehicleId]);
@@ -1021,18 +1089,45 @@ export const SimpleContractWizard: React.FC<SimpleContractWizardProps> = ({ open
                 ? `${c.first_name} ${c.last_name}`.trim()
                 : c.first_name_ar || c.first_name || 'عميل غير مسمى'
         }));
+
+        // The customer details page can open this wizard with a customer ID.
+        // That customer may not be among the 30 most recently created records,
+        // so load it explicitly to keep the preselection visible to the user.
+        if (preselectedCustomerId && !customersWithFullName.some(c => c.id === preselectedCustomerId)) {
+          const { data: preselectedCustomer } = await supabase
+            .from('customers')
+            .select('id, first_name, last_name, first_name_ar, last_name_ar, phone, national_id, customer_type, company_name, company_name_ar')
+            .eq('company_id', companyId)
+            .eq('id', preselectedCustomerId)
+            .eq('is_active', true)
+            .maybeSingle();
+
+          if (preselectedCustomer) {
+            customersWithFullName.unshift({
+              ...preselectedCustomer,
+              full_name: preselectedCustomer.customer_type === 'corporate'
+                ? preselectedCustomer.company_name_ar || preselectedCustomer.company_name || 'شركة غير مسماة'
+                : preselectedCustomer.first_name_ar && preselectedCustomer.last_name_ar
+                  ? `${preselectedCustomer.first_name_ar} ${preselectedCustomer.last_name_ar}`.trim()
+                  : preselectedCustomer.first_name && preselectedCustomer.last_name
+                    ? `${preselectedCustomer.first_name} ${preselectedCustomer.last_name}`.trim()
+                    : preselectedCustomer.first_name_ar || preselectedCustomer.first_name || 'عميل غير مسمى',
+            });
+          }
+        }
         
         // In edit mode, ensure the contract's customer is always included
         if (editContract?.customer_id && !customersWithFullName.find(c => c.id === editContract.customer_id)) {
-          const customerName = editContract.customers?.first_name_ar 
-            ? `${editContract.customers.first_name_ar} ${editContract.customers.last_name_ar || ''}`.trim()
-            : editContract.customers?.first_name 
-              ? `${editContract.customers.first_name} ${editContract.customers.last_name || ''}`.trim()
+          const customerInfo = editContract.customer || editContract.customers || {};
+          const customerName = customerInfo.first_name_ar
+            ? `${customerInfo.first_name_ar} ${customerInfo.last_name_ar || ''}`.trim()
+            : customerInfo.first_name
+              ? `${customerInfo.first_name} ${customerInfo.last_name || ''}`.trim()
               : 'عميل العقد الحالي';
           customersWithFullName.unshift({
             id: editContract.customer_id,
             full_name: customerName,
-            phone: editContract.customers?.phone || '',
+            phone: customerInfo.phone || '',
           } as any);
         }
         
@@ -1044,7 +1139,7 @@ export const SimpleContractWizard: React.FC<SimpleContractWizardProps> = ({ open
     // Debounce search to avoid too many requests - shorter delay for better UX
     const debounceTimer = setTimeout(fetchCustomers, 150);
     return () => clearTimeout(debounceTimer);
-  }, [companyId, customerSearch, customersRefreshKey, open, editContract?.customer_id]);
+  }, [companyId, customerSearch, customersRefreshKey, open, editContract?.customer_id, preselectedCustomerId]);
 
   // Load vehicles - only when dialog is open
   useEffect(() => {
@@ -1056,14 +1151,14 @@ export const SimpleContractWizard: React.FC<SimpleContractWizardProps> = ({ open
         .from('vehicles')
         .select('id, plate_number, make, model, year, status, daily_rate')
         .eq('company_id', companyId)
-        .in('status', isEditMode ? ['available', 'rented'] : ['available'])
+        .in('status', ['available', 'rented'])
         .order('make')
         .limit(200); // Increased limit to show more vehicles
 
       if (!error && data) {
         // In edit mode, ensure the contract's vehicle is always included
         if (editContract?.vehicle_id && !data.find(v => v.id === editContract.vehicle_id)) {
-          const vehicleInfo = editContract.vehicles || {};
+          const vehicleInfo = editContract.vehicle || editContract.vehicles || {};
           data.unshift({
             id: editContract.vehicle_id,
             plate_number: vehicleInfo.plate_number || 'مركبة العقد',
@@ -1082,16 +1177,50 @@ export const SimpleContractWizard: React.FC<SimpleContractWizardProps> = ({ open
     fetchVehicles();
   }, [companyId, open, editContract?.vehicle_id]);
 
-  const updateFormData = (updates: Partial<ContractFormData>) => {
-    setFormData((prev) => ({ ...prev, ...updates }));
-  };
+  const updateFormData = useCallback((updates: Partial<ContractFormData>) => {
+    setFormData((prev) => {
+      const next = { ...prev, ...updates };
+      if (editContract && next.end_date && next.start_date === editContract.start_date?.slice(0, 10)
+        && Number(next.monthly_amount) === Number(editContract.monthly_amount)) {
+        next.contract_amount = contractExtensionAmount(editContract, next.end_date);
+      }
+      return next;
+    });
+  }, [editContract]);
+
+  const expectedEditAmount = isEditMode && formData.end_date
+    && formData.start_date === editContract.start_date?.slice(0, 10)
+    && Number(formData.monthly_amount) === Number(editContract.monthly_amount)
+    ? contractExtensionAmount(editContract, formData.end_date) : undefined;
+
+  const billingMonths = calculateCanonicalBillingMonths(formData.start_date, formData.end_date);
+  const hasBillingAmountConflict =
+    billingMonths > 0
+    && Number(formData.monthly_amount || 0) > 0
+    && Number(formData.contract_amount || 0) > 0
+    && Math.abs(
+      Number(formData.contract_amount || 0)
+      - (expectedEditAmount ?? Number(formData.monthly_amount || 0) * billingMonths)
+    ) > 1;
+
+  const [handoffReview, setHandoffReview] = useState<HandoffReview>();
+  const handoffScope = [companyId, formData.vehicle_id, formData.start_date, formData.end_date, open].join(':');
+  const handoffReady = isEditMode || !formData.vehicle_id || (handoffReview?.scope === handoffScope && handoffReview.ready);
 
   const canProceed = (): boolean => {
+    if (currentStep > 0 && !handoffReady) return false;
     switch (currentStep) {
       case 0:
         return !!formData.customer_id;
       case 1:
-        return !!(formData.contract_type && formData.start_date && formData.end_date && formData.contract_amount && formData.contract_amount > 0);
+        return !!(
+          formData.contract_type
+          && formData.start_date
+          && formData.end_date
+          && formData.contract_amount
+          && formData.contract_amount > 0
+          && !hasBillingAmountConflict
+        );
       case 2:
         return true;
       default:
@@ -1112,6 +1241,7 @@ export const SimpleContractWizard: React.FC<SimpleContractWizardProps> = ({ open
   };
 
   const handleSubmit = async () => {
+    setSubmitError(null);
     if (!canProceed()) return;
 
     const validation = contractSchema.safeParse(formData);
@@ -1119,58 +1249,82 @@ export const SimpleContractWizard: React.FC<SimpleContractWizardProps> = ({ open
       toast.error(validation.error.issues[0]?.message || 'يرجى إكمال بيانات العقد');
       return;
     }
-    const validatedData = validation.data;
+    const validatedData = { ...validation.data, vehicle_handoff: !isEditMode && formData.vehicle_id && handoffReview?.scope === handoffScope ? handoffReview.consent : undefined };
 
     setIsSubmitting(true);
     try {
       if (!companyId) throw new Error('تعذر تحديد الشركة');
 
+      let acceptedUnpaidViolations = false;
+      if (validatedData.vehicle_id && !onSubmit && !isEditMode) {
+        const confirmation = await confirmRentalEligibility({
+          companyId,
+          vehicleId: validatedData.vehicle_id,
+          customerId: validatedData.customer_id,
+        });
+        if (!confirmation) return;
+        acceptedUnpaidViolations = confirmation.acceptedUnpaidViolations;
+      } else if (
+        validatedData.vehicle_id
+        && isEditMode
+        && (
+          validatedData.vehicle_id !== editContract.vehicle_id
+          || validatedData.customer_id !== editContract.customer_id
+        )
+      ) {
+        await assertRentalEligible({
+          companyId,
+          vehicleId: validatedData.vehicle_id,
+          customerId: validatedData.customer_id,
+        });
+      }
+
       if (onSubmit) {
         await onSubmit(validatedData);
       } else if (isEditMode && editContract?.id) {
+        const openedVersion = editVersionRef.current;
+        if (!openedVersion || openedVersion.id !== editContract.id || openedVersion.companyId !== companyId) {
+          throw new Error('تغير العقد أو الشركة أثناء التعديل؛ أغلق النافذة وافتح العقد مجددًا.');
+        }
         // Update existing contract
         const newMonthlyAmount = validatedData.monthly_amount;
         const billingDefinitionChanged =
           validatedData.customer_id !== String(editContract.customer_id || '')
+          || (validatedData.vehicle_id || '') !== String(editContract.vehicle_id || '')
           || validatedData.contract_type !== String(editContract.contract_type || '')
           || validatedData.start_date !== String(editContract.start_date || '').slice(0, 10)
           || validatedData.end_date !== String(editContract.end_date || '').slice(0, 10)
           || Math.abs(newMonthlyAmount - Number(editContract.monthly_amount || 0)) > 0.001
           || Math.abs(validatedData.contract_amount - Number(editContract.contract_amount || 0)) > 0.001;
 
-        if (billingDefinitionChanged) {
+        if (billingDefinitionChanged && (
+          validatedData.customer_id !== String(editContract.customer_id || '')
+          || validatedData.contract_type !== String(editContract.contract_type || '')
+          || validatedData.start_date !== String(editContract.start_date || '').slice(0, 10)
+          || newMonthlyAmount !== Number(editContract.monthly_amount || 0)
+        )) {
           throw new Error(
-            'تعديل العميل أو شروط الفوترة متوقف من هذه الشاشة لحماية الفواتير والقيود. استخدم مسار تعديل عقد محاسبي ذري ومعتمد.',
+            'تعديل العميل أو المركبة أو شروط الفوترة متوقف من هذه الشاشة لحماية الفواتير والقيود. يلزم تعديل عقد موثق يحدّث السجلات المرتبطة.',
           );
         }
 
-        const { error } = await supabase
-          .from('contracts')
-          .update({
-            customer_id: validatedData.customer_id,
-            vehicle_id: validatedData.vehicle_id || null,
-            contract_type: validatedData.contract_type,
-            start_date: validatedData.start_date,
-            end_date: validatedData.end_date,
-            monthly_amount: newMonthlyAmount,
-            contract_amount: validatedData.contract_amount,
-            description: validatedData.notes || null,
-          })
-          .eq('id', editContract.id)
-          .eq('company_id', companyId);
-
-        if (error) {
-          console.error('Contract update error:', error);
-          throw error;
-        }
-
-
+        if (billingDefinitionChanged) {
+          await saveContractVehicleAndExtension({
+            companyId, contractId: editContract.id, expectedUpdatedAt: openedVersion.updatedAt,
+            vehicleId: validatedData.vehicle_id || '', endDate: validatedData.end_date,
+            notes: validatedData.notes || null,
+          });
+        } else await saveContractNotes({
+          companyId,
+          contractId: editContract.id,
+          expectedUpdatedAt: openedVersion.updatedAt,
+          notes: validatedData.notes || null,
+        });
         toast.success('تم تحديث العقد بنجاح!');
       } else {
         if (!user?.id) throw new Error('تعذر تحديد المستخدم');
 
-        const { data: creationResult, error } = await supabase.rpc(
-          'create_contract_with_billing_graph_atomic',
+        const { data: creationResult, error } = await createContractWithHandoff(
           {
             p_company_id: companyId,
             p_customer_id: validatedData.customer_id,
@@ -1187,7 +1341,8 @@ export const SimpleContractWizard: React.FC<SimpleContractWizardProps> = ({ open
             p_created_via: assignedToProfileId ? 'employee_workspace' : 'web',
             p_idempotency_key: contractCreationKeyRef.current
               ?? (contractCreationKeyRef.current = `contract:${crypto.randomUUID()}`),
-          },
+            p_accept_unpaid_violations: acceptedUnpaidViolations,
+          }, validatedData.vehicle_handoff,
         );
 
         if (error) throw error;
@@ -1204,7 +1359,9 @@ export const SimpleContractWizard: React.FC<SimpleContractWizardProps> = ({ open
 
       onOpenChange(false);
     } catch (error: any) {
+      if (error instanceof RentalEligibilityConfirmationCancelledError) return;
       console.error('Error saving contract:', error);
+      setSubmitError(error?.message || 'فشل في حفظ العقد');
       toast.error(error?.message || (isEditMode ? 'فشل في تحديث العقد' : 'فشل في إنشاء العقد'));
     } finally {
       setIsSubmitting(false);
@@ -1239,6 +1396,14 @@ export const SimpleContractWizard: React.FC<SimpleContractWizardProps> = ({ open
           <Step2DetailsPricing
             formData={formData}
             onUpdate={updateFormData}
+            expectedContractAmount={expectedEditAmount}
+            preserveStoredContractAmount={Boolean(
+              isEditMode
+              && formData.start_date === editContract.start_date?.slice(0, 10)
+              && formData.end_date === editContract.end_date?.slice(0, 10)
+              && Number(formData.monthly_amount || 0) === Number(editContract.monthly_amount || 0)
+              && Number(formData.contract_amount || 0) === Number(editContract.contract_amount || 0)
+            )}
           />
         );
       case 2:
@@ -1321,6 +1486,24 @@ export const SimpleContractWizard: React.FC<SimpleContractWizardProps> = ({ open
             "wizard-step-scroll flex-1 overflow-y-auto p-6 transition-all",
             isAssistantOpen ? "w-1/2" : "w-full"
           )}>
+            {currentStep === 0 && <RentalEligibilityNotice className="mb-4" />}
+            {!isEditMode && open && companyId && formData.vehicle_id && <VehicleContractHandoffPanel
+              key={handoffScope} companyId={companyId} vehicleId={formData.vehicle_id}
+              startDate={formData.start_date} endDate={formData.end_date} scope={handoffScope}
+              onReview={setHandoffReview} disabled={isSubmitting} />}
+            {submitError && <div role="alert" className="mb-4 rounded-xl border border-red-300 bg-red-50 p-3 text-red-900">{submitError}</div>}
+            {(
+              !isEditMode
+              || formData.vehicle_id !== editContract.vehicle_id
+              || formData.customer_id !== editContract.customer_id
+            ) && (
+              <RentalEligibilityBanner
+                companyId={companyId}
+                vehicleId={formData.vehicle_id}
+                customerId={formData.customer_id}
+                className="mb-4"
+              />
+            )}
             <AnimatePresence mode="wait">
               {renderStep()}
             </AnimatePresence>
@@ -1575,5 +1758,11 @@ export const SimpleContractWizard: React.FC<SimpleContractWizardProps> = ({ open
     </Dialog>
   );
 };
+
+// Existing entry points keep the creation API, while editing gets its own
+// snapshot, change review and persistence flow without mounting creation hooks.
+export const SimpleContractWizard: React.FC<SimpleContractWizardProps> = (props) => props.editContract
+  ? <ContractEditWorkspace open={props.open} onOpenChange={props.onOpenChange} contract={props.editContract} onSubmit={props.onSubmit} />
+  : <ContractCreationWizard {...props} />;
 
 export default SimpleContractWizard;

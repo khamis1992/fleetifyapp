@@ -71,10 +71,10 @@ import {
 } from '@/utils/invoiceBillingMonth';
 
 const excelImportTour = {
-  title: 'جولة استيراد دفعات Excel',
+  title: 'جولة استيراد دفعات إكسل',
   description: 'شرح طريقة رفع ملفات الدفعات التاريخية ومراجعتها قبل الاعتماد.',
   steps: [
-    'ابدأ برفع ملف أو مجلد Excel يحتوي بيانات العميل واللوحة والمدفوعات الشهرية.',
+    'ابدأ برفع ملف أو مجلد إكسل يحتوي بيانات العميل واللوحة والمدفوعات الشهرية.',
     'راجع جودة القراءة: العميل، الهاتف، اللوحة، المدفوع، المتبقي، الصيانة، التأخير، والمخالفات.',
     'استخدم زر تعديل لتصحيح القيم التي قرأها النظام بشكل غير دقيق قبل الاعتماد.',
     'زر اعتماد الدفعات يفتح ملخصاً نهائياً لما سيتم ترحيله للنظام.',
@@ -83,7 +83,7 @@ const excelImportTour = {
 } satisfies FeatureTourContent;
 
 const excelApprovalTour = {
-  title: 'جولة اعتماد ملف Excel',
+  title: 'جولة اعتماد ملف إكسل',
   description: 'شرح نافذة اعتماد الدفعات التاريخية قبل ترحيلها للنظام.',
   steps: [
     'راجع عدد الدفعات والفواتير والمخالفات التي سيقوم النظام بإنشائها أو ربطها.',
@@ -1547,7 +1547,7 @@ const buildImportAiInsights = ({
   if (files.length === 0) {
     return [{
       tone: 'info',
-      title: 'ابدأ برفع ملفات Excel',
+      title: 'ابدأ برفع ملفات إكسل',
       description: 'بعد الرفع سيحلل المساعد جودة القراءة والمطابقة ويخبرك بالملفات الجاهزة والملفات التي تحتاج تدخل.',
     }];
   }
@@ -1602,7 +1602,7 @@ const buildImportAiInsights = ({
     insights.push({
       tone: 'warning',
       title: `${lowConfidenceFiles.length} ملف جودة قراءته منخفضة`,
-      description: 'راجع الاسم والهوية والجوال واللوحة قبل الاعتماد؛ انخفاض الجودة يعني أن أعمدة Excel قد تكون غير واضحة أو ناقصة.',
+      description: 'راجع الاسم والهوية والجوال واللوحة قبل الاعتماد؛ انخفاض الجودة يعني أن أعمدة إكسل قد تكون غير واضحة أو ناقصة.',
     });
   }
 
@@ -2536,7 +2536,7 @@ export default function ExcelPaymentImport() {
         {
           p_company_id: companyId,
           p_accounting_period_id: period.id,
-          p_reason: `اعتماد دفعات كاش تاريخية من ملف Excel للفترة ${period.period_name}`,
+          p_reason: `اعتماد دفعات كاش تاريخية من ملف إكسل للفترة ${period.period_name}`,
           p_hours: 2,
         }
       );
@@ -2547,7 +2547,7 @@ export default function ExcelPaymentImport() {
           {
             p_company_id: companyId,
             p_accounting_period_id: period.id,
-            p_reason: `اعتماد دفعات كاش تاريخية من ملف Excel للفترة ${period.period_name}`,
+            p_reason: `اعتماد دفعات كاش تاريخية من ملف إكسل للفترة ${period.period_name}`,
           }
         );
         if (requestError) throw requestError;
@@ -2648,8 +2648,8 @@ export default function ExcelPaymentImport() {
         vehicle_plate: contract.vehicles?.plate_number || contract.license_plate || file.plateNumber || null,
         customer_id: contract.customer_id,
         contract_id: contract.id,
-        violation_type: 'مخالفة مرورية تاريخية من ملف Excel',
-        reason: 'استيراد تاريخي من ملف Excel',
+        violation_type: 'مخالفة مرورية تاريخية من ملف إكسل',
+        reason: 'استيراد تاريخي من ملف إكسل',
         status: 'pending',
         payment_status: 'unpaid',
         created_by: user?.id || null,
@@ -2682,7 +2682,7 @@ export default function ExcelPaymentImport() {
       vehicle_id: contract.vehicle_id,
       maintenance_number: maintenanceNumber,
       maintenance_type: 'historical_excel_import',
-      description: `صيانة تاريخية مستوردة من ملف Excel للعقد ${contract.contract_number}`,
+      description: `صيانة تاريخية مستوردة من ملف إكسل للعقد ${contract.contract_number}`,
       actual_cost: amount,
       estimated_cost: amount,
       scheduled_date: maintenanceDate,
@@ -3014,7 +3014,7 @@ export default function ExcelPaymentImport() {
               payment_date: pending.paymentDate,
               amount: pending.amount,
               reference_number: pending.stableReference,
-              notes: `دفعة كاش تاريخية مستوردة من Excel - ${file.fileName} - شهر ${pending.row.month}`,
+              notes: `دفعة كاش تاريخية مستوردة من إكسل - ${file.fileName} - شهر ${pending.row.month}`,
             })),
             p_batch_idempotency_key: `excel:${file.id}:${contract.id}`,
             p_actor_id: user?.id || null,
@@ -3025,7 +3025,7 @@ export default function ExcelPaymentImport() {
         const batchPayments = ((batchResult as { payments?: Array<{ payment_id?: string }> } | null)?.payments || []);
         const paymentIds = batchPayments.map((item) => item.payment_id).filter((id): id is string => Boolean(id));
         if (paymentIds.length !== pendingPaymentRows.length) {
-          throw new Error('لم تُرجع قاعدة البيانات جميع دفعات ملف Excel بعد الحفظ الذري.');
+          throw new Error('لم تُرجع قاعدة البيانات جميع دفعات ملف إكسل بعد الحفظ الذري.');
         }
 
         const { data: persistedPayments, error: persistedError } = await supabase
@@ -3158,7 +3158,7 @@ export default function ExcelPaymentImport() {
         total: selectedFile.rows.length,
         label: 'اكتمل الاعتماد بنجاح.',
       });
-      toast.success('تم اعتماد ملف Excel وربطه بالنظام المالي');
+      toast.success('تم اعتماد ملف إكسل وربطه بالنظام المالي');
     } catch (error: unknown) {
       console.error('Excel approval failed:', error);
       try {
@@ -3174,11 +3174,11 @@ export default function ExcelPaymentImport() {
       setApprovalProgress(null);
       recordFileOutcome(selectedFile, {
         status: 'failed',
-        message: translateExcelImportError(error) || errorMessage(error) || 'فشل اعتماد ملف Excel',
+        message: translateExcelImportError(error) || errorMessage(error) || 'فشل اعتماد ملف إكسل',
         details: summarizeFileAnalysis(selectedFile, matchedContract),
         contractNumber: matchedContract.contract_number,
       });
-      toast.error(translateExcelImportError(error) || 'فشل اعتماد ملف Excel');
+      toast.error(translateExcelImportError(error) || 'فشل اعتماد ملف إكسل');
     } finally {
       setIsApproving(false);
     }
@@ -3377,13 +3377,13 @@ export default function ExcelPaymentImport() {
     <div dir="rtl" className={`min-h-screen bg-[#F6F8FB] py-6 text-[#020617] ${isEditMode ? 'px-0 md:px-0' : 'px-4 md:px-6'}`}>
       <div className={`mx-auto space-y-5 ${isEditMode ? 'max-w-none' : 'max-w-7xl'}`}>
         <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+          <div data-finance-heading="" className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <div className="flex items-start gap-3">
               <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#22C7A1]/10 text-[#22C7A1]">
                 <FileSpreadsheet className="h-6 w-6" />
               </div>
               <div>
-                <h1 className="text-2xl font-bold md:text-3xl">استيراد دفعات Excel التاريخية</h1>
+                <h1 className="text-2xl font-bold md:text-3xl">استيراد دفعات إكسل التاريخية</h1>
                 <p className="mt-1 max-w-3xl text-sm leading-6 text-[#94A3B8]">
                   ارفع ملفات العملاء القديمة لمراجعتها قبل إدخالها للنظام. التحليل مرن مع اختلاف بسيط في الأعمدة، ولا يتم اعتماد أي دفعة من هذه الشاشة.
                 </p>
@@ -3502,7 +3502,7 @@ export default function ExcelPaymentImport() {
               {isAiReviewLoading
                 ? 'AI يحلل الآن'
                 : aiReview?.source === 'longcat'
-                  ? 'AI عبر LongCat'
+                  ? 'AI بالمساعد الذكي'
                   : 'AI احتياطي داخلي'}
             </Badge>
           </div>
@@ -3613,7 +3613,7 @@ export default function ExcelPaymentImport() {
         {files.length === 0 ? (
           <section className="rounded-2xl border border-dashed border-slate-300 bg-white p-10 text-center shadow-sm">
             <FileSpreadsheet className="mx-auto h-14 w-14 text-[#38BDF8]" />
-            <h2 className="mt-4 text-xl font-bold">ابدأ برفع ملف أو مجلد Excel</h2>
+            <h2 className="mt-4 text-xl font-bold">ابدأ برفع ملف أو مجلد إكسل</h2>
             <p className="mt-2 text-sm text-[#94A3B8]">
               سيتم استخراج بيانات العميل واللوحة والمدفوعات الشهرية، ثم تصنيف الملفات حسب جودة القراءة.
             </p>
@@ -3997,7 +3997,7 @@ export default function ExcelPaymentImport() {
                           <TableHead className="text-right">الصيانة</TableHead>
                           <TableHead className="text-right">التأخير</TableHead>
                           <TableHead className="text-right">المخالفات المرورية</TableHead>
-                          <TableHead className="text-right">صف Excel</TableHead>
+                          <TableHead className="text-right">صف إكسل</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -4107,7 +4107,7 @@ export default function ExcelPaymentImport() {
                   </div>
 
                   <div className="rounded-xl border border-slate-200 bg-[#F6F8FB] p-4 text-sm leading-6 text-[#64748B]">
-                    الخطوة التالية بعد اعتماد شكل القراءة: نضيف زر اعتماد ينشئ دفعات تاريخية مستقلة، يطابقها مع الفواتير، ويمنع التكرار عبر رقم ملف Excel + الشهر + العقد.
+                    الخطوة التالية بعد اعتماد شكل القراءة: نضيف زر اعتماد ينشئ دفعات تاريخية مستقلة، يطابقها مع الفواتير، ويمنع التكرار عبر رقم ملف إكسل + الشهر + العقد.
                   </div>
                 </div>
               ) : null}
@@ -4137,7 +4137,7 @@ export default function ExcelPaymentImport() {
                   <TableHead className="text-right">الحقل</TableHead>
                   <TableHead className="text-right">قبل</TableHead>
                   <TableHead className="text-right">بعد</TableHead>
-                  <TableHead className="text-right">صف Excel</TableHead>
+                  <TableHead className="text-right">صف إكسل</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -4236,7 +4236,7 @@ export default function ExcelPaymentImport() {
                 </Badge>
               </div>
               {isAgentPlanLoading ? (
-                <p className="mt-2">يقارن الوكيل هذا الملف بآخر نسخة معتمدة ويصنف النصوص عبر LongCat...</p>
+                <p className="mt-2">يقارن الوكيل هذا الملف بآخر نسخة معتمدة ويصنف النصوص بالمساعد الذكي...</p>
               ) : agentPlan?.exactDuplicate ? (
                 <p className="mt-2 font-semibold">هذا الملف معتمد سابقًا بنفس المحتوى. لن تُنشأ أي حركة جديدة.</p>
               ) : agentPlan ? (
@@ -4291,7 +4291,7 @@ export default function ExcelPaymentImport() {
                 )}
               </>
             ) : (
-              <p className="mt-2">تأكد أن اللوحة أو الهاتف أو الهوية في ملف Excel تطابق عقدًا موجودًا في النظام.</p>
+              <p className="mt-2">تأكد أن اللوحة أو الهاتف أو الهوية في ملف إكسل تطابق عقدًا موجودًا في النظام.</p>
             )}
           </div>
 
@@ -4434,7 +4434,7 @@ export default function ExcelPaymentImport() {
                   <div className="mt-3 rounded-lg bg-slate-50 p-3 text-xs font-semibold leading-6 text-[#475569]">
                     {importResult.paymentReport.slice(0, 3).map((reportRow) => (
                       <p key={`${reportRow.referenceNumber}-${reportRow.month}`}>
-                        شهر {reportRow.month}: تم تسجيل الدفعة في جدول payments وربطها بالعميل "{reportRow.customerName}"، العقد "{reportRow.contractNumber}"، والفاتورة "{reportRow.invoiceNumber}".
+                        شهر {reportRow.month}: تم تسجيل الدفعة في سجل المدفوعات وربطها بالعميل "{reportRow.customerName}"، العقد "{reportRow.contractNumber}"، والفاتورة "{reportRow.invoiceNumber}".
                       </p>
                     ))}
                     {importResult.paymentReport.length > 3 && (

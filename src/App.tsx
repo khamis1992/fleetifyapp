@@ -16,6 +16,7 @@ import { CompanyContextProvider } from '@/contexts/CompanyContext';
 import { FABProvider } from '@/contexts/FABContext';
 import { FinanceProvider } from '@/contexts/FinanceContext';
 import { AIChatProvider } from '@/contexts/AIChatContext';
+import { RentalViolationOverrideProvider } from '@/contexts/RentalViolationOverrideContext';
 
 // UI Components
 import { Toaster } from '@/components/ui/toaster';
@@ -31,6 +32,7 @@ import { routeConfigs } from '@/routes';
 // Error Boundaries and Performance
 import ErrorBoundary from '@/components/common/ErrorBoundary';
 import { RouteErrorBoundary } from '@/components/common/RouteErrorBoundary';
+import { RecordChangeSynchronization } from '@/components/common/RecordChangeSynchronization';
 
 // Suspense Boundaries
 import SuspenseBoundary from '@/components/common/SuspenseBoundary';
@@ -168,8 +170,8 @@ const App: React.FC = () => {
     return id;
   }, []);
 
-  // Initialize query client with shared cache (no tab isolation)
-  // This allows all tabs to share the same data
+  // Each tab owns its cache. RecordChangeSynchronization refreshes affected
+  // readers after a successful save in another tab, without copying cache data.
   const queryClient = useMemo(() => {
     const client = createQueryClient();
     
@@ -213,7 +215,7 @@ const App: React.FC = () => {
   }, []);
 
   // DISABLED: Advanced tab sync causes performance issues and tab freezing
-  // Each tab will work independently with its own cache
+  // RecordChangeSynchronization below sends only scoped record identifiers.
   // React.useEffect(() => {
   //   import('./utils/advancedTabSync').then(({ advancedTabSync }) => {
   //     console.log('🔄 [APP] Tab sync disabled for performance');
@@ -283,10 +285,12 @@ const App: React.FC = () => {
           {/* <TooltipProvider delayDuration={200}> */}
             <AuthProvider>
               <CompanyContextProvider>
+                <RecordChangeSynchronization />
                 <AIChatProvider>
-                  <FABProvider>
-                    <FinanceProvider>
-                      <MobileOptimizationProvider>
+                  <RentalViolationOverrideProvider>
+                    <FABProvider>
+                      <FinanceProvider>
+                        <MobileOptimizationProvider>
                         <PerformanceMonitor>
                           <RouteProvider routes={routeConfigs}>
                             <RouteErrorBoundary>
@@ -324,9 +328,10 @@ const App: React.FC = () => {
 
                         {/* Security Headers */}
                         <SecurityHeaders />
-                      </MobileOptimizationProvider>
-                    </FinanceProvider>
-                  </FABProvider>
+                        </MobileOptimizationProvider>
+                      </FinanceProvider>
+                    </FABProvider>
+                  </RentalViolationOverrideProvider>
                 </AIChatProvider>
               </CompanyContextProvider>
             </AuthProvider>

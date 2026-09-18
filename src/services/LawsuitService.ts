@@ -4,6 +4,7 @@
  */
 
 import { supabase } from '@/integrations/supabase/client';
+import { isTrafficViolationsOnlyScope, type LegalClaimScope } from '@/types/legalClaimScope';
 
 // أنواع المستندات القانونية
 export type LegalDocumentType = 
@@ -55,6 +56,7 @@ export interface LawsuitPreparation {
   explanatory_memo_url?: string;
   claims_statement_url?: string;
   contract_copy_url?: string;
+  source_document_id?: string;
   status: LawsuitStatus;
   taqadi_case_number?: string;
   taqadi_reference_number?: string;
@@ -151,11 +153,11 @@ class LawsuitService {
     uploadedBy?: string,
   ): Promise<CompanyLegalDocument> {
     // رفع الملف إلى Storage
-    const safeFileName = file.name
-      .normalize('NFKC')
-      .replace(/[^\p{L}\p{N}._-]+/gu, '_')
-      .replace(/^[_\.]+|[_\.]+$/g, '') || 'document';
-    const fileName = `${companyId}/${documentType}/${Date.now()}-${crypto.randomUUID()}-${safeFileName}`;
+    // Storage keys must not contain user-supplied Unicode or path characters.
+    // Keep the original display name in document_name below.
+    const extension = file.name.normalize('NFKC').match(/\.([a-zA-Z0-9]{1,10})$/)?.[1].toLowerCase()
+      || (file.type === 'application/pdf' ? 'pdf' : undefined);
+    const fileName = `${companyId}/${documentType}/${Date.now()}-${crypto.randomUUID()}${extension ? `.${extension}` : ''}`;
     const { data: uploadData, error: uploadError } = await supabase.storage
       .from('legal-documents')
       .upload(fileName, file, {
@@ -377,6 +379,7 @@ class LawsuitService {
         facts_text: data.facts_text,
         claims_text: data.claims_text,
         status: 'draft',
+        source_document_id: data.source_document_id,
       })
       .select()
       .single();
@@ -477,7 +480,10 @@ class LawsuitService {
   private convertScaleGroup(num: number, singular: string, dual: string, plural: string, suffix: string): string {
     if (num === 1) return singular;
     if (num === 2) return dual;
-    if (num >= 3 && num <= 10) return `${this.convertHundreds(num)} ${plural}`;
+    const finalTwoDigits = num % 100;
+    if (finalTwoDigits >= 3 && finalTwoDigits <= 10) {
+      return `${this.convertHundreds(num)} ${plural}`;
+    }
     return `${this.convertHundreds(num)} ${suffix}`;
   }
 
@@ -514,8 +520,11 @@ class LawsuitService {
   /**
    * توليد عنوان الدعوى
    */
-  generateCaseTitle(customerName: string): string {
+  generateCaseTitle(customerName: string, claimScope?: LegalClaimScope): string {
     const shortName = customerName.split(' ').slice(0, 2).join(' ');
+    if (isTrafficViolationsOnlyScope(claimScope)) {
+      return `مطالبة مخالفات مرورية-${shortName}`.substring(0, 50);
+    }
     return `مطالبة مالية-إيجار سيارة-${shortName}`.substring(0, 50);
   }
 
@@ -526,14 +535,24 @@ class LawsuitService {
     customerName: string,
     contractDate: string,
     vehicleInfo: string,
-    overdueAmount: number
+    overdueAmount: number,
+    claimScope?: LegalClaimScope,
   ): string {
     const formattedDate = new Date(contractDate).toLocaleDateString('en-GB');
-    return `بتاريخ ${formattedDate} أبرمت شركة العراف لتأجير السيارات (المدعية) عقد إيجار سيارة مع السيد/ ${customerName} (المدعى عليه) وذلك لاستئجار سيارة ${vehicleInfo}.
+    const normalizedVehicleInfo = vehicleInfo.trim();
+    const vehicleDescription = normalizedVehicleInfo
+      ? `المركبة ${normalizedVehicleInfo}`
+      : 'المركبة المبينة بياناتها في عقد الإيجار المرفق';
 
-وقد التزمت المدعية بتسليم السيارة المؤجرة للمدعى عليه في حالة جيدة وصالحة للاستخدام، إلا أن المدعى عليه أخل بالتزاماته التعاقدية وامتنع عن سداد الإيجارات المستحقة عليه.
+    if (isTrafficViolationsOnlyScope(claimScope)) {
+      return `بتاريخ ${formattedDate} أبرمت شركة العراف لتأجير السيارات (المدعية) عقد إيجار سيارة مع السيد/ ${customerName} (المدعى عليه) بشأن ${vehicleDescription}.
 
-وبالرغم من المطالبات الودية المتكررة، إلا أن المدعى عليه لم يقم بسداد المبالغ المستحقة والتي بلغت ${overdueAmount.toLocaleString('en-US')} ريال قطري.`;
+وثبتت خلال حيازة المدعى عليه للمركبة مخالفات مرورية غير مسددة وفق الكشف الرسمي والمستندات المرفقة، وبلغت قيمتها الإجمالية ${overdueAmount.toLocaleString('en-US')} ريال قطري. وتقتصر هذه المطالبة على المخالفات المرورية فقط، ولا تشمل المطالبة رصيد الأجرة أو غرامات التأخير أو أي تعويضات أخرى.`;
+    }
+
+    return `بتاريخ ${formattedDate} أبرمت شركة العراف لتأجير السيارات (المدعية) عقد إيجار سيارة مع السيد/ ${customerName} (المدعى عليه) بشأن ${vehicleDescription}.
+
+وحلت بموجب العقد استحقاقات إيجارية لم تسدد في مواعيدها، وفق كشف الاستحقاقات والمستندات المرفقة، وبلغ صافي المبلغ المطالب به ${overdueAmount.toLocaleString('en-US')} ريال قطري حتى تاريخ إعداد المطالبة.`;
   }
 
   /**
@@ -542,7 +561,7 @@ class LawsuitService {
   generateClaimsText(totalAmount: number): string {
     return `1. إلزام المدعى عليه بأن يؤدي للمدعية مبلغ (${totalAmount.toLocaleString('en-US')}) ريال قطري قيمة الإيجارات المتأخرة.
 
-2. إلزام المدعى عليه بالفوائد القانونية من تاريخ الاستحقاق وحتى تمام السداد.
+2. إلزام المدعى عليه بالتعويض عن الضرر الفعلي المثبت الناتج عن التأخر في السداد، إن توافرت شروطه وبالقدر الذي تقدره المحكمة.
 
 3. إلزام المدعى عليه بالرسوم والمصاريف ومقابل أتعاب المحاماة.`;
   }

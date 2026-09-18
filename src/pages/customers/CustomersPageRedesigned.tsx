@@ -1,3 +1,5 @@
+import { OperationsWorkspace, OperationsMetric } from '@/components/operations/OperationsWorkspace';
+import { pageNumbers } from '@/components/operations/operationsPresentation';
 /**
  * صفحة العملاء - تصميم احترافي SaaS
  * مستوحى من منصات مثل Linear و Stripe و Vercel
@@ -6,10 +8,17 @@
  * @component CustomersPageRedesigned
  */
 
+/**
+ * صفحة العملاء - تصميم احترافي SaaS
+ * مستوحى من منصات مثل Linear و Stripe و Vercel
+ * تصميم نظيف، متطور، مع تسلسل هرمي ممتاز للطباعة
+ *
+ * @component CustomersPageRedesigned
+ */
 import React, { useState, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { motion } from 'framer-motion';
+
 import { supabase } from '@/integrations/supabase/client';
 import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
 import { useCustomers, useCustomerCount, useDeleteCustomer } from '@/hooks/useEnhancedCustomers';
@@ -17,99 +26,19 @@ import { useRolePermissions } from '@/hooks/useRolePermissions';
 import { Customer, CustomerFilters } from '@/types/customer';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
-import {
-  Search,
-  Plus,
-  Users,
-  Building2,
-  Phone,
-  Mail,
-  ChevronRight,
-  ChevronLeft,
-  FileText,
-  Upload,
-  UserPlus,
-  AlertCircle,
-  RefreshCw,
-  LayoutGrid,
-  Columns,
-  Crown,
-  MoreVertical,
-  Eye,
-  Edit3,
-  Trash2,
-  Download,
-  IdCard,
-  Gavel,
-} from 'lucide-react';
+import { Search, Plus, Users, Building2, Phone, Mail, ChevronRight, ChevronLeft, FileText, Upload, UserPlus, AlertCircle, RefreshCw, LayoutGrid, Columns, Crown, MoreVertical, Eye, Edit3, Trash2, Download, IdCard, Gavel } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
-import {
-  EnhancedCustomerDialog,
-  CustomerCSVUpload,
-  CustomerSplitView,
-} from '@/components/customers';
+
+
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { EnhancedCustomerDialog, CustomerCSVUpload, CustomerSplitView } from '@/components/customers';
 import CustomerExportDialog from '@/components/customers/CustomerExportDialog';
 import CustomerDocumentDistributionDialog from '@/components/customers/CustomerDocumentDistributionDialog';
-import { EmptyState } from '@/components/ui/EmptyState';
 
-import { useFleetifyTranslation } from "@/hooks/useTranslation";
-// ===== Professional Stat Card =====
-interface ProStatCardProps {
-  value: number | string;
-  label: string;
-  description: string;
-  icon: React.ElementType;
-  delay: number;
-}
-
-const ProStatCard: React.FC<ProStatCardProps> = ({ value, label, description, icon: Icon, delay }) => (
-  <motion.div
-    initial={{ opacity: 0, y: 8 }}
-    animate={{ opacity: 1, y: 0 }}
-    transition={{ delay, duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-    className="relative overflow-hidden rounded-lg border border-[#DDE5EF] bg-white p-5 shadow-sm transition-colors hover:border-[#173A63]"
-  >
-    <div className="flex items-start justify-between">
-      <div className="flex-1">
-        <p className="text-3xl font-black tracking-tight text-[#142033]">{value}</p>
-        <p className="mt-1 text-sm font-bold text-[#142033]">{label}</p>
-        <p className="mt-0.5 text-xs text-[#6A7688]">{description}</p>
-      </div>
-      <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-[#EEF5FB] text-[#173A63]">
-        <Icon className="h-5 w-5" strokeWidth={2.5} />
-      </div>
-    </div>
-    <div className="absolute inset-x-0 bottom-0 h-1 bg-[#173A63]" />
-  </motion.div>
-);
 
 // ===== Professional Customer Card =====
 interface ProCustomerCardProps {
@@ -121,7 +50,6 @@ interface ProCustomerCardProps {
   onQuickRent: () => void;
   canEdit: boolean;
   canDelete: boolean;
-  index: number;
   navigate: any; // Add navigate prop
 }
 
@@ -134,176 +62,25 @@ const ProCustomerCard: React.FC<ProCustomerCardProps> = ({
   onQuickRent,
   canEdit,
   canDelete,
-  index,
   navigate,
 }) => {
-  const { t } = useFleetifyTranslation("ui");
-  const getCustomerName = () => {
-    if (customer.customer_type === 'individual') {
-      const primaryName = `${customer.first_name || ''} ${customer.last_name || ''}`.trim();
-      const arName = `${customer.first_name_ar || ''} ${customer.last_name_ar || ''}`.trim();
-      return primaryName || arName || 'غير محدد';
-    }
-    return customer.company_name || customer.company_name_ar || 'غير محدد';
-  };
-
-  const getInitials = () => {
-    const name = getCustomerName();
-    if (name === 'غير محدد') return '؟';
-    const parts = name.split(' ').filter(n => n.length > 0);
-    return parts.slice(0, 2).map(n => n[0]).join('');
-  };
-
-  const getAvatarColor = () => {
-    const colors = [
-      'bg-sky-100 text-sky-700',
-      'bg-indigo-100 text-indigo-700',
-      'bg-violet-100 text-violet-700',
-      'bg-purple-100 text-purple-700',
-      'bg-fuchsia-100 text-fuchsia-700',
-      'bg-pink-100 text-pink-700',
-      'bg-rose-100 text-rose-700',
-      'bg-orange-100 text-orange-700',
-      'bg-amber-100 text-amber-700',
-      'bg-emerald-100 text-emerald-700',
-      'bg-teal-100 text-teal-700',
-      'bg-cyan-100 text-cyan-700',
-    ];
-    return colors[index % colors.length];
-  };
-
-  const avatarColor = getAvatarColor();
-
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 12 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: index * 0.02, duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
-      className="group relative cursor-pointer overflow-hidden rounded-lg border border-[#DDE5EF] bg-white p-5 shadow-sm transition-colors hover:border-[#173A63]"
-      onClick={onView}
-    >
-      {/* VIP Badge */}
-      {customer.is_vip && (
-        <div className="absolute top-4 right-4">
-          <Badge className="gap-1 border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-50">
-            <Crown className="w-3 h-3" />{t("vip")}</Badge>
-        </div>
-      )}
-
-      {/* Header */}
-      <div className="mb-4 flex items-start gap-3">
-        <Avatar className={cn("h-12 w-12", avatarColor.split(' ')[0])}>
-          <AvatarFallback className={cn("text-sm font-medium", avatarColor)}>
-            {getInitials()}
-          </AvatarFallback>
-        </Avatar>
-        <div className="min-w-0 flex-1">
-          <h3 className="truncate text-base font-black text-[#142033] transition-colors group-hover:text-[#173A63]">
-            {getCustomerName()}
-          </h3>
-          <div className="mt-2 flex items-center gap-2">
-            <Badge variant="outline" className="h-6 border-[#D8E1EC] bg-[#F8FAFC] px-2 text-xs text-[#536173]">
-              {customer.customer_type === 'individual' ? (
-                <><Users className="w-3 h-3 ml-1" /> فرد</>
-              ) : (
-                <><Building2 className="w-3 h-3 ml-1" /> شركة</>
-              )}
-            </Badge>
-            {customer.is_active && (
-              <div className="h-2 w-2 rounded-full bg-emerald-500" />
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* Contact Info */}
-      <div className="mb-4 grid gap-2">
-        <div className="flex min-h-10 items-center gap-2 rounded-lg border border-[#EDF2F7] bg-[#FCFDFE] px-3 text-sm text-[#536173]">
-          <Mail className="h-3.5 w-3.5 flex-shrink-0 text-[#8A96A8]" />
-          <span className="truncate">{customer.email || '-'}</span>
-        </div>
-        <div className="flex min-h-10 items-center gap-2 rounded-lg border border-[#EDF2F7] bg-[#FCFDFE] px-3 text-sm text-[#536173]">
-          <Phone className="h-3.5 w-3.5 flex-shrink-0 text-[#8A96A8]" />
-          <span className="font-mono truncate" dir="ltr">{customer.phone || '-'}</span>
-        </div>
-      </div>
-
-      {/* Footer */}
-      <div className="flex items-center justify-between border-t border-[#E6EDF5] pt-3">
-        <div className="flex items-center gap-1.5 text-sm">
-          <FileText className="h-4 w-4 text-[#8A96A8]" />
-          <span className="font-black text-[#142033]">{contractCount}</span>
-          <span className="text-neutral-500 dark:text-neutral-400">عقود</span>
-        </div>
-
-        {contractCount === 0 && (
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              onQuickRent();
-            }}
-            className="flex min-h-9 items-center gap-1 rounded-lg border border-[#D8E1EC] px-3 text-xs font-bold text-[#173A63] transition-colors hover:bg-[#EEF5FB]"
-          >
-            <Plus className="w-3 h-3" />
-            إنشاء عقد
-          </button>
-        )}
-
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-9 w-9 rounded-lg border border-transparent p-0 transition-colors hover:border-[#D8E1EC] hover:bg-[#EEF5FB]"
-            >
-              <MoreVertical className="w-4 h-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-56">
-            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onView(); }} className="gap-2">
-              <Eye className="w-4 h-4" />
-              عرض التفاصيل
-            </DropdownMenuItem>
-            {canEdit && (
-              <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onEdit(); }} className="gap-2">
-                <Edit3 className="w-4 h-4" />
-                تعديل
-              </DropdownMenuItem>
-            )}
-            <DropdownMenuSeparator />
-            <DropdownMenuItem 
-              onClick={(e) => { 
-                e.stopPropagation(); 
-                // البحث عن عقد نشط للعميل
-                const activeContract = customer.contracts?.find((c: any) => c.status === 'active');
-                if (activeContract) {
-                  navigate(`/legal/lawsuit/prepare/${activeContract.id}`);
-                } else {
-                  toast.error('لا يوجد عقد نشط لهذا العميل');
-                }
-              }} 
-              className="gap-2 text-teal-700 focus:text-teal-700 focus:bg-teal-50"
-            >
-              <Gavel className="w-4 h-4" />
-              إنشاء قضية قانونية
-            </DropdownMenuItem>
-            {canDelete && (
-              <>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem
-                  onClick={(e) => { e.stopPropagation(); onDelete(); }}
-                  className="gap-2 text-red-600"
-                >
-                  <Trash2 className="w-4 h-4" />
-                  حذف
-                </DropdownMenuItem>
-              </>
-            )}
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </div>
-    </motion.div>
-  );
+  const name = customer.customer_type === 'individual'
+    ? [customer.first_name_ar || customer.first_name, customer.last_name_ar || customer.last_name].filter(Boolean).join(' ') || 'عميل غير محدد'
+    : customer.company_name_ar || customer.company_name || 'جهة غير محددة';
+  const initials = name.split(' ').slice(0,2).map(part => part[0]).join('');
+  return <article className="opw-customer-card">
+    <div className="opw-customer-top"><div className="opw-avatar" aria-hidden="true">{initials}</div><div className="opw-customer-name">
+      <button onClick={onView} title={name}>{name}</button><p>{customer.customer_type === 'individual' ? 'عميل فرد' : 'عميل شركة'}<span>·</span>{customer.is_active ? 'نشط' : 'غير نشط'}{customer.is_vip && <span className="opw-vip"><Crown size={11}/>مميز</span>}</p>
+    </div><DropdownMenu dir="rtl"><DropdownMenuTrigger asChild><Button size="icon" variant="ghost" aria-label={'إجراءات العميل ' + name}><MoreVertical size={17}/></Button></DropdownMenuTrigger>
+      <DropdownMenuContent align="end"><DropdownMenuItem onClick={onView}><Eye size={15}/>عرض الملف</DropdownMenuItem>
+      {canEdit && <DropdownMenuItem onClick={onEdit}><Edit3 size={15}/>تعديل البيانات</DropdownMenuItem>}
+      <DropdownMenuItem onClick={onQuickRent}><Plus size={15}/>إنشاء عقد</DropdownMenuItem><DropdownMenuSeparator/>
+      <DropdownMenuItem onClick={() => { const contract = customer.contracts?.find((item: any) => item.status === 'active'); if (contract) navigate('/legal/lawsuit/prepare/' + contract.id); else toast.error('لا يوجد عقد نشط لهذا العميل'); }}><Gavel size={15}/>تجهيز دعوى</DropdownMenuItem>
+      {canDelete && <><DropdownMenuSeparator/><DropdownMenuItem onClick={onDelete} className="text-red-600"><Trash2 size={15}/>حذف العميل</DropdownMenuItem></>}
+      </DropdownMenuContent></DropdownMenu></div>
+    <div className="opw-customer-contact"><div><Phone size={15}/><span dir="ltr">{customer.phone || 'الهاتف غير مسجل'}</span></div><div><Mail size={15}/><span>{customer.email || 'البريد غير مسجل'}</span></div></div>
+    <footer><span className="opw-contract-count"><FileText size={15}/><b>{contractCount}</b>عقود</span><Button onClick={onView} variant="outline" size="sm">فتح الملف <ChevronLeft size={14}/></Button></footer>
+  </article>;
 };
 
 // ===== التحقق من صحة رقم الهوية (11 رقم) =====
@@ -637,7 +414,6 @@ const _exportCustomersToExcel = async (
 
 // ===== Main Component =====
 const CustomersPageRedesigned: React.FC = () => {
-  const { t } = useFleetifyTranslation("ui");
   const navigate = useNavigate();
   const deleteCustomerMutation = useDeleteCustomer();
   const { companyId, isAuthenticating } = useUnifiedCompanyAccess();
@@ -715,8 +491,8 @@ const CustomersPageRedesigned: React.FC = () => {
   });
 
   // Counts
-  const { data: individualCount = 0 } = useCustomerCount({ customer_type: 'individual', includeInactive: false });
-  const { data: corporateCount = 0 } = useCustomerCount({ customer_type: 'corporate', includeInactive: false });
+  const { data: individualCount } = useCustomerCount({ customer_type: 'individual', includeInactive: false });
+  const { data: corporateCount } = useCustomerCount({ customer_type: 'corporate', includeInactive: false });
 
 
   const totalPages = Math.ceil(totalCustomersInDB / pageSize);
@@ -766,137 +542,35 @@ const CustomersPageRedesigned: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-[#F6F8FB]">
-      {/* Header */}
-      <div className="border-b border-[#DDE5EF] bg-white">
-        <div className="mx-auto max-w-[1600px] px-4 py-5 sm:px-6">
-          <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
-            {/* Title */}
-            <div className="flex items-center gap-4">
-              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[#173A63] text-white shadow-sm">
-                <Users className="h-6 w-6 text-white" strokeWidth={2.5} />
-              </div>
-              <div>
-                <h1 className="text-2xl font-black tracking-tight text-[#142033]">
-                  العملاء
-                </h1>
-                <p className="mt-1 text-sm text-[#6A7688]">
-                  إدارة بيانات العملاء
-                </p>
-              </div>
-            </div>
-
-            {/* Actions */}
-            <div className="flex flex-wrap items-center gap-2">
-              {/* View Toggle */}
-              <div className="flex items-center rounded-xl border border-[#DDE5EF] bg-[#F8FAFC] p-1">
-                <button
-                  onClick={() => setViewMode('grid')}
-                  className={cn(
-                    "min-h-[44px] rounded-lg px-4 py-2.5 text-sm font-bold transition-colors",
-                    viewMode === 'grid'
-                      ? 'bg-white text-[#173A63] shadow-sm'
-                      : 'text-[#6A7688] hover:text-[#142033]'
-                  )}
-                >
-                  <LayoutGrid className="w-4 h-4 ml-1" />
-                  شبكة
-                </button>
-                <button
-                  onClick={() => setViewMode('split')}
-                  className={cn(
-                    "min-h-[44px] rounded-lg px-4 py-2.5 text-sm font-bold transition-colors",
-                    viewMode === 'split'
-                      ? 'bg-white text-[#173A63] shadow-sm'
-                      : 'text-[#6A7688] hover:text-[#142033]'
-                  )}
-                >
-                  <Columns className="w-4 h-4 ml-1" />
-                  مقسم
-                </button>
-              </div>
-
-              <Button
-                variant="outline"
-                size="default"
-                onClick={() => setShowCSVUpload(true)}
-                className="min-h-[44px] gap-2 border-[#D8E1EC] bg-white hover:border-[#173A63] hover:bg-[#EEF5FB]"
-              >
-                <Upload className="w-4 h-4" />
-                استيراد
-              </Button>
-
-              <Button
-                variant="outline"
-                size="default"
-                onClick={() => setShowExportDialog(true)}
-                disabled={isLoading}
-                className="min-h-[44px] gap-2 border-[#D8E1EC] bg-white hover:border-[#173A63] hover:bg-[#EEF5FB]"
-              >
-                <Download className="w-4 h-4" />
-                تصدير
-              </Button>
-
-              <Button
-                variant="outline"
-                size="default"
-                onClick={() => setShowDocumentDistribution(true)}
-                disabled={isLoading}
-                className="min-h-[44px] gap-2 border-[#D8E1EC] bg-white hover:border-[#173A63] hover:bg-[#EEF5FB]"
-              >
-                <IdCard className="w-4 h-4" />
-                توزيع البطاقات
-              </Button>
-
-              <Button
-                size="default"
-                onClick={() => setShowCreateDialog(true)}
-                className="min-h-[44px] gap-2 bg-[#173A63] text-white shadow-sm hover:bg-[#173A63]/90"
-              >
-                <UserPlus className="w-4 h-4" />
-                إضافة عميل
-              </Button>
-            </div>
-          </div>
-        </div>
-      </div>
-
+    <OperationsWorkspace section="customers" actions={<>
+      <Button className="opw-primary" onClick={() => setShowCreateDialog(true)}><UserPlus size={17}/>إضافة عميل</Button>
+      <DropdownMenu dir="rtl"><DropdownMenuTrigger asChild><Button className="opw-secondary" variant="outline"><MoreVertical size={16}/>أدوات العملاء</Button></DropdownMenuTrigger><DropdownMenuContent align="end">
+        <DropdownMenuItem onClick={() => setShowCSVUpload(true)}><Upload size={15}/>استيراد العملاء</DropdownMenuItem>
+        <DropdownMenuItem disabled={isLoading} onClick={() => setShowExportDialog(true)}><Download size={15}/>تصدير العملاء</DropdownMenuItem>
+        <DropdownMenuItem disabled={isLoading} onClick={() => setShowDocumentDistribution(true)}><IdCard size={15}/>توزيع بطاقات الهوية</DropdownMenuItem>
+      </DropdownMenuContent></DropdownMenu>
+      <Button className="opw-secondary" variant="outline" onClick={() => { void refetch(); }} disabled={isLoading}><RefreshCw size={16}/>تحديث</Button>
+    </>}>
       {/* Main Content */}
-      <div className="mx-auto max-w-[1600px] space-y-5 px-4 py-6 sm:px-6">
+      <div className="space-y-5">
 
-        {/* Stats Row */}
-        <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
-          <ProStatCard
-            value={totalCustomersInDB}
-            label="إجمالي العملاء"
-            description="النشطين"
-            icon={Users}
-            delay={0}
-          />
-          <ProStatCard
-            value={individualCount}
-            label="الأفراد"
-            description="نشطين"
-            icon={UserPlus}
-            delay={0.1}
-          />
-          <ProStatCard
-            value={corporateCount}
-            label="الشركات"
-            description="نشطين"
-            icon={Building2}
-            delay={0.2}
-          />
+        <div className="opw-metrics opw-metrics-three">
+          <OperationsMetric label="نتائج الدليل" value={isLoading || error ? '—' : totalCustomersInDB} hint="حسب البحث والحالة والنوع المحدد" icon={Users}/>
+          <OperationsMetric label="الأفراد النشطون" value={individualCount ?? '—'} hint="جميع العملاء الأفراد النشطين" icon={UserPlus}/>
+          <OperationsMetric label="الشركات النشطة" value={corporateCount ?? '—'} hint="جميع حسابات الشركات النشطة" icon={Building2}/>
         </div>
-
+        <div className="opw-toolbar"><div><h2>ملفات العملاء</h2><p>ابحث عن العميل أو افتح ملفه لمراجعة العقود والمستندات.</p></div><div className="opw-view-toggle" role="group" aria-label="طريقة عرض العملاء">
+          <button aria-pressed={viewMode === 'grid'} onClick={() => setViewMode('grid')}><LayoutGrid size={16}/>بطاقات</button>
+          <button aria-pressed={viewMode === 'split'} onClick={() => setViewMode('split')}><Columns size={16}/>عرض مقسم</button>
+        </div></div>
         {/* Search & Filters Bar */}
-        <div className="rounded-lg border border-[#DDE5EF] bg-white p-4 shadow-sm">
-          <div className="flex flex-col gap-3 lg:flex-row">
+        <div className="opw-searchbar">
+          <div className="flex w-full flex-col gap-3 lg:flex-row">
             {/* Search */}
             <div className="flex-1 relative">
               <Search className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#8A96A8]" />
               <Input
-                  placeholder="بحث بالاسم، الهاتف، أو البريد..."
+                  aria-label="البحث في دليل العملاء" placeholder="بحث بالاسم، الهاتف، أو البريد..."
                 value={searchTerm}
                 onChange={(e) => {
                   setSearchTerm(e.target.value);
@@ -906,7 +580,7 @@ const CustomersPageRedesigned: React.FC = () => {
               />
               {searchTerm && (
                 <button
-                  onClick={() => setSearchTerm('')}
+                  aria-label="مسح البحث" onClick={() => { setSearchTerm(''); setCurrentPage(1); }}
                   className="absolute left-2 top-1/2 -translate-y-1/2 rounded p-1 hover:bg-[#EEF5FB]"
                 >
                   <Plus className="h-3 w-3 rotate-45 text-[#8A96A8]" />
@@ -916,7 +590,7 @@ const CustomersPageRedesigned: React.FC = () => {
 
             {/* Type Filter */}
             <Select value={customerType} onValueChange={(v: any) => { setCustomerType(v); setCurrentPage(1); }}>
-              <SelectTrigger className="h-11 w-full rounded-xl border-[#D8E1EC] bg-[#FCFDFE] lg:w-44">
+              <SelectTrigger aria-label="نوع العميل" className="h-11 w-full rounded-xl border-[#D8E1EC] bg-[#FCFDFE] lg:w-44">
                 <SelectValue placeholder="النوع" />
               </SelectTrigger>
               <SelectContent>
@@ -928,7 +602,7 @@ const CustomersPageRedesigned: React.FC = () => {
 
             {/* Status Filter */}
             <Select value={includeInactive ? "all" : "active"} onValueChange={(v) => { setIncludeInactive(v === "all"); setCurrentPage(1); }}>
-              <SelectTrigger className="h-11 w-full rounded-xl border-[#D8E1EC] bg-[#FCFDFE] lg:w-44">
+              <SelectTrigger aria-label="حالة العميل" className="h-11 w-full rounded-xl border-[#D8E1EC] bg-[#FCFDFE] lg:w-44">
                 <SelectValue placeholder="الحالة" />
               </SelectTrigger>
               <SelectContent>
@@ -940,24 +614,8 @@ const CustomersPageRedesigned: React.FC = () => {
         </div>
 
         {/* Customer Grid or Split View */}
-        {viewMode === 'split' ? (
-          <CustomerSplitView
-            customers={customers}
-            isLoading={isLoading}
-            companyId={companyId}
-            onEditCustomer={handleEditCustomer}
-            onDeleteCustomer={handleDeleteCustomer}
-            canEdit={canEdit}
-            canDelete={canDelete}
-          />
-        ) : isLoading ? (
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
-            {[...Array(8)].map((_, i) => (
-              <div key={i} className="h-56 animate-pulse rounded-lg border border-[#DDE5EF] bg-white" />
-            ))}
-          </div>
-        ) : error ? (
-          <div className="rounded-lg border border-[#DDE5EF] bg-white p-12 text-center shadow-sm">
+        {error ? (
+          <div role="alert" className="rounded-lg border border-[#DDE5EF] bg-white p-12 text-center shadow-sm">
             <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-xl bg-red-50">
               <AlertCircle className="h-8 w-8 text-red-500" />
             </div>
@@ -974,14 +632,30 @@ const CustomersPageRedesigned: React.FC = () => {
               إعادة المحاولة
             </Button>
           </div>
+        ) : viewMode === 'split' ? (
+          <CustomerSplitView
+            customers={customers}
+            isLoading={isLoading}
+            companyId={companyId}
+            onEditCustomer={handleEditCustomer}
+            onDeleteCustomer={handleDeleteCustomer}
+            canEdit={canEdit}
+            canDelete={canDelete}
+          />
+        ) : isLoading ? (
+          <div className="opw-customers-grid">
+            {[...Array(8)].map((_, i) => (
+              <div key={i} className="h-56 animate-pulse rounded-lg border border-[#DDE5EF] bg-white" />
+            ))}
+          </div>
         ) : customers.length === 0 ? (
           <div className="rounded-lg border border-[#DDE5EF] bg-white p-12 text-center shadow-sm">
             <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-xl bg-[#EEF5FB]">
               <Users className="h-8 w-8 text-[#173A63]" />
             </div>
-            <h3 className="text-lg font-semibold text-slate-900 mb-2">لا توجد عملاء</h3>
+            <h3 className="text-lg font-semibold text-slate-900 mb-2">لا يوجد عملاء مطابقون</h3>
             <p className="text-sm text-slate-500 mb-6">
-              ابدأ بإضافة عملاء جدد للنظام
+              {searchTerm || customerType !== 'all' ? 'جرّب تغيير البحث أو نوع العميل.' : 'ابدأ بإضافة عميل جديد إلى الدليل.'}
             </p>
             <Button
               onClick={() => setShowCreateDialog(true)}
@@ -1002,8 +676,8 @@ const CustomersPageRedesigned: React.FC = () => {
             </div>
 
             {/* Customer Grid */}
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
-              {customers.map((customer, index) => (
+            <div className="opw-customers-grid">
+              {customers.map((customer) => (
                 <ProCustomerCard
                   key={customer.id}
                   customer={customer}
@@ -1014,32 +688,33 @@ const CustomersPageRedesigned: React.FC = () => {
                   onQuickRent={() => handleQuickRent(customer)}
                   canEdit={canEdit}
                   canDelete={canDelete}
-                  index={index}
                   navigate={navigate}
                 />
               ))}
             </div>
 
+          </>
+        )}
             {/* Pagination */}
-            {totalPages > 1 && (
-              <div className="flex flex-col gap-3 rounded-lg border border-[#DDE5EF] bg-white p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between">
+            {!error && !isLoading && totalPages > 1 && (
+              <div className="opw-pagination rounded-xl border border-border">
                 <p className="text-sm text-[#6A7688]">
                   صفحة <span className="font-medium text-slate-900">{currentPage}</span> من{' '}
                   <span className="font-medium text-slate-900">{totalPages}</span>
                 </p>
 
-                <div className="flex items-center gap-1">
+                <div className="flex flex-wrap items-center gap-1">
                   <Button
                     variant="outline"
                     size="default"
-                    onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                    aria-label="الصفحة السابقة" onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
                     disabled={currentPage === 1}
                     className="min-h-[44px] border-[#D8E1EC] hover:border-[#173A63] hover:bg-[#EEF5FB]"
                   >
                     <ChevronRight className="w-4 h-4" />
                   </Button>
 
-                  {Array.from({ length: Math.min(5, totalPages) }, (_, i) => i + 1).map(page => (
+                  {pageNumbers(currentPage, totalPages).map(page => (
                     <Button
                       key={page}
                       variant={currentPage === page ? "default" : "ghost"}
@@ -1055,7 +730,7 @@ const CustomersPageRedesigned: React.FC = () => {
                       {page}
                     </Button>
                   ))}
-                  {totalPages > 5 && (
+                  {totalPages > 5 && currentPage < totalPages - 2 && (
                     <>
                       <span className="px-2 text-slate-400">...</span>
                       <Button
@@ -1077,7 +752,7 @@ const CustomersPageRedesigned: React.FC = () => {
                   <Button
                     variant="outline"
                     size="default"
-                    onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                    aria-label="الصفحة التالية" onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
                     disabled={currentPage === totalPages}
                     className="min-h-[44px] border-[#D8E1EC] hover:border-[#173A63] hover:bg-[#EEF5FB]"
                   >
@@ -1086,8 +761,6 @@ const CustomersPageRedesigned: React.FC = () => {
                 </div>
               </div>
             )}
-          </>
-        )}
       </div>
 
       {/* Dialogs */}
@@ -1144,7 +817,7 @@ const CustomersPageRedesigned: React.FC = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </div>
+    </OperationsWorkspace>
   );
 };
 

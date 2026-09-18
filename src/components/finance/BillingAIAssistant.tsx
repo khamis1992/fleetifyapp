@@ -449,7 +449,7 @@ export const BillingAIAssistant = () => {
               <Brain className="h-5 w-5" />
             </span>
             <div>
-              <p className="text-xs font-black text-slate-500">AI للتحصيل والفوترة</p>
+              <p className="text-xs font-black text-slate-500">المساعد الذكي للتحصيل والفوترة</p>
               <h3 className="mt-1 text-2xl font-black text-slate-950">أولوية النقد اليوم</h3>
               <p className="mt-2 max-w-3xl text-sm leading-7 text-slate-600">
                 ترتيب العملاء المتأخرين، كشف مخاطر الفواتير والدفعات، وتجهيز رسالة مطالبة قابلة للإرسال فورًا.

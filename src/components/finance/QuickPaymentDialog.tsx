@@ -1,15 +1,16 @@
+import { WorkspaceButton as Button, WorkspaceSteps, WorkspaceDialogContent as DialogContent, WorkspaceDialogHeader as DialogHeader } from '@/components/employee-workspace/WorkspacePresentation';
 /**
  * نافذة الدفع السريع - تفتح مع اختيار العميل تلقائياً
  * تستخدم في صفحة متابعة الإيجارات الشهرية
  */
 import { useState, useRef, useMemo, useEffect } from 'react';
 import { Check, X, Loader2, MessageCircle, CheckCircle, FileText, Download, AlertTriangle, ChevronDown } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogTitle } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
@@ -639,7 +640,7 @@ export function QuickPaymentDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto max-sm:w-[calc(100vw-1rem)] max-sm:max-w-none" dir="rtl">
+        <DialogContent className="ew-payment-dialog max-w-2xl max-h-[90vh] overflow-y-auto max-sm:w-[calc(100vw-1rem)] max-sm:max-w-none" dir="rtl">
         <DialogHeader>
           <div className="flex items-start justify-between gap-3">
             <DialogTitle className="flex items-center gap-2">
@@ -649,6 +650,8 @@ export function QuickPaymentDialog({
             <FeatureTourButton tour={quickPaymentTour} onStart={setActiveTour} />
           </div>
         </DialogHeader>
+
+        <WorkspaceSteps steps={['اختيار الفواتير', 'تفاصيل الدفعة', 'سند القبض']} current={paymentSuccess ? 2 : readyToPay ? 1 : 0} />
 
         {/* Payment Success Screen */}
         {paymentSuccess ? (
@@ -764,7 +767,7 @@ export function QuickPaymentDialog({
                         return (
                           <div
                             key={invoice.id}
-                            className={`p-3 cursor-pointer transition-colors ${
+                            className={`ew-payment-invoice p-3 cursor-pointer transition-colors ${
                               isSelected
                                 ? 'bg-green-50 border-r-4 border-r-green-500'
                                 : futureWarning
@@ -777,7 +780,9 @@ export function QuickPaymentDialog({
                               <input
                                 type="checkbox"
                                 checked={isSelected}
-                                onChange={() => {}}
+                                onClick={(event) => event.stopPropagation()}
+                                onChange={() => toggleInvoiceSelection(invoice)}
+                                aria-label={`تحديد الفاتورة ${invoice.invoice_number}`}
                                 className="h-4 w-4 rounded border-slate-300 text-green-600"
                               />
                               <div className="flex-1">

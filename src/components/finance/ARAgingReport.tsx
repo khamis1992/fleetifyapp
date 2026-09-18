@@ -351,28 +351,28 @@ export const ARAgingReport: React.FC = () => {
 
       // Summary sheet
       const summaryData = [
-        ['Accounts Receivable Aging Report'],
-        ['Generated:', new Date().toLocaleString()],
+        ['تقرير تقادم الذمم المدينة'],
+        ['تاريخ الإصدار:', new Date().toLocaleString('ar-QA')],
         [],
-        ['Total Customers with AR:', summary?.total_customers_with_ar || 0],
-        ['Total Outstanding Invoices:', summary?.total_outstanding_invoices || 0],
-         ['Total AR Amount:', formatQar(summary?.total_ar_amount || 0)],
-        ['Average Days Overdue:', Math.round(summary?.avg_days_overdue || 0)],
+        ['إجمالي العملاء المدينين:', summary?.total_customers_with_ar || 0],
+        ['إجمالي الفواتير المستحقة:', summary?.total_outstanding_invoices || 0],
+         ['إجمالي الذمم المدينة:', formatQar(summary?.total_ar_amount || 0)],
+        ['متوسط أيام التأخير:', Math.round(summary?.avg_days_overdue || 0)],
         [],
-         ['Aging Category', 'Amount (QAR)', 'Percentage'],
-         ['Current', formatQar(summary?.current_total || 0), `${summary?.current_percentage || 0}%`],
-         ['1-30 Days', formatQar(summary?.days_1_30_total || 0), `${summary?.days_1_30_percentage || 0}%`],
-         ['31-60 Days', formatQar(summary?.days_31_60_total || 0), `${summary?.days_31_60_percentage || 0}%`],
-         ['61-90 Days', formatQar(summary?.days_61_90_total || 0), `${summary?.days_61_90_percentage || 0}%`],
-         ['90+ Days', formatQar(summary?.days_90_plus_total || 0), `${summary?.days_90_plus_percentage || 0}%`],
+         ['فئة التقادم', 'المبلغ (ر.ق)', 'النسبة'],
+         ['غير متأخر', formatQar(summary?.current_total || 0), `${summary?.current_percentage || 0}%`],
+         ['من 1 إلى 30 يومًا', formatQar(summary?.days_1_30_total || 0), `${summary?.days_1_30_percentage || 0}%`],
+         ['من 31 إلى 60 يومًا', formatQar(summary?.days_31_60_total || 0), `${summary?.days_31_60_percentage || 0}%`],
+         ['من 61 إلى 90 يومًا', formatQar(summary?.days_61_90_total || 0), `${summary?.days_61_90_percentage || 0}%`],
+         ['أكثر من 90 يومًا', formatQar(summary?.days_90_plus_total || 0), `${summary?.days_90_plus_percentage || 0}%`],
       ];
       const summarySheet = XLSX.utils.aoa_to_sheet(summaryData);
-      XLSX.utils.book_append_sheet(workbook, summarySheet, 'Summary');
+      XLSX.utils.book_append_sheet(workbook, summarySheet, 'الملخص');
 
       // Customer aging sheet
       if (customerAging && customerAging.length > 0) {
         const customerData: Array<Array<string | number | null | undefined>> = [
-          ['Customer Name (AR)', 'Customer Name (EN)', 'Phone', 'Email', 'Total Outstanding', 'Current', '1-30 Days', '31-60 Days', '61-90 Days', '90+ Days', 'Max Days Overdue', 'Total Invoices']
+          ['اسم العميل بالعربية', 'اسم العميل بالإنجليزية', 'الهاتف', 'البريد الإلكتروني', 'إجمالي المستحق', 'غير متأخر', 'من 1 إلى 30 يومًا', 'من 31 إلى 60 يومًا', 'من 61 إلى 90 يومًا', 'أكثر من 90 يومًا', 'أقصى أيام التأخير', 'عدد الفواتير']
         ];
         
         customerAging.forEach(c => {
@@ -393,13 +393,13 @@ export const ARAgingReport: React.FC = () => {
         });
         
         const customerSheet = XLSX.utils.aoa_to_sheet(customerData);
-        XLSX.utils.book_append_sheet(workbook, customerSheet, 'Customer Breakdown');
+        XLSX.utils.book_append_sheet(workbook, customerSheet, 'تفاصيل العملاء');
       }
 
       // Priority list sheet
       if (priorityList && priorityList.length > 0) {
         const priorityData: Array<Array<string | number | null | undefined>> = [
-          ['Customer Name (AR)', 'Phone', 'Email', 'Total Outstanding', 'Risk Category', 'Recommended Action', 'Critical (90+)', 'High Risk (61-90)', 'Max Days Overdue', 'Priority Score']
+          ['اسم العميل بالعربية', 'الهاتف', 'البريد الإلكتروني', 'إجمالي المستحق', 'درجة المخاطر', 'الإجراء المقترح', 'حرج (أكثر من 90 يومًا)', 'مرتفع (61 إلى 90 يومًا)', 'أقصى أيام التأخير', 'درجة الأولوية']
         ];
         
         priorityList.forEach(p => {
@@ -418,7 +418,7 @@ export const ARAgingReport: React.FC = () => {
         });
         
         const prioritySheet = XLSX.utils.aoa_to_sheet(priorityData);
-        XLSX.utils.book_append_sheet(workbook, prioritySheet, 'Collections Priority');
+        XLSX.utils.book_append_sheet(workbook, prioritySheet, 'أولوية التحصيل');
       }
 
       // Export
@@ -477,7 +477,7 @@ export const ARAgingReport: React.FC = () => {
         </div>
         <Button onClick={exportToExcel} disabled={!summary}>
           <Download className="h-4 w-4 mr-2" />
-          تصدير إلى Excel
+          تصدير إلى إكسل
         </Button>
       </div>
 
@@ -589,7 +589,7 @@ export const ARAgingReport: React.FC = () => {
               </div>
               <div>
                 <CardTitle className="flex items-center gap-2 text-xl text-slate-950">
-                  AI للتحصيل والمتأخرات
+                  المساعد الذكي للتحصيل والمتأخرات
                   <Sparkles className="h-4 w-4 text-amber-500" />
                 </CardTitle>
                 <p className="mt-1 text-sm text-slate-500">

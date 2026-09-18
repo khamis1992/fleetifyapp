@@ -236,7 +236,7 @@ if (!import.meta.env.DEV) {
 const bootstrap = async () => {
   if (await prepareDevelopmentRuntime()) return;
 
-  initializeI18n();
+  await initializeI18n();
   const { default: App } = await import('./App.tsx');
 
 const rootElement = document.getElementById('root');

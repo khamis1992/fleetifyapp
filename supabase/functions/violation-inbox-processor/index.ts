@@ -10,25 +10,28 @@
  * Body: { companyId, limit? }
  */
 
-import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2";
 import {
   agentCorsHeaders,
-  authorizeAgent,
+  AgentInvocationContext,
+  authorizeScheduledAgent,
   createServiceClient,
+  finishAgentExecution,
   jsonResponse,
   storeAgentReview,
 } from "../_shared/agent.ts";
 
 const BUCKET = "moi-inbox";
 
-serve(async (req) => {
+Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: agentCorsHeaders });
 
+  let invocation: AgentInvocationContext | null = null;
+  let executionFailed = false;
   try {
-    await authorizeAgent(req);
     const body = await req.json().catch(() => ({}));
     if (!body.companyId) throw new Error("companyId is required");
+    invocation = await authorizeScheduledAgent(req, "violation-inbox-processor", body.companyId);
 
     const supabase = createServiceClient();
     const limit = Math.min(Number(body.limit) || 5, 10);
@@ -55,8 +58,16 @@ serve(async (req) => {
 
     return jsonResponse({ success: true, ...summary });
   } catch (error) {
+    executionFailed = true;
     const message = error instanceof Error ? error.message : "Unknown error";
     return jsonResponse({ success: false, error: message }, message === "Unauthorized" ? 401 : 500);
+  } finally {
+    if (invocation) {
+      await finishAgentExecution(
+        createServiceClient(), invocation, !executionFailed, {},
+        executionFailed ? "violation_inbox_processing_failed" : null,
+      ).catch(() => undefined);
+    }
   }
 });
 

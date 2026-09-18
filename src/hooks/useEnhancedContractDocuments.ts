@@ -3,6 +3,7 @@ import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import type { Json } from '@/integrations/supabase/types';
 import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
+import { invalidateContractDocumentDependents } from '@/utils/contractDocumentQueries';
 
 const MAX_FILE_SIZE = 100 * 1024 * 1024;
 const ALLOWED_MIME_TYPES = new Set([
@@ -34,6 +35,8 @@ export interface CreateDocumentData {
 
 export interface DocumentOperationResult {
   success: boolean;
+  company_id?: string;
+  contract_id?: string;
   document_id?: string;
   error?: string;
   warnings?: string[];
@@ -190,7 +193,7 @@ export function useEnhancedContractDocuments() {
           has_file: Boolean(data.file),
         }, data.contract_id, documentId, filePath);
 
-        return { success: true, document_id: documentId };
+        return { success: true, document_id: documentId, company_id: companyId, contract_id: data.contract_id };
       } catch (error) {
         await logOperation('create_document', 'failed', {
           operation_id: operationId,
@@ -199,9 +202,9 @@ export function useEnhancedContractDocuments() {
         return { success: false, error: getErrorMessage(error) };
       }
     },
-    onSuccess: (result) => {
+    onSuccess: async (result) => {
       if (result.success) {
-        void queryClient.invalidateQueries({ queryKey: ['contract-documents'] });
+        await invalidateContractDocumentDependents(queryClient, result.company_id, result.contract_id);
         toast.success('تمت إضافة المستند بنجاح');
       } else {
         toast.error(result.error || 'فشلت إضافة المستند');

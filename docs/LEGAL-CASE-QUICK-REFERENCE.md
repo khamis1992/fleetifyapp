@@ -76,9 +76,9 @@
 | رقم البطاقة | Excel | (from file) |
 | مطلوب مترجم؟ | Fixed | لا |
 | وارث؟ | Fixed | لا |
-| العنوان | Fixed | الجوحة - قطر |
+| العنوان | Case file | العنوان الفعلي المتحقق للمدعى عليه |
 | رقم الهاتف | Excel | (from file) |
-| البريد الإلكتروني | Fixed | khamis-1992@hotmail.com |
+| البريد الإلكتروني | Case file | البريد الفعلي المتحقق للمدعى عليه؛ لا يستخدم بريد المدعية |
 
 - [ ] **Step 19:** Click "حفظ"
 
@@ -209,7 +209,7 @@ data/customers/{customer}/
 
 ---
 
-## 🔐 Fixed Values
+## 🔐 Fixed Values (claimant/representative only)
 
 Never change these values:
 
@@ -219,9 +219,11 @@ Claim Type: "قيمة المطالبة"
 Gender: "ذكر"
 Translator Required: "لا"
 Heir: "لا"
-Address: "الجوحة - قطر"
-Email: "khamis-1992@hotmail.com"
+ClaimantEmail: "khamis-1992@hotmail.com"
 ```
+
+Defendant address/email are never fixed defaults. Use only verified case data;
+an unavailable defendant email must remain unavailable and blocks automatic filing.
 
 ---
 

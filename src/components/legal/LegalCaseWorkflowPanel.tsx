@@ -10,14 +10,21 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { LEGAL_WORKFLOW_STAGES, LegalWorkflowStage, useLegalCaseWorkflow } from '@/hooks/useLegalCaseWorkflow';
+import {
+  LEGAL_WORKFLOW_STAGES,
+  LegalWorkflowStage,
+  REOPENABLE_LEGAL_WORKFLOW_STAGES,
+  useLegalCaseWorkflow,
+} from '@/hooks/useLegalCaseWorkflow';
 import { formatCurrency, cn } from '@/lib/utils';
 import { decodeLegalTaskTitle } from '@/utils/arabicDisplayText';
+import { ExternalFilingUncertainError } from '@/services/externalLegalFiling';
 
-type Action = 'hearing' | 'judgment' | 'appeal' | 'enforcement' | 'close' | 'reopen' | null;
+type Action = 'filing' | 'hearing' | 'judgment' | 'appeal' | 'enforcement' | 'close' | 'reopen' | null;
 
 const today = () => new Date().toISOString().slice(0, 10);
 const initialForm = () => ({
+  filingReference: '', filingDate: '',
   hearingDate: '', hearingStatus: 'scheduled', decision: '', nextHearingDate: '',
   outcomeType: 'won', outcomeAmount: '', outcomeDate: today(), appealDeadline: '', paymentDirection: 'receive', outcomeNotes: '',
   appealStatus: 'filed', appealFiledAt: '', appealReference: '', appealCourt: '',
@@ -26,42 +33,99 @@ const initialForm = () => ({
 });
 
 const actionTitles: Record<Exclude<Action, null>, string> = {
+  filing: 'تسجيل إيداع الدعوى في تقاضي',
   hearing: 'تسجيل جلسة', judgment: 'تسجيل الحكم', appeal: 'تسجيل الاستئناف',
   enforcement: 'بدء التنفيذ', close: 'الإغلاق النهائي', reopen: 'إعادة فتح القضية',
 };
 
-interface Props { caseId: string; onChanged?: (legalCase: Record<string, any>) => void }
+interface Props {
+  caseId: string;
+  onChanged?: (legalCase: Record<string, any>) => void;
+  canMarkFiled?: boolean;
+  filingBlockReason?: string;
+}
 
-export function LegalCaseWorkflowPanel({ caseId, onChanged }: Props) {
+export function LegalCaseWorkflowPanel({
+  caseId,
+  onChanged,
+  canMarkFiled = true,
+  filingBlockReason,
+}: Props) {
   const workflow = useLegalCaseWorkflow(caseId);
   const [action, setAction] = useState<Action>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
+  const [filingUncertain, setFilingUncertain] = useState(false);
+  const [filingRetryAllowed, setFilingRetryAllowed] = useState(false);
+  const [isCheckingFiling, setIsCheckingFiling] = useState(false);
   const [form, setForm] = useState(initialForm);
   const legalCase = workflow.data?.legalCase;
   const stage = (legalCase?.workflow_stage || 'preparation') as LegalWorkflowStage;
   const stageIndex = LEGAL_WORKFLOW_STAGES.findIndex((item) => item.value === stage);
   const collected = Number(workflow.data?.settlement?.settled_amount || 0);
   const pendingTasks = (workflow.data?.tasks ?? []).filter((task) => !['completed', 'cancelled'].includes(task.status));
+  const normalizedReopenReason = form.reopenReason.trim();
+  const isReopenInvalid = action === 'reopen' && normalizedReopenReason.length < 10;
+  const isFilingInvalid = action === 'filing' && (!form.filingReference.trim() || !form.filingDate || form.filingDate > today());
+  const isBusy = workflow.isSaving || isCheckingFiling;
 
   const refreshParent = async () => {
     const refreshed = await workflow.refetch();
+    if (refreshed.error) throw refreshed.error;
     if (refreshed.data?.legalCase) onChanged?.(refreshed.data.legalCase);
   };
 
+  const finishSavedAction = (message: string) => {
+    toast.success(message);
+    setAction(null);
+    setActionError(null);
+    setFilingUncertain(false);
+    setFilingRetryAllowed(false);
+    setForm(initialForm());
+    void refreshParent().catch(() => toast.warning('تم الحفظ، وتعذر تحديث عرض القضية الآن. حدّث الصفحة عند عودة الاتصال.'));
+  };
+
   const execute = async (callback: () => Promise<unknown>, message: string) => {
+    setActionError(null);
     try {
       await callback();
-      await refreshParent();
-      toast.success(message);
-      setAction(null);
-      setForm(initialForm());
     } catch (error: any) {
+      if (error instanceof ExternalFilingUncertainError) {
+        setFilingUncertain(true);
+        setFilingRetryAllowed(error.canRetry);
+      }
+      setActionError(error?.message || 'تعذر تنفيذ الإجراء');
       toast.error(error?.message || 'تعذر تنفيذ الإجراء');
+      return;
+    }
+    finishSavedAction(message);
+  };
+
+  const checkFiling = async () => {
+    if (isFilingInvalid || isBusy) return;
+    setIsCheckingFiling(true);
+    setActionError(null);
+    setFilingRetryAllowed(false);
+    try {
+      const recorded = await workflow.verifyExternalFiling(form.filingReference.trim(), form.filingDate);
+      if (recorded) {
+        finishSavedAction('تم التحقق من تسجيل الإيداع في النظام');
+      } else {
+        setActionError('لم يظهر تسجيل الإيداع بهذه البيانات. يمكنك اعتماد التسجيل إذا كنت قد أودعت الدعوى بالفعل في تقاضي.');
+        setFilingRetryAllowed(true);
+      }
+    } catch (error: any) {
+      setFilingUncertain(true);
+      setActionError(error?.message || 'تعذر التحقق من التسجيل. حاول التحقق مجددًا عند عودة الاتصال.');
+    } finally {
+      setIsCheckingFiling(false);
     }
   };
 
   const transition = (target: LegalWorkflowStage, message: string, reason?: string) => execute(() => workflow.transition(target, reason), message);
 
   const submit = () => {
+    if (isBusy || (action === 'filing' && filingUncertain && !filingRetryAllowed)) return;
+    if (action === 'filing' && !isFilingInvalid) return execute(() => workflow.recordExternalFiling(form.filingReference.trim(), form.filingDate), 'تم توثيق بيانات الإيداع في النظام');
     if (action === 'hearing') return execute(() => workflow.recordHearing({
       p_hearing_date: form.hearingDate ? new Date(form.hearingDate).toISOString() : null,
       p_status: form.hearingStatus, p_decision: form.decision || null,
@@ -88,7 +152,7 @@ export function LegalCaseWorkflowPanel({ caseId, onChanged }: Props) {
   };
 
   if (workflow.isLoading) return <div className="h-28 animate-pulse rounded-md bg-slate-100" />;
-  if (workflow.error || !legalCase) return <Alert variant="destructive"><AlertDescription>تعذر تحميل سير عمل القضية.</AlertDescription></Alert>;
+  if (!legalCase) return <Alert variant="destructive"><AlertDescription>تعذر تحميل سير عمل القضية.</AlertDescription></Alert>;
 
   const monetaryPending = Number(legalCase.outcome_amount || 0) > 0 && !['paid', 'received'].includes(legalCase.outcome_payment_status);
   const judgmentDifference = Number(legalCase.case_value || 0) - Number(legalCase.outcome_amount || 0);
@@ -103,7 +167,7 @@ export function LegalCaseWorkflowPanel({ caseId, onChanged }: Props) {
         <Badge className="bg-indigo-50 text-indigo-700 border-indigo-200 hover:bg-indigo-50">{LEGAL_WORKFLOW_STAGES.find((item) => item.value === stage)?.label}</Badge>
       </div>
 
-      <div className="grid grid-cols-5 gap-1 sm:grid-cols-10" aria-label="مراحل القضية">
+      <div className="grid grid-cols-5 gap-1 sm:grid-cols-11" aria-label="مراحل القضية">
         {LEGAL_WORKFLOW_STAGES.map((item, index) => (
           <div key={item.value} title={item.label} className="min-w-0 text-center">
             <div className={cn('h-2 rounded-sm', index < stageIndex ? 'bg-emerald-400' : index === stageIndex ? 'bg-indigo-600' : 'bg-slate-200')} />
@@ -124,9 +188,25 @@ export function LegalCaseWorkflowPanel({ caseId, onChanged }: Props) {
       {monetaryPending && <Alert className="border-amber-200 bg-amber-50"><AlertTriangle className="w-4 h-4 text-amber-700" /><AlertDescription className="text-amber-900">الحكم المالي غير مسدد بالكامل. لا يمكن الإغلاق النهائي إلا بعد التحصيل أو بتجاوز إداري موثق.</AlertDescription></Alert>}
       {legalCase.outcome_type && Math.abs(judgmentDifference) > 0.01 && <Alert><AlertDescription>يوجد فرق قدره {formatCurrency(Math.abs(judgmentDifference))} بين قيمة المطالبة ومبلغ الحكم. راجع منطوق الحكم قبل التنفيذ.</AlertDescription></Alert>}
 
+      {actionError && <Alert variant="destructive"><AlertDescription>{actionError}</AlertDescription></Alert>}
       <div className="flex flex-wrap gap-2">
-        {stage === 'preparation' && <Button size="sm" onClick={() => transition('filed', 'تم تسجيل رفع الدعوى')}><PlayCircle className="w-4 h-4 ml-1" />تسجيل رفع الدعوى</Button>}
-        {['filed', 'hearings'].includes(stage) && <Button size="sm" onClick={() => setAction('hearing')}><CalendarDays className="w-4 h-4 ml-1" />إضافة جلسة</Button>}
+        {stage === 'preparation' && (
+          <Button
+            size="sm"
+            onClick={() => { if (!filingUncertain) setActionError(null); setAction('filing'); }}
+            disabled={!canMarkFiled || isBusy}
+            title={!canMarkFiled ? filingBlockReason : undefined}
+          >
+            <PlayCircle className="w-4 h-4 ml-1" />
+            تسجيل رفع الدعوى
+          </Button>
+        )}
+        {stage === 'filed' && (
+          <Button size="sm" variant="outline" onClick={() => transition('awaiting_acceptance', 'تم تأكيد إيداع الدعوى وبدء انتظار قبول المحكمة')}>
+            بدء انتظار القبول
+          </Button>
+        )}
+        {['awaiting_acceptance', 'hearings'].includes(stage) && <Button size="sm" onClick={() => setAction('hearing')}><CalendarDays className="w-4 h-4 ml-1" />إضافة جلسة</Button>}
         {stage === 'hearings' && <Button size="sm" variant="outline" onClick={() => transition('reserved_for_judgment', 'تم حجز القضية للحكم')}>حجز للحكم</Button>}
         {['reserved_for_judgment', 'appeal', 'judgment_issued'].includes(stage) && <Button size="sm" onClick={() => setAction('judgment')}><Gavel className="w-4 h-4 ml-1" />تسجيل الحكم</Button>}
         {stage === 'judgment_issued' && <Button size="sm" variant="outline" onClick={() => setAction('appeal')}>تسجيل الاستئناف</Button>}
@@ -156,9 +236,21 @@ export function LegalCaseWorkflowPanel({ caseId, onChanged }: Props) {
         </div>
       )}
 
-      <Dialog open={Boolean(action)} onOpenChange={(open) => !open && setAction(null)}>
+      <Dialog open={Boolean(action)} onOpenChange={(open) => !open && !isBusy && setAction(null)}>
         <DialogContent className="max-w-lg" dir="rtl">
-          <DialogHeader><DialogTitle>{action ? actionTitles[action] : ''}</DialogTitle><DialogDescription>سيتم حفظ هذا الإجراء في سجل القضية وإنشاء المتابعة المناسبة.</DialogDescription></DialogHeader>
+          <DialogHeader><DialogTitle>{action ? actionTitles[action] : ''}</DialogTitle><DialogDescription>{action === 'filing' ? 'لتوثيق دعوى أودعتها بالفعل. أدخل رقم الطلب وتاريخ الإيداع من تقاضي. سيوقف الاعتماد مهمة الوكيل تلقائيًا ثم يسجل الإيداع بحالة انتظار القبول.' : 'سيتم حفظ هذا الإجراء في سجل القضية وإنشاء المتابعة المناسبة.'}</DialogDescription></DialogHeader>
+          {actionError && <Alert variant="destructive"><AlertDescription>{actionError}</AlertDescription></Alert>}
+          {action === 'filing' && <div className="space-y-3">
+            {workflow.isSaving && <p role="status" aria-live="polite" className="rounded-lg border bg-muted/40 p-3 text-sm text-foreground">
+              {workflow.filingProgress === 'waiting_for_stop'
+                ? 'تم طلب إيقاف الوكيل تلقائيًا. ننتظر انتهاء الإجراء الجاري ثم نسجل الإيداع؛ لا يلزم إيقافه يدويًا.'
+                : workflow.filingProgress === 'waiting_for_receipt'
+                  ? 'جارٍ انتظار مزامنة الإيصال الموجود قبل تأكيد التسجيل...'
+                  : 'جارٍ إنهاء مهمة الوكيل وتسجيل بيانات الإيداع...'}
+            </p>}
+            <Field label="رقم طلب الإيداع"><Input aria-label="رقم طلب الإيداع" maxLength={200} disabled={isBusy || filingUncertain} value={form.filingReference} onChange={e => setForm({ ...form, filingReference: e.target.value })} /></Field>
+            <Field label="تاريخ إيداع الدعوى"><Input aria-label="تاريخ إيداع الدعوى" type="date" max={today()} disabled={isBusy || filingUncertain} value={form.filingDate} onChange={e => setForm({ ...form, filingDate: e.target.value })} /></Field>
+          </div>}
           <div className="grid gap-4 py-2">
             {action === 'hearing' && <>
               <Field label="موعد الجلسة"><Input type="datetime-local" value={form.hearingDate} onChange={(e) => setForm({ ...form, hearingDate: e.target.value })} /></Field>
@@ -188,12 +280,19 @@ export function LegalCaseWorkflowPanel({ caseId, onChanged }: Props) {
               {monetaryPending && <label className="flex items-start gap-2 rounded-md border border-amber-200 bg-amber-50 p-3 text-sm"><Checkbox checked={form.overrideUnsettled} onCheckedChange={(checked) => setForm({ ...form, overrideUnsettled: checked === true })} /><span>إغلاق إداري رغم وجود مبلغ غير مسدد. يتطلب صلاحية مدير وسبباً مفصلاً.</span></label>}
             </>}
             {action === 'reopen' && <>
-              <Field label="المرحلة التي ستعود إليها"><Select value={form.reopenStage} onValueChange={(value) => setForm({ ...form, reopenStage: value as LegalWorkflowStage })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{LEGAL_WORKFLOW_STAGES.filter((item) => !['closed', 'cancelled'].includes(item.value)).map((item) => <SelectItem key={item.value} value={item.value}>{item.label}</SelectItem>)}</SelectContent></Select></Field>
-              <Field label="سبب إعادة الفتح"><Textarea value={form.reopenReason} onChange={(e) => setForm({ ...form, reopenReason: e.target.value })} placeholder="اكتب سبباً تفصيلياً لا يقل عن 10 أحرف" /></Field>
+              <Field label="المرحلة التي ستعود إليها"><Select value={form.reopenStage} onValueChange={(value) => setForm({ ...form, reopenStage: value as LegalWorkflowStage })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{LEGAL_WORKFLOW_STAGES.filter((item) => REOPENABLE_LEGAL_WORKFLOW_STAGES.includes(item.value)).map((item) => <SelectItem key={item.value} value={item.value}>{item.label}</SelectItem>)}</SelectContent></Select></Field>
+              <Field label="سبب إعادة الفتح">
+                <Textarea value={form.reopenReason} onChange={(e) => setForm({ ...form, reopenReason: e.target.value })} placeholder="اكتب سبباً تفصيلياً لا يقل عن 10 أحرف" aria-invalid={isReopenInvalid} />
+                <p className={cn('text-xs', isReopenInvalid ? 'text-destructive' : 'text-muted-foreground')}>{normalizedReopenReason.length}/10 أحرف على الأقل</p>
+              </Field>
             </>}
             {['hearing', 'appeal', 'enforcement'].includes(action || '') && <Field label="ملاحظات"><Textarea value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} /></Field>}
           </div>
-          <DialogFooter><Button variant="outline" onClick={() => setAction(null)}>إلغاء</Button><Button onClick={submit} disabled={workflow.isSaving}>{workflow.isSaving ? 'جارٍ الحفظ...' : 'اعتماد الإجراء'}</Button></DialogFooter>
+          <DialogFooter className="gap-2 sm:flex-wrap">
+            <Button variant="outline" disabled={isBusy} onClick={() => setAction(null)}>{filingUncertain ? 'إغلاق النافذة' : 'إلغاء'}</Button>
+            {action === 'filing' && <Button variant="outline" disabled={isBusy || isFilingInvalid} onClick={checkFiling}>{isCheckingFiling ? 'جارٍ التحقق...' : 'التحقق من التسجيل'}</Button>}
+            <Button onClick={submit} disabled={isBusy || isReopenInvalid || isFilingInvalid || (action === 'filing' && filingUncertain && !filingRetryAllowed)}>{workflow.isSaving ? workflow.filingProgress === 'waiting_for_stop' ? 'بانتظار توقف الوكيل...' : 'جارٍ الحفظ والتحقق...' : action === 'filing' && filingUncertain ? 'إعادة محاولة التسجيل' : 'اعتماد الإجراء'}</Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </section>

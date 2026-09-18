@@ -15,7 +15,7 @@ export default function AccountsSettings() {
 
   return (
     <div className="container mx-auto py-6 space-y-6">
-      <div className="flex items-center justify-between">
+      <div data-finance-heading="" className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold">إدارة الحسابات</h1>
           <p className="text-muted-foreground">إدارة دليل الحسابات والحسابات المحاسبية</p>
@@ -124,10 +124,10 @@ export default function AccountsSettings() {
             <div>
               <h4 className="font-semibold mb-2">أنواع الحسابات</h4>
               <ul className="text-sm text-muted-foreground space-y-1">
-                <li>• الأصول (Assets): النقد، البنوك، المخزون، المدينين</li>
-                <li>• الخصوم (Liabilities): الذمم الدائنة، القروض، الودائع</li>
-                <li>• الإيرادات (Revenue): إيجار السيارات، إيجار العقارات، خدمات</li>
-                <li>• المصروفات (Expenses): رواتب، إيجار، صيانة، مصاريف عامة</li>
+                <li>• الأصول: النقد، البنوك، المخزون، المدينين</li>
+                <li>• الخصوم: الذمم الدائنة، القروض، الودائع</li>
+                <li>• الإيرادات: إيجار السيارات، إيجار العقارات، خدمات</li>
+                <li>• المصروفات: رواتب، إيجار، صيانة، مصاريف عامة</li>
               </ul>
             </div>
             <div>

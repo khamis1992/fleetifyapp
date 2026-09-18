@@ -1,0 +1,1 @@
+-- Legacy migration history placeholder. No SQL is executed.;

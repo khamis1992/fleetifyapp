@@ -1,10 +1,14 @@
+import { FinancePageHeader } from "@/components/ui/FinancePageHeader";
+import { FinanceContextActions } from "@/components/finance/workspace/FinanceContextActions";
+import { FinanceRegisterPagination } from "@/components/finance/workspace/FinanceRegisterPagination";
+import { useFinanceRegisterPage } from "@/components/finance/workspace/useFinanceRegisterPage";
+import { useUnifiedCompanyAccess } from "@/hooks/useUnifiedCompanyAccess";
 import { type CSSProperties, type ElementType, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { useNavigate } from "react-router-dom";
+import { useSearchParams, Link } from "react-router-dom";
 import {
   Activity,
   ArrowDownRight,
-  ArrowLeft,
   ArrowRightLeft,
   ArrowUpRight,
   Building2,
@@ -21,7 +25,6 @@ import {
   X,
 } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { BankReconciliationPanel } from "@/components/finance/BankReconciliationPanel";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -108,16 +111,18 @@ const dateFormatter = new Intl.DateTimeFormat("ar-QA", {
 
 const numberFormatter = new Intl.NumberFormat("ar-QA");
 
-export default function Treasury() {
+export default function Treasury({ section = "banks" }: { section?: "banks" | "transactions" }) {
+  const [params] = useSearchParams();
+  const { companyId } = useUnifiedCompanyAccess();
+  const bankId = params.get("bank") || "";
   const [searchTerm, setSearchTerm] = useState("");
   const [isCreateBankDialogOpen, setIsCreateBankDialogOpen] = useState(false);
   const [isCreateTransactionDialogOpen, setIsCreateTransactionDialogOpen] = useState(false);
 
-  const navigate = useNavigate();
   const { user } = useAuth();
   const { data: banks, isLoading: banksLoading, error: banksError, refetch: refetchBanks } = useBanks();
-  const { data: transactions, isLoading: transactionsLoading, refetch: refetchTransactions } = useBankTransactions();
-  const { data: summary, isLoading: summaryLoading, refetch: refetchSummary } = useTreasurySummary();
+  const { data: transactions, isLoading: transactionsLoading, error: transactionsError, refetch: refetchTransactions } = useBankTransactions();
+  const { data: summary, isLoading: summaryLoading, error: summaryError, refetch: refetchSummary } = useTreasurySummary();
   const createBank = useCreateBank();
   const createTransaction = useCreateBankTransaction();
   const reverseTransaction = useReverseBankTransaction();
@@ -174,8 +179,8 @@ export default function Treasury() {
 
   const recentTransactions = useMemo(() => {
     const term = searchTerm.trim().toLowerCase();
-    const list = transactions || [];
-    if (!term) return list.slice(0, 10);
+    const list = (transactions || []).filter(transaction => !bankId || transaction.bank_id === bankId);
+    if (!term) return list;
 
     return list.filter((transaction) => {
       const transactionBank = bankLookup.get(transaction.bank_id);
@@ -188,32 +193,14 @@ export default function Treasury() {
         transactionBank?.bank_name_ar?.toLowerCase().includes(term) ||
         transactionBank?.account_number.includes(term)
       );
-    }).slice(0, 10);
-  }, [bankLookup, searchTerm, transactions]);
+    });
+  }, [bankId, bankLookup, searchTerm, transactions]);
 
-  const visibleBanks = useMemo(() => filteredBanks.slice(0, 6), [filteredBanks]);
+  const bankPage = useFinanceRegisterPage(filteredBanks, `${companyId}:${searchTerm}`, 12);
+  const transactionPage = useFinanceRegisterPage(recentTransactions, `${companyId}:${searchTerm}:${bankId}`, 25);
+  const visibleBanks = bankPage.rows;
 
-  const primaryBank = useMemo(() => {
-    return (banks || []).find((bank) => bank.is_primary) || banks?.[0];
-  }, [banks]);
-
-  const largestBalanceBank = useMemo(() => {
-    return [...(banks || [])].sort((first, second) => Math.abs(second.current_balance || 0) - Math.abs(first.current_balance || 0))[0];
-  }, [banks]);
-
-  const unreconciledTransactions = useMemo(() => {
-    return (transactions || []).filter((transaction) =>
-      transaction.status === "completed" && !transaction.reconciled
-    ).length;
-  }, [transactions]);
-
-  const completedTransactions = useMemo(() => {
-    return (transactions || []).filter((transaction) => transaction.status === "completed").length;
-  }, [transactions]);
-
-  const latestTransaction = transactions?.[0];
   const hasSearch = searchTerm.trim().length > 0;
-  const hasMoreBanks = filteredBanks.length > visibleBanks.length;
 
   const getBankName = (bank?: Bank) => {
     if (!bank) return "غير محدد";
@@ -358,7 +345,7 @@ export default function Treasury() {
     );
   }
 
-  if (banksError) {
+  if (banksError || summaryError || transactionsError) {
     return (
       <div className="treasury-system flex min-h-screen items-center justify-center" dir="rtl" style={treasuryStyle}>
         <div className="treasury-state">
@@ -366,7 +353,7 @@ export default function Treasury() {
             <Landmark className="h-8 w-8" />
           </span>
           <p className="font-bold text-[#FB6B7A]">حدث خطأ في تحميل البيانات</p>
-          <Button onClick={() => refetchBanks()} className="mt-2 bg-[#020617] text-white hover:bg-[#020617]/90">
+          <Button onClick={handleRefresh} className="mt-2 bg-[#020617] text-white hover:bg-[#020617]/90">
             إعادة المحاولة
           </Button>
         </div>
@@ -377,94 +364,13 @@ export default function Treasury() {
   return (
     <div className="treasury-system min-h-screen" dir="rtl" style={treasuryStyle}>
       <div className="mx-auto max-w-7xl space-y-4 p-4 sm:p-6">
-        <motion.section
-          initial={{ opacity: 0, y: 14 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="treasury-command"
-        >
-          <div className="treasury-command-grid">
-            <div className="flex items-start gap-4">
-              <div className="treasury-command-icon">
-                <Landmark className="h-6 w-6" />
-              </div>
-              <div>
-                <div className="mb-2 flex flex-wrap items-center gap-2">
-                  <Badge className="border-0 bg-[#E8FBF6] text-[#148768] hover:bg-[#E8FBF6]">
-                    مركز السيولة
-                  </Badge>
-                  <span className="text-xs font-bold" style={{ color: treasuryColors.muted }}>
-                    الحسابات البنكية، الحركة النقدية، التسويات
-                  </span>
-                </div>
-                <h1 className="text-2xl font-black tracking-normal sm:text-3xl" style={{ color: treasuryColors.text }}>
-                  الخزينة والبنوك
-                </h1>
-                <p className="mt-2 max-w-2xl text-sm leading-7" style={{ color: treasuryColors.muted }}>
-                  مساحة عمل مختصرة لمراجعة الرصيد المتاح، آخر الحركات، والحسابات التي تحتاج متابعة قبل التسوية.
-                </p>
-              </div>
-            </div>
+        <FinancePageHeader title={section === "banks" ? "الحسابات البنكية" : "الحركات المالية"} description="الحسابات المصرفية وحركة النقد والمطابقة مع كشوف البنك." icon={Landmark} actions={<>
+          <Button onClick={() => setIsCreateTransactionDialogOpen(true)}><ArrowRightLeft size={16} className="me-2" />معاملة جديدة</Button>
+          {section === "banks" && <Button variant="outline" onClick={() => setIsCreateBankDialogOpen(true)}><Plus size={16} className="me-2" />حساب جديد</Button>}
+          <Button variant="outline" onClick={handleRefresh}><RefreshCw size={16} className="me-2" />تحديث</Button>
+        </>} />
 
-            <div className="treasury-command-actions">
-              <Button
-                onClick={() => setIsCreateTransactionDialogOpen(true)}
-                className="gap-2 bg-[#020617] text-white hover:bg-[#020617]/90"
-              >
-                <ArrowRightLeft className="h-4 w-4" />
-                معاملة جديدة
-              </Button>
-              <Button
-                onClick={() => setIsCreateBankDialogOpen(true)}
-                variant="outline"
-                className="gap-2 border-[#E5EAF1] bg-white text-[#020617] hover:bg-[#F6F8FB]"
-              >
-                <Building2 className="h-4 w-4" />
-                حساب جديد
-              </Button>
-              <Button
-                onClick={handleRefresh}
-                variant="outline"
-                className="gap-2 border-[#E5EAF1] bg-white text-[#020617] hover:bg-[#F6F8FB]"
-              >
-                <RefreshCw className="h-4 w-4" />
-                تحديث
-              </Button>
-              <Button
-                onClick={() => navigate("/finance/hub")}
-                variant="outline"
-                className="gap-2 border-[#E5EAF1] bg-white text-[#020617] hover:bg-[#F6F8FB]"
-              >
-                <ArrowLeft className="h-4 w-4" />
-                المالية
-              </Button>
-            </div>
-          </div>
-
-          <div className="treasury-snapshot">
-            <div className="treasury-snapshot-item">
-              <span className="treasury-snapshot-label">الحساب الرئيسي</span>
-              <strong>{getBankName(primaryBank)}</strong>
-              <small>{primaryBank ? formatCurrency(primaryBank.current_balance || 0, { currency: primaryBank.currency }) : "لا يوجد حساب"}</small>
-            </div>
-            <div className="treasury-snapshot-item">
-              <span className="treasury-snapshot-label">أكبر رصيد</span>
-              <strong>{getBankName(largestBalanceBank)}</strong>
-              <small>{largestBalanceBank ? formatCurrency(largestBalanceBank.current_balance || 0, { currency: largestBalanceBank.currency }) : "لا توجد حسابات"}</small>
-            </div>
-            <div className="treasury-snapshot-item">
-              <span className="treasury-snapshot-label">آخر حركة</span>
-              <strong>{latestTransaction ? formatCurrency(latestTransaction.amount) : "لا توجد حركة"}</strong>
-              <small>{latestTransaction ? `${getTransactionDate(latestTransaction.transaction_date)} - ${getBankName(bankLookup.get(latestTransaction.bank_id))}` : "لم يتم تسجيل معاملات"}</small>
-            </div>
-            <div className="treasury-snapshot-item">
-              <span className="treasury-snapshot-label">غير مسواة</span>
-              <strong>{numberFormatter.format(unreconciledTransactions)} حركة</strong>
-              <small>من أصل {numberFormatter.format(completedTransactions)} حركة مكتملة</small>
-            </div>
-          </div>
-        </motion.section>
-
-        <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <section className="finance-treasury-metrics grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
           <TreasuryMetric
             title="إجمالي الأرصدة"
             value={formatCurrency(summary?.totalBalance || 0)}
@@ -475,14 +381,14 @@ export default function Treasury() {
           <TreasuryMetric
             title="الإيداعات الشهرية"
             value={formatCurrency(summary?.monthlyDeposits || 0)}
-            helper="آخر 30 يوم"
+            helper="الشهر الحالي"
             icon={ArrowDownRight}
             accent={treasuryColors.success}
           />
           <TreasuryMetric
             title="المسحوبات الشهرية"
             value={formatCurrency(summary?.monthlyWithdrawals || 0)}
-            helper="آخر 30 يوم"
+            helper="الشهر الحالي"
             icon={ArrowUpRight}
             accent={treasuryColors.alert}
           />
@@ -500,13 +406,12 @@ export default function Treasury() {
             <div className="flex items-center gap-2">
               <ListFilter className="h-4 w-4" style={{ color: treasuryColors.info }} />
               <h2 className="text-xl font-black" style={{ color: treasuryColors.text }}>
-                متابعة الخزينة
+                {section === "banks" ? "حسابات الخزينة" : "سجل الحركات"}
               </h2>
             </div>
             <p className="mt-2 text-sm" style={{ color: treasuryColors.muted }}>
-              {hasSearch
-                ? `نتائج البحث: ${numberFormatter.format(filteredBanks.length)} حساب و ${numberFormatter.format(recentTransactions.length)} حركة`
-                : `يعرض ${numberFormatter.format(banks?.length || 0)} حساب نشط و آخر ${numberFormatter.format(recentTransactions.length)} حركات`}
+              {section === "banks" ? `${numberFormatter.format(filteredBanks.length)} حساب` : `${numberFormatter.format(recentTransactions.length)} حركة`}
+
             </p>
           </div>
           <div className="treasury-search">
@@ -534,6 +439,12 @@ export default function Treasury() {
           </div>
         </section>
 
+        <FinanceContextActions ids={section === "banks" ? ["bank-transactions", "bank-reconciliation"] : ["treasury", "bank-reconciliation"]} />
+        {section === "transactions" && bankId && <div className="flex flex-wrap items-center gap-3 rounded-lg border bg-white p-3">
+          <span>حركات الحساب: {getBankName(bankLookup.get(bankId))}</span>
+          <Button variant="outline" size="sm" asChild><Link to="/finance/treasury/transactions">جميع الحسابات</Link></Button>
+        </div>}
+          {section === "banks" && <section>
         <motion.section
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
@@ -599,6 +510,7 @@ export default function Treasury() {
                       <span>{accountTypeLabels[bank.account_type] || bank.account_type}</span>
                     </div>
                   </div>
+                  <Button variant="outline" size="sm" asChild><Link to={`/finance/treasury/transactions?bank=${encodeURIComponent(bank.id)}`} aria-label={`عرض حركات ${getBankName(bank)}`}>الحركات</Link></Button>
                   <div className="treasury-bank-balance">
                     <span>الرصيد</span>
                     <strong>{formatCurrency(bank.current_balance || 0, { currency: bank.currency })}</strong>
@@ -618,12 +530,10 @@ export default function Treasury() {
             </div>
           )}
 
-          {hasMoreBanks && (
-            <div className="treasury-panel-note">
-              يتم عرض أول {numberFormatter.format(visibleBanks.length)} حسابات. استخدم البحث للوصول إلى حساب محدد.
-            </div>
-          )}
+          <FinanceRegisterPagination {...bankPage} />
         </motion.section>
+          </section>}
+          {section === "transactions" && <section>
 
         <motion.section
           initial={{ opacity: 0, y: 10 }}
@@ -670,7 +580,7 @@ export default function Treasury() {
                 </TableHeader>
                 <TableBody>
                   <AnimatePresence>
-                    {recentTransactions.map((transaction, index) => {
+                    {transactionPage.rows.map((transaction, index) => {
                       const transactionBank = bankLookup.get(transaction.bank_id);
 
                       return (
@@ -809,9 +719,9 @@ export default function Treasury() {
           )}
         </motion.section>
 
-        <section className="treasury-reconciliation-shell">
-          <BankReconciliationPanel />
-        </section>
+        <FinanceRegisterPagination {...transactionPage} />
+          </section>}
+
       </div>
 
       <Dialog open={isCreateBankDialogOpen} onOpenChange={setIsCreateBankDialogOpen}>
@@ -859,7 +769,7 @@ export default function Treasury() {
               <Input
                 id="openingBalance"
                 type="number"
-                value={newBank.opening_balance}
+                value={newBank.opening_balance ?? 0}
                 disabled
                 placeholder="0.000"
                 className="mt-1"
@@ -870,7 +780,7 @@ export default function Treasury() {
               <Label htmlFor="isPrimary" className="cursor-pointer">حساب رئيسي</Label>
               <Switch
                 id="isPrimary"
-                checked={newBank.is_primary}
+                checked={newBank.is_primary ?? false}
                 onCheckedChange={(checked) => setNewBank({ ...newBank, is_primary: checked })}
               />
             </div>

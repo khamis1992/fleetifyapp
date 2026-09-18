@@ -7,6 +7,7 @@
  */
 
 import { motion } from 'framer-motion';
+import { useState } from 'react';
 import { 
   Gavel, 
   Copy, 
@@ -25,6 +26,7 @@ import {
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Textarea } from '@/components/ui/textarea';
 import { useLawsuitPreparationContext } from '../store';
 
 // ==========================================
@@ -38,22 +40,30 @@ interface CopyableFieldProps {
   icon?: React.ReactNode;
   isMultiline?: boolean;
   className?: string;
+  /** عند تشغيل وكيل تقاضي يصبح الحقل للقراءة فقط (النسخ احتياطي عند تعطل الوكيل) */
+  readOnlyMode?: boolean;
+  completionField?: 'caseTitle' | 'facts' | 'claims';
 }
 
-function CopyableField({ 
-  label, 
-  value, 
-  fieldId, 
-  icon, 
+function CopyableField({
+  label,
+  value,
+  fieldId,
+  icon,
   isMultiline = false,
-  className = ''
+  className = '',
+  readOnlyMode = false,
+  completionField,
 }: CopyableFieldProps) {
-  const { state, actions } = useLawsuitPreparationContext();
+  const { state, actions, dispatch } = useLawsuitPreparationContext();
+  const [draft, setDraft] = useState('');
   const isCopied = state.ui.copiedField === fieldId;
   const displayValue = value || 'غير محدد';
-  
+
   return (
     <div
+      id={completionField ? `lawsuit-${completionField}` : undefined}
+      tabIndex={completionField ? -1 : undefined}
       className={`
         group relative p-4 bg-slate-100 rounded-xl
         border border-slate-200 hover:border-slate-300
@@ -76,25 +86,35 @@ function CopyableField({
         >
           {displayValue}
         </p>
+        {completionField && !value?.trim() && (
+          <div className="mt-3 space-y-2">
+            <Textarea aria-label={`استكمال ${label}`} value={draft} disabled={state.ui.isTaqadiAutomating} onChange={(event) => setDraft(event.target.value)} placeholder={`أدخل ${label} وفق وقائع الدعوى ومستنداتها`} />
+            <Button type="button" size="sm" disabled={!draft.trim() || !state.taqadiData || state.ui.isTaqadiAutomating} onClick={() => {
+              if (state.taqadiData) dispatch({ type: 'UPDATE_TAQADI_DATA', payload: { ...state.taqadiData, [completionField]: draft.trim() } });
+            }} className="bg-[#173A63] text-white hover:bg-[#102C4D]">تطبيق النص في بيانات التقاضي</Button>
+          </div>
+        )}
       </div>
 
-      <Button
-        variant="ghost"
-        size="sm"
-        onClick={() => actions.copyToClipboard(value || '', fieldId)}
-        className={`
-          flex-shrink-0 mr-2 opacity-0 group-hover:opacity-100
-          transition-opacity duration-200
-          ${isCopied ? 'opacity-100' : ''}
-          hover:bg-slate-200 text-slate-500 hover:text-slate-800
-        `}
-      >
-        {isCopied ? (
-          <Check className="h-4 w-4 text-emerald-500" />
-        ) : (
-          <Copy className="h-4 w-4" />
-        )}
-      </Button>
+      {!readOnlyMode && (
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => actions.copyToClipboard(value || '', fieldId)}
+          className={`
+            flex-shrink-0 mr-2 opacity-0 group-hover:opacity-100
+            transition-opacity duration-200
+            ${isCopied ? 'opacity-100' : ''}
+            hover:bg-slate-200 text-slate-500 hover:text-slate-800
+          `}
+        >
+          {isCopied ? (
+            <Check className="h-4 w-4 text-emerald-500" />
+          ) : (
+            <Copy className="h-4 w-4" />
+          )}
+        </Button>
+      )}
     </div>
   );
 }
@@ -142,7 +162,9 @@ function SectionCard({ title, icon, children, delay = 0 }: SectionCardProps) {
 export function LegalTaqadi() {
   const { state } = useLawsuitPreparationContext();
   const { taqadiData } = state;
-  
+  // وكيل تقاضي متاح = القراءة فقط؛ النسخ اليدوي يبقى احتياطياً عند غياب الوكيل
+  const readOnlyMode = state.ui.taqadiServerRunning;
+
   if (!taqadiData) {
     return (
       <div className="p-8 text-center text-slate-600">
@@ -171,6 +193,12 @@ export function LegalTaqadi() {
           <p className="text-slate-600 text-sm">بيانات جاهزة للنسخ إلى نظام المحاكم الإلكتروني</p>
         </div>
       </motion.div>
+
+      {readOnlyMode && (
+        <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-800">
+          وضع القراءة فقط: وكيل تقاضي متاح — يملأ الحقول تلقائياً. زر النسخ معطل الآن، ويعود تلقائياً إذا توقف الوكيل.
+        </div>
+      )}
       
       {/* Case Data Section */}
       <SectionCard
@@ -179,14 +207,18 @@ export function LegalTaqadi() {
         delay={0.1}
       >
         <CopyableField
+          readOnlyMode={readOnlyMode}
           label="عنوان الدعوى"
+          completionField="caseTitle"
           value={caseTitle}
           fieldId="case-title"
           icon={<Briefcase className="h-4 w-4" />}
         />
         
         <CopyableField
+          readOnlyMode={readOnlyMode}
           label="الوقائع"
+          completionField="facts"
           value={facts}
           fieldId="case-facts"
           icon={<FileText className="h-4 w-4" />}
@@ -194,7 +226,9 @@ export function LegalTaqadi() {
         />
         
         <CopyableField
+          readOnlyMode={readOnlyMode}
           label="الطلبات / المطالبات"
+          completionField="claims"
           value={claims}
           fieldId="case-claims"
           icon={<Gavel className="h-4 w-4" />}
@@ -203,12 +237,14 @@ export function LegalTaqadi() {
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <CopyableField
+          readOnlyMode={readOnlyMode}
             label="المبلغ المطالب به"
             value={`${Math.round(amount)} QAR`}
             fieldId="case-amount"
             icon={<CreditCard className="h-4 w-4" />}
           />
           <CopyableField
+          readOnlyMode={readOnlyMode}
             label="المبلغ كتابةً"
             value={amountInWords}
             fieldId="case-amount-words"
@@ -224,6 +260,7 @@ export function LegalTaqadi() {
         delay={0.2}
       >
         <CopyableField
+          readOnlyMode={readOnlyMode}
           label="الاسم الكامل"
           value={defendant.fullName}
           fieldId="defendant-fullname"
@@ -232,16 +269,19 @@ export function LegalTaqadi() {
         
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <CopyableField
+          readOnlyMode={readOnlyMode}
             label="الاسم الأول"
             value={defendant.firstName || ''}
             fieldId="defendant-firstname"
           />
           <CopyableField
+          readOnlyMode={readOnlyMode}
             label="الاسم الأوسط"
             value={defendant.middleName || ''}
             fieldId="defendant-middlename"
           />
           <CopyableField
+          readOnlyMode={readOnlyMode}
             label="اسم العائلة"
             value={defendant.lastName || ''}
             fieldId="defendant-lastname"
@@ -250,12 +290,14 @@ export function LegalTaqadi() {
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <CopyableField
+          readOnlyMode={readOnlyMode}
             label="رقم الهوية / جواز السفر"
             value={defendant.idNumber || ''}
             fieldId="defendant-id"
             icon={<Hash className="h-4 w-4" />}
           />
           <CopyableField
+          readOnlyMode={readOnlyMode}
             label="نوع الهوية"
             value={defendant.idType || ''}
             fieldId="defendant-id-type"
@@ -264,6 +306,7 @@ export function LegalTaqadi() {
         </div>
         
         <CopyableField
+          readOnlyMode={readOnlyMode}
           label="الجنسية"
           value={defendant.nationality || ''}
           fieldId="defendant-nationality"
@@ -272,12 +315,14 @@ export function LegalTaqadi() {
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <CopyableField
+          readOnlyMode={readOnlyMode}
             label="رقم الهاتف"
             value={defendant.phone || ''}
             fieldId="defendant-phone"
             icon={<Phone className="h-4 w-4" />}
           />
           <CopyableField
+          readOnlyMode={readOnlyMode}
             label="البريد الإلكتروني"
             value={defendant.email || ''}
             fieldId="defendant-email"
@@ -286,6 +331,7 @@ export function LegalTaqadi() {
         </div>
         
         <CopyableField
+          readOnlyMode={readOnlyMode}
           label="العنوان"
           value={defendant.address || ''}
           fieldId="defendant-address"
@@ -301,6 +347,7 @@ export function LegalTaqadi() {
         delay={0.3}
       >
         <CopyableField
+          readOnlyMode={readOnlyMode}
           label="رقم العقد"
           value={contract.contractNumber}
           fieldId="contract-number"
@@ -309,12 +356,14 @@ export function LegalTaqadi() {
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <CopyableField
+          readOnlyMode={readOnlyMode}
             label="تاريخ بدء العقد"
             value={new Date(contract.startDate).toLocaleDateString('ar-QA')}
             fieldId="contract-start"
             icon={<Calendar className="h-4 w-4" />}
           />
           <CopyableField
+          readOnlyMode={readOnlyMode}
             label="تاريخ انتهاء العقد"
             value={contract.endDate 
               ? new Date(contract.endDate).toLocaleDateString('ar-QA')
@@ -326,6 +375,7 @@ export function LegalTaqadi() {
         </div>
         
         <CopyableField
+          readOnlyMode={readOnlyMode}
           label="القيمة الإيجارية الشهرية"
           value={contract.monthlyAmount 
             ? `${Math.round(contract.monthlyAmount)} QAR`
@@ -343,6 +393,7 @@ export function LegalTaqadi() {
         delay={0.4}
       >
         <CopyableField
+          readOnlyMode={readOnlyMode}
           label="الوصف الكامل"
           value={vehicle.fullDescription}
           fieldId="vehicle-full"
@@ -351,11 +402,13 @@ export function LegalTaqadi() {
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <CopyableField
+          readOnlyMode={readOnlyMode}
             label="الماركة"
             value={vehicle.make || ''}
             fieldId="vehicle-make"
           />
           <CopyableField
+          readOnlyMode={readOnlyMode}
             label="الموديل"
             value={vehicle.model || ''}
             fieldId="vehicle-model"
@@ -364,16 +417,19 @@ export function LegalTaqadi() {
         
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <CopyableField
+          readOnlyMode={readOnlyMode}
             label="سنة الصنع"
             value={vehicle.year ? String(vehicle.year) : ''}
             fieldId="vehicle-year"
           />
           <CopyableField
+          readOnlyMode={readOnlyMode}
             label="رقم اللوحة"
             value={vehicle.plateNumber || ''}
             fieldId="vehicle-plate"
           />
           <CopyableField
+          readOnlyMode={readOnlyMode}
             label="اللون"
             value={vehicle.color || ''}
             fieldId="vehicle-color"
@@ -381,6 +437,7 @@ export function LegalTaqadi() {
         </div>
         
         <CopyableField
+          readOnlyMode={readOnlyMode}
           label="رقم الشاسيه (VIN)"
           value={vehicle.vin || ''}
           fieldId="vehicle-vin"

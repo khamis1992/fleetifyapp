@@ -806,7 +806,7 @@ const PaymentRegistration = () => {
         {/* Header */}
         <Card>
           <CardContent className="p-6">
-            <div className="flex justify-between items-center flex-wrap gap-4">
+            <div data-finance-heading="" className="flex justify-between items-center flex-wrap gap-4">
               <div className="flex items-center gap-3">
                 <div className="p-2 bg-primary/10 rounded-lg">
                   <Receipt className="w-6 h-6 text-primary" />
@@ -826,7 +826,7 @@ const PaymentRegistration = () => {
                 </Button>
                 <Button variant="outline" size="sm" onClick={() => toast.info('جاري التصدير...')}>
                   <FileSpreadsheet className="w-4 h-4 mr-2" />
-                  تصدير Excel
+                  تصدير إكسل
                 </Button>
               </div>
             </div>

@@ -33,12 +33,10 @@ import UserAccountForm from '@/components/hr/UserAccountForm';
 import PermissionsMatrix from '@/components/hr/permissions/PermissionsMatrix';
 import { useUpdateUserPermissions, useUpdateUserRoles } from '@/hooks/useUserPermissions';
 import { UserRole } from '@/types/permissions';
+import { OperationsWorkspace, OperationsMetric } from '@/components/operations/OperationsWorkspace';
 import { AdminGuard } from '@/components/auth/RoleGuard';
 import { cn } from '@/lib/utils';
 import {
-  HRMetricCard,
-  HRPageHeader,
-  HRPageShell,
   HRSectionCard,
   hrButtonClassName,
   hrFieldClassName,
@@ -316,18 +314,18 @@ function UserManagementContent() {
 
   if (isLoading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[#F6F8FB]" dir="rtl">
+      <OperationsWorkspace section="permissions"><div className="opw-empty" role="status">
         <div className="rounded-lg border border-slate-200 bg-white px-8 py-6 text-center shadow-sm">
           <div className="mx-auto mb-4 h-11 w-11 animate-spin rounded-full border-4 border-[#22C7A1] border-t-transparent" />
           <p className="font-black text-[#020617]">جاري تحميل المستخدمين والصلاحيات...</p>
         </div>
-      </div>
+      </div></OperationsWorkspace>
     );
   }
 
   if (accountsError) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[#F6F8FB] p-4" dir="rtl">
+      <OperationsWorkspace section="permissions"><div className="opw-empty" role="alert">
         <div className="max-w-md rounded-lg border border-slate-200 bg-white p-8 text-center shadow-sm">
           <AlertCircle className="mx-auto mb-4 h-12 w-12 text-[#FB6B7A]" />
           <h3 className="mb-2 text-lg font-black text-[#020617]">تعذر تحميل المستخدمين</h3>
@@ -337,48 +335,37 @@ function UserManagementContent() {
             إعادة المحاولة
           </Button>
         </div>
-      </div>
+      </div></OperationsWorkspace>
     );
   }
 
   return (
-    <HRPageShell>
-      <HRPageHeader
-        title="إدارة المستخدمين والصلاحيات"
-        description="تحكم مرن في صلاحيات كل موظف: الدور يعطي الصلاحيات الأساسية، ويمكنك إضافة سماح خاص أو منع خاص لكل صلاحية."
-        icon={Shield}
-        badge="نظام الصلاحيات"
-        action={
+    <OperationsWorkspace section="permissions" actions={
           <div className="flex flex-wrap items-center gap-2">
-            <Button variant="outline" className="h-11 rounded-xl gap-2" onClick={() => refetch()}>
+            <Button variant="outline" className="opw-secondary h-11 rounded-xl gap-2" onClick={() => refetch()}>
               <RefreshCw className="h-4 w-4" />
               تحديث
             </Button>
             {employeesWithoutAccess.length > 0 && (
-              <Button className={cn(hrButtonClassName, 'gap-2')} onClick={() => setEmployeeForAccount(employeesWithoutAccess[0])}>
+              <Button className={cn(hrButtonClassName, 'opw-primary gap-2')} onClick={() => setEmployeeForAccount(employeesWithoutAccess[0])}>
                 <UserPlus className="h-4 w-4" />
                 إنشاء حساب
               </Button>
             )}
           </div>
-        }
-      />
+        }>
 
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <HRMetricCard title="مستخدمون نشطون" value={employeesWithAccess.length} icon={UserCheck} tone="success" />
-        <HRMetricCard title="بدون حساب نظام" value={employeesWithoutAccess.length} icon={UserPlus} tone="danger" />
-        <HRMetricCard title="طلبات معلقة" value={accountRequests.length} icon={Clock} tone="focus" />
-        <HRMetricCard
-          title="تخصيصات صلاحيات"
-          value={employeesWithAccess.reduce((total, employee) => total + employee.permission_override_count, 0)}
-          icon={KeyRound}
-          tone="info"
-        />
+      <div className="opw-metrics">
+        <OperationsMetric label="مستخدمو النظام" value={employeesWithAccess.length} icon={UserCheck} hint="حسابات لديها صلاحية الوصول" />
+        <OperationsMetric label="بدون حساب نظام" value={employeesWithoutAccess.length} icon={UserPlus} hint="موظفون بانتظار إنشاء حساب" tone="warning" />
+        <OperationsMetric label="طلبات معلقة" value={accountRequests.length} icon={Clock} hint="طلبات إنشاء حساب قيد المراجعة" />
+        <OperationsMetric label="صلاحيات مخصصة" value={employeesWithAccess.reduce((total, employee) => total + employee.permission_override_count, 0)} icon={KeyRound} hint="استثناءات السماح والمنع على الحسابات" />
       </div>
+      <div className="ad-notice"><Shield size={21} /><div><strong>اختر المستخدم، ثم حدّد دوره وصلاحياته</strong>الدور يحدّد الصلاحيات الأساسية. استخدم السماح أو المنع لتخصيص الوصول، ثم احفظ التغييرات بعد مراجعتها.</div></div>
 
-      <div className="grid gap-5 xl:grid-cols-[420px_minmax(0,1fr)]">
+      <div className="ad-access-layout">
         <div className="space-y-5">
-          <HRSectionCard className="p-4">
+          <HRSectionCard className="ad-user-directory p-4">
             <div className="mb-4 flex items-center justify-between gap-3">
               <div>
                 <h2 className="text-lg font-black text-[#020617]">سجل المستخدمين</h2>
@@ -395,13 +382,13 @@ function UserManagementContent() {
                 <Input
                   value={searchTerm}
                   onChange={(event) => setSearchTerm(event.target.value)}
-                  placeholder="ابحث بالاسم، الرقم الوظيفي، البريد..."
+                  aria-label="البحث عن مستخدم" placeholder="ابحث بالاسم، الرقم الوظيفي، البريد..."
                   className={cn(hrFieldClassName, 'pr-10')}
                 />
               </div>
 
               <Select value={filterRole} onValueChange={setFilterRole}>
-                <SelectTrigger className={cn(hrFieldClassName, 'w-full')}>
+                <SelectTrigger aria-label="تصفية المستخدمين حسب الدور" className={cn(hrFieldClassName, 'w-full')}>
                   <Filter className="ml-2 h-4 w-4 text-[#94A3B8]" />
                   <SelectValue placeholder="تصفية حسب الدور" />
                 </SelectTrigger>
@@ -416,7 +403,7 @@ function UserManagementContent() {
               </Select>
             </div>
 
-            <div className="mt-4 max-h-[640px] space-y-2 overflow-y-auto pr-1">
+            <div className="ad-user-list mt-4 space-y-2 overflow-y-auto">
               {filteredUsers.length === 0 ? (
                 <EmptyState icon={Users} title="لا توجد نتائج" description="غيّر البحث أو التصفية لعرض مستخدمين آخرين." />
               ) : (
@@ -468,10 +455,10 @@ function UserManagementContent() {
         </div>
 
         <div className="space-y-5">
-          <HRSectionCard className="overflow-hidden">
+          <HRSectionCard className="ad-user-editor overflow-hidden">
             {selectedUser ? (
               <>
-                <div className="border-b border-slate-200 bg-white p-4">
+                <div className="ad-user-editor-header border-b border-slate-200 bg-white p-4">
                   <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                     <div className="flex items-center gap-3">
                       <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[#102B4E] text-xl font-black text-white">
@@ -545,7 +532,7 @@ function UserManagementContent() {
                 </div>
               </>
             ) : (
-              <div className="flex min-h-[620px] items-center justify-center p-8">
+              <div className="ad-access-empty flex items-center justify-center p-8">
                 <div className="max-w-md text-center">
                   <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-3xl bg-[#E8FBF6] text-[#22C7A1]">
                     <Sparkles className="h-8 w-8" />
@@ -575,7 +562,7 @@ function UserManagementContent() {
           }}
         />
       )}
-    </HRPageShell>
+    </OperationsWorkspace>
   );
 }
 
@@ -594,8 +581,10 @@ function UserAccessCard({
     <button
       type="button"
       onClick={onClick}
+      aria-pressed={active}
+      aria-label={`اختيار المستخدم ${employee.first_name} ${employee.last_name}`}
       className={cn(
-        'w-full rounded-2xl border p-3 text-right transition',
+        'ad-user-card w-full rounded-2xl border p-3 text-right transition',
         active ? 'border-[#22C7A1] bg-[#F7FFFC] shadow-sm' : 'border-slate-200 bg-white hover:border-[#BDEFE4]',
       )}
     >

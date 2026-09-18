@@ -406,13 +406,14 @@ export function CRMActivityPanel({
             animate={{ x: 0 }}
             exit={{ x: '100%' }}
             transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-            className="fixed left-0 top-0 z-50 flex h-full w-full max-w-lg flex-col bg-[#F6F8FB] shadow-2xl"
+            className="opw-details-drawer fixed left-0 top-0 z-50 flex h-full w-full max-w-lg flex-col bg-[#F6F8FB] shadow-2xl"
             dir="rtl"
           >
             {/* Header */}
             <div className="flex-shrink-0 border-b border-[#DDE5EF] bg-white">
               <div className="flex items-center justify-between p-4">
                 <button
+                  aria-label="إغلاق سجل التفاعلات"
                   onClick={onClose}
                   className="rounded-lg p-2 text-[#536173] transition hover:bg-[#F8FAFC]"
                 >

@@ -156,13 +156,42 @@ verify_jwt = false
 [functions.process-payment-reminders]
 verify_jwt = false
 
-# Scheduled internal endpoints. The gateway accepts the secret-header request;
-# each function still rejects callers that fail its own service/agent-secret check.
+# Scheduled internal endpoints. The gateway accepts the per-agent Vault headers;
+# each function verifies its exact machine identity, company policy and lease.
 [functions.generate-monthly-invoices]
 verify_jwt = false
 
+# Interactive historical backfill verifies an administrator JWT in-function and
+# then enters the governed-agent control plane; no shared backfill secret exists.
 [functions.backfill-historical-invoices]
 verify_jwt = false
 
+[functions.monthly-vehicle-depreciation]
+verify_jwt = false
+
 [functions.contract-terms-scanner]
+verify_jwt = true
+
+[functions.correct-contract-document-orientation]
+verify_jwt = true
+
+# Microsoft Graph poller. Scheduled calls use the shared per-agent Vault
+# identity; interactive calls require an authenticated company administrator.
+[functions.ingest-traffic-mail]
+verify_jwt = false
+
+# Scheduled formal-notice agent authenticates its dedicated Vault identity.
+[functions.legal-notice-agent]
+verify_jwt = false
+
+# Scheduled document-request agent authenticates with its dedicated Vault identity.
+[functions.missing-contract-pdf-agent]
+verify_jwt = false
+
+[functions.upload-missing-contract-pdf]
+verify_jwt = false
+
+# Ultramsg cannot attach a Supabase JWT. The handler verifies a high-entropy
+# Vault token before accepting acknowledgement payloads.
+[functions.ultramsg-ack-webhook]
 verify_jwt = false

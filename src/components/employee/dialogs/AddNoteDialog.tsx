@@ -1,4 +1,5 @@
-﻿/**
+import { WorkspaceDialogContent as DialogContent, WorkspaceDialogHeader as DialogHeader, WorkspaceDialogFooter as DialogFooter, WorkspaceButton as Button, WorkspaceFormSection } from '@/components/employee-workspace/WorkspacePresentation';
+/**
  * Add Note Dialog
  * حوار إضافة ملاحظة على العقد
  */
@@ -16,14 +17,7 @@ import type {
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from '@/components/ui/dialog';
+import { Dialog, DialogDescription, DialogTitle } from '@/components/ui/dialog';
 import {
   Form,
   FormControl,
@@ -40,7 +34,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { Button } from '@/components/ui/button';
+
 import { Loader2, FileText, CheckCircle } from 'lucide-react';
 
 // Validation Schema
@@ -169,21 +163,15 @@ export const AddNoteDialog: React.FC<AddNoteDialogProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent className="sm:max-w-[640px]">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2 text-xl">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500 to-amber-600 flex items-center justify-center text-white">
-              <FileText className="w-5 h-5" />
-            </div>
-            إضافة ملاحظة
-          </DialogTitle>
-          <DialogDescription>
-            أضف ملاحظة على العقد لتوثيق المعلومات المهمة
-          </DialogDescription>
+          <DialogTitle>إضافة ملاحظة</DialogTitle>
+          <DialogDescription>حفظ ملاحظة واضحة ضمن سجل العميل والعقد.</DialogDescription>
         </DialogHeader>
 
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            <WorkspaceFormSection number="01" title="العقد وتصنيف الملاحظة" description="اختر العميل والتصنيف لتسهيل الرجوع إلى المعلومة.">
             {/* Contract Selection */}
             <FormField
               control={form.control}
@@ -229,7 +217,7 @@ export const AddNoteDialog: React.FC<AddNoteDialogProps> = ({
                       <SelectItem value="complaint">شكوى</SelectItem>
                       <SelectItem value="vehicle_condition">حالة المركبة</SelectItem>
                       <SelectItem value="customer_request">طلب العميل</SelectItem>
-                      <SelectItem value="important">مهمة ⭐</SelectItem>
+                      <SelectItem value="important">مهمة</SelectItem>
                       <SelectItem value="other">أخرى</SelectItem>
                     </SelectContent>
                   </Select>
@@ -238,6 +226,8 @@ export const AddNoteDialog: React.FC<AddNoteDialogProps> = ({
               )}
             />
 
+            </WorkspaceFormSection>
+            <WorkspaceFormSection number="02" title="محتوى الملاحظة" description="وثّق التفاصيل والإجراء المطلوب بوضوح.">
             {/* Note Content */}
             <FormField
               control={form.control}
@@ -253,7 +243,7 @@ export const AddNoteDialog: React.FC<AddNoteDialogProps> = ({
                     />
                   </FormControl>
                   <div className="text-xs text-gray-500 mt-1">
-                    {field.value.length} / 500 حرف
+                    {field.value.length} حرف · الحد الأدنى 10 أحرف
                   </div>
                   <FormMessage />
                 </FormItem>
@@ -275,13 +265,14 @@ export const AddNoteDialog: React.FC<AddNoteDialogProps> = ({
                     />
                   </FormControl>
                   <FormLabel className="!mt-0 cursor-pointer flex items-center gap-2">
-                    <span>⭐</span>
+                    <FileText className="h-4 w-4" aria-hidden="true" />
                     <span>ملاحظة مهمة (سيتم تمييزها)</span>
                   </FormLabel>
                 </FormItem>
               )}
             />
 
+            </WorkspaceFormSection>
             <DialogFooter className="gap-2">
               <Button
                 type="button"

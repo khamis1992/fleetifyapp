@@ -232,35 +232,35 @@ function JournalEntryCard({
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={() => onView?.(entry)}>
+                <DropdownMenuItem onClick={() => {setIsExpanded(true); onView?.(entry);}}>
                   <Eye className="h-4 w-4 ml-2" />
                   عرض التفاصيل
                 </DropdownMenuItem>
                 <JournalEntryAiReviewMenuItem entryId={entry.id} entryNumber={entry.entry_number} />
                 {entry.status === 'draft' && (
                   <>
-                    <DropdownMenuItem onClick={() => onEdit?.(entry)}>
+                    {onEdit && <DropdownMenuItem onClick={() => onEdit(entry)}>
                       <Edit className="h-4 w-4 ml-2" />
                       تعديل القيد
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => onPost?.(entry)}>
+                    </DropdownMenuItem>}
+                    {onPost && <DropdownMenuItem onClick={() => onPost(entry)}>
                       <CheckCircle className="h-4 w-4 ml-2" />
                       ترحيل القيد
-                    </DropdownMenuItem>
+                    </DropdownMenuItem>}
                   </>
                 )}
-                {entry.status === 'posted' && !entry.reversed_at && (
+                {onReverse && entry.status === 'posted' && !entry.reversed_at && (
                   <DropdownMenuItem onClick={() => setShowReverseDialog(true)}>
                     <RotateCcw className="h-4 w-4 ml-2" />
                     عكس القيد
                   </DropdownMenuItem>
                 )}
-                <DropdownMenuItem onClick={() => onPrint?.(entry)}>
+                {onPrint && <DropdownMenuItem onClick={() => onPrint(entry)}>
                   <Printer className="h-4 w-4 ml-2" />
                   طباعة
-                </DropdownMenuItem>
+                </DropdownMenuItem>}
                 <DropdownMenuSeparator />
-                {entry.status === 'draft' && (
+                {onDelete && entry.status === 'draft' && (
                   <DropdownMenuItem
                     className="text-destructive"
                     onClick={() => setShowDeleteDialog(true)}
@@ -630,10 +630,7 @@ export function EnhancedJournalEntriesTab({
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
                   <DropdownMenuItem onClick={() => onExport?.('excel')}>
-                    تصدير Excel
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => onExport?.('pdf')}>
-                    تصدير PDF
+                    تصدير إكسل
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => onExport?.('csv')}>
                     تصدير CSV

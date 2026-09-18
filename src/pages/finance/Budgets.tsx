@@ -1,3 +1,5 @@
+import { FinanceContextActions } from "@/components/finance/workspace/FinanceContextActions";
+import { FinancePageHeader } from "@/components/ui/FinancePageHeader";
 import { useMemo, useState } from "react";
 import {
   Calculator,
@@ -19,14 +21,13 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
-import { Progress } from "@/components/ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
 import { Budget, useBudgets, useCreateBudget, useUpdateBudget } from "@/hooks/useFinance";
-import { evaluateBudgetControl } from "@/utils/budgetControlRules";
 
-const qarFormatter = new Intl.NumberFormat("en-QA", {
+const qarFormatter = new Intl.NumberFormat("ar-QA", {
+  numberingSystem: "latn",
   style: "currency",
   currency: "QAR",
   minimumFractionDigits: 2,
@@ -209,13 +210,6 @@ const Budgets = () => {
     };
   }, [budgets]);
 
-  const revenueExecution = totals.revenue > 0 ? 65 : 0;
-  const expenseExecution = totals.expenses > 0 ? 45 : 0;
-  const budgetControlDecision = evaluateBudgetControl({
-    budgetAmount: totals.expenses,
-    actualAmount: totals.expenses * (expenseExecution / 100),
-  });
-
   const handleCreateBudget = async () => {
     if (!newBudget.budget_name || !newBudget.budget_year) return;
 
@@ -281,6 +275,7 @@ const Budgets = () => {
 
   return (
     <div className="space-y-5" dir="rtl">
+      <FinancePageHeader title="الموازنات" description="إعداد الموازنات ومراجعة الإيرادات والمصروفات المخططة." icon={Calculator} />
       <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
         {metricCards.map((metric) => {
           const Icon = metric.icon;
@@ -304,7 +299,7 @@ const Budgets = () => {
         })}
       </div>
 
-      <div className="grid gap-5 xl:grid-cols-[0.8fr_1.2fr]">
+      <div className="grid gap-5 xl:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)]">
         <Card className="rounded-2xl border-slate-200 bg-white shadow-sm">
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-2 text-lg font-black text-[#020617]">
@@ -312,76 +307,20 @@ const Budgets = () => {
               تنفيذ الموازنة
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-5">
-            <div className="rounded-2xl bg-[#F6F8FB] p-4">
-              <div className="mb-2 flex items-center justify-between text-sm">
-                <span className="font-bold text-[#020617]">الإيرادات</span>
-                <span className="font-black text-[#22C7A1]">{revenueExecution}%</span>
-              </div>
-              <Progress value={revenueExecution} className="h-2" />
-              <div className="mt-2 flex justify-between text-xs text-[#94A3B8]">
-                <span>{formatQar(totals.revenue * 0.65)} فعلي</span>
-                <span>{formatQar(totals.revenue)} مخطط</span>
-              </div>
-            </div>
-            <div className="rounded-2xl bg-[#F6F8FB] p-4">
-              <div className="mb-2 flex items-center justify-between text-sm">
-                <span className="font-bold text-[#020617]">المصروفات</span>
-                <span className="font-black text-[#FB6B7A]">{expenseExecution}%</span>
-              </div>
-              <Progress value={expenseExecution} className="h-2" />
-              <div className="mt-2 flex justify-between text-xs text-[#94A3B8]">
-                <span>{formatQar(totals.expenses * 0.45)} فعلي</span>
-                <span>{formatQar(totals.expenses)} مخطط</span>
-              </div>
-            </div>
-            <div className="rounded-2xl border border-[#22C7A1]/20 bg-[#E8FBF6] p-4">
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <p className="text-sm font-black text-[#020617]">رقابة تجاوز الميزانية</p>
-                  <p className="mt-1 text-xs leading-5 text-[#64748B]">
-                    سيتم منع ترحيل مصروفات مركز التكلفة إذا تجاوزت الحد المعتمد بعد تطبيق المايغريشن.
-                  </p>
-                </div>
-                <Badge
-                  variant="outline"
-                  className={
-                    budgetControlDecision.status === "exceeded"
-                      ? "border-[#FB6B7A]/25 bg-[#FFF0F2] text-[#FB6B7A]"
-                      : budgetControlDecision.status === "near_limit"
-                        ? "border-amber-200 bg-amber-50 text-amber-700"
-                        : "border-[#22C7A1]/25 bg-white text-[#22C7A1]"
-                  }
-                >
-                  {budgetControlDecision.status === "exceeded"
-                    ? "متجاوزة"
-                    : budgetControlDecision.status === "near_limit"
-                      ? "قريبة من الحد"
-                      : "ضمن الحد"}
-                </Badge>
-              </div>
-              <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
-                <div className="rounded-xl bg-white p-3">
-                  <span className="block font-bold text-[#94A3B8]">المتبقي</span>
-                  <strong className="mt-1 block text-[#020617]">{formatQar(budgetControlDecision.remainingAmount)}</strong>
-                </div>
-                <div className="rounded-xl bg-white p-3">
-                  <span className="block font-bold text-[#94A3B8]">الاستخدام</span>
-                  <strong className="mt-1 block text-[#020617]">{budgetControlDecision.utilizationPercent.toFixed(1)}%</strong>
-                </div>
-              </div>
-            </div>
+          <CardContent className="space-y-4">
+            <p className="text-sm leading-7 text-muted-foreground">الأرقام المعروضة مبالغ مخططة. نسبة التنفيذ الفعلي غير متاحة في هذا السجل؛ راجع قائمة الدخل عن الفترة المطلوبة لمعرفة الإيرادات والمصروفات المسجلة.</p>
+            <FinanceContextActions ids={["report-income-statement"]} />
           </CardContent>
         </Card>
 
         <Card className="rounded-2xl border-slate-200 bg-white shadow-sm">
           <CardHeader className="pb-3">
-            <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+            <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
                 <CardTitle className="text-lg font-black text-[#020617]">قائمة الموازنات</CardTitle>
                 <p className="mt-1 text-sm text-[#94A3B8]">بحث وحالة وإجراءات في مساحة واحدة</p>
               </div>
-              <div className="flex flex-col gap-2 sm:flex-row">
+              <div className="flex flex-col flex-wrap gap-2 sm:flex-row">
                 <div className="relative">
                   <Search className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#94A3B8]" />
                   <Input
@@ -450,7 +389,7 @@ const Budgets = () => {
                           <div>
                             <p className="font-black text-[#020617]">{budget.budget_name}</p>
                             <p className="text-xs text-[#94A3B8]">
-                              {new Date(budget.created_at).toLocaleDateString("en-GB")}
+                              {new Date(budget.created_at).toLocaleDateString("ar-QA")}
                             </p>
                           </div>
                         </TableCell>

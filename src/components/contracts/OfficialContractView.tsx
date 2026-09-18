@@ -7,7 +7,7 @@
 import React, { useRef, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle } from '@/components/ui/card';
-import { Printer, Eye, Download } from 'lucide-react';
+import { AlertTriangle, Printer, Eye } from 'lucide-react';
 import { OfficialContractLetterDocument } from './OfficialContractLetterDocument';
 import type { PaymentSchedule } from '@/types/payment-schedules';
 import type { VehicleInspection } from '@/hooks/useVehicleInspections';
@@ -18,6 +18,7 @@ interface OfficialContractViewProps {
   paymentSchedules?: PaymentSchedule[];
   checkInInspection?: VehicleInspection | null;
   checkOutInspection?: VehicleInspection | null;
+  blockingMessage?: string | null;
 }
 
 export const OfficialContractView: React.FC<OfficialContractViewProps> = ({
@@ -25,11 +26,13 @@ export const OfficialContractView: React.FC<OfficialContractViewProps> = ({
   paymentSchedules = [],
   checkInInspection = null,
   checkOutInspection = null,
+  blockingMessage = null,
 }) => {
   const printRef = useRef<HTMLDivElement>(null);
 
   // طباعة العقد بطريقة محسنة
   const handlePrint = useCallback(() => {
+    if (blockingMessage) return;
     if (!printRef.current) return;
 
     // إنشاء نافذة طباعة جديدة
@@ -375,10 +378,11 @@ export const OfficialContractView: React.FC<OfficialContractViewProps> = ({
 
     printWindow.document.write(printContent);
     printWindow.document.close();
-  }, [contract]);
+  }, [blockingMessage, contract]);
 
   // معاينة الطباعة
   const handlePreview = useCallback(() => {
+    if (blockingMessage) return;
     if (!printRef.current) return;
 
     const previewWindow = window.open('', '_blank', 'width=900,height=700');
@@ -461,10 +465,19 @@ export const OfficialContractView: React.FC<OfficialContractViewProps> = ({
 
     previewWindow.document.write(previewContent);
     previewWindow.document.close();
-  }, [contract]);
+  }, [blockingMessage, contract]);
 
   return (
     <div className="space-y-4">
+      {blockingMessage && (
+        <div className="no-print flex items-start gap-3 rounded-xl border border-amber-300 bg-amber-50 p-4 text-amber-900">
+          <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0" />
+          <div>
+            <p className="text-sm font-black">نسخة العقد غير جاهزة للطباعة</p>
+            <p className="mt-1 text-sm font-semibold leading-6">{blockingMessage}</p>
+          </div>
+        </div>
+      )}
       {/* شريط أدوات الطباعة */}
       <Card className="no-print bg-gradient-to-r from-neutral-50 to-neutral-100 border-neutral-200">
         <CardHeader className="pb-4">
@@ -481,6 +494,8 @@ export const OfficialContractView: React.FC<OfficialContractViewProps> = ({
             <div className="flex gap-2">
               <Button
                 onClick={handlePreview}
+                disabled={Boolean(blockingMessage)}
+                title={blockingMessage || undefined}
                 variant="outline"
                 size="sm"
                 className="gap-2 border-neutral-300 hover:border-coral-400 hover:text-coral-600"
@@ -490,6 +505,8 @@ export const OfficialContractView: React.FC<OfficialContractViewProps> = ({
               </Button>
             <Button
               onClick={handlePrint}
+              disabled={Boolean(blockingMessage)}
+              title={blockingMessage || undefined}
               size="sm"
                 className="gap-2 bg-rose-500 hover:bg-coral-600 text-white shadow-lg shadow-rose-500/30"
             >

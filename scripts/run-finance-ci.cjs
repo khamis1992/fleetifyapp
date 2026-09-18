@@ -28,6 +28,11 @@ function loadDotEnv() {
 loadDotEnv();
 
 const requireDb = process.argv.includes('--require-db');
+const offline = process.argv.includes('--offline');
+if (offline && requireDb) {
+  console.error('--offline and --require-db cannot be combined.');
+  process.exit(1);
+}
 const hasDbEnv = Boolean(
   process.env.VITE_SUPABASE_URL
   && process.env.SUPABASE_SERVICE_ROLE_KEY
@@ -38,9 +43,16 @@ const steps = [
   ['npm', ['run', 'finance:permissions']],
   ['npm', ['run', 'finance:type-check']],
   ['npm', ['run', 'finance:test']],
+  ['npm', ['exec', '--', 'vitest', 'run', 'src/components/finance/workspace/__tests__', 'src/hooks/__tests__/financeRegisterReaders.test.tsx']],
+  ['npm', ['exec', '--', 'vitest', 'run', 'src/services/__tests__/professionalBalanceSheet.test.ts', 'src/components/finance/__tests__/BalanceSheetReport.test.tsx', 'src/components/finance/enhanced-editing/__tests__/EnhancedAccountEditDialog.subtype.test.tsx', 'src/utils/__tests__/balanceSheetPresentation.test.ts', 'src/utils/__tests__/balanceSheetExport.test.ts']],
+  ['npm', ['exec', '--', 'vitest', 'run', 'src/services/__tests__/financialStatementPackage.test.ts', 'src/components/finance/__tests__/FinancialStatementPackageReport.test.tsx', 'src/utils/__tests__/financialStatementPackageExport.test.ts']],
+  ['npm', ['exec', '--', 'vitest', 'run', 'src/hooks/finance/__tests__/financialReportMutationSafety.test.tsx', 'src/services/__tests__/financialReportErrors.test.ts', 'src/utils/__tests__/financialReportDiagnostics.test.ts', 'src/integrations/supabase/__tests__/financialReportRequestPolicy.test.ts']],
+  ['node', ['--test', 'tests/database/financial-report-performance.test.mjs', 'tests/database/professional-balance-sheets.test.mjs', 'tests/database/financial-statement-packages.test.mjs', 'tests/database/financial-reporting-period-locks.test.mjs']],
+  ['node', ['--test', 'tests/database/financial-workspace.test.mjs', 'tests/database/collected-fee-posting.test.mjs', 'tests/database/financial-lifecycle.test.mjs', 'tests/database/customer-collection-summary.test.mjs']],
+  ['npm', ['exec', '--', 'vitest', 'run', 'src/services/__tests__/financialReporting.test.ts', 'src/services/__tests__/accountingRefresh.test.ts', 'src/components/finance/__tests__/ProtectedFinanceRoute.test.tsx', 'src/hooks/__tests__/financialAnalysisBasis.test.tsx', 'src/hooks/__tests__/usePayrollJournalIntegration.test.ts', 'src/hooks/__tests__/accountMappingCommands.test.tsx', 'src/utils/__tests__/accountMappingValidation.test.ts', 'src/services/__tests__/customerCollectionSummary.test.tsx']],
 ];
 
-if (hasDbEnv || requireDb) {
+if (!offline && (hasDbEnv || requireDb)) {
   const healthSnapshotScript = requireDb ? 'finance:health:snapshot:required' : 'finance:health:snapshot';
   steps.push(
     ['npm', ['run', 'finance:integrity']],
@@ -49,7 +61,7 @@ if (hasDbEnv || requireDb) {
     ['npm', ['run', healthSnapshotScript]]
   );
 } else {
-  console.log('Skipping live DB finance checks because Supabase service-role environment variables are not set.');
+  console.log(offline ? 'Offline finance verification: live DB checks and snapshot writes are disabled.' : 'Skipping live DB finance checks because Supabase service-role environment variables are not set.');
 }
 
 if (requireDb && !hasDbEnv) {

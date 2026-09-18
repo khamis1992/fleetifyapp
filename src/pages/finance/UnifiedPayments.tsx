@@ -19,7 +19,7 @@ const UnifiedPayments = () => {
 
         <div className="container mx-auto p-6 space-y-6">
           {/* Header */}
-          <div className="flex justify-between items-center">
+          <div data-finance-heading="" className="flex justify-between items-center">
             <div className="flex items-center gap-4">
               <div className="p-3 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl text-white">
                 <CreditCard className="h-6 w-6" />
@@ -110,7 +110,7 @@ const UnifiedPayments = () => {
                   <div className="text-center py-12 text-muted-foreground">
                     <GitBranch className="h-12 w-12 mx-auto mb-4 opacity-50" />
                     <p>ربط المدفوعات بالعقود والفواتير</p>
-                    <p className="text-sm mt-2">مع AI Matching الذكي</p>
+                    <p className="text-sm mt-2">مع المطابقة الذكية</p>
                   </div>
                 </CardContent>
               </Card>

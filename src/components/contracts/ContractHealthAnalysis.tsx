@@ -1,3 +1,4 @@
+import { ContractSectionHeading } from './contract-details-v3/ContractSection';
 import React, { useMemo, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
@@ -20,6 +21,7 @@ import { useToast } from '@/hooks/use-toast';
 import type { Contract } from '@/types/contracts';
 import type { Invoice } from '@/types/finance.types';
 import { getInvoiceBillingDate, getInvoiceBillingMonthKey } from '@/utils/invoiceBillingMonth';
+import { requestFinancialReconciliation } from '@/services/contractFinancialIntegrity';
 import { getExpectedContractInvoiceCount } from '@/utils/contractInvoiceExpectations';
 
 type ContractPaymentRow = {
@@ -51,6 +53,9 @@ type HealthIssue = {
   count?: number;
   items?: string[];
   fixable?: boolean;
+  // هل يعالج الزر هذه المشكلة بالكامل؟ false يعني أن الزر يعالج جزءًا فقط
+  // أو أن بعض البنود تحتاج تعديلًا محاسبيًا معتمدًا.
+  autoFixable?: boolean;
 };
 
 type InvoiceIssueItem = {
@@ -210,7 +215,9 @@ export const ContractHealthAnalysis: React.FC<{
   contract: Contract;
   formatCurrency: (amount: number) => string;
   paymentSchedules: PaymentScheduleLike[];
-}> = ({ contract, formatCurrency }) => {
+  billingGenerationBlocker?: string | null;
+  healthScore?: number;
+}> = ({ contract, formatCurrency, billingGenerationBlocker, healthScore }) => {
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const [isFixing, setIsFixing] = useState(false);
@@ -348,326 +355,189 @@ export const ContractHealthAnalysis: React.FC<{
 
   const health = data;
   const fixableIssuesCount = health
-    ? health.metrics.missingInvoices
-      + health.metrics.outsideInvoices.length
-      + health.metrics.paymentsBeforeStartItems.filter((payment) => !payment.is_immutable).length
-      + health.metrics.paymentsAfterEndItems.filter((payment) => !payment.is_immutable).length
-      + (health.metrics.scheduleInvoiceDifference > 1 ? 1 : 0)
-      + health.metrics.scheduleInvoiceMismatchItems.length
-      + health.metrics.invoicePaymentCorrections.length
+    ? health.issues.filter(
+        (issue) => issue.fixable && issue.autoFixable !== false && issue.severity !== 'good',
+      ).length
     : 0;
+  const displayedHealthScore = healthScore ?? health?.score ?? 0;
 
   const handleAutoFix = async () => {
-    if (!health || fixableIssuesCount === 0) return;
-
     setIsFixing(true);
-    const fixedActions: string[] = [];
-    const reviewItems: string[] = [];
-    let fixedCount = 0;
-    const now = new Date().toISOString();
-    const reviewedPaymentIds = new Set<string>();
-
     try {
-      const agentPlan = buildLocalContractRepairAgentPlan(health.metrics);
-      if (agentPlan.actions.length > 0) {
-        const actionLabels = agentPlan.actions
-          .slice(0, 5)
-          .map((action) => getRepairToolLabel(action.tool))
-          .join('، ');
-        fixedActions.push(
-          `${agentPlan.source === 'longcat' ? 'وكيل AI' : 'خطة ذكية محلية'}: ${agentPlan.summary} (${actionLabels})`,
-        );
-      }
-      reviewItems.push(...agentPlan.requiresReview);
-
-      const schedulesResult = await supabase
-        .from('contract_payment_schedules')
-        .select('id, installment_number, due_date, amount, status, paid_date, paid_amount, invoice_id')
-        .eq('contract_id', contract.id)
-        .eq('company_id', contract.company_id)
-        .order('installment_number', { ascending: true });
-
-      if (schedulesResult.error) throw schedulesResult.error;
-      let currentPaymentSchedules = (schedulesResult.data || []) as PaymentScheduleLike[];
-
-      const repairedInvoiceLinks = await repairScheduleLinkedInvoiceContracts({
-        contract,
-        paymentSchedules: currentPaymentSchedules,
-        now,
-      });
-      if (repairedInvoiceLinks > 0) {
-        fixedCount += repairedInvoiceLinks;
-        fixedActions.push(`تصحيح ربط فواتير بالعقد: ${repairedInvoiceLinks}`);
-      }
-
-      const duplicateScheduleIds = getDuplicatePaymentScheduleIds(
-        currentPaymentSchedules,
-        contract.start_date,
-        contract.end_date,
-        Number(contract.monthly_amount || 0),
-      );
-      if (duplicateScheduleIds.length > 0) {
-        const { error } = await supabase
-          .from('contract_payment_schedules')
-          .update({
-            status: 'cancelled',
-            invoice_id: null,
-            notes: `تم إلغاء القسط لأنه مكرر ضمن إصلاح صحة العقد بتاريخ ${now}`,
-            updated_at: now,
-          })
-          .in('id', duplicateScheduleIds)
-          .eq('contract_id', contract.id)
-          .eq('company_id', contract.company_id);
-
-        if (error) throw error;
-        fixedCount += duplicateScheduleIds.length;
-        fixedActions.push(`إلغاء أقساط مكررة: ${duplicateScheduleIds.length}`);
-      }
-
-      let cancelledOutsideInvoices = 0;
-      let preservedLinkedPayments = 0;
-      for (const invoice of health.metrics.outsideInvoices) {
-        for (const paymentId of invoice.linked_payment_ids) {
-          if (reviewedPaymentIds.has(paymentId)) continue;
-          reviewedPaymentIds.add(paymentId);
-          preservedLinkedPayments += 1;
-        }
-
-        const repairResult = await repairOutOfPeriodInvoice({
-          contract,
-          invoice,
-          now,
-        });
-
-        if (repairResult.reviewMessage) {
-          reviewItems.push(repairResult.reviewMessage);
-        }
-
-        if (repairResult.changed) cancelledOutsideInvoices += 1;
-      }
-      if (health.metrics.outsideInvoices.length > 0) {
-        fixedCount += cancelledOutsideInvoices;
-        fixedActions.push(`إلغاء فواتير خارج الفترة: ${cancelledOutsideInvoices}`);
-        if (preservedLinkedPayments > 0) {
-          reviewItems.push(`تم الحفاظ على ${preservedLinkedPayments} دفعة مكتملة وفك ارتباطها بالفواتير الخارجة بدل إلغاء إيصالات القبض.`);
-        }
-      }
-
-      // One database command owns convention inference, installment amounts,
-      // schedule bootstrap and invoice creation. Local month enumeration used
-      // to extend established start-month graphs to N+1 invoices.
-      const { data: generatedInvoicesResult, error: billingGraphError } = await supabase.rpc(
-        'generate_invoices_from_payment_schedule',
-        { p_contract_id: contract.id },
-      );
-      if (billingGraphError) throw billingGraphError;
-
-      const generatedInvoices = Number(generatedInvoicesResult || 0);
-      if (generatedInvoices > 0) {
-        fixedCount += generatedInvoices;
-        fixedActions.push(`إنشاء وربط فواتير ناقصة: ${generatedInvoices}`);
-      }
-
-      const refreshedSchedules = await supabase
-        .from('contract_payment_schedules')
-        .select('id, installment_number, due_date, amount, status, paid_date, paid_amount, invoice_id')
-        .eq('contract_id', contract.id)
-        .eq('company_id', contract.company_id)
-        .order('installment_number', { ascending: true });
-
-      if (refreshedSchedules.error) throw refreshedSchedules.error;
-      currentPaymentSchedules = (refreshedSchedules.data || []) as PaymentScheduleLike[];
-
-      const paymentsToFix = Array.from(new Map(
-        [...health.metrics.paymentsBeforeStartItems, ...health.metrics.paymentsAfterEndItems]
-          .map((payment) => [payment.id, payment]),
-      ).values());
-      let reviewedOutOfPeriodPayments = 0;
-      let correctedPaymentDates = 0;
-      for (const payment of paymentsToFix) {
-        if (payment.is_immutable) {
-          reviewedPaymentIds.add(payment.id);
-          reviewedOutOfPeriodPayments += 1;
-          continue;
-        }
-
-        const nextPaymentDate = clampDateToContract(payment.payment_date, contract.start_date, contract.end_date);
-        if (!nextPaymentDate || nextPaymentDate === payment.payment_date) continue;
-
-        const { error } = await supabase
-          .from('payments')
-          .update({ payment_date: nextPaymentDate, updated_at: now })
-          .eq('id', payment.id)
-          .eq('company_id', contract.company_id);
-
-        if (error) {
-          if (!isImmutablePaymentError(error)) throw error;
-          reviewItems.push(`دفعة مكتملة: ${payment.payment_number}`);
-        } else {
-          correctedPaymentDates += 1;
-        }
-      }
-      if (paymentsToFix.length > 0) {
-        fixedCount += correctedPaymentDates;
-        if (correctedPaymentDates > 0) fixedActions.push(`تصحيح تواريخ دفعات: ${correctedPaymentDates}`);
-        if (reviewedOutOfPeriodPayments > 0) {
-          reviewItems.push(`توجد ${reviewedOutOfPeriodPayments} دفعة مكتملة خارج فترة العقد؛ تم الحفاظ على إيصالات القبض وتحتاج إعادة تخصيص آمنة.`);
-        }
-      }
-
-      // Amount changes require an approved accounting adjustment. Detect
-      // every linked mismatch, including offsetting differences whose
-      // aggregate happens to be zero, but never reprice a posted invoice.
-      const currentInvoicesForReconciliation = await getCurrentContractInvoices(contract, currentPaymentSchedules);
-      const linkedAmountMismatchCount = currentPaymentSchedules.filter((schedule) => {
-        if (isCancelled(schedule.status) || !schedule.invoice_id) return false;
-        const matchingInvoice = currentInvoicesForReconciliation.find((invoice) => invoice.id === schedule.invoice_id);
-        return Boolean(matchingInvoice)
-          && Math.abs(Number(schedule.amount || 0) - Number(matchingInvoice?.total_amount || 0)) > 0.01;
-      }).length;
-
-      if (
-        linkedAmountMismatchCount > 0
-        || health.metrics.scheduleInvoiceDifference > 1
-        || health.metrics.scheduleInvoiceMismatchItems.length > 0
-      ) {
-        reviewItems.push(
-          `يوجد ${Math.max(linkedAmountMismatchCount, health.metrics.scheduleInvoiceMismatchItems.length, 1)} اختلاف بين الأقساط والفواتير. `
-          + 'لم يغيّر الإصلاح التلقائي أي مبلغ أو ربط مالي؛ يلزم تعديل محاسبي معتمد يحافظ على القيد المرحّل.',
-        );
-      }
-
-      for (const invoice of health.metrics.invoicePaymentCorrections) {
-        try {
-          const changed = await recalculateInvoicePaymentTotals(invoice.id, contract.company_id, now);
-          if (changed) fixedCount += 1;
-        } catch (error) {
-          if (!isConflictError(error)) throw error;
-          reviewItems.push(`رصيد فاتورة متعارض: ${invoice.invoice_number}`);
-        }
-      }
-      if (health.metrics.invoicePaymentCorrections.length > 0) {
-        fixedActions.push(`إعادة احتساب أرصدة: ${health.metrics.invoicePaymentCorrections.length}`);
-      }
-
-      const finalBalanceCorrections = await recalculateCurrentContractInvoicePaymentTotals({
-        contract,
-        now,
-      });
-      if (finalBalanceCorrections > 0) {
-        fixedCount += finalBalanceCorrections;
-        fixedActions.push(`مراجعة نهائية لأرصدة الفواتير: ${finalBalanceCorrections}`);
-      }
-
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ['contract-health-analysis'] }),
-        queryClient.invalidateQueries({ queryKey: ['contract-details'] }),
-        queryClient.invalidateQueries({ queryKey: ['contract-details', contract.contract_number, contract.company_id] }),
-        queryClient.invalidateQueries({ queryKey: ['contract-invoices'] }),
-        queryClient.invalidateQueries({ queryKey: ['contract-invoices', contract.id] }),
-        queryClient.invalidateQueries({ queryKey: ['contract-payments'] }),
-        queryClient.invalidateQueries({ queryKey: ['payment-schedules'] }),
-        queryClient.invalidateQueries({ queryKey: ['invoices'] }),
-        queryClient.invalidateQueries({ queryKey: ['payments'] }),
-        queryClient.invalidateQueries({ queryKey: ['contracts'] }),
-      ]);
-      await Promise.all([
-        queryClient.refetchQueries({ queryKey: ['contract-health-analysis'], type: 'active' }),
-        queryClient.refetchQueries({ queryKey: ['contract-details'], type: 'active' }),
-        queryClient.refetchQueries({ queryKey: ['contract-invoices'], type: 'active' }),
-        queryClient.refetchQueries({ queryKey: ['contract-payments'], type: 'active' }),
-        queryClient.refetchQueries({ queryKey: ['payment-schedules'], type: 'active' }),
-      ]);
-      await refetch();
-
-      toast({
-        title: fixedCount > 0 ? 'تم تحديث صحة العقد' : 'لا توجد عناصر قابلة للإصلاح التلقائي',
-        description: buildAutoFixToastDescription(fixedActions, reviewItems),
-      });
+      await requestFinancialReconciliation(contract.company_id, contract.id);
+      await queryClient.invalidateQueries({ queryKey: ['contract-financial-integrity', contract.id, contract.company_id] });
+      toast({ title: 'سُجل طلب المطابقة', description: 'تُراجع الأرصدة والروابط على الخادم؛ تظهر نتيجة التحقق في لوحة المطابقة المالية.' });
     } catch (error) {
-      const errorMessage = getReadableErrorMessage(error);
-      console.error('[ContractHealthAnalysis] auto fix failed:', errorMessage, error);
-      toast({
-        title: 'تعذر الإصلاح التلقائي',
-        description: error instanceof Error ? error.message : 'حدث خطأ أثناء تحديث بيانات العقد.',
-        variant: 'destructive',
-      });
-    } finally {
-      setIsFixing(false);
-    }
+      toast({ title: 'تعذر طلب المطابقة', description: error instanceof Error ? error.message : 'أعد تحميل حالة المطابقة.', variant: 'destructive' });
+    } finally { setIsFixing(false); }
   };
 
-  const scoreTone = useMemo(() => {
+  const verdictTone = useMemo(() => {
     const score = health?.score || 0;
-    if (score >= 85) return 'text-emerald-700 bg-emerald-50 border-emerald-200';
-    if (score >= 65) return 'text-amber-700 bg-amber-50 border-amber-200';
-    return 'text-red-700 bg-red-50 border-red-200';
+    if (score >= 85) return { tint: 'bg-[#ECFDF9]', icon: 'text-[#0E9E7E]' };
+    if (score >= 65) return { tint: 'bg-[#FFFBEB]', icon: 'text-[#B45309]' };
+    return { tint: 'bg-[#FFF5F6]', icon: 'text-[#BE123C]' };
   }, [health?.score]);
+
+  const repairPlan = useMemo(
+    () => (health ? buildLocalContractRepairAgentPlan(health.metrics) : null),
+    [health],
+  );
 
   if (isLoading) {
     return (
-      <div className="rounded-xl border border-[#DDE5EF] bg-white p-5">
-        <div className="h-28 animate-pulse rounded-lg bg-slate-100" />
+      <div className="rounded-2xl border border-[#E5EAF1] bg-white p-5 shadow-[0_10px_30px_-22px_rgba(15,23,42,0.25)]">
+        <div className="h-28 animate-pulse rounded-lg bg-[#F6F8FB]" />
       </div>
     );
   }
 
   if (!health) return null;
 
+  const criticalIssues = health.issues.filter((issue) => issue.severity === 'critical');
+  const warningIssues = health.issues.filter((issue) => issue.severity === 'warning');
+  const infoIssues = health.issues.filter((issue) => issue.severity === 'info');
+  const goodIssues = health.issues.filter((issue) => issue.severity === 'good');
+
   return (
-    <section className="rounded-xl border border-[#DDE5EF] bg-white p-5 shadow-sm">
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <div className="mb-2 inline-flex items-center gap-2 rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-xs font-black text-blue-700">
-            <Sparkles className="h-4 w-4" />
-            {health.source === 'longcat' ? 'تحليل LongCat' : 'تحليل ذكي داخلي'}
+    <div className="space-y-4">
+      <ContractSectionHeading number="01" title="مراجعة العقد" description="راجع سلامة البيانات والملاحظات المكتشفة قبل تنفيذ أي إجراء." />
+      <section className="overflow-hidden rounded-2xl border border-[#E5EAF1] bg-white shadow-[0_10px_30px_-22px_rgba(15,23,42,0.25)]">
+        <PanelHeader
+          icon={Sparkles}
+          tint={verdictTone.tint}
+          iconColor={verdictTone.icon}
+          eyebrow="صحة العقد"
+          title="تحليل صحة العقد"
+        />
+        <div className="p-4">
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div className="min-w-0 flex-1">
+              <div className="mb-2 inline-flex items-center gap-2 rounded-full border border-[#E5EAF1] bg-[#F6F8FB] px-3 py-1 text-xs font-black text-[#0F172A]">
+                <Sparkles className="h-4 w-4 text-[#7C83F6]" />
+                {health.source === 'longcat' ? 'تحليل LongCat' : 'تحليل ذكي داخلي'}
+              </div>
+              <p className="max-w-3xl text-sm font-semibold leading-6 text-slate-500">
+                {billingGenerationBlocker
+                  ? 'يوجد تعارض جوهري بين مدة العقد وقيمته وجدول الدفعات، ويجب تصحيحه قبل أي إصلاح مالي تلقائي.'
+                  : health.summary}
+              </p>
+              <div className="mt-3 flex flex-wrap items-center gap-2">
+                <Button variant="outline" size="sm" onClick={() => refetch()} disabled={isFetching}>
+                  <RefreshCw className={cn('h-4 w-4', isFetching && 'animate-spin')} />
+                  تحديث
+                </Button>
+                <Button
+                  size="sm"
+                  onClick={handleAutoFix}
+                  disabled={isFixing}
+                  className="gap-2 bg-teal-700 text-white hover:bg-teal-800"
+                >
+                  {isFixing ? <Loader2 className="h-4 w-4 animate-spin" /> : <ShieldCheck className="h-4 w-4" />}
+                  طلب مطابقة الأرصدة والروابط
+                </Button>
+                {fixableIssuesCount > 0 && (
+                  <span className="rounded-full bg-[#EEF2FF] px-2.5 py-1 text-[11px] font-black text-[#4F46E5]">
+                    {billingGenerationBlocker
+                      ? 'يلزم تصحيح بيانات العقد أولاً'
+                      : `${fixableIssuesCount} أنواع ملاحظات تحتاج مطابقة`}
+                  </span>
+                )}
+              </div>
+            </div>
+            <div className="flex shrink-0 flex-col items-center">
+              <div
+                className="flex h-24 w-24 flex-col items-center justify-center rounded-full border-[6px]"
+                style={{
+                  borderColor:
+                    displayedHealthScore >= 85
+                      ? '#22C7A1'
+                      : displayedHealthScore >= 65
+                        ? '#F59E0B'
+                        : '#FB6B7A',
+                }}
+              >
+                <span className={cn('text-2xl font-black leading-none', displayedHealthScore >= 85 ? 'text-[#0E9E7E]' : displayedHealthScore >= 65 ? 'text-[#B45309]' : 'text-[#BE123C]')}>
+                  {displayedHealthScore}
+                </span>
+                <span className="mt-0.5 text-[10px] font-bold text-slate-400">درجة الصحة</span>
+              </div>
+            </div>
           </div>
-          <h2 className="text-xl font-black text-[#142033]">تحليل صحة العقد</h2>
-          <p className="mt-1 max-w-3xl text-sm font-medium leading-6 text-[#6A7688]">{health.summary}</p>
-        </div>
-        <div className="flex items-center gap-2">
-          <div className={cn('rounded-xl border px-4 py-3 text-center', scoreTone)}>
-            <p className="text-xs font-bold">درجة الصحة</p>
-            <p className="text-2xl font-black">{health.score}%</p>
-          </div>
-          <Button variant="outline" onClick={() => refetch()} disabled={isFetching}>
-            <RefreshCw className={cn('h-4 w-4', isFetching && 'animate-spin')} />
-            تحديث
-          </Button>
-          <Button
-            onClick={handleAutoFix}
-            disabled={isFixing || fixableIssuesCount === 0}
-            className="gap-2 bg-[#22C7A1] text-white hover:bg-[#1BAA8A]"
-          >
-            {isFixing ? <Loader2 className="h-4 w-4 animate-spin" /> : <ShieldCheck className="h-4 w-4" />}
-            إصلاح المشاكل تلقائيًا
-          </Button>
-        </div>
-      </div>
 
-      <div className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-        <HealthMetric label="الفواتير الناقصة" value={String(health.metrics.missingInvoices)} icon={FileWarning} tone="amber" />
-        <HealthMetric label="دفعات قبل البداية" value={String(health.metrics.paymentsBeforeStart)} icon={CalendarX} tone="red" />
-        <HealthMetric label="إجمالي المدفوع" value={formatCurrency(health.metrics.totalPaid)} icon={CreditCard} tone="emerald" />
-        <HealthMetric label="تجاوز قيمة العقد" value={formatCurrency(health.metrics.overpaidAmount)} icon={TrendingUp} tone="red" />
-      </div>
-
-      <div className="mt-5 rounded-lg border border-emerald-200 bg-emerald-50 p-4">
-        <div className="flex items-start gap-3">
-          <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-emerald-700" />
-          <div>
-            <p className="font-black text-emerald-900">القرار المقترح</p>
-            <p className="mt-1 text-sm font-bold leading-6 text-emerald-800">{health.recommendation}</p>
+          <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+            <StatTile label="الفواتير الناقصة" value={String(health.metrics.missingInvoices)} icon={FileWarning} tint="bg-[#FFFBEB]" iconColor="text-[#B45309]" />
+            <StatTile label="دفعات قبل البداية" value={String(health.metrics.paymentsBeforeStart)} icon={CalendarX} tint="bg-[#FFF5F6]" iconColor="text-[#BE123C]" />
+            <StatTile label="إجمالي المدفوع" value={formatCurrency(health.metrics.totalPaid)} icon={CreditCard} tint="bg-[#ECFDF9]" iconColor="text-[#0E9E7E]" />
+            <StatTile label="تجاوز قيمة العقد" value={formatCurrency(health.metrics.overpaidAmount)} icon={TrendingUp} tint="bg-[#FFF5F6]" iconColor="text-[#BE123C]" />
           </div>
         </div>
-      </div>
+      </section>
 
-      <div className="mt-5 grid gap-3 lg:grid-cols-2">
-        {health.issues.map((issue, index) => (
-          <IssueCard key={`${issue.title}-${index}`} issue={issue} />
-        ))}
-      </div>
-    </section>
+      <section className="overflow-hidden rounded-2xl border border-[#E5EAF1] bg-white shadow-[0_10px_30px_-22px_rgba(15,23,42,0.25)]">
+        <PanelHeader
+          icon={AlertTriangle}
+          tint="bg-[#FFF5F6]"
+          iconColor="text-[#BE123C]"
+          eyebrow="الملاحظات"
+          title="المشاكل المكتشفة"
+        />
+        <div className="space-y-4 p-4">
+          {criticalIssues.length > 0 && <SeverityGroup label="مشاكل حرجة" issues={criticalIssues} autoFixBlocked={Boolean(billingGenerationBlocker)} />}
+          {warningIssues.length > 0 && <SeverityGroup label="تحذيرات" issues={warningIssues} autoFixBlocked={Boolean(billingGenerationBlocker)} />}
+          {infoIssues.length > 0 && <SeverityGroup label="ملاحظات" issues={infoIssues} autoFixBlocked={Boolean(billingGenerationBlocker)} />}
+          {goodIssues.length > 0 && <SeverityGroup label="سليم" issues={goodIssues} autoFixBlocked={Boolean(billingGenerationBlocker)} />}
+        </div>
+      </section>
+
+      <section className="overflow-hidden rounded-2xl border border-[#E5EAF1] bg-white shadow-[0_10px_30px_-22px_rgba(15,23,42,0.25)]">
+        <PanelHeader
+          icon={ShieldCheck}
+          tint="bg-[#ECFDF9]"
+          iconColor="text-[#0E9E7E]"
+          eyebrow="المطابقة"
+          title="أدوات الإصلاح"
+        />
+        <div className="p-4">
+          <div className="rounded-xl border border-[#E5EAF1] bg-[#F6F8FB] p-4">
+            <div className="flex items-start gap-3">
+              <ShieldCheck
+                className={cn(
+                  'mt-0.5 h-5 w-5 shrink-0',
+                  (health.issues.filter((issue) => issue.severity === 'critical').length > 0)
+                    ? 'text-[#BE123C]'
+                    : 'text-[#0E9E7E]',
+                )}
+              />
+              <div>
+                <p className="text-sm font-black text-[#0F172A]">القرار المقترح</p>
+                <p className="mt-1 text-sm font-semibold leading-6 text-slate-600">
+                  {billingGenerationBlocker
+                    ? 'صحح قيمة العقد أو شهر بداية الفوترة والقسط الخارج عن المدة، ثم أعد تشغيل الإصلاح التلقائي.'
+                    : health.recommendation}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {repairPlan && repairPlan.actions.length > 0 && (
+            <ul className="mt-4 space-y-2">
+              {repairPlan.actions.map((action) => (
+                <li key={action.tool} className="flex items-start gap-3 rounded-xl border border-[#E5EAF1] bg-[#F6F8FB] p-3">
+                  <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-[#EEF2FF] text-[11px] font-black text-[#4F46E5]">
+                    {action.priority}
+                  </span>
+                  <div>
+                    <p className="text-sm font-bold text-[#0F172A]">{getRepairToolLabel(action.tool)}</p>
+                    <p className="mt-0.5 text-xs font-semibold leading-5 text-slate-500">{action.reason}</p>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      </section>
+    </div>
   );
 };
 
@@ -706,37 +576,15 @@ function normalizeContractRepairAgentPlan(payload: any): ContractRepairAgentPlan
 }
 
 function buildLocalContractRepairAgentPlan(metrics: ContractHealthResult['metrics']): ContractRepairAgentPlan {
-  const actions: ContractRepairAgentPlan['actions'] = [];
-  const pushAction = (tool: ContractRepairTool, reason: string) => {
-    if (actions.some((action) => action.tool === tool)) return;
-    actions.push({ tool, priority: actions.length + 1, reason });
-  };
-
-  if (metrics.scheduleInvoiceMismatchItems.length > 0) {
-    pushAction('repair_linked_invoice_contracts', 'توجد روابط أو تواريخ غير متطابقة بين الأقساط والفواتير.');
-    pushAction('reconcile_schedule_invoices', 'يلزم تصحيح ربط وتواريخ الفواتير حسب جدول الدفعات.');
-  }
-  if (metrics.outsideInvoices.length > 0) pushAction('repair_outside_invoices', 'توجد فواتير خارج فترة العقد.');
-  if (metrics.missingInvoices > 0) pushAction('create_missing_invoices', 'توجد فواتير ناقصة داخل فترة العقد.');
-  if (metrics.paymentsBeforeStartItems.length > 0 || metrics.paymentsAfterEndItems.length > 0) {
-    pushAction('repair_out_of_period_payments', 'توجد دفعات خارج فترة العقد.');
-  }
-  if (Math.abs(metrics.scheduleInvoiceDifference) > 1) {
-    pushAction('reconcile_invoice_amounts', 'يوجد فرق مالي بين جدول الدفعات والفواتير.');
-    pushAction('reconcile_schedule_invoices', 'يلزم مصالحة الفواتير مع الأقساط.');
-  }
-  if (metrics.invoicePaymentCorrections.length > 0) {
-    pushAction('recalculate_invoice_balances', 'توجد أرصدة فواتير تحتاج إعادة احتساب.');
-  }
-  if (actions.length > 0) pushAction('final_balance_audit', 'مراجعة نهائية بعد الإصلاح.');
-
   return {
     source: 'local',
-    summary: actions.length > 0
-      ? 'تم إعداد خطة إصلاح تلقائية بناءً على مؤشرات صحة العقد.'
-      : 'لا توجد أدوات إصلاح مطلوبة حاليًا.',
-    actions,
-    requiresReview: [],
+    summary: 'المطابقة الآلية تعيد اشتقاق الأرصدة وتصحح الروابط المؤكدة. اختلاف الالتزام أو المستند يحتاج مراجعة مالية.',
+    actions: [
+      { tool: 'recalculate_invoice_balances', priority: 1, reason: 'إعادة اشتقاق الأرصدة من الدفعات والتخصيصات المكتملة.' },
+      { tool: 'final_balance_audit', priority: 2, reason: 'التحقق من النتيجة وتسجيل الحالات المتبقية للمراجعة.' },
+    ],
+    requiresReview: metrics.missingInvoices > 0 || metrics.scheduleInvoiceMismatchItems.length > 0
+      ? ['إنشاء فواتير أو تعديل التزامات غير مؤكدة يتطلب حسمًا ماليًا؛ لا تنفذه المطابقة تلقائيًا.'] : [],
   };
 }
 
@@ -873,7 +721,8 @@ function buildContractHealthMetrics({
   const missingScheduleItems = missingScheduleIssueItems
     .map((schedule) => `قسط ${schedule.installment_number || '-'} بتاريخ ${formatDateLabel(schedule.due_date)} بقيمة ${formatCurrency(schedule.amount)}`);
   const coveredMonths = invoiceMonths.size;
-  const missingInvoices = Math.max(0, Math.max(expectedInvoices - coveredMonths, missingScheduleIssueItems.length));
+  const missingInvoices = ['cancelled', 'canceled'].includes(String(contract.status))
+    ? 0 : Math.max(0, Math.max(expectedInvoices - coveredMonths, missingScheduleIssueItems.length));
   const paymentsBeforeStartItems = activePayments
     .filter((payment) => isBefore(payment.payment_date, startDate))
     .map((payment) => ({
@@ -887,7 +736,13 @@ function buildContractHealthMetrics({
       reason: 'before_start',
     })) as PaymentIssueItem[];
   const paymentsAfterEndItems = activePayments
-    .filter((payment) => isAfter(payment.payment_date, endDate))
+    .filter((payment) => {
+      if (!isAfter(payment.payment_date, endDate)) return false;
+      const targets = payment.has_active_allocations
+        ? (payment.invoice_allocations || []).map((allocation) => allocation.target_id)
+        : payment.invoice_id ? [payment.invoice_id] : [];
+      return targets.length === 0 || targets.some((id) => !invoicesInsideContract.some((invoice) => invoice.id === id));
+    })
     .map((payment) => ({
       id: payment.id,
       payment_number: payment.payment_number || payment.reference_number || 'دفعة بدون رقم',
@@ -1089,10 +944,18 @@ function buildLocalContractHealth(metrics: ReturnType<typeof buildContractHealth
   if (metrics.scheduleInvoiceDifference > 1 || metrics.scheduleInvoiceMismatchItems.length > 0) {
     const scheduleIssue = issues[issues.length - 1];
     if (scheduleIssue) {
+      const wrongLinkCount = metrics.scheduleInvoiceMismatchItems.filter(
+        (item) => item.reason === 'wrong_link' || item.reason === 'date_mismatch' || item.reason === 'duplicate_link',
+      ).length;
+      const amountOnlyCount = metrics.scheduleInvoiceMismatchItems.filter(
+        (item) => item.reason !== 'wrong_link' && item.reason !== 'date_mismatch' && item.reason !== 'duplicate_link',
+      ).length;
+
       scheduleIssue.detail = metrics.scheduleInvoiceDifference > 1
         ? `يوجد فرق مالي بين جدول الدفعات والفواتير بقيمة ${metricsFormatCurrency(metrics, metrics.scheduleInvoiceDifference)}. مجموع جدول الدفعات ${metricsFormatCurrency(metrics, metrics.scheduleTotal)}، ومجموع الفواتير ${metricsFormatCurrency(metrics, metrics.invoicesTotal)}.`
         : `يوجد ربط غير متطابق بين الأقساط والفواتير رغم أن الإجمالي المالي لا يظهر فرقًا كبيرًا.`;
-      scheduleIssue.fixable = true;
+      scheduleIssue.fixable = wrongLinkCount > 0;
+      scheduleIssue.autoFixable = wrongLinkCount > 0 && amountOnlyCount === 0;
       scheduleIssue.items = metrics.scheduleInvoiceMismatchItems.slice(0, 8).map((item) => {
         if (item.reason === 'date_mismatch') {
           return `قسط ${item.installment_number || '-'} بتاريخ ${formatDateLabel(item.due_date)}: تاريخ استحقاق الفاتورة لا يطابق شهر القسط - الفاتورة ${item.invoice_number}`;
@@ -1137,7 +1000,9 @@ function buildLocalContractHealth(metrics: ReturnType<typeof buildContractHealth
   let recommendation = 'يمكن متابعة العقد بشكل طبيعي مع مراقبة السداد والفواتير.';
   if (criticalCount > 0) {
     recommendation = 'لا يفضل تجديد أو إغلاق العقد قبل معالجة المشاكل الحرجة في الدفعات والتواريخ.';
-  } else if (metrics.daysUntilEnd !== null && metrics.daysUntilEnd <= 30 && metrics.balanceDue <= 0) {
+    } else if (metrics.daysUntilEnd !== null && metrics.daysUntilEnd < 0) {
+      recommendation = 'انتهت مدة العقد. راجع الرصيد المتبقي وحالة المركبة قبل الإغلاق أو تعديل المدة.';
+    } else if (metrics.daysUntilEnd !== null && metrics.daysUntilEnd <= 30 && metrics.balanceDue <= 0) {
     recommendation = 'العقد مناسب للإغلاق أو التجديد بعد التأكد من حالة المركبة والمخالفات.';
   } else if (metrics.daysUntilEnd !== null && metrics.daysUntilEnd <= 30) {
     recommendation = 'العقد قريب من الانتهاء. يفضل متابعة التحصيل أولًا ثم اتخاذ قرار التجديد.';
@@ -1179,58 +1044,94 @@ function buildLocalContractHealth(metrics: ReturnType<typeof buildContractHealth
   };
 }
 
-const HealthMetric: React.FC<{
+const PanelHeader: React.FC<{
+  icon: React.ElementType;
+  tint: string;
+  iconColor: string;
+  eyebrow: string;
+  title: string;
+}> = ({ icon: Icon, tint, iconColor, eyebrow, title }) => (
+  <div className="flex items-center gap-3 border-b border-[#E5EAF1] bg-[#F6F8FB] px-4 py-3">
+    <div className={cn('flex h-8 w-8 items-center justify-center rounded-lg', tint)}>
+      <Icon className={cn('h-4 w-4', iconColor)} />
+    </div>
+    <div>
+      <p className="text-[10px] font-black uppercase tracking-wide text-slate-400">{eyebrow}</p>
+      <p className="text-sm font-black text-[#0F172A]">{title}</p>
+    </div>
+  </div>
+);
+
+const StatTile: React.FC<{
   label: string;
   value: string;
   icon: React.ElementType;
-  tone: 'emerald' | 'amber' | 'red';
-}> = ({ label, value, icon: Icon, tone }) => {
-  const toneClass = {
-    emerald: 'bg-emerald-50 text-emerald-700',
-    amber: 'bg-amber-50 text-amber-700',
-    red: 'bg-red-50 text-red-700',
-  }[tone];
-
-  return (
-    <div className="rounded-lg border border-[#DDE5EF] bg-[#FCFDFE] p-4">
-      <div className="flex items-center justify-between gap-3">
-        <div>
-          <p className="text-xs font-bold text-[#6A7688]">{label}</p>
-          <p className="mt-2 text-lg font-black text-[#142033]">{value}</p>
-        </div>
-        <div className={cn('rounded-lg p-2', toneClass)}>
-          <Icon className="h-5 w-5" />
-        </div>
+  tint: string;
+  iconColor: string;
+}> = ({ label, value, icon: Icon, tint, iconColor }) => (
+  <div className="rounded-xl border border-[#E5EAF1] bg-white p-4">
+    <div className="flex items-center justify-between gap-3">
+      <div>
+        <p className="text-[11px] font-bold text-slate-500">{label}</p>
+        <p className="mt-2 text-base font-black text-[#0F172A]">{value}</p>
+      </div>
+      <div className={cn('flex h-8 w-8 items-center justify-center rounded-lg', tint)}>
+        <Icon className={cn('h-4 w-4', iconColor)} />
       </div>
     </div>
-  );
-};
+  </div>
+);
 
-const IssueCard: React.FC<{ issue: HealthIssue }> = ({ issue }) => {
+const SeverityGroup: React.FC<{
+  label: string;
+  issues: HealthIssue[];
+  autoFixBlocked?: boolean;
+}> = ({ label, issues, autoFixBlocked }) => (
+  <div>
+    <p className="mb-2 text-[11px] font-black uppercase tracking-wide text-slate-400">{label}</p>
+    <div className="grid gap-3 lg:grid-cols-2">
+      {issues.map((issue, index) => (
+        <IssueCard key={`${issue.title}-${index}`} issue={issue} autoFixBlocked={autoFixBlocked} />
+      ))}
+    </div>
+  </div>
+);
+
+const IssueCard: React.FC<{ issue: HealthIssue; autoFixBlocked?: boolean }> = ({ issue, autoFixBlocked }) => {
   const styles = {
-    critical: 'border-red-200 bg-red-50 text-red-800',
-    warning: 'border-amber-200 bg-amber-50 text-amber-800',
-    info: 'border-blue-200 bg-blue-50 text-blue-800',
-    good: 'border-emerald-200 bg-emerald-50 text-emerald-800',
+    critical: 'border-[#FB6B7A]/30 bg-[#FFF5F6] text-[#BE123C]',
+    warning: 'border-[#F59E0B]/30 bg-[#FFFBEB] text-[#B45309]',
+    info: 'border-[#38BDF8]/30 bg-[#F0F9FF] text-[#0369A1]',
+    good: 'border-[#22C7A1]/30 bg-[#ECFDF9] text-[#0E9E7E]',
   }[issue.severity];
   const Icon = issue.severity === 'good' ? CheckCircle2 : AlertTriangle;
 
   return (
-    <div className={cn('rounded-lg border p-4', styles)}>
+    <div className={cn('rounded-xl border p-4', styles)}>
       <div className="flex items-start gap-3">
         <Icon className="mt-0.5 h-5 w-5 shrink-0" />
         <div>
-          <p className="font-black">{issue.title}</p>
-          <p className="mt-1 text-sm font-medium leading-6">{issue.detail}</p>
+          <p className="text-sm font-black">{issue.title}</p>
+          <p className="mt-1 text-sm font-semibold leading-6">{issue.detail}</p>
           {issue.items && issue.items.length > 0 && (
-            <ul className="mt-3 space-y-1 rounded-md bg-white/65 p-2 text-xs font-bold leading-5">
+            <ul className="mt-3 space-y-1 rounded-lg bg-white/65 p-2 text-xs font-semibold leading-5">
               {issue.items.slice(0, 8).map((item, index) => (
                 <li key={`${issue.title}-${index}`}>{item}</li>
               ))}
             </ul>
           )}
           {issue.fixable && issue.severity !== 'good' && (
-            <p className="mt-2 text-xs font-black">يمكن إصلاح هذه المشكلة من زر الإصلاح التلقائي بالأعلى.</p>
+            autoFixBlocked ? (
+              <p className="mt-2 text-xs font-black">
+                يلزم تصحيح مدة العقد وقيمته وجدول الأقساط قبل تشغيل الإصلاح التلقائي.
+              </p>
+            ) : issue.autoFixable === false ? (
+              <p className="mt-2 text-xs font-black">
+                يمكن للزر أعلى الصفحة معالجة الروابط القابلة للتصحيح، بينما تحتاج فروق المبالغ المتبقية إلى تعديل محاسبي معتمد يحافظ على القيد المرحّل.
+              </p>
+            ) : (
+              <p className="mt-2 text-xs font-black">يمكن إصلاح هذه المشكلة من زر الإصلاح التلقائي بالأعلى.</p>
+            )
           )}
         </div>
       </div>
@@ -1563,6 +1464,131 @@ async function repairScheduleLinkedInvoiceContracts({
   }
 
   return repairedCount;
+}
+
+/**
+ * إصلاح روابط الأقساط ذات القيمة الخاطئة: قسط نشط مربوط بفاتورة قيمتها تختلف عن
+ * قيمة القسط بينما توجد فاتورة أخرى لنفس العقد ونفس شهر الفاتورة قيمتها مطابقة
+ * للقسط بالضبط وغير مربوطة بأي قسط. النمط الفعلي الذي كشفه LTO202437: أقساط إيجار
+ * (1050-1060) رُبطت بفواتير مخالفات مرور TV (300-500) بدل فواتير إيجار الشهر.
+ *
+ * قاعدة الأمان (منع النمط المعكوس): يُصلح الربط فقط عندما تكون الفاتورة الحالية
+ * غير إيجارية (مخالفة TV/غرامة) والبديل فاتورة إيجار مطابقة. أما إن كان القسط
+ * مربوطًا بفاتورة إيجار قيمتها أكبر (نمط أقساط المخالفات 500 المربوطة بفواتير
+ * إيجار 2100 في عقود مثل C-ALF-0048) فيُترك لمراجعة محاسبية معتمدة لأن فك
+ * الربط قد ييتم فاتورة إيجار مدفوعة لا قسط إيجار لها.
+ *
+ * العملية إعادة ربط schedule.invoice_id فقط: لا تعيد تسعير فاتورة مرحّلة ولا تلمس
+ * أي مبلغ أو قيد أو دفعة.
+ */
+async function repairWrongValueScheduleInvoiceLinks({
+  contract,
+  paymentSchedules,
+  now,
+}: {
+  contract: Contract;
+  paymentSchedules: PaymentScheduleLike[];
+  now: string;
+}) {
+  const activeSchedules = paymentSchedules.filter(
+    (schedule) => !isCancelled(schedule.status) && schedule.invoice_id,
+  );
+  if (activeSchedules.length === 0) return { repaired: 0, review: [] as string[] };
+
+  const linkedInvoiceIds = Array.from(
+    new Set(activeSchedules.map((schedule) => schedule.invoice_id as string)),
+  );
+
+  const { data: linkedInvoices, error: linkedError } = await supabase
+    .from('invoices')
+    .select('id, invoice_number, total_amount, invoice_month, invoice_date, due_date, status')
+    .in('id', linkedInvoiceIds)
+    .eq('company_id', contract.company_id);
+
+  if (linkedError) throw linkedError;
+
+  const { data: contractInvoices, error: contractInvoicesError } = await supabase
+    .from('invoices')
+    .select('id, invoice_number, total_amount, invoice_month, invoice_date, due_date, status')
+    .eq('contract_id', contract.id)
+    .eq('company_id', contract.company_id)
+    .not('status', 'in', '(cancelled,void,deleted)');
+
+  if (contractInvoicesError) throw contractInvoicesError;
+
+  const invoicesBoundToOtherSchedules = new Set(
+    paymentSchedules
+      .filter((schedule) => schedule.invoice_id)
+      .map((schedule) => schedule.invoice_id as string),
+  );
+
+  const isNonRentInvoiceNumber = (invoiceNumber: string | null | undefined) =>
+    String(invoiceNumber || '').startsWith('TV-');
+
+  const review: string[] = [];
+  let repaired = 0;
+
+  for (const schedule of activeSchedules) {
+    const scheduleAmount = Number(schedule.amount || 0);
+    if (scheduleAmount <= 0) continue;
+
+    const linkedInvoice = (linkedInvoices || []).find((invoice) => invoice.id === schedule.invoice_id);
+    if (!linkedInvoice) continue;
+
+    const linkedAmount = Number(linkedInvoice.total_amount || 0);
+    if (Math.abs(scheduleAmount - linkedAmount) <= 0.01) continue;
+
+    const linkedMonth = getInvoiceMonthKey(linkedInvoice) || String(schedule.due_date || '').slice(0, 7);
+    const scheduleMonth = String(schedule.due_date || '').slice(0, 7);
+    const candidateMonths = Array.from(new Set([linkedMonth, scheduleMonth].filter(Boolean)));
+
+    const candidate = (contractInvoices || []).find((invoice) => {
+      if (invoicesBoundToOtherSchedules.has(invoice.id)) return false;
+      if (isCancelled(invoice.status)) return false;
+      const invoiceMonth = getInvoiceMonthKey(invoice);
+      return candidateMonths.includes(invoiceMonth)
+        && Math.abs(Number(invoice.total_amount || 0) - scheduleAmount) <= 0.01;
+    });
+
+    if (!candidate) {
+      continue;
+    }
+
+    // قاعدة الأمان: أصلح فقط النمط "قسط إيجار مربوط بفاتورة مخالفة".
+    // نمط "قسط مخالفة مربوط بفاتورة إيجار" يُترك للمراجعة لأن فكه قد ييتم فاتورة إيجار مدفوعة.
+    const linkedIsNonRent = isNonRentInvoiceNumber(linkedInvoice.invoice_number);
+    const candidateIsRent = !isNonRentInvoiceNumber(candidate.invoice_number);
+    if (!linkedIsNonRent || !candidateIsRent) {
+      review.push(
+        `قسط ${schedule.installment_number || '-'} (${formatRepairAmount(scheduleAmount)}) مربوط بفاتورة ${linkedInvoice.invoice_number} بقيمة مختلفة (${formatRepairAmount(linkedAmount)}) والبديل المطابق ${candidate.invoice_number} — تركناه للمراجعة لأن فك الربط قد ييتم فاتورة إيجار مدفوعة بلا قسط. يتطلب تعديلًا محاسبيًا معتمدًا.`,
+      );
+      continue;
+    }
+
+    const { error: updateError } = await supabase
+      .from('contract_payment_schedules')
+      .update({
+        invoice_id: candidate.id,
+        notes: `أعيد ربط القسط بفاتورة شهره المطابقة ${candidate.invoice_number} من إصلاح صحة العقد بتاريخ ${now}. كان مربوطًا بفاتورة ${linkedInvoice.invoice_number} بقيمة مختلفة. تصحيح رابط فقط دون لمس أي مبلغ أو قيد.`,
+        updated_at: now,
+      })
+      .eq('id', schedule.id)
+      .eq('contract_id', contract.id)
+      .eq('company_id', contract.company_id);
+
+    if (updateError) throw updateError;
+
+    // امنع إعادة استخدام نفس الفاتورة البديلة لقسط آخر في نفس التشغيل.
+    invoicesBoundToOtherSchedules.add(candidate.id);
+    schedule.invoice_id = candidate.id;
+    repaired += 1;
+  }
+
+  return { repaired, review };
+}
+
+function formatRepairAmount(value: number) {
+  return `${value.toLocaleString('ar-QA')} ر.ق`;
 }
 
 async function recalculateCurrentContractInvoicePaymentTotals({

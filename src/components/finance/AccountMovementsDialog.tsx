@@ -20,6 +20,7 @@ interface AccountMovementsDialogProps {
   accountId: string;
   accountName: string;
   accountCode: string;
+  initialDateTo?: string;
 }
 
 export function AccountMovementsDialog({
@@ -27,15 +28,16 @@ export function AccountMovementsDialog({
   onOpenChange,
   accountId,
   accountName,
-  accountCode
+  accountCode,
+  initialDateTo = ""
 }: AccountMovementsDialogProps) {
   const [dateFrom, setDateFrom] = useState("");
-  const [dateTo, setDateTo] = useState("");
+  const [dateTo, setDateTo] = useState(initialDateTo);
   const [searchTerm, setSearchTerm] = useState("");
   const { formatCurrency } = useCurrencyFormatter();
   const formatQar = (amount: number) => formatCurrency(amount || 0, { currency: "QAR", minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
-  const { data: movements, isLoading } = useAccountMovements(accountId, {
+  const { data: movements, isLoading, error, refetch } = useAccountMovements(accountId, {
     dateFrom,
     dateTo,
     searchTerm
@@ -122,7 +124,9 @@ export function AccountMovementsDialog({
               </CardDescription>
             </CardHeader>
             <CardContent>
-              {isLoading ? (
+              {error ? <div role="alert" className="p-6 text-red-700">تعذر تحميل حركات الحساب كاملة.
+                <Button variant="outline" className="ms-3" onClick={() => refetch()}>إعادة المحاولة</Button>
+              </div> : isLoading ? (
                 <div className="flex justify-center py-8">
                   <LoadingSpinner />
                 </div>

@@ -11,6 +11,7 @@ export default defineConfig({
     exclude: [
       '**/node_modules/**',
       '**/dist/**',
+      '**/.tmp/**',
       'e2e/**',
       'tests/**',
       'scripts/**/*.spec.{ts,tsx,js,jsx}',

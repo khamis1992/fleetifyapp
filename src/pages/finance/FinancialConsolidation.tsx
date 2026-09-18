@@ -341,7 +341,7 @@ export default function FinancialConsolidation() {
 
   return (
     <div className="space-y-6 p-4" dir="rtl">
-      <div className="flex items-center justify-between">
+      <div data-finance-heading="" className="flex items-center justify-between">
         <div className="flex items-start gap-3">
           <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#ECEEFE] text-[#7C83F6]">
             <Globe2 className="h-6 w-6" />

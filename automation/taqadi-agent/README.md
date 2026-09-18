@@ -1,5 +1,49 @@
 # Taqadi Automation Agent
 
+## Version 1.8.1 — final approval and claim consistency
+
+Final approval recognizes the portal's `إعتماد` link as well as button controls.
+An approval RPC must confirm the exact job and memo snapshot before the portal
+click. PostgREST messages/codes/details are preserved; HTML gateway failures are
+summarized without emitting an opaque object or the gateway page markup.
+
+Before document preparation or portal interaction, the worker validates the
+stored package and compares its amount with the current server claim. The final
+approval gate still rechecks the claim. Resuming an existing parties-stage draft
+from the portal home now asks the operator to open that draft instead of creating
+another one. Keep existing receipt and submission-uncertainty protections.
+
+Migration `20260906223503_align_legal_claim_service_rent_classification` repairs
+the existing read-only legal calculators to include service invoices proven by
+one matching active installment, using the same month and total. It excludes
+TV-prefixed/penalty invoices, preserves payments and existing permissions, and
+has a hash-guarded rollback. See
+[the incident report](../../docs/plans/2026-09-07-taqadi-final-approval-fix.md).
+
+## Version 1.8.0 — receipt recovery and latency
+
+Verified submission receipts are saved atomically under
+`TAQADI_AGENT_DATA_DIR/receipt-outbox` before database synchronization or screenshot
+upload. On startup and each idle loop, completion is replayed before stale-job
+recovery and before claiming another job. Network errors back off up to 60 seconds;
+lock, identity and reference conflicts retain the receipt for verification. A
+pending receipt blocks new work and never triggers another portal submission.
+Do not delete pending receipts or requeue a filed request to fix synchronization.
+
+The database commits the job, matching preparation and case transition to
+`awaiting_acceptance` in one transaction. A lost response is safe to replay, and
+later court stages are preserved. Browser receipt recovery requires matching
+contract evidence; an unbound receipt is referred for human verification.
+
+Documents are prepared two at a time and cached by source package/snapshot version;
+uploads and party steps remain sequential. Informational observations are separate
+from progress writes. Timing events include preparation, authentication and each
+verified portal transition. Check the worker's types with
+`npx tsc -p tsconfig.taqadi.json` in addition to the application type check.
+
+Deployment versions, tests and rollback order are recorded in
+[the implementation report](../../docs/plans/2026-09-06-taqadi-reliability-design.md).
+
 This Windows-side worker files prepared Fleetify legal cases in Taqadi using a
 persistent Chrome profile and Playwright. Fleetify and the worker communicate
 only through the durable Supabase queue, so closing or refreshing the ERP page
@@ -49,18 +93,55 @@ Version 1.2 hardens the authentication boundary:
    When the repository's local `.env` already contains
    `SUPABASE_SERVICE_ROLE_KEY`, the worker reuses it without duplicating the key.
 4. Complete the representative contact fields.
-5. On Windows, run `npm run taqadi:agent:credentials` once. The username and
-   password are stored with Windows DPAPI under `.taqadi-agent`, not in Git or
-   the environment file.
+5. On Windows, run `npm run taqadi:agent:credentials` and
+   `npm run taqadi:agent:smart-card-pin` once. The credentials and smart-card
+   PIN are stored with Windows DPAPI under `.taqadi-agent`, not in Git or the
+   environment file.
 6. Run `npm run taqadi:agent`.
-7. The worker opens the Tawtheeq card, fills the encrypted credentials, and
-   waits only when reCAPTCHA or another human verification is shown. After the
-   operator completes that verification, the worker clicks Continue itself.
-8. If Taqadi displays the account prompt after login, the worker confirms it
-   with Enter without opening or changing the account dropdown.
+7. The worker opens Tawtheeq, selects smart-card authentication, enters the
+   encrypted PIN, selects the company account matching establishment number
+   `17201586`, and continues. Username/password remains a compatibility
+   fallback only when the smart-card option is unavailable.
+8. If Taqadi displays the account prompt after login, the worker selects the
+   Alaraf company option and verifies the visible company identity before
+   creating a lawsuit. A successful smart-card login alone is insufficient.
+
+### Smart-card login recovery (1.8.2 / 1.8.3)
+
+- The native PIN watcher waits for authorization from the worker. Starting
+  the watcher or timing out without a native dialog consumes no PIN attempt.
+  Native and web entry are mutually exclusive for each challenge.
+- Two unconfirmed submissions remain the limit. The budget resets only after
+  a successful authenticated portal session is observed, not on job retry.
+  A rejected PIN stops automation immediately; restarting is not a remedy.
+- If login succeeds with an unverified company identity, select Alaraf
+  (`17201586`) in the worker browser, then use **متابعة من تقاضي**. Resume
+  preserves the existing authorization page instead of reopening login.
+- Before opening the browser, 1.8.3 rejects missing/placeholder defendant
+  nationality. The same validation drives the preparation page; residence
+  country is not a substitute for nationality.
+- If the portal redirects to login during field entry, locator timeouts are
+  classified as `LOGIN_REQUIRED`. After a draft was saved, reopen that draft
+  before resuming. The existing-draft guard prevents creating another case.
 
 The Chrome session is stored under `.taqadi-agent/chrome-profile`. Do not share
 that folder or commit it to source control.
+
+### First smart-card setup (SConnect)
+
+The worker uses its own persistent Chrome profile. On the first smart-card
+login, install SConnect **inside the Chrome window opened by the worker**:
+
+1. Install the SConnect Chrome extension when Tawtheeq opens its installation
+   page.
+2. Install the downloaded SConnect Extension Host in Windows.
+3. Return to Tawtheeq and choose `Allow` when SConnect asks for origin access.
+4. Resume the same filing from Fleetify using `متابعة من تقاضي`.
+
+Playwright normally launches Chrome with extensions disabled. The worker
+explicitly removes those launch switches because smart-card authentication
+cannot work without SConnect. Once installed, both the extension state and
+the Tawtheeq origin approval persist in `.taqadi-agent/chrome-profile`.
 
 ## Start automatically with Windows
 
@@ -135,8 +216,8 @@ of any unexpected stop, and the ERP start button becomes only a backup.
   observed when Taqadi edits the representative before adding the other
   parties.
 - Company order is 2; Khamees and the defendant each use order 1.
-- The defendant email is always `khamis-1992@hotmail.com` and the address is
-  always `الدوحة قطر`.
+- The defendant email and service address are taken from the approved filing
+  payload. The agent does not substitute default defendant contact data.
 - An 11-digit foreign passport identifier is entered as `رخصة مقيم`, and
   nationality adjectives are mapped to the country names used by Taqadi.
 - Every attachment is normalized to an A4 PDF before upload.
@@ -176,6 +257,19 @@ Both actions are logged as job events (`auto_heal_applied`,
 `auto_heal_rejected`, `advisor_navigation`, `advisor_rejected`) so the ERP
 panel shows exactly what the agent decided and why. Final approval, party
 ordering, and claim-amount checks stay fully deterministic.
+
+### Optional local Scrapling memory
+
+Scrapling can be enabled as a first, local recovery layer before the external
+LLM selector healer. It receives only a synthetic HTML map of field labels and
+control identities—never entered values, case text, customer identifiers, or
+documents—and it cannot navigate, click, upload, or submit. A returned match
+still passes the same deterministic live-page verification and one-retry limit.
+
+Install and run the loopback service using
+`automation/taqadi-scrapling/README.md`, then set
+`TAQADI_SCRAPLING_ENABLED=true`. If the sidecar is unavailable, the worker
+continues with its existing deterministic and optional Anthropic paths.
 - An error after clicking final approval is never retried automatically. The
   operator must verify Taqadi first to avoid a duplicate lawsuit.
 - After an unexpected Windows restart, stale work before submission is safely

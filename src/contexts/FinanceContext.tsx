@@ -1,4 +1,7 @@
-import React, { createContext, useContext, useState, useCallback, useMemo, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useCallback, useMemo, useEffect, ReactNode } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
+import { subscribeToFinancialChanges } from '@/services/financialQuerySynchronization';
+import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
 
 /**
  * Finance Context
@@ -64,12 +67,22 @@ interface Activity {
 const FinanceContext = createContext<FinanceContextState | undefined>(undefined);
 
 export const FinanceProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+  const queryClient = useQueryClient();
+  const { companyId } = useUnifiedCompanyAccess();
+  useEffect(() => subscribeToFinancialChanges(queryClient), [queryClient]);
   const [userRole, setUserRole] = useState<FinanceRole>('accountant');
   const [currentWorkflow, setCurrentWorkflow] = useState<FinanceWorkflow>(null);
   const [workflowData, setWorkflowData] = useState<Record<string, any>>({});
   const [context, setContext] = useState<FinanceContextState['context']>({});
   const [recentActivities, setRecentActivities] = useState<Activity[]>([]);
   const [frequentAccounts, setFrequentAccounts] = useState<string[]>([]);
+  useEffect(() => {
+    setCurrentWorkflow(null);
+    setWorkflowData({});
+    setContext({});
+    setRecentActivities([]);
+    setFrequentAccounts([]);
+  }, [companyId]);
 
   const updateWorkflowData = useCallback((data: Record<string, any>) => {
     setWorkflowData(prev => ({ ...prev, ...data }));

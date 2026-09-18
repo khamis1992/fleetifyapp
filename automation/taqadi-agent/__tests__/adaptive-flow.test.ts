@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { planPortalAction, stageReached } from '../adaptive-flow';
+import {
+  planPortalAction,
+  shouldSubmitFinalAutomatically,
+  stageReached,
+} from '../adaptive-flow';
 import type { TaqadiPortalPosition } from '../portal-stage';
 
 const position = (
@@ -16,6 +20,24 @@ const position = (
 });
 
 describe('adaptive Taqadi flow planning', () => {
+  it('submits a verified production filing without a human approval pause', () => {
+    expect(shouldSubmitFinalAutomatically({
+      canary: false,
+      workerFinalApproval: true,
+      jobFinalApproval: true,
+      payloadFinalApproval: true,
+    })).toBe(true);
+  });
+
+  it.each([
+    { canary: true, workerFinalApproval: true, jobFinalApproval: true, payloadFinalApproval: true },
+    { canary: false, workerFinalApproval: false, jobFinalApproval: true, payloadFinalApproval: true },
+    { canary: false, workerFinalApproval: true, jobFinalApproval: false, payloadFinalApproval: true },
+    { canary: false, workerFinalApproval: true, jobFinalApproval: true, payloadFinalApproval: false },
+  ])('does not submit canary or explicitly disabled filings: %o', (input) => {
+    expect(shouldSubmitFinalAutomatically(input)).toBe(false);
+  });
+
   it('recovers from the authenticated home page by opening a new case', () => {
     expect(planPortalAction(position({
       stage: 'home',

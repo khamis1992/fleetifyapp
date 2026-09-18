@@ -14,8 +14,9 @@ const proposalHookSource = readFileSync(
 describe('contract ID scanner official-name safety', () => {
   it('rejects identity-number mismatches before proposing customer changes', () => {
     expect(scannerSource).toContain(
-      'Scanned identity number does not match the contract customer',
+      'LEGAL_IDENTITY_MISMATCH: signed contract party',
     );
+    expect(scannerSource).toContain('does not match defendant');
   });
 
   it('uses repeated Arabic-name evidence and filters authority labels', () => {
@@ -66,5 +67,17 @@ describe('contract ID scanner official-name safety', () => {
     expect(proposalHookSource).toContain('applyContractProposalChanges');
     expect(proposalHookSource).toContain("from('contracts')");
     expect(proposalHookSource).toContain('contract_fields_updated_from_id_review');
+  });
+
+  it('reuses stored OCR before requesting a fresh PDF scan', () => {
+    expect(scannerSource).toContain('mode === "stored_ocr"');
+    expect(scannerSource).toContain('processStoredOcr');
+    expect(scannerSource).toContain('stored_ocr_unavailable');
+    expect(scannerSource).toContain('.from("customer_id_scan_proposals")');
+  });
+
+  it('continues when one PDF page fails OCR and reports all-page failure clearly', () => {
+    expect(scannerSource).toContain('const pageErrors: string[] = []');
+    expect(scannerSource).toContain('OCR failed for every submitted page');
   });
 });

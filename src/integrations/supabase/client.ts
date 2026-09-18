@@ -3,6 +3,7 @@ import { createClient } from '@supabase/supabase-js';
 import type { Database } from './types';
 import { getSupabaseConfig, debugLog, securityLog } from '@/lib/env';
 import { createCapacitorStorageAdapter } from '@/lib/capacitorStorage';
+import { getFinancialReportRequestPolicy } from './financialReportRequestPolicy';
 
 // Get Supabase configuration securely
 let supabaseConfig: ReturnType<typeof getSupabaseConfig>;
@@ -46,24 +47,36 @@ export const supabase = createClient<Database>(supabaseConfig.url, supabaseConfi
     headers: { 'x-client-info': 'fleetify-web' },
     fetch: async (url, options, retries = 1, delay = 500) => {
       const requestUrl = String(url);
+      const financialReportPolicy = getFinancialReportRequestPolicy(requestUrl);
       const isAuthRequest = requestUrl.includes('/auth/v1/');
+      const isContractIdScanner = requestUrl.includes('/functions/v1/contract-id-scanner');
+      const isTaqadiQueueMutation = /\/rest\/v1\/rpc\/(?:resume|restart)_taqadi_filing_job_v2(?:\?|$)/.test(requestUrl);
+      const isExternalLegalFiling = /\/rest\/v1\/rpc\/record_external_legal_filing_v[12](?:\?|$)/.test(requestUrl);
       // Auth refresh tokens are single-use and rotated. Retrying the same auth
       // request after an interrupted response can invalidate session recovery.
-      const maxRetries = isAuthRequest ? 0 : retries;
+      // Contract identity scans can transmit multiple document pages and write
+      // an assessment, so an HTTP-level retry would duplicate the whole scan.
+      // A queue mutation can commit before its response arrives. Replaying it
+      // after a timeout races the worker that has already claimed the job.
+      // External filing may also commit before the response is lost. Its caller
+      // verifies the saved case instead of blindly replaying the attestation.
+      const maxRetries = financialReportPolicy.disableRetry || isAuthRequest || isContractIdScanner || isTaqadiQueueMutation || isExternalLegalFiling ? 0 : retries;
 
       // Add timeout to prevent hanging requests with retry logic
       for (let attempt = 0; attempt <= maxRetries; attempt++) {
         let timeoutId: ReturnType<typeof setTimeout> | undefined;
         try {
-          const timeoutMs = isAuthRequest
+          const timeoutMs = financialReportPolicy.timeoutMs ?? (isAuthRequest
             ? 30000
+            : isTaqadiQueueMutation || isExternalLegalFiling
+              ? 60000
             : requestUrl.includes('/functions/v1/excel-import-ai-review')
               ? 90000
               : requestUrl.includes('/functions/v1/customer-proposal-ai-reviewer')
                 ? 120000
                 : requestUrl.includes('/functions/v1/contract-id-scanner')
                   ? 120000
-                  : 10000;
+                  : 10000);
           const controller = new AbortController();
           timeoutId = setTimeout(() => controller.abort(), timeoutMs);
           

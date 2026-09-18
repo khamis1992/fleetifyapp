@@ -409,7 +409,7 @@ export function CashFlowStatementReport() {
             <div>
               <CardTitle className="flex items-center gap-2">
                 <Droplets className="h-5 w-5" />
-                قائمة التدفقات النقدية (Cash Flow Statement)
+                قائمة التدفقات النقدية
               </CardTitle>
               <CardDescription>
                 تحليل شامل للتدفقات النقدية من الأنشطة التشغيلية والاستثمارية والتمويلية
@@ -478,8 +478,8 @@ export function CashFlowStatementReport() {
                   onChange={(e) => setMethod(e.target.value as 'direct' | 'indirect')}
                   className="w-full mt-1 px-3 py-2 border rounded-md"
                 >
-                  <option value="indirect">الطريقة غير المباشرة (Indirect)</option>
-                  <option value="direct">الطريقة المباشرة (Direct)</option>
+                  <option value="indirect">الطريقة غير المباشرة</option>
+                  <option value="direct">الطريقة المباشرة</option>
                 </select>
               </div>
             </div>
@@ -567,7 +567,7 @@ export function CashFlowStatementReport() {
                         <CardHeader className="bg-green-50 border-b">
                           <CardTitle className="flex items-center gap-2 text-green-700">
                             <Activity className="h-5 w-5" />
-                            الأنشطة التشغيلية (Operating Activities)
+                            الأنشطة التشغيلية
                           </CardTitle>
                         </CardHeader>
                         <CardContent className="p-0">
@@ -603,7 +603,7 @@ export function CashFlowStatementReport() {
                         <CardHeader className="bg-blue-50 border-b">
                           <CardTitle className="flex items-center gap-2 text-blue-700">
                             <TrendingDown className="h-5 w-5" />
-                            الأنشطة الاستثمارية (Investing Activities)
+                            الأنشطة الاستثمارية
                           </CardTitle>
                         </CardHeader>
                         <CardContent className="p-0">
@@ -639,7 +639,7 @@ export function CashFlowStatementReport() {
                         <CardHeader className="bg-amber-50 border-b">
                           <CardTitle className="flex items-center gap-2 text-amber-700">
                             <Droplets className="h-5 w-5" />
-                            الأنشطة التمويلية (Financing Activities)
+                            الأنشطة التمويلية
                           </CardTitle>
                         </CardHeader>
                         <CardContent className="p-0">
@@ -817,7 +817,7 @@ export function CashFlowStatementReport() {
                     {/* Waterfall Chart */}
                     <Card>
                       <CardHeader>
-                        <CardTitle>تحليل التدفق النقدي (Waterfall)</CardTitle>
+                        <CardTitle>تحليل التدفق النقدي</CardTitle>
                       </CardHeader>
                       <CardContent>
                         <ResponsiveContainer width="100%" height={300}>

@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
+import { invalidateContractDocumentDependents } from '@/utils/contractDocumentQueries';
 import { useUpdateCustomer } from '@/hooks/useCustomers';
 import { convertAllPagesToImages, convertPDFToImage } from '@/services/contractPDFExtractor';
 import type { CustomerFormData } from '@/types/customer';
@@ -331,7 +332,7 @@ export function useScanContractDocumentsForId(contractId?: string) {
 
       if (error) throw error;
       if (!documents || documents.length === 0) {
-        return { scanned: 0, proposals: 0 };
+        return { scanned: 0, proposals: 0, companyId, contractId };
       }
 
       let proposals = 0;
@@ -382,12 +383,12 @@ export function useScanContractDocumentsForId(contractId?: string) {
         }
       }
 
-      return { scanned: documents.length, proposals };
+      return { scanned: documents.length, proposals, companyId, contractId };
     },
     onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: ['customer-id-proposals', contractId] });
       queryClient.invalidateQueries({ queryKey: ['pending-id-scan-count', contractId] });
-      queryClient.invalidateQueries({ queryKey: ['contract-documents', contractId] });
+      void invalidateContractDocumentDependents(queryClient, result.companyId, result.contractId);
       if (result.scanned === 0) {
         toast.info('لا توجد مستندات جديدة للمسح');
       } else if (result.proposals > 0) {

@@ -11,7 +11,7 @@ import { InvoicePreviewDialog } from "@/components/finance/InvoicePreviewDialog"
 import * as React from "react";
 import { StatCardNumber } from "@/components/ui/NumberDisplay";
 import { useQueryClient } from "@tanstack/react-query";
-import { useToast } from "@/hooks/use-toast-mock";
+import { useToast } from "@/hooks/use-toast";
 
 interface CustomerInvoicesTabProps {
   customerId: string;

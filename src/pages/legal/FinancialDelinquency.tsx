@@ -1,10 +1,14 @@
-﻿/* eslint-disable @typescript-eslint/no-explicit-any */
+import { legalCandidateAmounts } from './utils/legalCandidateAmounts';
+import { loadLegalQueueClaims } from './utils/legalQueueClaims';
+import { LegalPageHeader } from '@/components/legal/workspace/LegalPageHeader';
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   AlertCircle,
   AlertTriangle,
+  ArrowUpDown,
   Brain,
   CheckCircle2,
   ChevronDown,
@@ -68,12 +72,14 @@ import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { LegalTransferReadinessWizard as ConvertToLegalDialog } from '@/components/contracts/LegalTransferReadinessWizard';
 import { AgentReviewButton, AgentReviewVerdictBadge } from '@/components/ai-agents/AgentReviewButton';
 import { CollectionMessageButton } from '@/components/ai-agents/CollectionMessageButton';
+import { LegalCaseStageChangeDialog } from '@/components/legal/LegalCaseStageChangeDialog';
 import type { ContractForLegal } from '@/hooks/useConvertToLegal';
 import { useDelinquentCustomers, type DelinquentCustomer } from '@/hooks/useDelinquentCustomers';
 import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
 import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
 import { useRolePermissions } from '@/hooks/useRolePermissions';
 import { useTeamMembers } from '@/hooks/useTasks';
+import { LEGAL_WORKFLOW_STAGES, type LegalWorkflowStage } from '@/hooks/useLegalCaseWorkflow';
 import {
   latestLegalEmployeeReviewByContract,
   type LegalTransferEmployeeReview,
@@ -84,10 +90,14 @@ import {
 import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
 import { revertContractLegalProcedure } from '@/services/contractLegalProcedureService';
-import { calculateDelinquencyAmounts } from '@/utils/calculateDelinquencyAmounts';
 import { formatCustomerName } from '@/utils/formatCustomerName';
 import { escapeHtml } from '@/utils/htmlSanitizer';
+import { fetchAllRangePages } from '@/utils/fetchAllRangePages';
 import { selectLegalContractDocument } from './LawsuitPreparation/utils/contractDocumentSelection';
+import {
+  sortLegalQueueByAmount,
+  type LegalQueueAmountSort,
+} from './utils/legalQueueSorting';
 import '@/styles/legal-system.css';
 
 type QueueItem = {
@@ -98,12 +108,16 @@ type QueueItem = {
   vehicleLabel: string;
   legalCaseNumber?: string | null;
   legalCaseStatus?: string | null;
-  workflowStage?: string | null;
+  workflowStage?: LegalWorkflowStage | null;
   legalCaseValue: number;
-  overdueRent: number;
-  lateFees: number;
-  trafficViolations: number;
-  detailedClaimTotal: number;
+  overdueRent: number | null;
+  lateFees: number | null;
+  trafficViolations: number | null;
+  detailedClaimTotal: number | null;
+  financialReview: string | null;
+  damages: number | null;
+  retention: number | null;
+  depositDeduction: number | null;
   transferredAt?: string | null;
   missingDocuments: string[];
 };
@@ -111,27 +125,22 @@ type QueueItem = {
 type CandidateSource = 'rent' | 'traffic';
 type CandidateSort = 'amount_desc' | 'amount_asc' | 'traffic_desc' | 'traffic_asc';
 
-type CandidateItem = {
+type CandidateItem = ReturnType<typeof legalCandidateAmounts> & {
   id: string;
   customerId?: string | null;
   source: CandidateSource;
   sources: CandidateSource[];
   reason: string;
-  amount: number;
   daysOverdue?: number;
   violationsCount?: number;
-  overdueRent: number;
-  lateFees: number;
-  trafficViolations: number;
-  detailedClaimTotal: number;
   contract?: ContractForLegal | null;
   customerName: string;
   phone?: string | null;
   contractNumber?: string | null;
   vehicleLabel?: string | null;
-  canConvert: boolean;
 };
 
+const LEGAL_SUBJECT_CHUNK_SIZE = 75;
 const activeLegalStatuses = ['open', 'pending', 'active', 'under_review', 'on_hold'];
 const employeeReviewStatusMeta: Record<string, { label: string; className: string }> = {
   awaiting_assignment: { label: 'بانتظار تعيين موظف', className: 'border-slate-200 bg-slate-50 text-slate-700' },
@@ -142,12 +151,13 @@ const employeeReviewStatusMeta: Record<string, { label: string; className: strin
   employee_rejected: { label: 'غير مناسبة للتحويل', className: 'border-rose-200 bg-rose-50 text-rose-700' },
   employee_approved: { label: 'معتمدة من الموظف', className: 'border-emerald-200 bg-emerald-50 text-emerald-700' },
   manager_overridden: { label: 'تجاوز إداري معتمد', className: 'border-violet-200 bg-violet-50 text-violet-700' },
+  system_verified: { label: 'متحققة آلياً', className: 'border-cyan-200 bg-cyan-50 text-cyan-700' },
   cancelled: { label: 'طلب ملغي', className: 'border-slate-200 bg-slate-50 text-slate-600' },
 };
-const delinquencyWorkflowStages = ['preparation', 'filed', 'hearings', 'reserved_for_judgment'];
-const activeWorkflowStages = [
+const activeWorkflowStages: LegalWorkflowStage[] = [
   'preparation',
   'filed',
+  'awaiting_acceptance',
   'hearings',
   'reserved_for_judgment',
   'judgment_issued',
@@ -156,7 +166,6 @@ const activeWorkflowStages = [
   'collection',
 ];
 const openedWorkflowStages = activeWorkflowStages.filter((stage) => stage !== 'preparation');
-
 const REQUIRED_COMPANY_LEGAL_DOCUMENTS = [
   { type: 'commercial_register', name: 'السجل التجاري' },
   { type: 'iban_certificate', name: 'شهادة IBAN' },
@@ -229,47 +238,6 @@ const normalizeContractForLegal = (contract: any): ContractForLegal => ({
       : undefined,
 });
 
-const sumUnpaidTrafficViolationsByContract = async (
-  companyId: string,
-  contractIds: string[],
-  fallbackPenalties: Map<string, number> = new Map()
-) => {
-  const totals = new Map<string, number>();
-  const counts = new Map<string, number>();
-
-  if (contractIds.length === 0) return { totals, counts };
-
-  for (let index = 0; index < contractIds.length; index += INVOICE_CONTRACT_CHUNK_SIZE) {
-    const contractIdChunk = contractIds.slice(index, index + INVOICE_CONTRACT_CHUNK_SIZE);
-    const { data, error } = await supabase
-      .from('traffic_violations')
-      .select('contract_id, fine_amount, status')
-      .eq('company_id', companyId)
-      .in('contract_id', contractIdChunk)
-      .not('contract_id', 'is', null)
-      .not('status', 'in', '("paid","cancelled","canceled","void","voided")');
-
-    if (error) throw error;
-
-    (data || []).forEach((violation: any) => {
-      if (!violation.contract_id) return;
-      totals.set(
-        violation.contract_id,
-        (totals.get(violation.contract_id) || 0) + Number(violation.fine_amount || 0)
-      );
-      counts.set(violation.contract_id, (counts.get(violation.contract_id) || 0) + 1);
-    });
-  }
-
-  fallbackPenalties.forEach((amount, contractId) => {
-    if (!totals.has(contractId)) {
-      totals.set(contractId, amount);
-    }
-  });
-
-  return { totals, counts };
-};
-
 const fetchActiveLegalSubjectIds = async (
   companyId: string,
   contractIds: string[],
@@ -285,8 +253,8 @@ const fetchActiveLegalSubjectIds = async (
     });
   };
 
-  for (let index = 0; index < contractIds.length; index += INVOICE_CONTRACT_CHUNK_SIZE) {
-    const contractIdChunk = contractIds.slice(index, index + INVOICE_CONTRACT_CHUNK_SIZE);
+  for (let index = 0; index < contractIds.length; index += LEGAL_SUBJECT_CHUNK_SIZE) {
+    const contractIdChunk = contractIds.slice(index, index + LEGAL_SUBJECT_CHUNK_SIZE);
     if (contractIdChunk.length === 0) continue;
 
     const { data, error } = await supabase
@@ -301,8 +269,8 @@ const fetchActiveLegalSubjectIds = async (
     addLegalCases(data);
   }
 
-  for (let index = 0; index < customerIds.length; index += INVOICE_CONTRACT_CHUNK_SIZE) {
-    const customerIdChunk = customerIds.slice(index, index + INVOICE_CONTRACT_CHUNK_SIZE);
+  for (let index = 0; index < customerIds.length; index += LEGAL_SUBJECT_CHUNK_SIZE) {
+    const customerIdChunk = customerIds.slice(index, index + LEGAL_SUBJECT_CHUNK_SIZE);
     if (customerIdChunk.length === 0) continue;
 
     const { data, error } = await supabase
@@ -390,15 +358,13 @@ const fetchLegalQueue = async (companyId: string): Promise<QueueItem[]> => {
     .eq('company_id', companyId)
     .not('contract_id', 'is', null)
     .in('case_status', activeLegalStatuses)
-    .in('workflow_stage', delinquencyWorkflowStages)
+    .in('workflow_stage', activeWorkflowStages)
     .order('created_at', { ascending: false });
 
   if (error) throw error;
   if (!legalCases?.length) return [];
 
   const contractIds = legalCases.map((legalCase: any) => legalCase.contract_id).filter(Boolean);
-  let violationsByContract = new Map<string, number>();
-  const invoicesByContract = new Map<string, any[]>();
   const contractDocumentsByContract = new Map<string, any[]>();
 
   const { data: companyLegalDocuments, error: companyDocumentsError } = await supabase
@@ -419,53 +385,12 @@ const fetchLegalQueue = async (companyId: string): Promise<QueueItem[]> => {
     .map((document) => document.name);
 
   if (contractIds.length > 0) {
-    const [
-      { data: penalties, error: penaltiesError },
-      { data: invoices, error: invoicesError },
-      { data: contractDocuments, error: contractDocumentsError },
-    ] = await Promise.all([
-      supabase
-        .from('penalties')
-        .select('contract_id, amount')
-        .eq('company_id', companyId)
-        .in('contract_id', contractIds)
-        .neq('payment_status', 'paid')
-        .neq('status', 'cancelled'),
-      supabase
-        .from('invoices')
-        .select('id, invoice_number, contract_id, due_date, total_amount, paid_amount, balance_due, status')
-        .eq('company_id', companyId)
-        .in('contract_id', contractIds)
-        .neq('status', 'cancelled'),
-      supabase
-        .from('contract_documents')
-        .select('id, contract_id, document_name, document_type, file_path, mime_type')
-        .eq('company_id', companyId)
-        .in('contract_id', contractIds),
-    ]);
-
-    if (penaltiesError) throw penaltiesError;
-    if (invoicesError) throw invoicesError;
+    const { data: contractDocuments, error: contractDocumentsError } = await supabase
+      .from('contract_documents')
+      .select('id, contract_id, document_name, document_type, file_path, mime_type, legal_identity_match_status, legal_identity_expected_id, legal_identity_extracted_id, legal_evidence_state')
+      .eq('company_id', companyId)
+      .in('contract_id', contractIds);
     if (contractDocumentsError) throw contractDocumentsError;
-
-    const fallbackPenalties = new Map<string, number>();
-    (penalties || []).forEach((penalty: any) => {
-      if (!penalty.contract_id) return;
-      fallbackPenalties.set(
-        penalty.contract_id,
-        (fallbackPenalties.get(penalty.contract_id) || 0) + Number(penalty.amount || 0)
-      );
-    });
-    violationsByContract = (await sumUnpaidTrafficViolationsByContract(
-      companyId,
-      contractIds,
-      fallbackPenalties
-    )).totals;
-
-    (invoices || []).forEach((invoice: any) => {
-      if (!invoice.contract_id) return;
-      invoicesByContract.set(invoice.contract_id, [...(invoicesByContract.get(invoice.contract_id) || []), invoice]);
-    });
 
     (contractDocuments || []).forEach((document: any) => {
       if (!document.contract_id) return;
@@ -476,24 +401,20 @@ const fetchLegalQueue = async (companyId: string): Promise<QueueItem[]> => {
     });
   }
 
+  const claimsByContract = await loadLegalQueueClaims(companyId, contractIds);
+
   return legalCases
     .filter((legalCase: any) => legalCase.contracts)
     .map((legalCase: any) => {
     const contract = legalCase.contracts;
     const normalized = normalizeContractForLegal(contract);
-    const invoiceCalculation = calculateDelinquencyAmounts(
-      invoicesByContract.get(normalized.id) || [],
-      [],
-      { includeDamagesFee: false }
-    );
-    // Contract balance includes future installments. Legal delinquency must only
-    // include invoices whose due date has actually passed.
-    const overdueRent = invoiceCalculation.overdueRent;
-    const lateFees = invoiceCalculation.overdueInvoicesCount > 0
-      ? invoiceCalculation.lateFees
-      : Number(normalized.late_fine_amount || 0);
-    const trafficViolations = violationsByContract.get(normalized.id) || 0;
-    const detailedClaimTotal = overdueRent + lateFees + trafficViolations;
+    const claim = claimsByContract.get(normalized.id);
+    const amounts = claim?.amounts;
+    const financialReview = claim?.error ?? (!amounts ? 'تعذر التحقق من المطالبة المالية' : null);
+    const overdueRent = amounts?.overdueRent ?? null;
+    const lateFees = amounts?.lateFees ?? null;
+    const trafficViolations = amounts?.violationsFines ?? null;
+    const detailedClaimTotal = amounts?.total ?? null;
     const hasSignedContract = Boolean(
       selectLegalContractDocument(contractDocumentsByContract.get(normalized.id) || [])
     );
@@ -510,12 +431,16 @@ const fetchLegalQueue = async (companyId: string): Promise<QueueItem[]> => {
       vehicleLabel: vehicleLabel(contract),
       legalCaseNumber: legalCase?.case_number,
       legalCaseStatus: legalCase?.case_status,
-      workflowStage: legalCase?.workflow_stage,
+      workflowStage: legalCase?.workflow_stage as LegalWorkflowStage | null,
       legalCaseValue: Number(legalCase?.case_value || normalized.balance_due || 0),
       overdueRent,
       lateFees,
       trafficViolations,
       detailedClaimTotal,
+      financialReview,
+      damages: amounts?.damagesFee ?? null,
+      retention: amounts?.retentionCompensation ?? null,
+      depositDeduction: amounts?.securityDepositDeduction ?? null,
       transferredAt: legalCase?.created_at,
       missingDocuments,
     };
@@ -534,9 +459,8 @@ const fetchOpenedLegalCasesCount = async (companyId: string): Promise<number> =>
   return count ?? 0;
 };
 
-const fetchRentCandidates = async (companyId: string, searchTerm: string): Promise<CandidateItem[]> => {
-  const { data, error } = await supabase
-    .from('contracts')
+export const fetchManualCandidates = async (companyId: string, searchTerm: string, page: number): Promise<{items: CandidateItem[]; hasMore: boolean}> => {
+  const data = await fetchAllRangePages<any>((from,to) => supabase.from('contracts')
     .select(`
       id,
       company_id,
@@ -580,411 +504,26 @@ const fetchRentCandidates = async (companyId: string, searchTerm: string): Promi
         plate_number
       )
     `)
-    .eq('company_id', companyId)
-    .in('status', ['active', 'expired', 'closed', 'cancelled'])
-    .gt('balance_due', 0)
-    .order('balance_due', { ascending: false })
-    .limit(80);
 
-  if (error) throw error;
-
-  const contractIds = (data || []).map((contract: any) => contract.id).filter(Boolean);
-  const customerIds = Array.from(new Set((data || []).map((contract: any) => contract.customer_id).filter(Boolean)));
-  const { excludedContractIds, excludedCustomerIds } = await fetchActiveLegalSubjectIds(
-    companyId,
-    contractIds,
-    customerIds
-  );
-  const invoicesByContract = new Map<string, any[]>();
-  let violationsByContract = new Map<string, number>();
-
-  if (contractIds.length > 0) {
-    const [{ data: invoices, error: invoicesError }, { data: penalties, error: penaltiesError }] = await Promise.all([
-      supabase
-        .from('invoices')
-        .select('id, invoice_number, contract_id, due_date, total_amount, paid_amount, balance_due, status')
-        .eq('company_id', companyId)
-        .in('contract_id', contractIds)
-        .neq('status', 'cancelled'),
-      supabase
-        .from('penalties')
-        .select('contract_id, amount')
-        .eq('company_id', companyId)
-        .in('contract_id', contractIds)
-        .neq('payment_status', 'paid')
-        .neq('status', 'cancelled'),
-    ]);
-
-    if (invoicesError) throw invoicesError;
-    if (penaltiesError) throw penaltiesError;
-
-    (invoices || []).forEach((invoice: any) => {
-      if (!invoice.contract_id) return;
-      invoicesByContract.set(invoice.contract_id, [...(invoicesByContract.get(invoice.contract_id) || []), invoice]);
-    });
-
-    const fallbackPenalties = new Map<string, number>();
-    (penalties || []).forEach((penalty: any) => {
-      if (!penalty.contract_id) return;
-      fallbackPenalties.set(
-        penalty.contract_id,
-        (fallbackPenalties.get(penalty.contract_id) || 0) + Number(penalty.amount || 0)
-      );
-    });
-    violationsByContract = (await sumUnpaidTrafficViolationsByContract(
-      companyId,
-      contractIds,
-      fallbackPenalties
-    )).totals;
-  }
-
-  const needle = searchTerm.trim().toLowerCase();
-  return (data || [])
-    .filter((contract: any) => {
-      if (
-        excludedContractIds.has(contract.id) ||
-        (contract.customer_id && excludedCustomerIds.has(contract.customer_id))
-      ) {
-        return false;
-      }
-
-      const name = normalizeCustomerName(contract.customers).toLowerCase();
-      return (
-        !needle ||
-        name.includes(needle) ||
-        contract.contract_number?.toLowerCase().includes(needle) ||
-        contract.customers?.phone?.toLowerCase().includes(needle) ||
-        contract.license_plate?.toLowerCase().includes(needle) ||
-        contract.vehicles?.plate_number?.toLowerCase().includes(needle)
-      );
-    })
-    .map((contract: any) => {
-      const calculation = calculateDelinquencyAmounts(
-        invoicesByContract.get(contract.id) || [],
-        [],
-        { includeDamagesFee: false }
-      );
-      const overdueRent = calculation.overdueRent;
-      const lateFees = calculation.overdueInvoicesCount > 0
-        ? calculation.lateFees
-        : Number(contract.late_fine_amount || 0);
-      const trafficViolations = violationsByContract.get(contract.id) || 0;
-      const detailedClaimTotal = overdueRent + lateFees + trafficViolations;
-
-      return {
-        id: `rent-${contract.id}`,
-        customerId: contract.customer_id,
-        source: 'rent' as const,
-        sources: ['rent'] as CandidateSource[],
-        reason: 'تأخير في سداد الإيجار',
-        amount: detailedClaimTotal,
-        daysOverdue: Number(contract.days_overdue || 0),
-        violationsCount: trafficViolations > 0 ? 1 : 0,
-        overdueRent,
-        lateFees,
-        trafficViolations,
-        detailedClaimTotal,
-        contract: normalizeContractForLegal(contract),
-        customerName: normalizeCustomerName(contract.customers),
-        phone: contract.customers?.phone,
-        contractNumber: contract.contract_number,
-        vehicleLabel: vehicleLabel(contract),
-        canConvert: true,
-      };
-    })
-    .filter((candidate) => candidate.overdueRent > 0);
-};
-
-const TRAFFIC_CANDIDATE_PAGE_SIZE = 500;
-const INVOICE_CONTRACT_CHUNK_SIZE = 75;
-
-const fetchTrafficCandidates = async (companyId: string): Promise<CandidateItem[]> => {
-  const penalties: any[] = [];
-  let pageStart = 0;
-
-  while (true) {
-    const { data, error } = await supabase
-      .from('penalties')
-      .select(`
-      id,
-      penalty_number,
-      amount,
-      reason,
-      violation_type,
-      penalty_date,
-      customer_id,
-      contract_id,
-      vehicle_plate,
-      customers(
-        id,
-        first_name,
-        last_name,
-        first_name_ar,
-        last_name_ar,
-        company_name,
-        company_name_ar,
-        customer_type,
-        phone,
-        email,
-        national_id,
-        passport_number
-      ),
-      contracts(
-        id,
-        company_id,
-        contract_number,
-        customer_id,
-        vehicle_id,
-        status,
-        vehicle_returned,
-        start_date,
-        end_date,
-        monthly_amount,
-        contract_amount,
-        total_paid,
-        balance_due,
-        late_fine_amount,
-        days_overdue,
-        assigned_to_profile_id,
-        license_plate,
-        make,
-        model,
-        year,
-        customers(
-          id,
-          first_name,
-          last_name,
-          first_name_ar,
-          last_name_ar,
-          company_name,
-          company_name_ar,
-          customer_type,
-          phone,
-          email,
-          national_id,
-          passport_number
-        ),
-        vehicles(
-          id,
-          make,
-          model,
-          year,
-          plate_number
-        )
-      )
-      `)
-      .eq('company_id', companyId)
-      .not('contract_id', 'is', null)
-      .or('payment_status.is.null,payment_status.neq.paid')
-      .or('status.is.null,status.neq.cancelled')
-      .order('penalty_date', { ascending: false })
-      .order('id', { ascending: false })
-      .range(pageStart, pageStart + TRAFFIC_CANDIDATE_PAGE_SIZE - 1);
-
-    if (error) throw error;
-
-    const page = data || [];
-    penalties.push(...page);
-    if (page.length < TRAFFIC_CANDIDATE_PAGE_SIZE) break;
-    pageStart += TRAFFIC_CANDIDATE_PAGE_SIZE;
-  }
-
-  const grouped = new Map<string, any[]>();
-  penalties.forEach((penalty: any) => {
-    const key = penalty.contract_id || penalty.customer_id || penalty.vehicle_plate || penalty.id;
-    grouped.set(key, [...(grouped.get(key) || []), penalty]);
-  });
-
-  const contractIds = Array.from(new Set(
-    penalties
-      .map((penalty: any) => penalty.contract_id)
-      .filter(Boolean)
-  ));
-  const customerIds = Array.from(new Set(
-    penalties
-      .map((penalty: any) => penalty.customer_id || penalty.contracts?.customer_id || penalty.customers?.id)
-      .filter(Boolean)
-  ));
-  const { excludedContractIds, excludedCustomerIds } = await fetchActiveLegalSubjectIds(
-    companyId,
-    contractIds,
-    customerIds
-  );
-  const invoicesByContract = new Map<string, any[]>();
-  const fallbackPenalties = new Map<string, number>();
-
-  penalties.forEach((penalty: any) => {
-    if (!penalty.contract_id) return;
-    fallbackPenalties.set(
-      penalty.contract_id,
-      (fallbackPenalties.get(penalty.contract_id) || 0) + Number(penalty.amount || 0)
-    );
-  });
-
-  if (contractIds.length > 0) {
-    for (let index = 0; index < contractIds.length; index += INVOICE_CONTRACT_CHUNK_SIZE) {
-      const contractIdChunk = contractIds.slice(index, index + INVOICE_CONTRACT_CHUNK_SIZE);
-      const { data: invoices, error: invoicesError } = await supabase
-        .from('invoices')
-        .select('id, invoice_number, contract_id, due_date, total_amount, paid_amount, balance_due, status')
-        .eq('company_id', companyId)
-        .in('contract_id', contractIdChunk)
-        .neq('status', 'cancelled');
-
-      if (invoicesError) throw invoicesError;
-
-      (invoices || []).forEach((invoice: any) => {
-        if (!invoice.contract_id) return;
-        invoicesByContract.set(invoice.contract_id, [
-          ...(invoicesByContract.get(invoice.contract_id) || []),
-          invoice,
-        ]);
-      });
-    }
-  }
-
-  const trafficViolationSummary = await sumUnpaidTrafficViolationsByContract(
-    companyId,
-    contractIds,
-    fallbackPenalties
-  );
-
-  return Array.from(grouped.values())
-    .filter((penalties) => {
-      const first = penalties[0];
-      const contract = first.contracts;
-      const customer = first.customers || contract?.customers;
-      const customerId = first.customer_id || contract?.customer_id || customer?.id || null;
-
-      return !(
-        (first.contract_id && excludedContractIds.has(first.contract_id)) ||
-        (customerId && excludedCustomerIds.has(customerId))
-      );
-    })
-    .map((penalties) => {
-      const first = penalties[0];
-      const contract = first.contracts;
-      const customer = first.customers || contract?.customers;
-      const customerId = first.customer_id || contract?.customer_id || customer?.id || null;
-      const fallbackAmount = penalties.reduce((sum, penalty) => sum + Number(penalty.amount || 0), 0);
-      const amount = first.contract_id
-        ? trafficViolationSummary.totals.get(first.contract_id) ?? fallbackAmount
-        : fallbackAmount;
-      const violationsCount = first.contract_id
-        ? trafficViolationSummary.counts.get(first.contract_id) || penalties.length
-        : penalties.length;
-      const name = normalizeCustomerName(customer);
-      const normalizedContract = contract ? normalizeContractForLegal({ ...contract, customers: customer }) : null;
-      const invoiceCalculation = calculateDelinquencyAmounts(
-        first.contract_id ? invoicesByContract.get(first.contract_id) || [] : [],
-        [],
-        { includeDamagesFee: false }
-      );
-      const overdueRent = invoiceCalculation.overdueRent;
-      const lateFees = invoiceCalculation.overdueInvoicesCount > 0
-        ? invoiceCalculation.lateFees
-        : Number(normalizedContract?.late_fine_amount || 0);
-      const trafficViolations = amount;
-      const detailedClaimTotal = overdueRent + lateFees + trafficViolations;
-      const sources = overdueRent > 0
-        ? ['traffic', 'rent'] as CandidateSource[]
-        : ['traffic'] as CandidateSource[];
-
-      return {
-        id: `traffic-${first.contract_id || first.customer_id || first.vehicle_plate || first.id}`,
-        customerId,
-        source: overdueRent > 0 ? 'rent' as const : 'traffic' as const,
-        sources,
-        reason: `${violationsCount} مخالفة مرورية غير مسددة`,
-        amount: detailedClaimTotal,
-        violationsCount,
-        overdueRent,
-        lateFees,
-        trafficViolations,
-        detailedClaimTotal,
-        contract: normalizedContract,
-        customerName: name,
-        phone: customer?.phone,
-        contractNumber: contract?.contract_number,
-        vehicleLabel: contract ? vehicleLabel(contract) : first.vehicle_plate,
-        canConvert: !!normalizedContract,
-      };
-    })
-    .filter((candidate) => candidate.canConvert && !!candidate.contract?.id);
-};
-
-const mergeCandidateSources = (items: CandidateItem[]): CandidateItem[] => {
-  const mergedByContract = new Map<string, CandidateItem>();
-
-  items.forEach((candidate) => {
-    const contractId = candidate.contract?.id;
-    const key = contractId ? `contract:${contractId}` : `candidate:${candidate.id}`;
-    const existing = mergedByContract.get(key);
-
-    if (!existing) {
-      mergedByContract.set(key, {
-        ...candidate,
-        sources: [...new Set(candidate.sources || [candidate.source])],
-      });
-      return;
-    }
-
-    const sources = [...new Set([
-      ...(existing.sources || [existing.source]),
-      ...(candidate.sources || [candidate.source]),
-    ])];
-    const rentCandidate = candidate.source === 'rent'
-      ? candidate
-      : existing.source === 'rent'
-        ? existing
-        : null;
-    const trafficCandidate = candidate.source === 'traffic'
-      ? candidate
-      : existing.source === 'traffic'
-        ? existing
-        : null;
-    const violationsCount = Math.max(
-      Number(existing.violationsCount || 0),
-      Number(candidate.violationsCount || 0)
-    );
-    const overdueRent = rentCandidate?.overdueRent ?? Math.max(
-      Number(existing.overdueRent || 0),
-      Number(candidate.overdueRent || 0),
-      0
-    );
-    const lateFees = rentCandidate?.lateFees || 0;
-    const trafficViolations = Math.max(
-      Number(existing.trafficViolations || 0),
-      Number(candidate.trafficViolations || 0)
-    );
-    const detailedClaimTotal = overdueRent + lateFees + trafficViolations;
-    const primary = rentCandidate || trafficCandidate || existing;
-    const reasons = [
-      sources.includes('rent') ? 'تأخير في سداد الإيجار' : null,
-      sources.includes('traffic')
-        ? `${violationsCount || 'وجود'} مخالفة مرورية غير مسددة`
-        : null,
-    ].filter(Boolean);
-
-    mergedByContract.set(key, {
-      ...primary,
-      id: contractId ? `contract-${contractId}` : primary.id,
-      source: sources.includes('rent') ? 'rent' : 'traffic',
-      sources,
-      reason: reasons.join(' + '),
-      violationsCount,
-      overdueRent,
-      lateFees,
-      trafficViolations,
-      detailedClaimTotal,
-      amount: detailedClaimTotal,
-      contract: existing.contract || candidate.contract,
-      customerId: existing.customerId || candidate.customerId,
-      canConvert: existing.canConvert || candidate.canConvert,
-    });
-  });
-
-  return Array.from(mergedByContract.values());
+    .eq('company_id',companyId).in('status',['active','expired','closed','cancelled'])
+    .order('id').range(from,to));
+  const needle=searchTerm.trim().toLowerCase();
+  const matches=data.filter(contract => !needle || [normalizeCustomerName(contract.customers),contract.contract_number,contract.customers?.phone,contract.license_plate,contract.vehicles?.plate_number].some(value=>String(value ?? '').toLowerCase().includes(needle)));
+  const {excludedContractIds,excludedCustomerIds}=await fetchActiveLegalSubjectIds(companyId,matches.map(c=>c.id),matches.map(c=>c.customer_id).filter(Boolean));
+  const available=matches.filter(c=>!excludedContractIds.has(c.id)&&!excludedCustomerIds.has(c.customer_id));
+  const pageContracts=available.slice(page*25,(page+1)*25);
+  const claims=await loadLegalQueueClaims(companyId,pageContracts.map(c=>c.id));
+  const items: CandidateItem[]=pageContracts.map(contract=>{
+    const financial=legalCandidateAmounts(claims.get(contract.id));
+    const sources: CandidateSource[]=[];
+    if ((financial.overdueRent ?? 0)>0 || (financial.lateFees ?? 0)>0 || (financial.damages ?? 0)>0 || (financial.retention ?? 0)>0) sources.push('rent');
+    if ((financial.trafficViolations ?? 0)>0) sources.push('traffic');
+    return { ...financial,id:'contract-'+contract.id,customerId:contract.customer_id,
+      source:sources[0] ?? 'rent',sources,reason:financial.financialReview ? 'تحتاج مراجعة مالية' : 'مطالبة مالية محسوبة حتى تاريخ اليوم',
+      contract:normalizeContractForLegal(contract),customerName:normalizeCustomerName(contract.customers),phone:contract.customers?.phone,
+      contractNumber:contract.contract_number,vehicleLabel:vehicleLabel(contract) };
+  }).filter(candidate=>candidate.financialReview || (candidate.detailedClaimTotal ?? 0)>0);
+  return {items,hasMore:available.length>(page+1)*25};
 };
 
 const statusLabel = (status?: string | null) => {
@@ -1005,33 +544,40 @@ const statusLabel = (status?: string | null) => {
 };
 
 const preparationStageLabel = (stage?: string | null) => {
-  switch (stage) {
-    case 'preparation':
-      return 'مرحلة تجهيز الملف';
-    case 'filed':
-      return 'تم فتحها رسميًا';
-    case 'hearings':
-      return 'جلسات';
-    case 'reserved_for_judgment':
-      return 'محجوزة للحكم';
-    default:
-      return 'مرحلة التحضير القانوني';
-  }
+  return LEGAL_WORKFLOW_STAGES.find((item) => item.value === stage)?.label
+    || 'مرحلة التحضير القانوني';
 };
 
 const getQueueReadiness = (item: QueueItem) => {
   const missingCount = item.missingDocuments.length;
-  const hasClaim = item.detailedClaimTotal > 0;
+  const hasClaim = (item.detailedClaimTotal ?? 0) > 0;
   const isFiled = item.workflowStage && item.workflowStage !== 'preparation';
 
   if (isFiled) {
+    const filedDescription = item.workflowStage === 'filed'
+      ? 'تم إيداع الدعوى، ولم يُسجل قبول المحكمة بعد.'
+      : item.workflowStage === 'awaiting_acceptance'
+        ? 'الدعوى لدى المحكمة وبانتظار قرار القبول.'
+        : 'هذه الدعوى خرجت من لوبي التجهيز وتحتاج متابعة في سجل القضايا.';
     return {
       label: preparationStageLabel(item.workflowStage),
-      description: 'هذه الدعوى خرجت من لوبي التجهيز وتحتاج متابعة في سجل القضايا.',
+      description: filedDescription,
       progress: 100,
-      tone: 'slate' as const,
+      // Filing and court-acceptance are operationally different states.  Keep
+      // each one visually distinct instead of rendering every post-preparation
+      // case with the same neutral colour.
+      tone: item.workflowStage === 'filed'
+        ? 'filed' as const
+        : item.workflowStage === 'awaiting_acceptance'
+          ? 'awaitingAcceptance' as const
+          : 'slate' as const,
       nextAction: 'عرض المتابعة',
     };
+  }
+
+  if (item.financialReview) {
+    return { label: 'تحتاج مراجعة مالية', description: item.financialReview, progress: 45,
+      tone: 'amber' as const, nextAction: 'مراجعة المطالبة' };
   }
 
   if (missingCount > 0) {
@@ -1048,7 +594,7 @@ const getQueueReadiness = (item: QueueItem) => {
     label: item.legalCaseStatus === 'active' ? 'ملف تجهيز نشط' : 'جاهز للمراجعة',
     description: 'الملف موجود في لوبي التجهيز ولم يتم اعتباره قضية مفتوحة رسميًا بعد.',
     progress: hasClaim ? 90 : 75,
-    tone: 'emerald' as const,
+    tone: 'ready' as const,
     nextAction: 'متابعة التجهيز',
   };
 };
@@ -1065,6 +611,24 @@ const readinessToneClassName = {
     rail: 'bg-emerald-500',
     card: 'border-emerald-200 bg-emerald-50/70',
     icon: 'bg-emerald-100 text-emerald-700',
+  },
+  ready: {
+    badge: 'border-emerald-600 bg-emerald-600 text-white hover:bg-emerald-600',
+    rail: 'bg-emerald-600',
+    card: 'border-emerald-300 bg-gradient-to-l from-emerald-50 to-white shadow-emerald-100/60',
+    icon: 'bg-emerald-600 text-white',
+  },
+  filed: {
+    badge: 'border-blue-300 bg-blue-100 text-blue-800',
+    rail: 'bg-blue-600',
+    card: 'border-blue-200 bg-blue-50/70',
+    icon: 'bg-blue-100 text-blue-700',
+  },
+  awaitingAcceptance: {
+    badge: 'border-violet-300 bg-violet-100 text-violet-800',
+    rail: 'bg-violet-600',
+    card: 'border-violet-200 bg-violet-50/70',
+    icon: 'bg-violet-100 text-violet-700',
   },
   slate: {
     badge: 'border-slate-200 bg-slate-50 text-slate-700',
@@ -1237,13 +801,17 @@ const FinancialDelinquencyPage: React.FC = () => {
   const { companyId, isInitializing, isAuthenticating } = useUnifiedCompanyAccess();
   const [activeTab, setActiveTab] = useState<'queue' | 'search'>('queue');
   const [queueSearch, setQueueSearch] = useState('');
+  const [queueSort, setQueueSort] = useState<LegalQueueAmountSort>('amount_desc');
+  const [queueStage, setQueueStage] = useState<LegalWorkflowStage | 'all'>('all');
   const [candidateSearch, setCandidateSearch] = useState('');
+  const [candidatePage, setCandidatePage] = useState(0);
   const [candidateType, setCandidateType] = useState<'all' | CandidateSource>('all');
   const [candidateSort, setCandidateSort] = useState<CandidateSort>('amount_desc');
   const [selectedCandidateIds, setSelectedCandidateIds] = useState<Set<string>>(() => new Set());
   const [selectedContract, setSelectedContract] = useState<ContractForLegal | null>(null);
   const [convertDialogOpen, setConvertDialogOpen] = useState(false);
   const [removingItem, setRemovingItem] = useState<QueueItem | null>(null);
+  const [stageChangeItem, setStageChangeItem] = useState<QueueItem | null>(null);
   const [isRemovingLegal, setIsRemovingLegal] = useState(false);
   const [reviewCandidate, setReviewCandidate] = useState<CandidateItem | null>(null);
   const [reviewReason, setReviewReason] = useState('');
@@ -1284,23 +852,13 @@ const FinancialDelinquencyPage: React.FC = () => {
 
   const shouldLoadCandidates = activeTab === 'search' && isCompanyReady;
 
-  const { data: rentCandidates = [], isFetching: rentSearching } = useQuery({
-    queryKey: ['legal-delinquency-rent-candidates', companyId, candidateSearch],
-    queryFn: () => {
-      if (!companyId) throw new Error('Company not ready');
-      return fetchRentCandidates(companyId, candidateSearch);
-    },
-    enabled: shouldLoadCandidates,
+  const manualCandidatesQuery = useQuery({
+    queryKey:['legal-delinquency-manual-candidates',companyId,candidateSearch,candidatePage],
+    queryFn:()=> { if(!companyId) throw new Error('Company not ready'); return fetchManualCandidates(companyId,candidateSearch,candidatePage); },
+    enabled:shouldLoadCandidates,
   });
-
-  const { data: trafficCandidates = [], isFetching: trafficSearching } = useQuery({
-    queryKey: ['legal-delinquency-traffic-candidates', companyId],
-    queryFn: () => {
-      if (!companyId) throw new Error('Company not ready');
-      return fetchTrafficCandidates(companyId);
-    },
-    enabled: shouldLoadCandidates,
-  });
+  const manualCandidates=useMemo(()=>manualCandidatesQuery.data?.items ?? [],[manualCandidatesQuery.data]);
+  const candidatesSearching=manualCandidatesQuery.isFetching;
 
   const convertedContractIds = useMemo(
     () => new Set(legalQueue.map((item) => item.contract.id).filter(Boolean)),
@@ -1317,22 +875,28 @@ const FinancialDelinquencyPage: React.FC = () => {
 
   const filteredQueue = useMemo(() => {
     const needle = queueSearch.trim().toLowerCase();
-    if (!needle) return legalQueue;
-    return legalQueue.filter((item) =>
-      item.customerName.toLowerCase().includes(needle) ||
-      item.contract.contract_number.toLowerCase().includes(needle) ||
-      item.phone?.toLowerCase().includes(needle) ||
-      item.vehicleLabel.toLowerCase().includes(needle) ||
-      item.legalCaseNumber?.toLowerCase().includes(needle)
-    );
-  }, [legalQueue, queueSearch]);
+    const matchingItems = legalQueue.filter((item) => {
+      const matchesStage = queueStage === 'all' || item.workflowStage === queueStage;
+      const matchesSearch = !needle ||
+        item.customerName.toLowerCase().includes(needle) ||
+        item.contract.contract_number.toLowerCase().includes(needle) ||
+        item.phone?.toLowerCase().includes(needle) ||
+        item.vehicleLabel.toLowerCase().includes(needle) ||
+        item.legalCaseNumber?.toLowerCase().includes(needle);
+      return matchesStage && matchesSearch;
+    });
+    return sortLegalQueueByAmount(matchingItems, queueSort);
+  }, [legalQueue, queueSearch, queueSort, queueStage]);
+
+  const hasQueueFilters = queueSearch.trim() !== '' || queueStage !== 'all';
+  const resetQueueFilters = () => {
+    setQueueSearch('');
+    setQueueStage('all');
+  };
 
   const candidates = useMemo(() => {
     const needle = candidateSearch.trim().toLowerCase();
-    const mergedCandidates = mergeCandidateSources([
-      ...rentCandidates,
-      ...trafficCandidates,
-    ]);
+    const mergedCandidates = manualCandidates;
     const matchingCandidates = mergedCandidates.filter((candidate) => {
       const matchesType =
         candidateType === 'all' ||
@@ -1354,16 +918,17 @@ const FinancialDelinquencyPage: React.FC = () => {
     });
 
     return [...uniqueCandidates].sort((a, b) => {
+      if (Boolean(a.financialReview)!==Boolean(b.financialReview)) return a.financialReview ? 1 : -1;
       switch (candidateSort) {
         case 'amount_asc':
-          return a.detailedClaimTotal - b.detailedClaimTotal;
+          return (a.detailedClaimTotal ?? 0) - (b.detailedClaimTotal ?? 0);
         case 'traffic_desc':
-          return b.trafficViolations - a.trafficViolations;
+          return (b.trafficViolations ?? 0) - (a.trafficViolations ?? 0);
         case 'traffic_asc':
-          return a.trafficViolations - b.trafficViolations;
+          return (a.trafficViolations ?? 0) - (b.trafficViolations ?? 0);
         case 'amount_desc':
         default:
-          return b.detailedClaimTotal - a.detailedClaimTotal;
+          return (b.detailedClaimTotal ?? 0) - (a.detailedClaimTotal ?? 0);
       }
     });
   }, [
@@ -1372,8 +937,7 @@ const FinancialDelinquencyPage: React.FC = () => {
     candidateType,
     convertedContractIds,
     convertedCustomerIds,
-    rentCandidates,
-    trafficCandidates,
+    manualCandidates,
   ]);
 
   useEffect(() => {
@@ -1406,6 +970,7 @@ const FinancialDelinquencyPage: React.FC = () => {
   };
 
   const printSelectedCandidates = () => {
+    if (selectedCandidates.some(candidate=>candidate.financialReview)) { toast.error('توجد مطالبات تحتاج مراجعة؛ لا يمكن طباعة إجمالي غير متحقق.'); return; }
     if (selectedCandidates.length === 0) {
       toast.error('حدد اسمًا واحدًا على الأقل للطباعة');
       return;
@@ -1427,13 +992,16 @@ const FinancialDelinquencyPage: React.FC = () => {
         <td>${candidate.sources
           .map((source) => source === 'rent' ? 'إيجار متأخر' : 'مخالفات مرورية')
           .join(' + ')}</td>
-        <td>${escapeHtml(formatCurrency(candidate.overdueRent))}</td>
-        <td>${escapeHtml(formatCurrency(candidate.lateFees))}</td>
-        <td>${escapeHtml(formatCurrency(candidate.trafficViolations))}</td>
-        <td class="total">${escapeHtml(formatCurrency(candidate.detailedClaimTotal))}</td>
+        <td>${escapeHtml((candidate.overdueRent == null ? "تحتاج مراجعة" : formatCurrency(candidate.overdueRent)))}</td>
+        <td>${escapeHtml((candidate.lateFees == null ? "تحتاج مراجعة" : formatCurrency(candidate.lateFees)))}</td>
+        <td>${escapeHtml((candidate.trafficViolations == null ? "تحتاج مراجعة" : formatCurrency(candidate.trafficViolations)))}</td>
+        <td>${escapeHtml(formatCurrency(candidate.damages ?? 0))}</td>
+        <td>${escapeHtml(formatCurrency(candidate.retention ?? 0))}</td>
+        <td>${escapeHtml(formatCurrency(candidate.depositDeduction ?? 0))}</td>
+        <td class="total">${escapeHtml((candidate.detailedClaimTotal == null ? "تحتاج مراجعة" : formatCurrency(candidate.detailedClaimTotal)))}</td>
       </tr>
     `).join('');
-    const printedTotal = selectedCandidates.reduce((sum, candidate) => sum + candidate.detailedClaimTotal, 0);
+    const printedTotal = selectedCandidates.reduce((sum, candidate) => sum + Math.round((candidate.detailedClaimTotal ?? 0) * 100), 0) / 100;
     const printedAt = new Intl.DateTimeFormat('ar-QA', { dateStyle: 'long', timeStyle: 'short' }).format(new Date());
 
     printWindow.document.open();
@@ -1454,6 +1022,8 @@ const FinancialDelinquencyPage: React.FC = () => {
             th, td { border: 1px solid #cbd5e1; padding: 7px 5px; text-align: center; vertical-align: middle; overflow-wrap: anywhere; }
             th { background: #e2f5f1; color: #134e4a; font-weight: 700; }
             tbody tr:nth-child(even) { background: #f8fafc; }
+            thead { display: table-header-group; }
+            tr { break-inside: avoid; page-break-inside: avoid; }
             .name { font-weight: 700; }
             .total { font-weight: 700; color: #0f766e; }
             footer { display: flex; justify-content: space-between; margin-top: 12px; color: #64748b; }
@@ -1473,16 +1043,19 @@ const FinancialDelinquencyPage: React.FC = () => {
           <table>
             <thead>
               <tr>
-                <th style="width: 4%">#</th>
-                <th style="width: 13%">اسم العميل</th>
-                <th style="width: 10%">رقم العقد</th>
-                <th style="width: 13%">المركبة</th>
-                <th style="width: 10%">الهاتف</th>
-                <th style="width: 10%">نوع المطالبة</th>
-                <th style="width: 10%">الإيجار</th>
-                <th style="width: 10%">غرامات التأخير</th>
-                <th style="width: 10%">المخالفات</th>
-                <th style="width: 10%">الإجمالي</th>
+                <th style="width: 3%">#</th>
+                <th style="width: 12%">اسم العميل</th>
+                <th style="width: 9%">رقم العقد</th>
+                <th style="width: 10%">المركبة</th>
+                <th style="width: 8%">الهاتف</th>
+                <th style="width: 9%">نوع المطالبة</th>
+                <th style="width: 7%">الإيجار</th>
+                <th style="width: 7%">التعويض الاتفاقي</th>
+                <th style="width: 7%">المخالفات</th>
+                <th style="width: 7%">الأضرار</th>
+                <th style="width: 7%">الاحتباس</th>
+                <th style="width: 7%">خصم الوديعة</th>
+                <th style="width: 7%">صافي المطالبة</th>
               </tr>
             </thead>
             <tbody>${rows}</tbody>
@@ -1499,12 +1072,13 @@ const FinancialDelinquencyPage: React.FC = () => {
   };
 
   const queueStats = useMemo(() => {
-    const totalRentalValue = legalQueue.reduce((sum, item) => sum + item.overdueRent, 0);
+    const totalRentalValue = legalQueue.reduce((sum, item) => sum + Math.round((item.overdueRent ?? 0) * 100), 0) / 100;
+    const financialReviews = legalQueue.filter((item) => item.financialReview).length;
     const missingRequirements = legalQueue.filter((item) => item.missingDocuments.length > 0).length;
     const readyForCourt = legalQueue.filter(
-      (item) => (!item.workflowStage || item.workflowStage === 'preparation') && item.missingDocuments.length === 0
+      (item) => (!item.workflowStage || item.workflowStage === 'preparation') && item.missingDocuments.length === 0 && !item.financialReview
     ).length;
-    return { total: legalQueue.length, totalRentalValue, missingRequirements, readyForCourt };
+    return { total: legalQueue.length, totalRentalValue, missingRequirements, readyForCourt, financialReviews };
   }, [legalQueue]);
 
   const delinquencyAIInsights = useMemo(
@@ -1560,8 +1134,7 @@ const FinancialDelinquencyPage: React.FC = () => {
   const refreshAll = () => {
     queryClient.invalidateQueries({ queryKey: ['manual-legal-delinquency-queue'] });
     queryClient.invalidateQueries({ queryKey: ['opened-legal-cases-count'] });
-    queryClient.invalidateQueries({ queryKey: ['legal-delinquency-rent-candidates'] });
-    queryClient.invalidateQueries({ queryKey: ['legal-delinquency-traffic-candidates'] });
+    queryClient.invalidateQueries({ queryKey: ['legal-delinquency-manual-candidates'] });
     queryClient.invalidateQueries({ queryKey: ['contract-details'] });
     queryClient.invalidateQueries({ queryKey: ['contracts'] });
     queryClient.invalidateQueries({ queryKey: ['delinquent-customers'] });
@@ -1575,7 +1148,7 @@ const FinancialDelinquencyPage: React.FC = () => {
     }
 
     const review = employeeReviewByContract.get(candidate.contract.id);
-    if (!review || !['employee_approved', 'manager_overridden'].includes(review.status)) {
+    if (!review || !['employee_approved', 'manager_overridden', 'system_verified'].includes(review.status)) {
       toast.error('يجب اعتماد الموظف المسؤول قبل التحويل القانوني');
       return;
     }
@@ -1652,40 +1225,7 @@ const FinancialDelinquencyPage: React.FC = () => {
   return (
     <div className="legal-system min-h-screen bg-[#F6F8FB] pb-8 text-right font-sans text-[#020617]" dir="rtl">
       <div className="mx-auto max-w-7xl space-y-5 px-4 py-5 md:px-6">
-        <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-            <div className="flex items-start gap-3">
-              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#22C7A1]/10 text-[#22C7A1]">
-                <Scale className="h-6 w-6" />
-              </div>
-              <div>
-                <h1 className="text-2xl font-bold tracking-tight text-[#020617] md:text-3xl">الشؤون القانونية</h1>
-                <p className="mt-1 max-w-3xl text-sm leading-6 text-[#94A3B8]">
-                  هذه الصفحة تعرض العقود التي تم تحويلها يدويًا للشؤون القانونية فقط. المتأخرون أو أصحاب المخالفات لا يظهرون هنا تلقائيًا حتى يتم تحويل العقد من تفاصيل العقد أو من أداة البحث أدناه.
-                </p>
-              </div>
-            </div>
-
-            <div className="flex flex-wrap gap-2">
-              <Button
-                variant="outline"
-                onClick={refreshAll}
-                disabled={queueFetching || openedCasesFetching || rentSearching || trafficSearching}
-                className="gap-2 rounded-xl border-slate-200 bg-white"
-              >
-                <RefreshCw className={cn('h-4 w-4', (queueFetching || openedCasesFetching || rentSearching || trafficSearching) && 'animate-spin')} />
-                تحديث
-              </Button>
-              <Button
-                onClick={() => setActiveTab('search')}
-                className="gap-2 rounded-xl bg-[#22C7A1] text-white hover:bg-[#1BAA8A]"
-              >
-                <FileSearch className="h-4 w-4" />
-                بحث عن مخالف
-              </Button>
-            </div>
-          </div>
-        </section>
+        <LegalPageHeader title="تجهيز الدعاوى" icon={Scale} description="ملفات العقود المحالة يدويًا إلى الشؤون القانونية. راجع المستحقات والمستندات، ثم استكمل تجهيز كل دعوى." actions={<><Button variant="outline" onClick={refreshAll} disabled={queueFetching || openedCasesFetching || candidatesSearching}><RefreshCw className={cn('h-4 w-4 ml-2', (queueFetching || openedCasesFetching || candidatesSearching) && 'animate-spin')} />تحديث</Button><Button onClick={() => setActiveTab('search')}><FileSearch className="h-4 w-4 ml-2" />بحث وإضافة عقد</Button></>} />
 
         <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <Card className="rounded-2xl border-slate-200 shadow-sm">
@@ -1705,8 +1245,9 @@ const FinancialDelinquencyPage: React.FC = () => {
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-semibold text-[#94A3B8]">إجمالي الإيجارات</p>
+                  <p className="text-sm font-semibold text-[#94A3B8]">إجمالي الأجرة المتحقق منها</p>
                   <p className="mt-2 text-2xl font-bold text-[#020617]">{formatCurrency(queueStats.totalRentalValue)}</p>
+                  {queueStats.financialReviews > 0 && <p className="mt-1 text-xs text-amber-800">لا يشمل {queueStats.financialReviews} ملفًا يحتاج مراجعة مالية</p>}
                 </div>
                 <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#22C7A1]/10 text-[#22C7A1]">
                   <FileText className="h-5 w-5" />
@@ -1901,23 +1442,74 @@ const FinancialDelinquencyPage: React.FC = () => {
 
           <TabsContent value="queue" className="space-y-4">
             <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
-              <div className="relative">
-                <Search className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#94A3B8]" />
-                <Input
-                  value={queueSearch}
-                  onChange={(event) => setQueueSearch(event.target.value)}
-                  placeholder="ابحث في الملفات المحولة: اسم العميل، رقم العقد، رقم القضية، اللوحة..."
-                  className="h-12 rounded-xl border-slate-200 bg-[#F6F8FB] pr-10"
-                />
+              <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-[minmax(0,1fr)_230px_235px]">
+                <div className="relative sm:col-span-2 xl:col-span-1">
+                  <Search className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#94A3B8]" />
+                  <Input
+                    value={queueSearch}
+                    onChange={(event) => setQueueSearch(event.target.value)}
+                    aria-label="البحث في الملفات المحولة"
+                    placeholder="ابحث في الملفات المحولة: اسم العميل، رقم العقد، رقم القضية، اللوحة..."
+                    className="h-12 rounded-xl border-slate-200 bg-[#F6F8FB] pr-10"
+                  />
+                </div>
+                <Select
+                  dir="rtl"
+                  value={queueStage}
+                  onValueChange={(value) => setQueueStage(value as LegalWorkflowStage | 'all')}
+                >
+                  <SelectTrigger
+                    aria-label="حالة الدعوى"
+                    className="h-12 w-full rounded-xl border-slate-200 bg-[#F6F8FB] text-slate-700"
+                  >
+                    <SelectValue placeholder="جميع حالات الدعوى" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">جميع حالات الدعوى</SelectItem>
+                    {LEGAL_WORKFLOW_STAGES.filter((stage) => activeWorkflowStages.includes(stage.value)).map((stage) => (
+                      <SelectItem key={stage.value} value={stage.value}>{stage.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Select
+                  value={queueSort}
+                  onValueChange={(value) => setQueueSort(value as LegalQueueAmountSort)}
+                >
+                  <SelectTrigger
+                    aria-label="ترتيب ملفات القضايا حسب المبلغ"
+                    className="h-12 w-full rounded-xl border-slate-200 bg-[#F6F8FB]"
+                  >
+                    <ArrowUpDown className="ml-2 h-4 w-4 text-emerald-600" />
+                    <SelectValue placeholder="ترتيب حسب المبلغ" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="amount_desc">المبلغ: الأعلى إلى الأقل</SelectItem>
+                    <SelectItem value="amount_asc">المبلغ: الأقل إلى الأعلى</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
+                <p role="status" className="text-sm text-slate-500">
+                  عرض {filteredQueue.length} من {legalQueue.length} ملف
+                </p>
+                {hasQueueFilters && (
+                  <Button variant="ghost" size="sm" onClick={resetQueueFilters} className="text-slate-700">
+                    مسح الفلاتر
+                  </Button>
+                )}
               </div>
             </div>
 
             {filteredQueue.length === 0 ? (
               <div className="rounded-lg border border-dashed border-slate-300 bg-white p-10 text-center shadow-sm">
                 <ShieldCheck className="mx-auto h-12 w-12 text-[#22C7A1]" />
-                <h2 className="mt-4 text-xl font-bold text-[#020617]">لا توجد عقود محولة قانونيًا</h2>
+                <h2 className="mt-4 text-xl font-bold text-[#020617]">
+                  {hasQueueFilters ? 'لا توجد ملفات مطابقة للبحث والفلاتر' : 'لا توجد عقود محولة قانونيًا'}
+                </h2>
                 <p className="mt-2 text-sm text-[#94A3B8]">
-                  عند تحويل عقد من صفحة تفاصيل العقد سيظهر هنا فورًا. لا يتم إدراج المتأخرين تلقائيًا.
+                  {hasQueueFilters
+                    ? 'غيّر حالة الدعوى أو عبارة البحث، أو امسح الفلاتر لعرض جميع الملفات.'
+                    : 'عند تحويل عقد من صفحة تفاصيل العقد سيظهر هنا فورًا. لا يتم إدراج المتأخرين تلقائيًا.'}
                 </p>
               </div>
             ) : (
@@ -1927,7 +1519,7 @@ const FinancialDelinquencyPage: React.FC = () => {
                   const tone = readinessToneClassName[readiness.tone];
 
                   return (
-                  <article key={item.contract.id} className={cn('overflow-hidden rounded-xl border bg-white shadow-sm', tone.card)}>
+                  <article key={item.contract.id} className={cn('lw-queue-card overflow-hidden rounded-xl border bg-white shadow-sm', tone.card)}>
                     <div className="grid min-h-1.5 grid-cols-1 bg-slate-100">
                       <div className={cn('h-1.5', tone.rail)} style={{ width: `${readiness.progress}%` }} />
                     </div>
@@ -1974,28 +1566,33 @@ const FinancialDelinquencyPage: React.FC = () => {
                           </div>
                         </div>
 
-                        <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-5">
+                        <div className="lw-queue-money grid gap-2 sm:grid-cols-2 lg:grid-cols-5">
                           <div className="rounded-xl bg-[#F6F8FB] p-3">
                             <p className="text-xs font-semibold text-[#94A3B8]">الإيجار المتأخر</p>
-                            <p className="mt-1 font-bold text-[#020617]">{formatCurrency(item.overdueRent)}</p>
+                            <p className="mt-1 font-bold text-[#020617]">{item.overdueRent == null ? "تحتاج مراجعة" : formatCurrency(item.overdueRent)}</p>
                           </div>
                           <div className="rounded-xl bg-[#F6F8FB] p-3">
-                            <p className="text-xs font-semibold text-[#94A3B8]">غرامات التأخير</p>
-                            <p className="mt-1 font-bold text-[#020617]">{formatCurrency(item.lateFees)}</p>
+                            <p className="text-xs font-semibold text-[#94A3B8]">التعويض الاتفاقي</p>
+                            <p className="mt-1 font-bold text-[#020617]">{item.lateFees == null ? "تحتاج مراجعة" : formatCurrency(item.lateFees)}</p>
                           </div>
                           <div className="rounded-xl bg-[#F6F8FB] p-3">
                             <p className="text-xs font-semibold text-[#94A3B8]">المخالفات المرورية</p>
-                            <p className="mt-1 font-bold text-[#020617]">{formatCurrency(item.trafficViolations)}</p>
+                            <p className="mt-1 font-bold text-[#020617]">{item.trafficViolations == null ? "تحتاج مراجعة" : formatCurrency(item.trafficViolations)}</p>
                           </div>
                           <div className="rounded-xl bg-[#ECFDF5] p-3">
-                            <p className="text-xs font-semibold text-[#0F766E]">الإجمالي المفصل</p>
-                            <p className="mt-1 font-bold text-[#020617]">{formatCurrency(item.detailedClaimTotal)}</p>
+                            <p className="text-xs font-semibold text-[#0F766E]">صافي المطالبة الحالي</p>
+                            <p className="mt-1 font-bold text-[#020617]">{item.detailedClaimTotal == null ? "تحتاج مراجعة" : formatCurrency(item.detailedClaimTotal)}</p>
                           </div>
                           <div className="rounded-xl bg-[#F6F8FB] p-3">
                             <p className="text-xs font-semibold text-[#94A3B8]">الهاتف</p>
                             <p className="mt-1 font-bold text-[#020617]" dir="ltr">{item.phone || '-'}</p>
                           </div>
                         </div>
+
+                        {item.financialReview && <div role="alert" className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-950">{item.financialReview}</div>}
+                        {!item.financialReview && <p className="text-sm text-slate-600">
+                          أضرار: {formatCurrency(item.damages ?? 0)} · تعويض الاحتباس: {formatCurrency(item.retention ?? 0)} · خصم الوديعة: {formatCurrency(item.depositDeduction ?? 0)}
+                        </p>}
 
                         {item.missingDocuments.length > 0 ? (
                           <div
@@ -2014,16 +1611,16 @@ const FinancialDelinquencyPage: React.FC = () => {
                           <div className="flex items-start gap-3 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2.5 text-emerald-950">
                             <ClipboardCheck className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" />
                             <div className="min-w-0">
-                              <p className="text-sm font-bold">المتطلبات الأساسية مكتملة</p>
+                              <p className="text-sm font-bold">المستندات الأساسية متوفرة</p>
                               <p className="mt-1 text-sm leading-6 text-emerald-800">
-                                الملف جاهز للمراجعة النهائية قبل فتح الدعوى رسميًا.
+                                {item.financialReview ? 'المطالبة المالية تحتاج مراجعة قبل اعتماد مبلغ جديد.' : 'يمكن مراجعة المستندات والمطالبة من صفحة تجهيز الدعوى.'}
                               </p>
                             </div>
                           </div>
                         )}
                       </div>
 
-                      <div className="flex flex-col gap-2 sm:flex-row lg:flex-col lg:min-w-[176px]">
+                      <div className="lw-queue-actions flex flex-col gap-2 sm:flex-row lg:flex-col lg:min-w-[176px]">
                         <div className="hidden rounded-xl border border-slate-200 bg-white p-3 text-center text-xs font-bold text-[#64748B] lg:block">
                           <ListChecks className="mx-auto mb-1 h-5 w-5 text-[#22C7A1]" />
                           {readiness.nextAction}
@@ -2037,6 +1634,15 @@ const FinancialDelinquencyPage: React.FC = () => {
                         </Button>
                         {item.legalCaseId && (
                           <>
+                            <Button
+                              type="button"
+                              variant="outline"
+                              onClick={() => setStageChangeItem(item)}
+                              className="gap-2 rounded-xl border-[#0F766E]/25 bg-white text-[#0F766E] hover:bg-emerald-50 hover:text-[#115E59]"
+                            >
+                              <RefreshCw className="h-4 w-4" />
+                              تغيير مرحلة الدعوى
+                            </Button>
                             <AgentReviewButton
                               agentType="legal_case"
                               body={{ legalCaseId: item.legalCaseId }}
@@ -2079,7 +1685,7 @@ const FinancialDelinquencyPage: React.FC = () => {
                   <Search className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#94A3B8]" />
                   <Input
                     value={candidateSearch}
-                    onChange={(event) => setCandidateSearch(event.target.value)}
+                    onChange={(event) => { setCandidateSearch(event.target.value); setCandidatePage(0); }}
                     placeholder="ابحث باسم العميل، رقم الهاتف، رقم العقد، أو لوحة المركبة..."
                     className="h-12 rounded-xl border-slate-200 bg-[#F6F8FB] pr-10"
                   />
@@ -2126,7 +1732,7 @@ const FinancialDelinquencyPage: React.FC = () => {
               </p>
             </section>
 
-            {!rentSearching && !trafficSearching && candidates.length > 0 && (
+            {!candidatesSearching && candidates.length > 0 && (
               <section className="flex flex-col gap-3 rounded-lg border border-slate-200 bg-white p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between">
                 <label className="flex cursor-pointer items-center gap-3 text-sm font-bold text-[#020617]">
                   <Checkbox
@@ -2155,7 +1761,12 @@ const FinancialDelinquencyPage: React.FC = () => {
               </section>
             )}
 
-            {rentSearching || trafficSearching ? (
+            <div className="flex items-center justify-between gap-3 p-3" dir="rtl">
+              <Button variant="outline" disabled={candidatesSearching || candidatePage===0} onClick={()=>setCandidatePage(candidatePage-1)}>السابق</Button>
+              <span className="text-sm">صفحة {candidatePage+1} من العقود المطابقة</span>
+              <Button variant="outline" disabled={candidatesSearching || !manualCandidatesQuery.data?.hasMore} onClick={()=>setCandidatePage(candidatePage+1)}>التالي</Button>
+            </div>
+            {manualCandidatesQuery.isError ? <div role="alert" className="p-4 text-red-700">تعذر تحميل المطالبات. <Button variant="outline" onClick={()=>void manualCandidatesQuery.refetch()}>إعادة المحاولة</Button></div> : candidatesSearching ? (
               <div className="flex items-center justify-center rounded-lg border border-slate-200 bg-white p-10 shadow-sm">
                 <Loader2 className="h-6 w-6 animate-spin text-[#22C7A1]" />
                 <span className="mr-3 text-sm font-semibold text-[#94A3B8]">جاري البحث في المرشحين...</span>
@@ -2182,7 +1793,7 @@ const FinancialDelinquencyPage: React.FC = () => {
                     : undefined;
                   const reviewApproved = Boolean(
                     employeeReview
-                    && ['employee_approved', 'manager_overridden'].includes(employeeReview.status),
+                    && ['employee_approved', 'manager_overridden', 'system_verified'].includes(employeeReview.status),
                   );
                   const reviewMeta = employeeReview
                     ? employeeReviewStatusMeta[employeeReview.status]
@@ -2221,7 +1832,7 @@ const FinancialDelinquencyPage: React.FC = () => {
                             </Badge>
                             {!candidate.canConvert && (
                               <Badge className="bg-amber-100 text-amber-700 hover:bg-amber-100">
-                                يحتاج ربط بعقد
+                                تحتاج مراجعة مالية
                               </Badge>
                             )}
                             {reviewMeta && (
@@ -2252,22 +1863,24 @@ const FinancialDelinquencyPage: React.FC = () => {
                           </p>
                         </div>
 
+                        {candidate.financialReview && <p role="alert" className="rounded-lg bg-amber-50 p-3 text-sm text-amber-900">{candidate.financialReview}</p>}
+                        {!candidate.financialReview && <p className="text-sm text-slate-600">أضرار: {formatCurrency(candidate.damages ?? 0)} · احتباس: {formatCurrency(candidate.retention ?? 0)} · خصم الوديعة: {formatCurrency(candidate.depositDeduction ?? 0)}</p>}
                         <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-5">
                           <div className="rounded-xl bg-[#F6F8FB] p-3">
                             <p className="text-xs font-semibold text-[#94A3B8]">الإيجار المتأخر</p>
-                            <p className="mt-1 font-bold text-[#020617]">{formatCurrency(candidate.overdueRent)}</p>
+                            <p className="mt-1 font-bold text-[#020617]">{(candidate.overdueRent == null ? "تحتاج مراجعة" : formatCurrency(candidate.overdueRent))}</p>
                           </div>
                           <div className="rounded-xl bg-[#F6F8FB] p-3">
-                            <p className="text-xs font-semibold text-[#94A3B8]">غرامات التأخير</p>
-                            <p className="mt-1 font-bold text-[#020617]">{formatCurrency(candidate.lateFees)}</p>
+                            <p className="text-xs font-semibold text-[#94A3B8]">التعويض الاتفاقي</p>
+                            <p className="mt-1 font-bold text-[#020617]">{(candidate.lateFees == null ? "تحتاج مراجعة" : formatCurrency(candidate.lateFees))}</p>
                           </div>
                           <div className="rounded-xl bg-[#F6F8FB] p-3">
                             <p className="text-xs font-semibold text-[#94A3B8]">المخالفات المرورية</p>
-                            <p className="mt-1 font-bold text-[#020617]">{formatCurrency(candidate.trafficViolations)}</p>
+                            <p className="mt-1 font-bold text-[#020617]">{(candidate.trafficViolations == null ? "تحتاج مراجعة" : formatCurrency(candidate.trafficViolations))}</p>
                           </div>
                           <div className="rounded-xl bg-[#ECFDF5] p-3">
-                            <p className="text-xs font-semibold text-[#0F766E]">الإجمالي المفصل</p>
-                            <p className="mt-1 font-bold text-[#020617]">{formatCurrency(candidate.detailedClaimTotal)}</p>
+                            <p className="text-xs font-semibold text-[#0F766E]">صافي المطالبة</p>
+                            <p className="mt-1 font-bold text-[#020617]">{(candidate.detailedClaimTotal == null ? "تحتاج مراجعة" : formatCurrency(candidate.detailedClaimTotal))}</p>
                           </div>
                           <div className="rounded-xl bg-[#F6F8FB] p-3">
                             <p className="text-xs font-semibold text-[#94A3B8]">الهاتف</p>
@@ -2519,6 +2132,20 @@ const FinancialDelinquencyPage: React.FC = () => {
           setActiveTab('queue');
         }}
       />
+
+      {stageChangeItem && companyId && (
+        <LegalCaseStageChangeDialog
+          open
+          onOpenChange={(open) => !open && setStageChangeItem(null)}
+          companyId={companyId}
+          caseId={stageChangeItem.legalCaseId}
+          caseNumber={stageChangeItem.legalCaseNumber}
+          currentStage={stageChangeItem.workflowStage}
+          canOverrideUnsettled={isAdminOrManager()}
+          canCorrectUnfiled={isAdminOrManager()}
+          onChanged={refreshAll}
+        />
+      )}
 
       <AlertDialog open={!!removingItem} onOpenChange={(open) => !open && !isRemovingLegal && setRemovingItem(null)}>
         <AlertDialogContent className="rounded-2xl text-right" dir="rtl">

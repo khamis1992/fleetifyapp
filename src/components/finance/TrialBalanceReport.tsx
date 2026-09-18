@@ -191,7 +191,7 @@ export function TrialBalanceReport() {
               <Scale className="h-6 w-6" />
             </span>
             <div>
-              <p className="text-xs font-black uppercase tracking-[0.18em] text-[#94A3B8]">Trial Balance</p>
+              <p className="text-xs font-black uppercase tracking-[0.18em] text-[#94A3B8]">ميزان المراجعة</p>
               <h3 className="mt-1 text-xl font-black text-[#020617]">ميزان المراجعة</h3>
               <p className="mt-1 text-sm leading-7 text-[#94A3B8]">
                 عرض أرصدة الحسابات المدينة والدائنة كما في تاريخ محدد مع حالة التوازن والفارق.
@@ -221,7 +221,7 @@ export function TrialBalanceReport() {
             </Button>
             <Button onClick={handleExportExcel} variant="outline" size="sm" disabled={isLoading || !rows.length} className="gap-2 border-[#E5EAF1] bg-white">
               <FileSpreadsheet className="h-4 w-4" />
-              Excel
+              إكسل
             </Button>
             <Button onClick={handleExportCSV} variant="outline" size="sm" disabled={isLoading || !rows.length} className="gap-2 border-[#E5EAF1] bg-white">
               <FileText className="h-4 w-4" />

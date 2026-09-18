@@ -24,7 +24,7 @@ const CashReceiptDemo = () => {
 
   return (
     <div className="container mx-auto py-8">
-      <div className="flex justify-between items-center mb-6">
+      <div data-finance-heading="" className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold">نموذج سند القبض</h1>
         <Button onClick={handlePrint} className="flex items-center gap-2">
           <Printer className="h-4 w-4" />

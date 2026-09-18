@@ -22,7 +22,7 @@ const UnifiedReports = () => {
   return (
         <div className="container mx-auto p-4 md:p-6 space-y-4 md:space-y-6">
           {/* Header */}
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <div data-finance-heading="" className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div className="flex items-center gap-3 md:gap-4">
               <div className="p-2.5 md:p-3 bg-gradient-to-br from-green-500 to-green-600 rounded-xl text-white">
                 <FileText className="h-5 w-5 md:h-6 md:w-6" />

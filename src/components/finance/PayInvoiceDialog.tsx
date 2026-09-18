@@ -1,4 +1,4 @@
-import React, { type CSSProperties, useEffect, useMemo, useState } from "react";
+import React, { type CSSProperties, useEffect, useMemo, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -23,7 +23,7 @@ import {
   X,
 } from "lucide-react";
 
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -33,10 +33,13 @@ import { useCreatePayment } from "@/hooks/usePayments.unified";
 import { useCurrencyFormatter } from "@/hooks/useCurrencyFormatter";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { useToast } from "@/hooks/use-toast-mock";
+import { useUnifiedCompanyAccess } from "@/hooks/useUnifiedCompanyAccess";
+import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { systemColorPattern } from "@/lib/design-system/systemColorPattern";
 import { useTourGuide } from "@/components/tour-guide";
+import { PaymentRecordedReadError } from '@/services/paymentCommitResult';
+import { contractBusinessDate } from '@/utils/contractScheduleSettlement';
 
 const paymentSchema = z.object({
   amount: z.number().min(0.001, "المبلغ يجب أن يكون أكبر من صفر"),
@@ -66,7 +69,7 @@ interface PayInvoiceDialogProps {
     due_date?: string;
     payment_status: string;
   };
-  onPaymentCreated?: () => void;
+  onPaymentCreated?: () => void | Promise<void>;
 }
 
 const paymentMethods = [
@@ -115,33 +118,42 @@ export function PayInvoiceDialog({ open, onOpenChange, invoice, onPaymentCreated
   const createPayment = useCreatePayment();
   const { formatCurrency } = useCurrencyFormatter();
   const { user } = useAuth();
+  const { companyId, isInitializing } = useUnifiedCompanyAccess();
   const { toast } = useToast();
   const { startTour } = useTourGuide();
   const queryClient = useQueryClient();
   const [deletingFeeId, setDeletingFeeId] = useState<string | null>(null);
-  const [lateFeeWaived, setLateFeeWaived] = useState(false);
-
+  const paymentDisplayContext = useRef({});
   useEffect(() => {
-    if (open) {
-      setLateFeeWaived(false);
-    }
-  }, [open]);
+    // An old command may complete after a different invoice/session is opened.
+    paymentDisplayContext.current = {};
+  }, [companyId, invoice.id, open]);
 
-  const { data: lateFees = [] } = useQuery({
-    queryKey: ["invoice-late-fees", invoice.id],
+  const invoiceCompanyMismatch = Boolean(invoice.company_id && invoice.company_id !== companyId);
+  const {
+    data: lateFees = [],
+    isSuccess: areLateFeesLoaded,
+    isFetching: areLateFeesFetching,
+    isError: hasLateFeeReadError,
+    refetch: refetchLateFees,
+  } = useQuery({
+    queryKey: ["invoice-late-fees", invoice.id, companyId],
     queryFn: async () => {
-      if (!invoice.id) return [];
+      if (!invoice.id || !companyId || invoiceCompanyMismatch) {
+        throw new Error('تعذر التحقق من الشركة المرتبطة بالفاتورة');
+      }
 
       const { data, error } = await supabase
         .from("late_fees")
         .select("*")
+        .eq("company_id", companyId)
         .eq("invoice_id", invoice.id)
-        .in("status", ["pending", "applied"])
+        .in("status", ["pending", "applied", "waived"])
         .order("created_at", { ascending: false });
 
       if (error) {
         console.error("Error fetching late fees:", error);
-        return [];
+        throw error;
       }
 
       const feeRows = data || [];
@@ -152,12 +164,14 @@ export function PayInvoiceDialog({ open, onOpenChange, invoice, onPaymentCreated
       const { data: allocations, error: allocationsError } = await supabase
         .from("payment_allocations")
         .select("target_id, amount")
+        .eq("company_id", companyId)
         .eq("allocation_type", "late_fee")
         .eq("is_active", true)
         .in("target_id", feeRows.map((fee) => fee.id));
 
       if (allocationsError) {
         console.error("Error fetching late fee allocations:", allocationsError);
+        throw allocationsError;
       }
 
       const paidByFee = new Map<string, number>();
@@ -173,92 +187,183 @@ export function PayInvoiceDialog({ open, onOpenChange, invoice, onPaymentCreated
         paid_amount: paidByFee.get(fee.id) || 0,
       }));
     },
-    enabled: !!invoice.id && open,
+    enabled: !!invoice.id && open && !!companyId && !isInitializing && !invoiceCompanyMismatch,
+    retry: false,
   });
+
+  const areLateFeesReady = Boolean(companyId) && !isInitializing && !invoiceCompanyMismatch
+    && areLateFeesLoaded && !areLateFeesFetching;
+  const lateFeeReadBlocked = hasLateFeeReadError || invoiceCompanyMismatch
+    || (!isInitializing && !companyId);
+  const lateFeeReadMessage = lateFeeReadBlocked
+    ? 'تعذر التحقق من غرامات الفاتورة والدفعات المخصصة لها. أُوقف الدفع والإعفاء حتى تكتمل القراءة.'
+    : 'جاري التحقق من غرامات الفاتورة والدفعات المخصصة لها…';
 
   const daysOverdue = useMemo(() => {
     if (!invoice.due_date) return 0;
     return Math.max(0, differenceInDays(new Date(), new Date(invoice.due_date)));
   }, [invoice.due_date]);
 
+  const activeLateFees = useMemo(
+    () => lateFees.filter((fee) => fee.status === "pending" || fee.status === "applied"),
+    [lateFees]
+  );
+  const persistedLateFeeWaived = useMemo(
+    () => activeLateFees.length === 0 && lateFees.some((fee) => fee.status === "waived"),
+    [activeLateFees.length, lateFees]
+  );
+  const isLateFeeWaived = persistedLateFeeWaived;
+
   const calculatedLateFee = useMemo(() => {
-    if (daysOverdue <= 0 || lateFeeWaived) return 0;
+    if (daysOverdue <= 0 || isLateFeeWaived) return 0;
     return Math.min(daysOverdue * 120, 3000);
-  }, [daysOverdue, lateFeeWaived]);
+  }, [daysOverdue, isLateFeeWaived]);
 
   const allLateFees = useMemo(() => {
-    if (daysOverdue <= 0 || calculatedLateFee <= 0 || lateFeeWaived) return [];
+    if (daysOverdue <= 0 || isLateFeeWaived) return [];
 
-    const existingFee = lateFees.length > 0 ? lateFees[0] : null;
-    const remainingExistingFee = existingFee
-      ? Math.max(0, Number(existingFee.fee_amount || 0) - Number(existingFee.paid_amount || 0))
-      : calculatedLateFee;
+    if (activeLateFees.length > 0) {
+      // Persisted assessments are authoritative: show each active fee's
+      // remaining amount instead of re-deriving (and understating) it from a
+      // hardcoded daily rate. The rule used at assessment time may differ.
+      return activeLateFees.map((fee) => ({
+        id: fee.id,
+        days_overdue: Number(fee.days_overdue || daysOverdue),
+        fee_amount: roundMoney(Math.max(0, Number(fee.fee_amount || 0) - Number(fee.paid_amount || 0))),
+        status: fee.status,
+        calculated: false,
+        late_fee_rule_id: fee.late_fee_rule_id,
+      }));
+    }
+
+    // No persisted assessment yet: estimate with the default daily rule so the
+    // cashier can charge/waive it up front.
     return [
       {
-        id: existingFee?.id || `calculated-${invoice.id}`,
+        id: `calculated-${invoice.id}`,
         days_overdue: daysOverdue,
-        fee_amount: roundMoney(Math.min(calculatedLateFee, remainingExistingFee)),
-        status: existingFee?.status || "pending",
-        calculated: !existingFee,
-        late_fee_rule_id: existingFee?.late_fee_rule_id,
+        fee_amount: calculatedLateFee,
+        status: "pending",
+        calculated: true,
+        late_fee_rule_id: undefined,
       },
     ];
-  }, [daysOverdue, calculatedLateFee, lateFees, invoice.id, lateFeeWaived]);
+  }, [daysOverdue, calculatedLateFee, activeLateFees, invoice.id, isLateFeeWaived]);
 
   const totalLateFees = roundMoney(allLateFees.reduce((sum, fee) => sum + (fee.fee_amount || 0), 0));
-  const totalAmountDue = roundMoney(invoice.balance_due + totalLateFees);
+  // Vendor invoices cannot charge fees through the payment command; the
+  // amount-due and overpay guard reflect only the invoice principal there.
+  const chargeableLateFees = invoice.customer_id ? totalLateFees : 0;
+  const totalAmountDue = roundMoney(invoice.balance_due + chargeableLateFees);
 
   const form = useForm<PaymentFormData>({
     resolver: zodResolver(paymentSchema),
     defaultValues: {
-      amount: totalAmountDue,
+      amount: 0,
       payment_method: "cash",
-      payment_date: new Date().toISOString().split("T")[0],
+      payment_date: contractBusinessDate(),
       reference_number: "",
       notes: "",
     },
   });
 
+  const amountContext = useRef<{ key: string; total: number } | null>(null);
   useEffect(() => {
-    if (open && invoice) {
+    if (!open) {
+      amountContext.current = null;
+      return;
+    }
+    if (!areLateFeesReady) return;
+    const key = `${companyId}:${invoice.id}`;
+    const previous = amountContext.current;
+    if (!previous || previous.key !== key
+      || Math.abs(form.getValues('amount') - previous.total) < moneyTolerance) {
       form.setValue("amount", totalAmountDue);
     }
-  }, [open, invoice, totalAmountDue, form]);
+    // Retrying a read must not replace the employee's partial-payment entry.
+    amountContext.current = { key, total: totalAmountDue };
+  }, [open, invoice.id, companyId, totalAmountDue, form, areLateFeesReady]);
 
   const watchedAmount = Number(form.watch("amount") || 0);
   const remainingBalance = getRemainingAmount(totalAmountDue, watchedAmount);
-  const isAmountOverpay = watchedAmount > totalAmountDue + moneyTolerance;
-  const isAmountPartial = watchedAmount > 0 && remainingBalance > 0 && !isAmountOverpay;
-  const isAmountFull = watchedAmount > 0 && remainingBalance === 0 && !isAmountOverpay;
-  const paidRatio = totalAmountDue > 0 ? Math.min(100, Math.max(0, (Math.min(watchedAmount, totalAmountDue) / totalAmountDue) * 100)) : 0;
+  const isAmountOverpay = areLateFeesReady && watchedAmount > totalAmountDue + moneyTolerance;
+  const isAmountPartial = areLateFeesReady && watchedAmount > 0 && remainingBalance > 0 && !isAmountOverpay;
+  const isAmountFull = areLateFeesReady && watchedAmount > 0 && remainingBalance === 0 && !isAmountOverpay;
+  const paidRatio = areLateFeesReady && totalAmountDue > 0 ? Math.min(100, Math.max(0, (Math.min(watchedAmount, totalAmountDue) / totalAmountDue) * 100)) : 0;
 
   const handleDeleteLateFee = async (feeId: string) => {
-    if (feeId.startsWith("calculated-")) {
-      setLateFeeWaived(true);
-      toast({
-        title: "تم إعفاء الغرامة",
-        description: "تم إعفاء العميل من غرامة التأخير لهذه الدفعة",
-      });
-      return;
-    }
-
+    if (!areLateFeesReady || !companyId || deletingFeeId !== null || createPayment.isPending) return;
     setDeletingFeeId(feeId);
+    let waiverConfirmed = false;
 
     try {
-      const { error } = await supabase
-        .from("late_fees")
-        .update({
+      const waivedAt = new Date().toISOString();
+      let acknowledgement: { id: string; company_id: string; invoice_id: string; status: string } | null;
+
+      if (feeId.startsWith("calculated-")) {
+        let contractId = invoice.contract_id;
+
+        if (!invoice.company_id) {
+          const { data: invoiceOwner, error: invoiceOwnerError } = await supabase
+            .from("invoices")
+            .select("company_id, contract_id")
+            .eq("company_id", companyId)
+            .eq("id", invoice.id)
+            .single();
+
+          if (invoiceOwnerError) throw invoiceOwnerError;
+          if (!invoiceOwner || invoiceOwner.company_id !== companyId) {
+            throw new Error("تعذر التحقق من الشركة المرتبطة بالفاتورة");
+          }
+          contractId = contractId || invoiceOwner.contract_id || undefined;
+        }
+
+        const result = await supabase.from("late_fees").insert({
+          company_id: companyId,
+          invoice_id: invoice.id,
+          contract_id: contractId || null,
+          original_amount: invoice.total_amount,
+          days_overdue: daysOverdue,
+          fee_amount: calculatedLateFee,
+          fee_type: "daily",
           status: "waived",
           waive_reason: "تم الإعفاء من الغرامة يدوياً",
-          waived_at: new Date().toISOString(),
+          waived_at: waivedAt,
           waived_by: user?.id,
-        })
-        .eq("id", feeId);
+        }).select("id, company_id, invoice_id, status").single();
+        if (result.error) throw result.error;
+        acknowledgement = result.data;
+      } else {
+        const result = await supabase
+          .from("late_fees")
+          .update({
+            status: "waived",
+            waive_reason: "تم الإعفاء من الغرامة يدوياً",
+            waived_at: waivedAt,
+            waived_by: user?.id,
+          })
+          .eq("company_id", companyId)
+          .eq("invoice_id", invoice.id)
+          .eq("id", feeId)
+          .in("status", ["pending", "applied"])
+          .select("id, company_id, invoice_id, status")
+          .single();
+        if (result.error) throw result.error;
+        acknowledgement = result.data;
+      }
 
-      if (error) throw error;
+      if (!acknowledgement?.id || acknowledgement.company_id !== companyId
+        || acknowledgement.invoice_id !== invoice.id || acknowledgement.status !== 'waived'
+        || (!feeId.startsWith('calculated-') && acknowledgement.id !== feeId)) {
+        throw new Error('تعذر تأكيد إعفاء الغرامة. أعد تحميل البيانات للتحقق قبل تكرار الطلب.');
+      }
+      waiverConfirmed = true;
 
-      queryClient.invalidateQueries({ queryKey: ["invoice-late-fees", invoice.id] });
-      setLateFeeWaived(true);
+      // Read the persisted result; a local flag must not waive other fees or invoices.
+      await queryClient.invalidateQueries(
+        { queryKey: ["invoice-late-fees", invoice.id, companyId] },
+        { throwOnError: true },
+      );
 
       toast({
         title: "تم إعفاء الغرامة",
@@ -267,8 +372,10 @@ export function PayInvoiceDialog({ open, onOpenChange, invoice, onPaymentCreated
     } catch (error: any) {
       console.error("Error deleting late fee:", error);
       toast({
-        title: "خطأ في حذف الغرامة",
-        description: error.message || "حدث خطأ أثناء حذف الغرامة",
+        title: waiverConfirmed ? "تم إعفاء الغرامة، وتعذر تحديث العرض" : "تعذر تأكيد إعفاء الغرامة",
+        description: waiverConfirmed
+          ? "أعد تحميل الغرامات للتحقق من الرصيد. لا تكرر طلب الإعفاء."
+          : error.message || "أعد تحميل البيانات للتحقق قبل تكرار طلب الإعفاء.",
         variant: "destructive",
       });
     } finally {
@@ -277,10 +384,34 @@ export function PayInvoiceDialog({ open, onOpenChange, invoice, onPaymentCreated
   };
 
   const onSubmit = async (data: PaymentFormData) => {
+    if (!areLateFeesReady || deletingFeeId !== null) {
+      toast({ title: 'بيانات الغرامات غير جاهزة', description: lateFeeReadMessage, variant: 'destructive' });
+      return;
+    }
+    const submittedContext = paymentDisplayContext.current;
+    const refreshRecordedPayment = async () => {
+      if (submittedContext === paymentDisplayContext.current) {
+        form.reset();
+        onOpenChange(false);
+      }
+      await onPaymentCreated?.();
+    };
     try {
-      const lateFineAmount = roundMoney(
-        Math.min(totalLateFees, Math.max(0, data.amount - invoice.balance_due))
-      );
+      // Vendor payments route through a command that cannot allocate late
+      // fees; charging a fee-inclusive amount there would overpay the invoice
+      // principal and fail atomically. Keep the fee visible but out of the
+      // charged amount for vendor invoices.
+      const isVendorPayment = !invoice.customer_id;
+      const lateFineAmount = isVendorPayment
+        ? 0
+        : roundMoney(Math.min(totalLateFees, Math.max(0, data.amount - invoice.balance_due)));
+      if (isVendorPayment && totalLateFees > 0) {
+        toast({
+          title: 'غرامة التأخير غير مشمولة',
+          description: 'دفعات فواتير الموردين لا تدعم تحصيل الغرامات آلياً؛ سُجّل مبلغ الفاتورة فقط. راجع الغرامة مع الإدارة.',
+          variant: 'destructive',
+        });
+      }
       const persistedLateFee = allLateFees.find((fee) => !fee.calculated);
 
       await createPayment.mutateAsync({
@@ -300,14 +431,36 @@ export function PayInvoiceDialog({ open, onOpenChange, invoice, onPaymentCreated
         late_fine_type: lateFineAmount > 0 ? "included_with_payment" : "none",
       });
 
-      onPaymentCreated?.();
-      onOpenChange(false);
-      form.reset();
     } catch (error: any) {
+      if (error instanceof PaymentRecordedReadError) {
+        toast({ title: 'تم تسجيل الدفعة، وتعذر تحديث العرض', description: error.message, variant: 'destructive' });
+        // There is a committed payment ID. Close the entry form and refresh
+        // readers, never invoke the payment command a second time.
+        try {
+          await refreshRecordedPayment();
+        } catch (refreshError) {
+          console.error('Confirmed payment display refresh failed:', refreshError);
+        }
+        return;
+      }
       console.error("Error creating payment:", error);
       toast({
         title: "خطأ في تسجيل الدفع",
         description: error.message || "حدث خطأ أثناء تسجيل الدفع",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // The payment command has succeeded. A subsequent UI/cache failure must
+    // not be reported as a failed payment or encourage another payment entry.
+    try {
+      await refreshRecordedPayment();
+    } catch (refreshError) {
+      console.error("Payment recorded but display refresh failed:", refreshError);
+      toast({
+        title: "تم تسجيل الدفعة، وتعذر تحديث العرض",
+        description: "لا تسجّل الدفعة مرة أخرى. أعد تحميل بيانات العقد للتحقق من الرصيد المحدّث.",
         variant: "destructive",
       });
     }
@@ -323,7 +476,7 @@ export function PayInvoiceDialog({ open, onOpenChange, invoice, onPaymentCreated
             </span>
             <div className="min-w-0">
               <DialogTitle className="text-lg font-black tracking-normal text-[#020617]">تسجيل دفعة</DialogTitle>
-              <p className="mt-1 truncate text-sm font-bold text-[#94A3B8]">{invoice.invoice_number}</p>
+              <DialogDescription className="mt-1 truncate text-sm font-bold text-[#94A3B8]">{invoice.invoice_number}</DialogDescription>
             </div>
           </div>
           <Badge className="payment-card-badge">
@@ -344,10 +497,21 @@ export function PayInvoiceDialog({ open, onOpenChange, invoice, onPaymentCreated
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="payment-card-form">
             <div className="payment-card-scroll">
+              {!areLateFeesReady && (
+                <section role={lateFeeReadBlocked ? 'alert' : 'status'} className="payment-card-alert">
+                  <p>{lateFeeReadMessage}</p>
+                  {lateFeeReadBlocked && companyId && !invoiceCompanyMismatch && (
+                    <Button type="button" variant="outline" disabled={areLateFeesFetching}
+                      onClick={() => { void refetchLateFees(); }}>
+                      إعادة تحميل الغرامات
+                    </Button>
+                  )}
+                </section>
+              )}
               <section className="payment-card-summary" data-tour="contract-pay-invoice-summary">
                 <div className="payment-card-total">
                   <span>المبلغ المستحق</span>
-                  <strong>{formatCurrency(totalAmountDue)}</strong>
+                  <strong>{areLateFeesReady ? formatCurrency(totalAmountDue) : 'غير متحقق'}</strong>
                 </div>
                 <div className="payment-card-summary-grid">
                   <div>
@@ -356,11 +520,11 @@ export function PayInvoiceDialog({ open, onOpenChange, invoice, onPaymentCreated
                   </div>
                   <div>
                     <span>غرامات التأخير</span>
-                    <strong>{formatCurrency(totalLateFees)}</strong>
+                    <strong>{areLateFeesReady ? formatCurrency(totalLateFees) : 'غير متحقق'}</strong>
                   </div>
                   <div>
                     <span>المتبقي بعد الدفع</span>
-                    <strong>{formatCurrency(remainingBalance)}</strong>
+                    <strong>{areLateFeesReady ? formatCurrency(remainingBalance) : 'غير متحقق'}</strong>
                   </div>
                 </div>
                 <div className="payment-card-progress">
@@ -368,7 +532,7 @@ export function PayInvoiceDialog({ open, onOpenChange, invoice, onPaymentCreated
                 </div>
               </section>
 
-              {daysOverdue > 0 && !lateFeeWaived && (
+              {areLateFeesReady && daysOverdue > 0 && !isLateFeeWaived && (
                 <section className="payment-card-alert" data-tour="contract-pay-invoice-late-fee">
                   <div className="flex items-center gap-2">
                     <Clock className="h-4 w-4" />
@@ -378,14 +542,14 @@ export function PayInvoiceDialog({ open, onOpenChange, invoice, onPaymentCreated
                     <div key={fee.id} className="payment-card-late-fee">
                       <div>
                         <strong>{formatCurrency(fee.fee_amount)}</strong>
-                        <span>{fee.calculated ? `120 ر.ق × ${daysOverdue} يوم` : "مسجلة"}</span>
+                        <span>{fee.calculated ? `120 ر.ق × ${daysOverdue} يوم (تقديرية)` : "مسجلة"}</span>
                       </div>
                       <Button
                         type="button"
                         variant="ghost"
                         size="sm"
                         onClick={() => handleDeleteLateFee(fee.id)}
-                        disabled={deletingFeeId === fee.id}
+                        disabled={deletingFeeId !== null || createPayment.isPending}
                         className="gap-1 text-[#FB6B7A] hover:bg-[#FB6B7A]/10 hover:text-[#FB6B7A]"
                       >
                         {deletingFeeId === fee.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
@@ -396,7 +560,7 @@ export function PayInvoiceDialog({ open, onOpenChange, invoice, onPaymentCreated
                 </section>
               )}
 
-              {lateFeeWaived && daysOverdue > 0 && (
+              {areLateFeesReady && isLateFeeWaived && daysOverdue > 0 && (
                 <section className="payment-card-waived">
                   <Check className="h-4 w-4" />
                   تم إعفاء العميل من غرامة التأخير
@@ -416,8 +580,15 @@ export function PayInvoiceDialog({ open, onOpenChange, invoice, onPaymentCreated
                             type="number"
                             step="0.01"
                             placeholder="0.00"
+                            disabled={!areLateFeesReady || deletingFeeId !== null}
                             {...field}
-                            onChange={(e) => field.onChange(Number(e.target.value) || 0)}
+                            value={field.value ?? ''}
+                            onChange={(e) => {
+                              // Keep in-progress decimals ("12.") intact instead of
+                              // coercing to a number on every keystroke.
+                              const raw = e.target.value;
+                              field.onChange(raw === '' ? 0 : Number(raw));
+                            }}
                             dir="ltr"
                           />
                         </FormControl>
@@ -425,18 +596,18 @@ export function PayInvoiceDialog({ open, onOpenChange, invoice, onPaymentCreated
                       </div>
                       <FormMessage />
                       <div className="payment-card-quick-actions" data-tour="contract-pay-invoice-quick-amounts">
-                        <Button type="button" variant={isAmountFull ? "default" : "outline"} onClick={() => form.setValue("amount", totalAmountDue)}>
+                        <Button type="button" disabled={!areLateFeesReady || deletingFeeId !== null} variant={isAmountFull ? "default" : "outline"} onClick={() => form.setValue("amount", totalAmountDue)}>
                           <Check className="h-4 w-4" />
                           دفع كامل
                         </Button>
-                        <Button type="button" variant={isAmountPartial ? "default" : "outline"} onClick={() => form.setValue("amount", roundMoney(totalAmountDue / 2))}>
+                        <Button type="button" disabled={!areLateFeesReady || deletingFeeId !== null} variant={isAmountPartial ? "default" : "outline"} onClick={() => form.setValue("amount", roundMoney(totalAmountDue / 2))}>
                           دفع جزئي
                         </Button>
                       </div>
                       {isAmountPartial && (
                         <div className="payment-card-note">
                           <FileText className="h-4 w-4" />
-                          سيتم إنشاء فاتورة للمتبقي: {formatCurrency(remainingBalance)}
+                          سيبقى الرصيد على نفس الفاتورة: {formatCurrency(remainingBalance)}
                         </div>
                       )}
                       {isAmountOverpay && (
@@ -540,7 +711,7 @@ export function PayInvoiceDialog({ open, onOpenChange, invoice, onPaymentCreated
                 <div className="min-w-0">
                   <p className="truncate text-sm font-black text-[#020617]">تأكيد الدفعة</p>
                   <p className={cn("text-xs", isAmountOverpay ? "font-bold text-[#FB6B7A]" : "text-[#94A3B8]")}>
-                    {isAmountOverpay ? "المبلغ أكبر من المستحق" : formatCurrency(watchedAmount || 0)}
+                    {!areLateFeesReady ? 'بانتظار التحقق' : isAmountOverpay ? "المبلغ أكبر من المستحق" : formatCurrency(watchedAmount || 0)}
                   </p>
                 </div>
               </div>
@@ -550,7 +721,7 @@ export function PayInvoiceDialog({ open, onOpenChange, invoice, onPaymentCreated
                 </Button>
                 <Button
                   type="submit"
-                  disabled={createPayment.isPending || isAmountOverpay || watchedAmount <= 0}
+                  disabled={!areLateFeesReady || deletingFeeId !== null || createPayment.isPending || isAmountOverpay || watchedAmount <= 0}
                   className="bg-[#22C7A1] text-white hover:bg-[#1cae8d]"
                   data-tour="contract-pay-invoice-submit"
                 >

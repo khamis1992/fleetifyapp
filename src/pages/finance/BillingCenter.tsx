@@ -1,18 +1,18 @@
+import { FinanceRegisterPagination } from "@/components/finance/workspace/FinanceRegisterPagination";
+import { useFinanceRegisterPage } from "@/components/finance/workspace/useFinanceRegisterPage";
+import { useUnifiedCompanyAccess } from "@/hooks/useUnifiedCompanyAccess";
+import { financeToday } from "@/services/financialReporting";
+import { FinancePageHeader } from "@/components/ui/FinancePageHeader";
+import { FinanceContextActions } from "@/components/finance/workspace/FinanceContextActions";
 /**
  * مركز الفواتير والمدفوعات الموحد
  * تصميم بسيط ومتوافق مع الداشبورد
  * يشمل: الفواتير + المدفوعات + الودائع + الإيجارات
  */
-import { type CSSProperties, useEffect, useState, useMemo, Suspense, lazy } from "react";
+import { type CSSProperties, useEffect, useState, useMemo } from "react";
 import { motion } from "framer-motion";
 import { useSearchParams, useNavigate } from "react-router-dom";
-import { PageSkeletonFallback } from "@/components/common/LazyPageWrapper";
 
-// Lazy load additional tabs
-const Deposits = lazy(() => import("./Deposits"));
-const MonthlyRentTracking = lazy(() => import("./MonthlyRentTracking"));
-const ExcelPaymentImport = lazy(() => import("../payments/ExcelPaymentImport"));
-const BillingAIAssistant = lazy(() => import("@/components/finance/BillingAIAssistant"));
 import { useInvoice, useInvoices } from "@/hooks/finance/useInvoices";
 import { usePayments } from "@/hooks/useFinance";
 import { useCurrencyFormatter } from "@/hooks/useCurrencyFormatter";
@@ -21,7 +21,6 @@ import { InvoiceFormWizard } from "@/components/finance/InvoiceFormWizard";
 import { InvoicePreviewDialog } from "@/components/finance/InvoicePreviewDialog";
 import { InvoiceEditDialog } from "@/components/finance/InvoiceEditDialog";
 import { PayInvoiceDialog } from "@/components/finance/PayInvoiceDialog";
-import { UnifiedPaymentForm } from "@/components/finance/UnifiedPaymentForm";
 import { PaymentPreviewDialog } from "@/components/finance/PaymentPreviewDialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -36,9 +35,8 @@ import {
 } from "@/components/ui/table";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ExportButton } from "@/components/ui/ExportButton";
+import { exportToCSV } from "@/utils/exports/csvExport";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import {
   AlertDialog,
@@ -68,11 +66,9 @@ import {
   Landmark,
   Loader2,
   Send,
-  ArrowLeft,
   TrendingUp,
   Brain,
 } from "lucide-react";
-import { cn } from "@/lib/utils";
 import { systemColorPattern } from "@/lib/design-system/systemColorPattern";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient, useMutation } from "@tanstack/react-query";
@@ -111,17 +107,13 @@ const billingStyle = {
 } as CSSProperties;
 
 const billingTabs = [
-  { id: "ai-collections", label: "AI التحصيل", helper: "خطر وتوقعات", icon: Brain, accent: billingColors.focus },
-  { id: "invoices", label: "الفواتير", helper: "إصدار ومتابعة", icon: Receipt, accent: billingColors.info },
-  { id: "payments", label: "المدفوعات", helper: "تحصيل وإيصالات", icon: CreditCard, accent: billingColors.success },
-  { id: "deposits", label: "الودائع", helper: "ضمانات العملاء", icon: Wallet, accent: billingColors.focus },
-  { id: "excel-import", label: "استيراد Excel", helper: "دفعات تاريخية", icon: FileSpreadsheet, accent: billingColors.info },
-  { id: "rent", label: "الإيجارات", helper: "متابعة شهرية", icon: CalendarDays, accent: billingColors.alert },
+  { id: "invoices", label: "الفواتير", icon: Receipt, accent: billingColors.info },
+  { id: "payments", label: "المدفوعات", icon: CreditCard, accent: billingColors.success },
 ];
 
 const billingFeatureTours = {
   aiCollections: {
-    title: "جولة AI التحصيل والفوترة",
+    title: "جولة التحصيل الذكي والفوترة",
     description: "شرح سريع لطريقة استخدام التحليل الذكي لترتيب التحصيل ومراجعة مخاطر الفواتير.",
     steps: [
       "ابدأ من مؤشرات التوقع لمعرفة المبلغ المتوقع تحصيله خلال 7 أيام و30 يومًا.",
@@ -132,13 +124,13 @@ const billingFeatureTours = {
     ],
   },
   overview: {
-    title: "جولة مركز الفوترة والتحصيل",
+    title: "جولة السجل المالي",
     description: "شرح سريع لطريقة إدارة الفواتير والمدفوعات من هذه الصفحة.",
     steps: [
       "ابدأ من المؤشرات العلوية لمعرفة إجمالي الفواتير، المدفوع، المستحق، ومدفوعات الشهر.",
       "استخدم زر فاتورة جديدة لإصدار مطالبة مالية مرتبطة بعميل أو عقد.",
       "استخدم زر تسجيل دفعة عند استلام مبلغ وربطه بالفاتورة أو العميل الصحيح.",
-      "تنقل بين التبويبات لمراجعة الفواتير، المدفوعات، الودائع، استيراد Excel، والإيجارات الشهرية.",
+      "استخدم القائمة الجانبية لفتح السجلات الأخرى، وأدوات الصفحة للاستيراد ومراجعة الربط.",
       "استخدم البحث والفلترة والتصدير لمراجعة السجلات أو تجهيز ملف متابعة.",
     ],
   },
@@ -225,10 +217,10 @@ const billingFeatureTours = {
     ],
   },
   excelImport: {
-    title: "جولة استيراد دفعات Excel",
+    title: "جولة استيراد دفعات إكسل",
     description: "شرح استخدام تبويب استيراد الدفعات التاريخية.",
     steps: [
-      "اختر ملف Excel يحتوي الدفعات الشهرية أو السجلات التاريخية.",
+      "اختر ملف إكسل يحتوي الدفعات الشهرية أو السجلات التاريخية.",
       "راجع قراءة الأعمدة والعميل واللوحة والعقد قبل الاعتماد.",
       "صحح الصفوف أو القيم غير الواضحة قبل إنشاء الفواتير أو الدفعات.",
       "بعد الاعتماد يتم إنشاء أو ربط الدفعات والفواتير حسب البيانات المطابقة.",
@@ -286,7 +278,7 @@ const getPaymentMethodLabel = (method: string) => ({
 }[method] || method);
 
 // ===== Main Component =====
-const BillingCenter = () => {
+const BillingCenter = ({ section = "invoices" }: { section?: "invoices" | "payments" }) => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { formatCurrency } = useCurrencyFormatter();
@@ -294,11 +286,7 @@ const BillingCenter = () => {
   const financeAccess = useFinanceAccessGuard();
   const [searchParams, setSearchParams] = useSearchParams();
   
-  // State - use URL params for tab
-  const activeTab = searchParams.get("tab") || "invoices";
-  const setActiveTab = (tab: string) => {
-    setSearchParams({ tab });
-  };
+  const activeTab = section;
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
   
@@ -312,7 +300,6 @@ const BillingCenter = () => {
   const [invoiceToDelete, setInvoiceToDelete] = useState<any>(null);
   
   // Payment states
-  const [isCreatePaymentOpen, setIsCreatePaymentOpen] = useState(false);
   const [selectedPayment, setSelectedPayment] = useState<any>(null);
   const [isPaymentPreviewOpen, setIsPaymentPreviewOpen] = useState(false);
   const [isCancelPaymentDialogOpen, setIsCancelPaymentDialogOpen] = useState(false);
@@ -339,39 +326,37 @@ const BillingCenter = () => {
     setSelectedInvoice(requestedInvoice);
     setIsPreviewOpen(true);
     const nextParams = new URLSearchParams(searchParams);
-    nextParams.set("tab", "invoices");
     nextParams.delete("invoice");
     setSearchParams(nextParams, { replace: true });
   }, [requestedInvoice, requestedInvoiceId, searchParams, setSearchParams]);
 
-  const handleExportCSV = () => {
-    const headers = ["رقم الفاتورة", "العميل", "المبلغ", "الحالة", "التاريخ"];
-    const rows = filteredInvoices.map(inv => [
-      inv.invoice_number,
-      inv.customers?.company_name || `${inv.customers?.first_name || ''} ${inv.customers?.last_name || ''}`,
-      inv.total_amount?.toString() || '0',
-      inv.payment_status || '',
-      inv.invoice_date || ''
-    ]);
-    const csv = [headers, ...rows].map(row => row.join(",")).join("\n");
-    const blob = new Blob(["\ufeff" + csv], { type: "text/csv;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "invoices_export.csv";
-    a.click();
+  const exportInvoiceRows = (rows: typeof invoices, filename: string) => {
+    if (!rows.length) { toast.info('لا توجد فواتير للتصدير'); return; }
+    exportToCSV(rows.map(inv => ({
+      number: inv.invoice_number,
+      customer: inv.customers?.company_name || `${inv.customers?.first_name || ''} ${inv.customers?.last_name || ''}`,
+      total: inv.total_amount, paid: inv.paid_amount ?? 0, remaining: Math.max(0, inv.total_amount - (inv.paid_amount ?? 0)),
+      status: inv.payment_status, date: inv.invoice_date,
+    })), filename, { headers: ['رقم الفاتورة', 'العميل', 'الإجمالي', 'المسدّد', 'المتبقي', 'الحالة', 'التاريخ'] });
   };
 
-  const handleExportPDF = () => {
-    window.print();
+  const handleExportCSV = () => {
+    if (activeTab === 'payments') {
+      if (!filteredPayments.length || paymentsError) { toast.info('لا توجد مدفوعات متاحة للتصدير'); return; }
+      exportToCSV(filteredPayments.map(payment => ({
+        number: payment.payment_number,
+        customer: payment.customers?.company_name || `${payment.customers?.first_name || ''} ${payment.customers?.last_name || ''}`,
+        amount: payment.amount, method: getPaymentMethodLabel(payment.payment_method),
+        status: payment.payment_status, date: payment.payment_date,
+      })), 'payments_export.csv', { headers: ['رقم الدفعة', 'العميل', 'المبلغ', 'الطريقة', 'الحالة', 'التاريخ'] });
+    } else if (!invoicesError) exportInvoiceRows(filteredInvoices, 'invoices_export.csv');
   };
 
   const toggleSelectAll = () => {
-    if (selectedInvoiceIds.length === filteredInvoices.length) {
-      setSelectedInvoiceIds([]);
-    } else {
-      setSelectedInvoiceIds(filteredInvoices.map(inv => inv.id));
-    }
+    const pageIds = invoicePage.rows.map(inv => inv.id);
+    setSelectedInvoiceIds(previous => pageIds.every(id => previous.includes(id))
+      ? previous.filter(id => !pageIds.includes(id))
+      : [...new Set([...previous, ...pageIds])]);
   };
 
   const toggleSelectInvoice = (invoiceId: string) => {
@@ -383,30 +368,17 @@ const BillingCenter = () => {
   };
 
   const handleBulkExport = () => {
-    const selectedInvoices = invoices.filter(inv => selectedInvoiceIds.includes(inv.id));
-    const headers = ["رقم الفاتورة", "العميل", "المبلغ", "الحالة", "التاريخ"];
-    const rows = selectedInvoices.map(inv => [
-      inv.invoice_number,
-      inv.customers?.company_name || `${inv.customers?.first_name || ''} ${inv.customers?.last_name || ''}`,
-      inv.total_amount?.toString() || '0',
-      inv.payment_status || '',
-      inv.invoice_date || ''
-    ]);
-    const csv = [headers, ...rows].map(row => row.join(",")).join("\n");
-    const blob = new Blob(["\ufeff" + csv], { type: "text/csv;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "selected_invoices.csv";
-    a.click();
+    if (invoicesError) return;
+    exportInvoiceRows(invoices.filter(inv => selectedInvoiceIds.includes(inv.id)), 'selected_invoices.csv');
     setSelectedInvoiceIds([]);
   };
 
   const { cancelPayment } = usePaymentOperations();
 
   // Data fetching
-  const { data: invoicesData, isLoading: invoicesLoading } = useInvoices({ pageSize: 100 });
-  const { data: paymentsData, isLoading: paymentsLoading } = usePayments();
+  const { data: invoicesData, isLoading: invoicesLoading, error: invoicesError, refetch: refetchInvoices } = useInvoices({ allPages: true });
+  const { data: paymentsData, isLoading: paymentsLoading, error: paymentsError, refetch: refetchPayments } = usePayments();
+  const { companyId } = useUnifiedCompanyAccess();
   const { data: treasuryData } = useTreasurySummary();
 
   // Extract data
@@ -423,63 +395,18 @@ const BillingCenter = () => {
 
   // Statistics
   const stats = useMemo(() => {
-    const now = new Date();
-    const currentMonth = now.getMonth();
-    const currentYear = now.getFullYear();
-    
-    // حساب بداية ونهاية الشهر الحالي
-    const startOfCurrentMonth = new Date(currentYear, currentMonth, 1);
-    const startOfLastMonth = new Date(currentYear, currentMonth - 1, 1);
-    const startOfNextMonth = new Date(currentYear, currentMonth + 1, 1);
-    
-    // إجمالي الفواتير
-    const totalInvoices = invoices.reduce((sum, inv) => sum + (inv?.total_amount || 0), 0);
-    const paidInvoices = invoices.filter(inv => inv?.payment_status === 'paid')
-      .reduce((sum, inv) => sum + (inv?.total_amount || 0), 0);
-    const pendingInvoices = invoices.filter(inv => inv?.payment_status === 'unpaid' || inv?.payment_status === 'partial')
-      .reduce((sum, inv) => sum + (inv?.total_amount || 0), 0);
-    const totalPayments = payments.reduce((sum, pmt) => sum + (Number(pmt?.amount) || 0), 0);
-
-    // مدفوعات الشهر الحالي
-    const currentMonthPayments = payments.filter(pmt => {
-      const paymentDate = new Date(pmt?.payment_date);
-      return paymentDate >= startOfCurrentMonth && paymentDate < startOfNextMonth;
-    });
-    const currentMonthTotal = currentMonthPayments.reduce((sum, pmt) => sum + (Number(pmt?.amount) || 0), 0);
-    
-    // مدفوعات الشهر السابق
-    const lastMonthPayments = payments.filter(pmt => {
-      const paymentDate = new Date(pmt?.payment_date);
-      return paymentDate >= startOfLastMonth && paymentDate < startOfCurrentMonth;
-    });
-    const lastMonthTotal = lastMonthPayments.reduce((sum, pmt) => sum + (Number(pmt?.amount) || 0), 0);
-    
-    // نسبة التغيير
-    const monthlyChange = lastMonthTotal > 0 
-      ? Math.round(((currentMonthTotal - lastMonthTotal) / lastMonthTotal) * 100)
-      : currentMonthTotal > 0 ? 100 : 0;
-
-    // فواتير الشهر الحالي
-    const currentMonthInvoices = invoices.filter(inv => {
-      const invoiceDate = new Date(inv?.invoice_date);
-      return invoiceDate >= startOfCurrentMonth && invoiceDate < startOfNextMonth;
-    });
-    const currentMonthInvoicesTotal = currentMonthInvoices.reduce((sum, inv) => sum + (inv?.total_amount || 0), 0);
-
+    const month = financeToday().slice(0,7);
+    const activeInvoices = invoices.filter(invoice => invoice.status !== 'cancelled' && invoice.currency === 'QAR');
+    const currentMonthPayments = payments.filter(payment => payment.payment_status === 'completed' && payment.payment_date?.slice(0,7) === month);
     return {
-      totalInvoices,
-      paidInvoices,
-      pendingInvoices,
-      totalPayments,
-      invoiceCount: invoices.length,
-      paymentCount: payments.length,
-      // إحصائيات الشهر الحالي
-      currentMonthPayments: currentMonthTotal,
+      totalInvoices: activeInvoices.reduce((sum, invoice) => sum + Number(invoice.total_amount || 0), 0),
+      paidInvoices: activeInvoices.reduce((sum, invoice) => sum + Number(invoice.paid_amount || 0), 0),
+      pendingInvoices: activeInvoices.reduce((sum, invoice) => sum + Math.max(0, Number(invoice.total_amount || 0) - Number(invoice.paid_amount || 0)), 0),
+      invoiceCount: activeInvoices.length,
+      currentMonthPayments: currentMonthPayments.reduce((sum, payment) => sum + Number(payment.amount || 0), 0),
       currentMonthPaymentsCount: currentMonthPayments.length,
-      lastMonthPayments: lastMonthTotal,
-      monthlyChange,
-      currentMonthInvoices: currentMonthInvoicesTotal,
-      currentMonthInvoicesCount: currentMonthInvoices.length,
+      completedPaymentCount: payments.filter(payment => payment.payment_status === "completed").length,
+      pendingPaymentCount: payments.filter(payment => payment.payment_status === "pending").length,
     };
   }, [invoices, payments]);
 
@@ -488,8 +415,8 @@ const BillingCenter = () => {
     return invoices.filter(inv => {
       const matchesSearch = inv?.invoice_number?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         inv?.customers?.first_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        inv?.customers?.last_name?.toLowerCase().includes(searchTerm.toLowerCase());
-      const matchesStatus = filterStatus === "all" || inv?.payment_status === filterStatus;
+        inv?.customers?.last_name?.toLowerCase().includes(searchTerm.toLowerCase()) || inv?.customers?.company_name?.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesStatus = filterStatus === "all" || (filterStatus === "overdue" ? inv.status === "overdue" : inv?.payment_status === filterStatus);
       return matchesSearch && matchesStatus;
     });
   }, [invoices, searchTerm, filterStatus]);
@@ -497,11 +424,16 @@ const BillingCenter = () => {
   const filteredPayments = useMemo(() => {
     return payments.filter(pmt => {
       const matchesSearch = pmt?.payment_number?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        pmt?.customers?.first_name?.toLowerCase().includes(searchTerm.toLowerCase());
+        pmt?.customers?.first_name?.toLowerCase().includes(searchTerm.toLowerCase()) || pmt?.customers?.last_name?.toLowerCase().includes(searchTerm.toLowerCase()) || pmt?.customers?.company_name?.toLowerCase().includes(searchTerm.toLowerCase());
       const matchesStatus = filterStatus === "all" || pmt?.payment_status === filterStatus;
       return matchesSearch && matchesStatus;
     });
   }, [payments, searchTerm, filterStatus]);
+
+  const invoicePage = useFinanceRegisterPage(filteredInvoices, `${companyId}:${searchTerm}:${filterStatus}`);
+  const paymentPage = useFinanceRegisterPage(filteredPayments, `${companyId}:${searchTerm}:${filterStatus}`);
+  useEffect(() => { setFilterStatus('all'); }, [activeTab]);
+  useEffect(() => { setSelectedInvoiceIds([]); setSelectedInvoice(null); setSelectedPayment(null); }, [companyId, searchTerm, filterStatus]);
 
   // Delete invoice mutation
   const deleteInvoiceMutation = useMutation({
@@ -675,103 +607,27 @@ const BillingCenter = () => {
   return (
     <div className="billing-system min-h-screen" dir="rtl" style={billingStyle}>
       <div className="mx-auto max-w-7xl space-y-5 p-4 sm:p-6">
-        <motion.section
-          data-tour="billing-header"
-          className="billing-command"
-          initial={{ opacity: 0, y: 14 }}
-          animate={{ opacity: 1, y: 0 }}
-        >
-          <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
-            <div className="flex items-start gap-4">
-              <span className="billing-command-icon">
-                <Receipt className="h-6 w-6" />
-              </span>
-              <div>
-                <div className="mb-2 flex flex-wrap items-center gap-2">
-                  <Badge className="border-0 bg-[#38BDF8]/10 text-[#38BDF8] hover:bg-[#38BDF8]/10">
-                    مركز الفوترة والتحصيل
-                  </Badge>
-                  <span className="text-xs font-bold" style={{ color: billingColors.muted }}>
-                    فواتير، مدفوعات، ودائع، إيجارات
-                  </span>
-                </div>
-                <h1 className="text-2xl font-black tracking-normal sm:text-3xl" style={{ color: billingColors.text }}>
-                  الفوترة والتحصيل
-                </h1>
-                <p className="mt-2 max-w-2xl text-sm leading-7" style={{ color: billingColors.muted }}>
-                  مساحة واحدة لمراقبة الفواتير المستحقة، تحصيل الدفعات، ومتابعة التدفقات المرتبطة بالعقود.
-                </p>
-              </div>
-            </div>
-
-            <div data-tour="billing-create-actions" className="flex flex-wrap gap-2">
-              <FeatureTourButton
-                tour={billingFeatureTours.overview}
-                onStart={setActiveFeatureTour}
-                className="h-10 gap-2 border-[#E5EAF1] bg-white text-[#020617] hover:bg-[#F6F8FB]"
-              />
-              <Button onClick={() => setIsCreateInvoiceOpen(true)} className="gap-2 bg-[#020617] text-white hover:bg-[#020617]/90">
-                <Plus className="h-4 w-4" />
-                فاتورة جديدة
-              </Button>
-              <Button onClick={() => setIsCreatePaymentOpen(true)} variant="outline" className="gap-2 border-[#E5EAF1] bg-white text-[#020617] hover:bg-[#F6F8FB]">
-                <CreditCard className="h-4 w-4" />
-                تسجيل دفعة
-              </Button>
-              <Button onClick={() => navigate("/finance/overview")} variant="outline" className="gap-2 border-[#E5EAF1] bg-white text-[#020617] hover:bg-[#F6F8FB]">
-                <ArrowLeft className="h-4 w-4" />
-                المالية
-              </Button>
-            </div>
-          </div>
-
-          <div data-tour="billing-metrics" className="mt-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <FinancePageHeader title={section === "invoices" ? "الفواتير" : "المدفوعات"} description={section === "invoices" ? "إصدار الفواتير ومتابعة المستحقات وسداد كل فاتورة." : "سجل الدفعات والإيصالات والتحصيل من العملاء."} icon={section === "invoices" ? Receipt : CreditCard} actions={<>
+          <FeatureTourButton tour={billingFeatureTours.overview} onStart={setActiveFeatureTour} />
+          {section === "invoices" && <Button onClick={() => setIsCreateInvoiceOpen(true)}><Plus size={16} className="me-2" />فاتورة جديدة</Button>}
+          <FinanceContextActions ids={["receive"]} />
+        </>}>
+          {section === "invoices" && !invoicesError && !invoicesLoading && <div data-tour="billing-metrics" className="grid gap-3 sm:grid-cols-3">
             <BillingMetric title="إجمالي الفواتير" value={formatCurrency(stats.totalInvoices)} helper={`${stats.invoiceCount} فاتورة`} icon={Receipt} accent={billingColors.info} />
-            <BillingMetric title="المدفوع" value={formatCurrency(stats.paidInvoices)} helper={`${stats.monthlyChange >= 0 ? "+" : ""}${stats.monthlyChange}%`} icon={CheckCircle} accent={billingColors.success} />
-            <BillingMetric title="المستحق" value={formatCurrency(stats.pendingInvoices)} helper="قيد التحصيل" icon={Clock} accent={billingColors.alert} />
-            <BillingMetric title="مدفوعات هذا الشهر" value={formatCurrency(stats.currentMonthPayments)} helper={`${stats.currentMonthPaymentsCount} دفعة`} icon={TrendingUp} accent={billingColors.focus} />
-          </div>
-        </motion.section>
+            <BillingMetric title="المسدّد من الفواتير" value={formatCurrency(stats.paidInvoices)} icon={CheckCircle} accent={billingColors.success} />
+            <BillingMetric title="رصيد الفواتير" value={formatCurrency(stats.pendingInvoices)} helper="قيد التحصيل" icon={Clock} accent={billingColors.alert} />
+          </div>}
+          {section === "payments" && !paymentsError && !paymentsLoading && <div data-tour="billing-metrics" className="grid gap-3 sm:grid-cols-3">
+            <BillingMetric title="مدفوعات الشهر" value={formatCurrency(stats.currentMonthPayments)} helper={`${stats.currentMonthPaymentsCount} دفعة مكتملة`} icon={TrendingUp} accent={billingColors.success} />
+            <BillingMetric title="الدفعات المكتملة" value={stats.completedPaymentCount.toLocaleString("ar-QA")} helper="في السجل" icon={CheckCircle} accent={billingColors.info} />
+            <BillingMetric title="الدفعات المعلقة" value={stats.pendingPaymentCount.toLocaleString("ar-QA")} helper="بانتظار الإكمال" icon={Clock} accent={billingColors.alert} />
+          </div>}
+        </FinancePageHeader>
 
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="billing-workspace">
-          <section data-tour="billing-tabs" className="billing-tabs-shell">
-            <div>
-              <p className="text-xs font-black uppercase tracking-[0.18em]" style={{ color: billingColors.muted }}>
-                Billing Workspace
-              </p>
-              <h2 className="mt-1 text-xl font-black" style={{ color: billingColors.text }}>
-                {activeTabInfo.label}
-              </h2>
-              <p className="mt-1 text-sm" style={{ color: billingColors.muted }}>
-                {activeTabInfo.helper}
-              </p>
-            </div>
+        <div className="billing-workspace">
+          <FinanceContextActions ids={section === "invoices" ? ["scanner", "invoice-journal"] : ["excel-import", "register", "payment-tracking", "sync", "cash-receipt"]} />
 
-            <TabsList className="billing-tabs-list">
-              {billingTabs.map((tab) => {
-                const Icon = tab.icon;
-                const isActive = activeTab === tab.id;
-                return (
-                  <TabsTrigger
-                    key={tab.id}
-                    value={tab.id}
-                    className="billing-tab-trigger"
-                    style={{ "--tab-accent": tab.accent } as CSSProperties}
-                  >
-                    <span className="billing-tab-icon">
-                      <Icon className="h-4 w-4" />
-                    </span>
-                    <span className="min-w-0 text-right">
-                      <span className="block truncate text-sm font-black">{tab.label}</span>
-                      <span className={cn("block truncate text-[11px] font-bold", isActive && "text-white/80")}>{tab.helper}</span>
-                    </span>
-                  </TabsTrigger>
-                );
-              })}
-            </TabsList>
-          </section>
-
-          <section data-tour="billing-filters" className="billing-filter-bar">
+          {["invoices", "payments"].includes(activeTab) && <section data-tour="billing-filters" className="billing-filter-bar">
             <div className="flex items-center gap-3">
               <span className="billing-filter-icon" style={{ color: activeTabInfo.accent, backgroundColor: `${activeTabInfo.accent}14` }}>
                 <activeTabInfo.icon className="h-5 w-5" />
@@ -788,7 +644,7 @@ const BillingCenter = () => {
                 onStart={setActiveFeatureTour}
                 className="h-10 gap-2 border-[#E5EAF1] bg-white text-[#020617] hover:bg-[#F6F8FB]"
               />
-              <ExportButton onExportCSV={handleExportCSV} onExportPDF={handleExportPDF} />
+              <ExportButton onExportCSV={handleExportCSV} />
               <div className="relative min-w-[220px] flex-1">
                 <Search className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2" style={{ color: billingColors.muted }} />
                 <Input
@@ -804,42 +660,16 @@ const BillingCenter = () => {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">جميع الحالات</SelectItem>
-                  <SelectItem value="paid">مدفوعة</SelectItem>
-                  <SelectItem value="pending">معلقة</SelectItem>
-                  <SelectItem value="partial">جزئية</SelectItem>
-                  <SelectItem value="overdue">متأخرة</SelectItem>
+                  {activeTab === 'payments' ? <><SelectItem value="completed">مكتملة</SelectItem><SelectItem value="pending">معلقة</SelectItem><SelectItem value="cancelled">ملغاة</SelectItem></> : <><SelectItem value="paid">مدفوعة</SelectItem><SelectItem value="unpaid">غير مدفوعة</SelectItem><SelectItem value="partial">جزئية</SelectItem><SelectItem value="overdue">متأخرة</SelectItem><SelectItem value="cancelled">ملغاة</SelectItem></>}
                 </SelectContent>
               </Select>
             </div>
-          </section>
+          </section>}
 
         {/* AI Collections Tab */}
-        <TabsContent value="ai-collections">
-          <motion.div
-            data-tour="billing-ai-collections-tab"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.3 }}
-          >
-            <div className="mb-3 flex flex-wrap items-center justify-between gap-3 rounded-[8px] border border-[#E5EAF1] bg-white p-4">
-              <div>
-                <p className="text-sm font-black text-[#020617]">AI التحصيل والفوترة</p>
-                <p className="text-xs text-[#64748B]">ترتيب العملاء، تفسير المخاطر، توقع التحصيل، وتنبيهات الفواتير</p>
-              </div>
-              <FeatureTourButton
-                tour={billingFeatureTours.aiCollections}
-                onStart={setActiveFeatureTour}
-                className="h-9 gap-2 border-[#E5EAF1] bg-white text-[#020617] hover:bg-[#F6F8FB]"
-              />
-            </div>
-            <Suspense fallback={<PageSkeletonFallback />}>
-              <BillingAIAssistant />
-            </Suspense>
-          </motion.div>
-        </TabsContent>
 
         {/* Invoices Tab */}
-        <TabsContent value="invoices">
+        {section === "invoices" && <section>
           <motion.div 
             data-tour="billing-invoices-table"
             className="bg-white rounded-xl shadow-sm overflow-hidden"
@@ -857,7 +687,7 @@ const BillingCenter = () => {
                 className="h-9 gap-2 border-[#E5EAF1] bg-white text-[#020617] hover:bg-[#F6F8FB]"
               />
             </div>
-            {invoicesLoading ? (
+            {invoicesError ? (<div role="alert" className="p-5">تعذر تحميل الفواتير. <Button variant="outline" onClick={() => refetchInvoices()}>إعادة المحاولة</Button></div>) : invoicesLoading ? (
               <div className="flex items-center justify-center py-20">
                 <Loader2 className="w-8 h-8 animate-spin text-rose-500" />
               </div>
@@ -878,7 +708,7 @@ const BillingCenter = () => {
                     <TableRow className="bg-neutral-50">
                       <TableHead className="w-12" scope="col">
                         <Checkbox
-                          checked={selectedInvoiceIds.length === filteredInvoices.length && filteredInvoices.length > 0}
+                          checked={invoicePage.rows.length > 0 && invoicePage.rows.every(invoice => selectedInvoiceIds.includes(invoice.id))}
                           onCheckedChange={toggleSelectAll}
                           aria-label="تحديد كل الفواتير"
                         />
@@ -892,7 +722,7 @@ const BillingCenter = () => {
                     </TableRow>
                   </TableHeader>
                 <TableBody>
-                  {filteredInvoices.slice(0, 20).map((invoice) => (
+                  {invoicePage.rows.map((invoice) => (
                     <TableRow key={invoice.id} className="hover:bg-neutral-50">
                       <TableCell className="w-12">
                         <Checkbox
@@ -959,11 +789,12 @@ const BillingCenter = () => {
               </Table>
               </div>
             )}
+          <FinanceRegisterPagination {...invoicePage} />
           </motion.div>
-        </TabsContent>
+        </section>}
 
         {/* Payments Tab */}
-        <TabsContent value="payments">
+        {section === "payments" && <section>
           <motion.div 
             data-tour="billing-payments-table"
             className="bg-white rounded-xl shadow-sm overflow-hidden"
@@ -996,7 +827,7 @@ const BillingCenter = () => {
               </div>
             )}
             
-            {paymentsLoading ? (
+            {paymentsError ? (<div role="alert" className="p-5">تعذر تحميل المدفوعات. <Button variant="outline" onClick={() => refetchPayments()}>إعادة المحاولة</Button></div>) : paymentsLoading ? (
               <div className="flex items-center justify-center py-20">
                 <Loader2 className="w-8 h-8 animate-spin text-rose-500" />
               </div>
@@ -1006,7 +837,7 @@ const BillingCenter = () => {
                   icon={CreditCard}
                   title="لا توجد مدفوعات"
                   description="لم يتم تسجيل أي مدفوعات بعد"
-                  onAction={() => setIsCreatePaymentOpen(true)}
+                  onAction={() => navigate("/finance/operations/receive-payment")}
                   actionLabel="تسجيل دفعة"
                 />
               </div>
@@ -1025,7 +856,7 @@ const BillingCenter = () => {
                     </TableRow>
                   </TableHeader>
                 <TableBody>
-                  {filteredPayments.slice(0, 20).map((payment) => (
+                  {paymentPage.rows.map((payment) => (
                     <TableRow key={payment.id} className="hover:bg-neutral-50">
                       <TableCell className="font-medium">{payment.payment_number || '-'}</TableCell>
                       <TableCell>
@@ -1081,84 +912,16 @@ const BillingCenter = () => {
               </Table>
               </div>
             )}
+          <FinanceRegisterPagination {...paymentPage} />
           </motion.div>
-        </TabsContent>
+        </section>}
 
         {/* Deposits Tab */}
-        <TabsContent value="deposits">
-          <motion.div
-            data-tour="billing-deposits-tab"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.3 }}
-          >
-            <div className="mb-3 flex flex-wrap items-center justify-between gap-3 rounded-[8px] border border-[#E5EAF1] bg-white p-4">
-              <div>
-                <p className="text-sm font-black text-[#020617]">تبويب الودائع</p>
-                <p className="text-xs text-[#64748B]">إضافة ومتابعة ضمانات العملاء</p>
-              </div>
-              <FeatureTourButton
-                tour={billingFeatureTours.deposits}
-                onStart={setActiveFeatureTour}
-                className="h-9 gap-2 border-[#E5EAF1] bg-white text-[#020617] hover:bg-[#F6F8FB]"
-              />
-            </div>
-            <Suspense fallback={<PageSkeletonFallback />}>
-              <Deposits />
-            </Suspense>
-          </motion.div>
-        </TabsContent>
 
         {/* Historical Excel Payments Import Tab */}
-        <TabsContent value="excel-import">
-          <motion.div
-            data-tour="billing-excel-import-tab"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.3 }}
-          >
-            <div className="mb-3 flex flex-wrap items-center justify-between gap-3 rounded-[8px] border border-[#E5EAF1] bg-white p-4">
-              <div>
-                <p className="text-sm font-black text-[#020617]">استيراد Excel</p>
-                <p className="text-xs text-[#64748B]">قراءة الدفعات التاريخية ومطابقتها مع العقود</p>
-              </div>
-              <FeatureTourButton
-                tour={billingFeatureTours.excelImport}
-                onStart={setActiveFeatureTour}
-                className="h-9 gap-2 border-[#E5EAF1] bg-white text-[#020617] hover:bg-[#F6F8FB]"
-              />
-            </div>
-            <Suspense fallback={<PageSkeletonFallback />}>
-              <ExcelPaymentImport />
-            </Suspense>
-          </motion.div>
-        </TabsContent>
 
         {/* Monthly Rent Tracking Tab */}
-        <TabsContent value="rent">
-          <motion.div
-            data-tour="billing-rent-tab"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.3 }}
-          >
-            <div className="mb-3 flex flex-wrap items-center justify-between gap-3 rounded-[8px] border border-[#E5EAF1] bg-white p-4">
-              <div>
-                <p className="text-sm font-black text-[#020617]">الإيجارات الشهرية</p>
-                <p className="text-xs text-[#64748B]">متابعة الاستحقاقات الشهرية وربطها بالفواتير</p>
-              </div>
-              <FeatureTourButton
-                tour={billingFeatureTours.rent}
-                onStart={setActiveFeatureTour}
-                className="h-9 gap-2 border-[#E5EAF1] bg-white text-[#020617] hover:bg-[#F6F8FB]"
-              />
-            </div>
-            <Suspense fallback={<PageSkeletonFallback />}>
-              <MonthlyRentTracking />
-            </Suspense>
-          </motion.div>
-        </TabsContent>
-      </Tabs>
+      </div>
       </div>
 
       <style>{`
@@ -1424,18 +1187,6 @@ const BillingCenter = () => {
           <button onClick={() => setSelectedInvoiceIds([])} className="text-xs bg-white/10 hover:bg-white/20 px-3 py-1.5 rounded-lg">إلغاء التحديد</button>
         </div>
       )}
-
-      {/* Create Payment Dialog */}
-      <UnifiedPaymentForm
-        open={isCreatePaymentOpen}
-        onOpenChange={setIsCreatePaymentOpen}
-        type="customer_payment"
-        onSuccess={() => {
-          setIsCreatePaymentOpen(false);
-          queryClient.invalidateQueries({ queryKey: ['payments'] });
-        }}
-        onCancel={() => setIsCreatePaymentOpen(false)}
-      />
 
       {/* Invoice Preview */}
       {selectedInvoice && isPreviewOpen && (

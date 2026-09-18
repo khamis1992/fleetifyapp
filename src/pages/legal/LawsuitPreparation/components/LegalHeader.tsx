@@ -5,8 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { formatCustomerName } from '@/utils/formatCustomerName';
 import { useLawsuitPreparationContext } from '../store';
-
-const mandatoryDocIds = ['memo', 'claims', 'docsList', 'contract', 'commercialRegister', 'ibanCertificate', 'representativeId'] as const;
+import { getFilingReadiness } from '../utils/filingReadiness';
 
 function formatQar(amount?: number | null) {
   return new Intl.NumberFormat('ar-QA', {
@@ -24,12 +23,9 @@ function formatDate(value?: string | null) {
 export function LegalHeader() {
   const navigate = useNavigate();
   const { state } = useLawsuitPreparationContext();
-  const { calculations, contract, customer, documents, trafficViolations, vehicle } = state;
-  const requiredDocumentIds = trafficViolations.length > 0
-    ? [...mandatoryDocIds, 'violationsEvidence' as const]
-    : mandatoryDocIds;
-  const readyCount = requiredDocumentIds.filter((docId) => documents[docId].status === 'ready').length;
-  const readiness = Math.round((readyCount / requiredDocumentIds.length) * 100);
+  const { calculations, contract, customer, vehicle } = state;
+  const filingReadiness = getFilingReadiness(state);
+  const readiness = filingReadiness.percentage;
   const customerName = formatCustomerName(customer) || 'عميل غير محدد';
   const vehicleLabel = vehicle
     ? [vehicle.make, vehicle.model, vehicle.year].filter(Boolean).join(' ')
@@ -63,7 +59,7 @@ export function LegalHeader() {
         <div className="lawsuit-header-amount">
           <span>إجمالي المطالبة</span>
           <strong>{formatQar(calculations?.total)}</strong>
-          <small>{readiness}% جاهزية المستندات</small>
+          <small>{readiness}% جاهزية الرفع الفعلية</small>
         </div>
       </div>
 
@@ -108,7 +104,7 @@ export function LegalHeader() {
         </div>
       </div>
 
-      <div className="lawsuit-header-progress" aria-label="جاهزية المستندات">
+      <div className="lawsuit-header-progress" aria-label="جاهزية رفع الدعوى">
         <span style={{ width: `${readiness}%` }} />
       </div>
     </motion.header>

@@ -97,7 +97,8 @@ export function PaymentStatsCards() {
   };
 
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-US', {
+    return new Intl.NumberFormat('ar-QA', {
+      numberingSystem: 'latn',
       style: 'currency',
       currency: 'QAR',
       minimumFractionDigits: 2

@@ -199,7 +199,7 @@ export const SmartAccountWizardTab: React.FC = () => {
           id="accountName"
           value={wizardData.accountName}
           onChange={(e) => setWizardData(prev => ({ ...prev, accountName: e.target.value }))}
-          placeholder="مثال: Cash in Hand"
+          placeholder="أدخل اسم الحساب بالإنجليزية"
           required
         />
       </div>

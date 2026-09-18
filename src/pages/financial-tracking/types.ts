@@ -5,6 +5,8 @@ export interface MonthlySummaryItem {
   month: string;
   rent: number;
   fines: number;
+  advances: number;
+  other: number;
   total: number;
   count: number;
   monthKey: string;

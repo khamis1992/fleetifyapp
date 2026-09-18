@@ -456,15 +456,27 @@ const enforcementFiles = [
   {
     path: path.join(process.cwd(), 'src', 'components', 'finance', 'BalanceSheetReport.tsx'),
     markers: [
-      'exportOfficialFinancialReportToPDF',
-      'buildBalanceSheetReport',
-      'sourceFingerprint',
-      'balance_sheet',
+      'exportBalanceSheetPDF',
+      'useProfessionalBalanceSheet',
+      'source_fingerprint',
+      'snapshot.created_by !== actorId',
+      'blocking.length === 0',
     ],
     forbiddenMarkers: [
       'import jsPDF from "jspdf"',
       'jspdf-autotable',
       'doc.autoTable',
+    ],
+  },
+  {
+    path: path.join(process.cwd(), 'supabase', 'migrations', '20260918001000_professional_balance_sheets.sql'),
+    markers: [
+      'is_finance_action_authorized',
+      'professional_balance_sheet_reports_read',
+      'REVOKE ALL ON public.professional_balance_sheet_reports',
+      'approve_professional_balance_sheet_v1',
+      'source changed; save and review a new version',
+      'balance_sheet_private.report_events',
     ],
   },
   {

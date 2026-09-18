@@ -39,7 +39,6 @@ import {
   Wrench,
   Package,
   Camera,
-  Upload,
   X,
   Check,
   AlertTriangle,
@@ -47,17 +46,9 @@ import {
   User,
   FileText,
   Plus,
-  Minus,
-  Star,
   MapPin,
-  ChevronDown,
-  ChevronUp,
-  Settings,
-  Eye,
-  EyeOff,
 } from 'lucide-react';
 import { format } from 'date-fns';
-import { ar } from 'date-fns/locale';
 import { VehicleMarking } from './vehicle-inspection/VehicleMarking';
 import { VehicleMark } from './vehicle-inspection/types';
 
@@ -68,15 +59,6 @@ const fadeInUp: Variants = {
     opacity: 1,
     y: 0,
     transition: { duration: 0.4, ease: [0.25, 0.1, 0.25, 1] }
-  }
-};
-
-const scaleIn: Variants = {
-  hidden: { opacity: 0, scale: 0.95 },
-  visible: {
-    opacity: 1,
-    scale: 1,
-    transition: { duration: 0.3, ease: [0.25, 0.1, 0.25, 1] }
   }
 };
 
@@ -122,14 +104,6 @@ interface InspectionItem {
   condition: ConditionStatus;
   notes: string;
   photo?: PhotoPreview;
-}
-
-interface InspectionCategory {
-  id: string;
-  name: string;
-  nameAr: string;
-  icon: any;
-  items: InspectionItem[];
 }
 
 interface MechanicalItem {
@@ -251,10 +225,6 @@ export const VehicleReturnFormDialog = ({
   const [returnTime, setReturnTime] = useState(format(new Date(), 'HH:mm'));
   const [mileage, setMileage] = useState('');
   const [fuelLevel, setFuelLevel] = useState<number>(75);
-  const [exteriorCondition, setExteriorCondition] = useState('good');
-  const [interiorCondition, setInteriorCondition] = useState('good');
-  const [mechanicalCondition, setMechanicalCondition] = useState('good');
-
   // Comprehensive inspection data
   const [exteriorItems, setExteriorItems] = useState<InspectionItem[]>(initialExteriorItems);
   const [interiorItems, setInteriorItems] = useState<InspectionItem[]>(initialInteriorItems);
@@ -402,6 +372,9 @@ export const VehicleReturnFormDialog = ({
     if (hasIssues) return 'fair';
     return 'good';
   }, []);
+  const exteriorCondition = calculateOverallRating(exteriorItems);
+  const interiorCondition = calculateOverallRating(interiorItems);
+  const mechanicalCondition = calculateOverallRating(mechanicalItems);
 
   // Remove photo
   const removePhoto = useCallback((id: string) => {
@@ -463,6 +436,9 @@ export const VehicleReturnFormDialog = ({
 
     setIsSubmitting(true);
 
+    const uploadedPaths: string[] = [];
+    let databaseSubmissionStarted = false;
+
     try {
       if (!companyId || !contract.vehicle_id) throw new Error('تعذر تحديد الشركة أو المركبة');
 
@@ -483,6 +459,7 @@ export const VehicleReturnFormDialog = ({
           .upload(fileName, photo.file);
 
         if (uploadError) throw uploadError;
+        uploadedPaths.push(uploadData.path);
         const { data: publicUrl } = supabase.storage.from('vehicle-documents').getPublicUrl(uploadData.path);
         photoUrls.push(publicUrl.publicUrl);
       }
@@ -500,6 +477,7 @@ export const VehicleReturnFormDialog = ({
             .upload(fileName, item.photo.file);
 
           if (uploadError) throw uploadError;
+          uploadedPaths.push(uploadData.path);
           const { data: publicUrl } = supabase.storage.from('vehicle-documents').getPublicUrl(uploadData.path);
           photoUrls.push(publicUrl.publicUrl);
         }
@@ -552,77 +530,53 @@ export const VehicleReturnFormDialog = ({
         ? 'poor'
         : [exteriorRating, interiorRating, mechanicalRating].includes('fair') ? 'fair' : 'good';
 
-      const { error: returnError } = await supabase
-        .from('vehicle_condition_reports')
-        .insert({
-          contract_id: contract.id,
-          vehicle_id: contract.vehicle_id,
-          company_id: companyId,
-          inspector_id: user.id,
-          inspection_type: 'check_out',
-          inspection_date: `${returnDate}T${returnTime}:00`,
-          mileage_reading: parseInt(mileage, 10),
-          fuel_level: fuelLevel,
-          overall_condition: overallCondition,
-          condition_items: JSON.parse(JSON.stringify({
-            ...inspectionData,
-            exterior_rating: exteriorRating,
-            interior_rating: interiorRating,
-            mechanical_rating: mechanicalRating,
-            accessories: Object.entries(accessories).filter(([, present]) => present).map(([key]) => key),
-            documents: Object.entries(documents).filter(([, present]) => present).map(([key]) => key),
-            staff_notes: staffNotes || null,
-            customer_acknowledgment: customerAcknowledgment,
-            visual_inspection_zones: visualInspectionZones,
-          })) as Json,
-          damage_points: JSON.parse(JSON.stringify(visualInspectionZones)) as Json,
-          damage_items: JSON.parse(JSON.stringify(additionalCharges)) as Json,
-          photos: photoUrls as Json,
-          notes: notes || null,
-          status: 'approved',
-        })
-        .select('id')
-        .single();
+      const inspectionDate = new Date(`${returnDate}T${returnTime}:00`);
+      if (Number.isNaN(inspectionDate.getTime())) {
+        throw new Error('تاريخ أو وقت التسليم غير صالح');
+      }
+
+      const conditionItems = JSON.parse(JSON.stringify({
+        ...inspectionData,
+        exterior_rating: exteriorRating,
+        interior_rating: interiorRating,
+        mechanical_rating: mechanicalRating,
+        accessories: Object.entries(accessories).filter(([, present]) => present).map(([key]) => key),
+        documents: Object.entries(documents).filter(([, present]) => present).map(([key]) => key),
+        staff_notes: staffNotes || null,
+        customer_acknowledgment: customerAcknowledgment,
+        visual_inspection_zones: visualInspectionZones,
+      })) as Json;
+
+      databaseSubmissionStarted = true;
+      const { data: returnData, error: returnError } = await supabase.rpc('record_contract_vehicle_return_v1', {
+        p_contract_id: contract.id,
+        p_inspection_date: inspectionDate.toISOString(),
+        p_mileage_reading: parseInt(mileage, 10),
+        p_fuel_level: fuelLevel,
+        p_overall_condition: overallCondition,
+        p_condition_items: conditionItems,
+        p_damage_points: JSON.parse(JSON.stringify(visualInspectionZones)) as Json,
+        p_damage_items: JSON.parse(JSON.stringify(additionalCharges)) as Json,
+        p_photos: photoUrls as Json,
+        p_notes: notes || null,
+      });
 
       if (returnError) throw returnError;
-
-      const now = new Date().toISOString();
-      const { data: otherActiveContracts, error: activeContractsError } = await supabase
-        .from('contracts')
-        .select('id')
-        .eq('company_id', companyId)
-        .eq('vehicle_id', contract.vehicle_id)
-        .eq('status', 'active')
-        .neq('id', contract.id)
-        .limit(1);
-
-      if (activeContractsError) throw activeContractsError;
-      const vehicleStatus = otherActiveContracts?.length ? 'rented' : 'available';
-      const [vehicleResult, contractResult] = await Promise.all([
-        supabase
-          .from('vehicles')
-          .update({
-            current_mileage: parseInt(mileage, 10),
-            odometer_reading: parseInt(mileage, 10),
-            status: vehicleStatus,
-            updated_at: now,
-          })
-          .eq('id', contract.vehicle_id)
-          .eq('company_id', companyId),
-        supabase
-          .from('contracts')
-          .update({ vehicle_returned: true, vehicle_status: 'available', updated_at: now })
-          .eq('id', contract.id)
-          .eq('company_id', companyId),
-      ]);
-      const integrationErrors = [vehicleResult.error, contractResult.error].filter(Boolean);
+      const returnResult = returnData as { idempotent_replay?: boolean } | null;
+      if (returnResult?.idempotent_replay && uploadedPaths.length > 0) {
+        const { error: replayCleanupError } = await supabase.storage
+          .from('vehicle-documents')
+          .remove(uploadedPaths);
+        if (replayCleanupError) {
+          console.warn('Could not clean up unused replay uploads:', replayCleanupError);
+        }
+      }
 
       toast({
-        title: integrationErrors.length ? 'تم حفظ تقرير التسليم مع تنبيه' : 'تم تسجيل التسليم بنجاح',
-        description: integrationErrors.length
-          ? 'حُفظ تقرير الفحص، لكن تعذر تحديث حالة العقد أو المركبة. أعد المحاولة من صفحة العقد.'
-          : `تم تسجيل تسليم المركبة ${contract.vehicle_plate} بنجاح`,
-        variant: integrationErrors.length ? 'destructive' : 'default',
+        title: returnResult?.idempotent_replay ? 'التسليم مسجل مسبقًا' : 'تم تسجيل التسليم بنجاح',
+        description: returnResult?.idempotent_replay
+          ? `تم التحقق من محضر تسليم المركبة ${contract.vehicle_plate} وحالتها دون إنشاء نسخة مكررة`
+          : `تم تسجيل تسليم المركبة ${contract.vehicle_plate} وتحديث حالتها بشكل متزامن`,
       });
 
       // Refresh data
@@ -634,6 +588,12 @@ export const VehicleReturnFormDialog = ({
       onOpenChange(false);
     } catch (error) {
       console.error('Error submitting return:', error);
+      if (!databaseSubmissionStarted && uploadedPaths.length > 0) {
+        const { error: cleanupError } = await supabase.storage
+          .from('vehicle-documents')
+          .remove(uploadedPaths);
+        if (cleanupError) console.error('Error cleaning up failed return uploads:', cleanupError);
+      }
       toast({
         title: 'خطأ في تسجيل التسليم',
         description: error instanceof Error ? error.message : 'حدث خطأ غير متوقع',

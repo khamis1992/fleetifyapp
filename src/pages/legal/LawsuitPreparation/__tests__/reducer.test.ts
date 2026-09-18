@@ -313,3 +313,19 @@ describe('lawsuitPreparationReducer', () => {
     });
   });
 });
+
+
+describe('financial claim refresh failure', () => {
+  it('invalidates stale totals and refuses recalculation until reconciliation succeeds', () => {
+    const initial = createInitialState('contract');
+    const calculations = { overdueRent: 1700, total: 1700 } as NonNullable<LawsuitPreparationState['calculations']>;
+    const loaded = { ...initial, calculations };
+    const failed = lawsuitPreparationReducer(loaded, { type: 'SET_FINANCIAL_CLAIM_ERROR', payload: 'تحتاج الأقساط إلى مطابقة' });
+    expect(failed.calculations).toBeNull();
+    expect(failed.taqadiData).toBeNull();
+    expect(lawsuitPreparationReducer(failed, { type: 'UPDATE_CALCULATIONS', payload: calculations }).calculations).toBeNull();
+    const recovered = lawsuitPreparationReducer(failed, { type: 'SET_FINANCIAL_CLAIM_ERROR', payload: null });
+    expect(recovered.calculations).toBeNull();
+    expect(lawsuitPreparationReducer(recovered, { type: 'UPDATE_CALCULATIONS', payload: calculations }).calculations).toEqual(calculations);
+  });
+});

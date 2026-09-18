@@ -5,6 +5,13 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
+import { getInvoiceDisplayLabel } from '@/utils/invoiceBillingMonth';
+
+const getInvoiceReference = (invoice: any) =>
+  invoice.invoice_number || `INV-${invoice.id?.substring(0, 8) || '-'}`;
+
+const getInvoiceDisplayName = (invoice: any) =>
+  getInvoiceDisplayLabel(invoice);
 
 const InvoicesTab = ({
   invoices,
@@ -12,13 +19,15 @@ const InvoicesTab = ({
   violations = [],
   customerName,
   customerPhone,
-  customerIdNumber
+  customerIdNumber,
+  isFiltered = false
 }: {
   invoices: any[],
   onInvoiceClick: (invoice: any) => void,
   violations?: any[],
   customerName?: string,
   customerPhone?: string,
+  isFiltered?: boolean,
   customerIdNumber?: string
 }) => {
   const totalOutstanding = useMemo(() => {
@@ -150,12 +159,12 @@ const InvoicesTab = ({
           ${outstandingInvoices.length > 0 ? `
           <div class="section-title">أولاً: الفواتير المستحقة (${outstandingInvoices.length})</div>
           <table>
-            <thead><tr><th style="width: 35px;">م</th><th>رقم الفاتورة</th><th>التاريخ</th><th>تاريخ الاستحقاق</th><th>المبلغ الإجمالي</th><th>المدفوع</th><th>المتبقي</th><th>الحالة</th></tr></thead>
+            <thead><tr><th style="width: 35px;">م</th><th>الفاتورة</th><th>التاريخ</th><th>تاريخ الاستحقاق</th><th>المبلغ الإجمالي</th><th>المدفوع</th><th>المتبقي</th><th>الحالة</th></tr></thead>
             <tbody>
               ${outstandingInvoices.map((invoice, index) => {
                 const outstanding = (invoice.total_amount || 0) - (invoice.paid_amount || 0);
                 const isOverdue = invoice.due_date && new Date(invoice.due_date) < new Date();
-                return `<tr><td style="text-align: center;">${index + 1}</td><td>${invoice.invoice_number || 'INV-' + (invoice.id?.substring(0, 8) || '-')}</td><td>${invoice.invoice_date ? format(new Date(invoice.invoice_date), 'dd/MM/yyyy') : '-'}</td><td>${invoice.due_date ? format(new Date(invoice.due_date), 'dd/MM/yyyy') : '-'}</td><td>${(invoice.total_amount || 0).toLocaleString()} ر.ق</td><td>${(invoice.paid_amount || 0).toLocaleString()} ر.ق</td><td class="amount-cell">${outstanding.toLocaleString()} ر.ق</td><td style="text-align: center;"><span class="${isOverdue ? 'status-overdue' : 'status-pending'}">${isOverdue ? 'متأخر' : 'مستحق'}</span></td></tr>`;
+                return `<tr><td style="text-align: center;">${index + 1}</td><td><strong>${getInvoiceDisplayName(invoice)}</strong><br/><small>المرجع: ${getInvoiceReference(invoice)}</small></td><td>${invoice.invoice_date ? format(new Date(invoice.invoice_date), 'dd/MM/yyyy') : '-'}</td><td>${invoice.due_date ? format(new Date(invoice.due_date), 'dd/MM/yyyy') : '-'}</td><td>${(invoice.total_amount || 0).toLocaleString()} ر.ق</td><td>${(invoice.paid_amount || 0).toLocaleString()} ر.ق</td><td class="amount-cell">${outstanding.toLocaleString()} ر.ق</td><td style="text-align: center;"><span class="${isOverdue ? 'status-overdue' : 'status-pending'}">${isOverdue ? 'متأخر' : 'مستحق'}</span></td></tr>`;
               }).join('')}
             </tbody>
             <tfoot><tr style="background: #1e3a5f; color: white;"><td colspan="6" style="text-align: left; font-weight: bold; border-color: #1e3a5f;">إجمالي الفواتير المستحقة</td><td colspan="2" style="font-weight: bold; font-size: 14px; border-color: #1e3a5f;">${totalOutstanding.toLocaleString()} ر.ق</td></tr></tfoot>
@@ -209,6 +218,8 @@ const InvoicesTab = ({
             <Button
               variant="outline"
               className="h-9 gap-2 border-rose-200 bg-white text-rose-700 hover:bg-rose-50"
+              disabled={isFiltered}
+              title={isFiltered ? 'امسح البحث قبل طباعة كشف المستحقات' : undefined}
               onClick={handlePrintOutstandingStatement}
             >
               <Printer className="w-4 h-4" />
@@ -223,89 +234,25 @@ const InvoicesTab = ({
         </div>
       </div>
 
-      {invoices.length > 0 ? (
-        <div className="grid gap-3 xl:grid-cols-2">
-          {invoices.map((invoice, index) => {
-            const outstanding = (invoice.total_amount || 0) - (invoice.paid_amount || 0);
-            const isPaid = invoice.payment_status === 'paid';
-            const isOverdue = !isPaid && invoice.due_date && new Date(invoice.due_date) < new Date();
-
-            return (
-              <motion.div
-                key={invoice.id}
-                initial={{ opacity: 0, x: -10 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: index * 0.05 }}
-                className={cn(
-                  "rounded-xl border bg-white p-4 transition-all cursor-pointer hover:-translate-y-0.5 hover:shadow-md",
-                  isPaid
-                    ? "border-emerald-200 hover:border-emerald-300"
-                    : isOverdue
-                    ? "border-red-200 hover:border-red-300"
-                    : "border-amber-200 hover:border-amber-300"
-                )}
-                onClick={() => onInvoiceClick(invoice)}
-              >
-                <div className="mb-4 flex items-center gap-3">
-                  <div className={cn(
-                    "w-10 h-10 rounded-lg flex items-center justify-center",
-                    isPaid
-                      ? "bg-emerald-100 text-emerald-600"
-                      : isOverdue
-                      ? "bg-red-100 text-red-600"
-                      : "bg-amber-100 text-amber-600"
-                  )}>
-                    <FileText className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <p className="font-bold text-slate-900">{invoice.invoice_number || `INV-${invoice.id.substring(0, 8)}`}</p>
-                    <p className="text-xs text-slate-600">
-                      {invoice.invoice_date ? format(new Date(invoice.invoice_date), 'dd/MM/yyyy') : invoice.due_date ? format(new Date(invoice.due_date), 'dd/MM/yyyy') : '-'}
-                    </p>
-                  </div>
-                </div>
-                <div className="flex items-end justify-between gap-3">
-                  <p className={cn(
-                    "font-bold",
-                    isPaid ? "text-emerald-600" : isOverdue ? "text-red-600" : "text-amber-600"
-                  )}>
-                    {invoice.total_amount?.toLocaleString()} ر.ق
-                  </p>
-                  <Badge className={cn(
-                    "text-[10px] px-2 py-0.5 rounded-md font-medium border",
-                    isPaid
-                      ? "bg-emerald-100 text-emerald-700 border-emerald-200"
-                      : isOverdue
-                      ? "bg-red-100 text-red-700 border-red-200"
-                      : "bg-amber-100 text-amber-700 border-amber-200"
-                  )}>
-                    {isPaid ? 'مسدد' : isOverdue ? 'متأخر' : 'مستحق'}
-                  </Badge>
-                </div>
-                <div className="mt-4 grid grid-cols-3 gap-2 border-t border-[#E7EDF4] pt-3">
-                  <div className="rounded-lg bg-[#F8FAFC] p-3">
-                    <p className="text-[11px] font-bold text-[#6A7688]">الإجمالي</p>
-                    <p className="mt-1 text-sm font-black text-[#142033]">{(invoice.total_amount || 0).toLocaleString()} ر.ق</p>
-                  </div>
-                  <div className="rounded-lg bg-[#F8FAFC] p-3">
-                    <p className="text-[11px] font-bold text-[#6A7688]">المدفوع</p>
-                    <p className="mt-1 text-sm font-black text-emerald-700">{(invoice.paid_amount || 0).toLocaleString()} ر.ق</p>
-                  </div>
-                  <div className={cn("rounded-lg p-3", outstanding > 0 ? "bg-rose-50" : "bg-emerald-50")}>
-                    <p className={cn("text-[11px] font-bold", outstanding > 0 ? "text-rose-700" : "text-emerald-700")}>المتبقي</p>
-                    <p className={cn("mt-1 text-sm font-black", outstanding > 0 ? "text-rose-700" : "text-emerald-700")}>{outstanding.toLocaleString()} ر.ق</p>
-                  </div>
-                </div>
-              </motion.div>
-            );
-          })}
-        </div>
-      ) : (
-        <div className="rounded-xl border border-dashed border-[#B8C6D8] bg-[#F8FAFC] p-12 text-center">
-          <Wallet className="mx-auto mb-3 h-12 w-12 text-[#9AA6B6]" />
-          <p className="font-bold text-[#536173]">لا توجد فواتير لهذا العميل</p>
-        </div>
-      )}
+      {invoices.length > 0 ? <div className="overflow-x-auto rounded-xl border border-[#dfe5dc] bg-white"><table>
+        <caption className="sr-only">فواتير العميل وأرصدة السداد</caption>
+        <thead><tr>{['الفاتورة', 'التاريخ', 'الإجمالي', 'المسدد', 'المتبقي', 'الحالة', ''].map((label, i) => <th key={i} scope="col" className="px-4 text-start">{label || <span className="sr-only">الإجراء</span>}</th>)}</tr></thead>
+        <tbody className="divide-y divide-[#edf1e8]">{invoices.map(invoice => {
+          const outstanding = Math.max(0, (invoice.total_amount || 0) - (invoice.paid_amount || 0));
+          const isCancelled = ['cancelled', 'canceled', 'void'].includes(invoice.status);
+          const isPaid = invoice.payment_status === 'paid' || invoice.status === 'paid';
+          const isOverdue = !isPaid && invoice.due_date && new Date(invoice.due_date) < new Date();
+          return <tr key={invoice.id} className="hover:bg-[#f8faf5]">
+            <td className="px-4"><strong className="text-xs font-semibold">{getInvoiceDisplayName(invoice)}</strong><p className="mt-1 text-[10px] text-slate-400"><bdi>{getInvoiceReference(invoice)}</bdi></p></td>
+            <td className="px-4 text-xs text-slate-500"><bdi>{invoice.invoice_date || invoice.due_date || '—'}</bdi></td>
+            <td className="px-4 whitespace-nowrap">{Number(invoice.total_amount || 0).toLocaleString()} ر.ق</td>
+            <td className="px-4 whitespace-nowrap text-emerald-700">{Number(invoice.paid_amount || 0).toLocaleString()} ر.ق</td>
+            <td className="px-4 whitespace-nowrap">{isCancelled ? '—' : outstanding.toLocaleString() + ' ر.ق'}</td>
+            <td className="px-4"><Badge className={cn('whitespace-nowrap rounded-md border px-2 py-1 text-[10px]', isCancelled ? 'bg-slate-50 text-slate-500' : isPaid ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : isOverdue ? 'bg-rose-50 text-rose-700 border-rose-200' : 'bg-amber-50 text-amber-700 border-amber-200')}>{isCancelled ? 'ملغاة' : isPaid ? 'مسددة' : isOverdue ? 'متأخرة' : 'مستحقة'}</Badge></td>
+            <td className="px-4"><Button variant="ghost" size="sm" aria-label={'عرض الفاتورة ' + getInvoiceReference(invoice)} onClick={() => onInvoiceClick(invoice)}>عرض ←</Button></td>
+          </tr>;
+        })}</tbody>
+      </table></div> : <div className="cw-empty"><FileText size={36}/><h3>لا توجد فواتير في هذا العرض</h3><p>ستظهر هنا فواتير العميل عند تسجيلها. يمكنك أيضاً تغيير البحث لعرض نتائج أخرى.</p></div>}
     </motion.div>
   );
 };

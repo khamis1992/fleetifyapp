@@ -68,6 +68,7 @@ export interface FilingPayload {
   };
   vehicle: Record<string, unknown> | null;
   documents: FilingDocument[];
+  memoSnapshotId?: string;
   finalApproval: boolean;
   sourceUrl: string;
   // Canary jobs re-run the portal flow up to the parties page and never
@@ -115,6 +116,10 @@ export interface ProgressUpdate {
   details?: Record<string, unknown>;
   errorCode?: string;
   errorMessage?: string;
+}
+
+export class ManualStopRequestedError extends Error {
+  constructor() { super('طلب المستخدم إيقاف الوكيل'); this.name = 'ManualStopRequestedError'; }
 }
 
 export class HumanInterventionError extends Error {

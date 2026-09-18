@@ -140,7 +140,7 @@ export function ProfessionalInvoiceTemplate({
     <div id="invoice-template" className={`w-full max-w-4xl mx-auto bg-white ${className}`}>
       {/* Visual Indicator - NEW PROFESSIONAL DESIGN */}
       <div className="bg-gradient-to-r from-primary to-blue-600 text-white px-4 py-2 rounded-t-lg text-center font-semibold print:hidden mb-2">
-        ✨ New Professional Invoice Design v2.0
+        معاينة الفاتورة
       </div>
       
       {/* Action Buttons */}
@@ -230,13 +230,13 @@ export function ProfessionalInvoiceTemplate({
                 <div className="flex items-center gap-2">
                   <Calendar className="h-4 w-4 text-muted-foreground" />
                   <span className="text-muted-foreground">التاريخ:</span>
-                  <span>{new Date(invoice.invoice_date).toLocaleDateString('en-GB')}</span>
+                  <span>{new Date(invoice.invoice_date).toLocaleDateString('ar-QA')}</span>
                 </div>
                 {invoice.due_date && (
                   <div className="flex items-center gap-2">
                     <Calendar className="h-4 w-4 text-muted-foreground" />
                     <span className="text-muted-foreground">تاريخ الاستحقاق:</span>
-                    <span>{new Date(invoice.due_date).toLocaleDateString('en-GB')}</span>
+                    <span>{new Date(invoice.due_date).toLocaleDateString('ar-QA')}</span>
                   </div>
                 )}
                 <div className="flex items-center gap-2">

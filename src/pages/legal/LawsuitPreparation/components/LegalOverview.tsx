@@ -1,14 +1,23 @@
+import { ClaimRegisterView } from './ClaimRegisterPanel';
+import { Link } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
+import { Button } from '@/components/ui/button';
 import { motion } from 'framer-motion';
 import { AlertTriangle, Car, Coins, FileText, Receipt, ShieldAlert, UserRound } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { formatCustomerName } from '@/utils/formatCustomerName';
+import { hasKnownTaqadiNationality } from '@/utils/taqadiNationality';
 import { useLawsuitPreparationContext } from '../store';
+import { summarizeRentClaim } from '../utils/rentClaimSummary';
+import { isTrafficViolationsOnlyScope } from '@/types/legalClaimScope';
+import { fixedCompensationRow } from '@/types/legalClaimRegister';
 
 function formatQar(amount?: number | null) {
   return new Intl.NumberFormat('ar-QA', {
     style: 'currency',
     currency: 'QAR',
-    maximumFractionDigits: 0,
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
   }).format(Number(amount || 0));
 }
 
@@ -37,9 +46,10 @@ function AmountTile({ label, value, tone = 'default' }: { label: string; value?:
 
 export function LegalOverview() {
   const { state } = useLawsuitPreparationContext();
-  const { calculations, contract, customer, overdueInvoices, trafficViolations, vehicle } = state;
+  const queryClient = useQueryClient();
+  const { calculations, contract, customer, financialClaimSource, overdueInvoices, trafficViolations, vehicle } = state;
 
-  if (!contract || !calculations) {
+  if (!contract) {
     return (
       <div className="lawsuit-empty-panel">
         <strong>جاري تجهيز بيانات القضية</strong>
@@ -51,6 +61,11 @@ export function LegalOverview() {
   const customerName = formatCustomerName(customer) || 'غير محدد';
   const vehicleName = vehicle ? [vehicle.make, vehicle.model, vehicle.year].filter(Boolean).join(' ') : 'غير محدد';
   const plateNumber = vehicle?.plate_number || contract.license_plate || 'غير محدد';
+  const fixedCompensation = fixedCompensationRow(financialClaimSource?.claimRegister);
+  const rentSummary = summarizeRentClaim(
+    isTrafficViolationsOnlyScope(state.legalCase?.claim_scope) ? [] : overdueInvoices,
+    contract,
+  );
 
   return (
     <motion.div className="lawsuit-overview-redesign" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}>
@@ -63,7 +78,7 @@ export function LegalOverview() {
           </div>
           <div className="lawsuit-case-value">
             <span>قيمة المطالبة</span>
-            <strong>{formatQar(calculations.total)}</strong>
+            <strong>{calculations ? formatQar(calculations.total) : 'لم تكتمل المراجعة المالية'}</strong>
           </div>
         </div>
 
@@ -76,7 +91,8 @@ export function LegalOverview() {
             <InfoRow label="الاسم" value={customerName} />
             <InfoRow label="الرقم الشخصي" value={customer?.national_id} />
             <InfoRow label="الهاتف" value={customer?.phone} />
-            <InfoRow label="الجنسية" value={customer?.nationality || customer?.country} />
+            <InfoRow label="الجنسية" value={hasKnownTaqadiNationality(customer?.nationality) ? customer?.nationality : 'غير مسجلة — يلزم استكمالها'} />
+            <InfoRow label="بلد الإقامة" value={customer?.country} />
           </article>
 
           <article className="lawsuit-data-card">
@@ -103,28 +119,59 @@ export function LegalOverview() {
         </div>
       </section>
 
+      {state.financialClaimError && <section className="lawsuit-section-panel border-amber-300 bg-amber-50" role="alert">
+        <h2 className="font-bold text-amber-950">المطالبة المالية تحتاج مراجعة</h2>
+        <p className="mt-2 text-amber-950">{state.financialClaimError}</p>
+        <p className="mt-2 text-sm text-amber-900">راجع ربط الأقساط بالفواتير وتخصيص الدفعات المكتملة في ملف العقد، ثم أعد تحميل المطالبة. يتوقف اعتماد المذكرة حتى نجاح المطابقة.</p>
+        <div className="mt-4 flex flex-wrap gap-2">
+          <Button asChild variant="outline"><Link to={'/contracts/' + (contract.contract_number || contract.id)}>مراجعة مالية العقد</Link></Button>
+          <Button variant="outline" onClick={() => queryClient.invalidateQueries({ queryKey: ['legal-claim-projection', state.contractId, state.companyId] })}>إعادة تحميل المطالبة</Button>
+        </div>
+      </section>}
+      {calculations && !state.financialClaimError ? <>
       <section className="lawsuit-section-panel">
         <div className="lawsuit-section-heading compact">
           <div>
             <h2>ملخص المطالبة المالية</h2>
             <p>الأرقام المعتمدة لتوليد المذكرة الشارحة وكشف المطالبات.</p>
           </div>
-          <Badge variant="outline">{overdueInvoices.length} فاتورة متأخرة</Badge>
+          <Badge variant="outline">
+            {financialClaimSource.mode === 'legal_accrual'
+              ? 'أجرة تعاقدية مستمرة'
+              : financialClaimSource.mode === 'composite'
+                ? `${overdueInvoices.length} استحقاق محاسبي وقانوني موحد`
+                : financialClaimSource.mode === 'payment_schedules'
+                  ? `${overdueInvoices.length} استحقاق تعاقدي حالّ`
+                  : financialClaimSource.mode === 'hybrid'
+                    ? `${overdueInvoices.length} استحقاق من مصدر موحد`
+                    : `${overdueInvoices.length} فاتورة متأخرة`}
+          </Badge>
         </div>
 
         <div className="lawsuit-amount-grid">
+          <AmountTile label="أصل الأجرة الداخلة في المطالبة" value={rentSummary.grossRent} />
+          <AmountTile label="المسدد جزئيًا من هذه الأجرة" value={rentSummary.countedPayments} />
           <AmountTile label="الإيجار المتأخر" value={calculations.overdueRent} tone="danger" />
-          <AmountTile label="غرامات التأخير" value={calculations.lateFees} tone="warning" />
-          <AmountTile label="رسوم الأضرار" value={calculations.damagesFee} />
+          <AmountTile label="تعويض اتفاقي موثق" value={calculations.lateFees} tone="warning" />
+          <AmountTile label="أضرار ومصاريف وطلبات إضافية" value={calculations.damagesFee - Number(fixedCompensation?.amount || 0)} />
+          {fixedCompensation && <AmountTile label={fixedCompensation.label} value={fixedCompensation.amount} tone="warning" />}
           <AmountTile label="المخالفات المرورية" value={calculations.violationsFines} tone="danger" />
+          <AmountTile label="تعويض الاحتباس المثبت" value={calculations.retentionCompensation} />
+          <AmountTile label="وديعة الضمان المخصومة" value={calculations.securityDepositDeduction} />
           <AmountTile label="الإجمالي" value={calculations.total} tone="total" />
         </div>
+        <p className="mt-4 text-sm leading-6 text-muted-foreground">
+          فترة الخدمة المغطاة بالمطالبة: {formatDate(rentSummary.periodFrom)} إلى {formatDate(rentSummary.periodTo)}.
+          {' '}المدفوعات أعلاه تخص الاستحقاقات التي بقي عليها رصيد فقط. الاستحقاقات المسددة بالكامل ومدفوعاتها مستبعدة معًا، والأقساط المستقبلية لا تدخل في المطالبة؛ لذلك قد يختلف هذا المسدد عن إجمالي المحصل في صفحة العقد.
+          {' '}تاريخ استحقاق الفاتورة أول الشهر مستقل عن نهاية فترة الخدمة.
+        </p>
       </section>
 
+      {financialClaimSource?.claimRegister && <section className="lawsuit-section-panel"><h2 className="text-xl font-bold mb-4">البيان المالي والطلبات</h2><ClaimRegisterView register={financialClaimSource.claimRegister} /></section>}
       <section className="lawsuit-signal-grid">
         <article>
           <Receipt className="h-5 w-5" />
-          <span>الفواتير غير المسددة</span>
+          <span>{financialClaimSource.scheduleCount > 0 ? 'الاستحقاقات غير المسددة' : 'الفواتير غير المسددة'}</span>
           <strong>{overdueInvoices.length}</strong>
           <small>متوسط التأخير {calculations.avgDaysOverdue || 0} يوم</small>
         </article>
@@ -147,6 +194,7 @@ export function LegalOverview() {
           <small>بالريال القطري</small>
         </article>
       </section>
+      </> : <div className="lawsuit-empty-panel" role="status">لم تكتمل مراجعة المطالبة المالية بعد. بيانات العقد أعلاه مستقلة عن حالة المطالبة.</div>}
     </motion.div>
   );
 }

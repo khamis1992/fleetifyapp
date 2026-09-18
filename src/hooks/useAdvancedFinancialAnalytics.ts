@@ -1,6 +1,7 @@
-import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/contexts/AuthContext";
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
+import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
+import { financeToday, readFinancialPages, readFinancialWorkspace } from '@/services/financialReporting';
 
 interface CostCenterPerformance {
   centerName: string;
@@ -41,297 +42,75 @@ interface MonthlyTrend {
 interface AdvancedFinancialAnalytics {
   monthlyTrends: MonthlyTrend[];
   costCenterPerformance: CostCenterPerformance[];
-  cashFlowAnalysis: CashFlowAnalysis;
-  financialHealthScore: FinancialHealthScore;
-}
-
-interface JournalEntryLine {
-  cost_center_id?: string | null;
-  debit_amount?: number | null;
-  credit_amount?: number | null;
-  chart_of_accounts?: {
-    account_type?: string;
-    account_name?: string;
-  } | null;
-  cost_centers?: {
-    center_name?: string;
-    center_code?: string;
-  } | null;
-}
-
-interface JournalEntry {
-  entry_date: string;
-  journal_entry_lines?: JournalEntryLine[];
-}
-
-interface Payment {
-  amount: number;
-  payment_type?: string;
-}
-
-interface BankTransaction {
-  amount: number;
-  transaction_type?: string;
-}
-
-interface CostCenter {
-  id: string;
-  center_name: string;
-  center_code: string;
-  budget_amount?: number | null;
+  cashFlowAnalysis: CashFlowAnalysis | null;
+  financialHealthScore: FinancialHealthScore | null;
 }
 
 export const useAdvancedFinancialAnalytics = () => {
-  const { user } = useAuth();
-  
+  const { companyId } = useUnifiedCompanyAccess();
   return useQuery({
-    queryKey: ["advanced-financial-analytics", user?.profile?.company_id],
+    queryKey: ['advanced-financial-analytics', companyId],
+    enabled: Boolean(companyId),
     queryFn: async (): Promise<AdvancedFinancialAnalytics> => {
-      if (!user?.profile?.company_id) {
-        return getEmptyAnalytics();
-      }
-
-      const companyId = user.profile.company_id;
-      const sixMonthsAgo = new Date();
-      sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
-
-      // جلب بيانات مراكز التكلفة
-      const { data: costCenters } = await supabase
-        .from("cost_centers")
-        .select("*")
-        .eq("company_id", companyId)
-        .eq("is_active", true);
-
-      // جلب القيود اليومية للأشهر الستة الماضية
-      const { data: journalEntries } = await supabase
-        .from("journal_entries")
-        .select(`
-          *,
-          journal_entry_lines (
-            *,
-            chart_of_accounts!fk_journal_entry_lines_account (
-              account_type,
-              account_name
-            ),
-            cost_centers (
-              center_name,
-              center_code
+      if (!companyId) throw new Error('Company ID required');
+      const today = financeToday();
+      const snapshot = await readFinancialWorkspace(companyId, today);
+      const since = snapshot.trend[0]?.month || today;
+      const [centers, lines] = await Promise.all([
+        readFinancialPages((from, to) =>
+          supabase
+            .from('cost_centers')
+            .select('*', { count: 'exact' })
+            .eq('company_id', companyId)
+            .order('id')
+            .range(from, to)
+        ),
+        readFinancialPages((from, to) =>
+          supabase
+            .from('journal_entry_lines')
+            .select(
+              'cost_center_id,debit_amount,credit_amount,journal_entries!inner(company_id,status,entry_date),chart_of_accounts!fk_journal_entry_lines_account!inner(account_type,company_id)',
+              { count: 'exact' }
             )
-          )
-        `)
-        .eq("company_id", companyId)
-        .eq("status", "posted")
-        .gte("entry_date", sixMonthsAgo.toISOString().split('T')[0]);
-
-      // جلب المدفوعات والعمليات البنكية
-      const { data: payments } = await supabase
-        .from("payments")
-        .select("*")
-        .eq("company_id", companyId)
-        .eq("payment_status", "completed")
-        .gte("payment_date", sixMonthsAgo.toISOString().split('T')[0]);
-
-      const { data: bankTransactions } = await supabase
-        .from("bank_transactions")
-        .select("*")
-        .eq("company_id", companyId)
-        .eq("status", "completed")
-        .gte("transaction_date", sixMonthsAgo.toISOString().split('T')[0]);
-
-      // حساب الاتجاهات الشهرية
-      const monthlyTrends = calculateMonthlyTrends(journalEntries || [], payments || []);
-      
-      // حساب أداء مراكز التكلفة
-      const costCenterPerformance = calculateCostCenterPerformance(
-        costCenters || [],
-        journalEntries || []
-      );
-      
-      // تحليل التدفق النقدي
-      const cashFlowAnalysis = calculateCashFlowAnalysis(
-        payments || [],
-        bankTransactions || []
-      );
-      
-      // حساب درجة الصحة المالية
-      const financialHealthScore = calculateFinancialHealthScore(
-        monthlyTrends,
-        cashFlowAnalysis
-      );
-
+            .eq('journal_entries.company_id', companyId)
+            .eq('chart_of_accounts.company_id', companyId)
+            .eq('journal_entries.status', 'posted')
+            .in('chart_of_accounts.account_type', ['expense', 'expenses'])
+            .gte('journal_entries.entry_date', since)
+            .lte('journal_entries.entry_date', today)
+            .not('cost_center_id', 'is', null)
+            .order('id')
+            .range(from, to)
+        ),
+      ]);
       return {
-        monthlyTrends,
-        costCenterPerformance,
-        cashFlowAnalysis,
-        financialHealthScore,
+        monthlyTrends: snapshot.trend.map((row) => ({
+          month: row.month,
+          revenue: row.revenue,
+          expenses: row.expenses,
+          profit: row.revenue - row.expenses,
+          profitMargin: row.revenue !== 0 ? ((row.revenue - row.expenses) / row.revenue) * 100 : 0,
+        })),
+        costCenterPerformance: centers.map((center) => {
+          const actualAmount = lines
+            .filter((line) => line.cost_center_id === center.id)
+            .reduce((sum, line) => sum + (line.debit_amount || 0) - (line.credit_amount || 0), 0);
+          const budgetAmount = center.budget_amount || 0,
+            variance = actualAmount - budgetAmount;
+          return {
+            centerName: center.center_name,
+            centerCode: center.center_code,
+            budgetAmount,
+            actualAmount,
+            variance,
+            variancePercentage: budgetAmount !== 0 ? (variance / budgetAmount) * 100 : 0,
+          };
+        }),
+        // Cash-flow categories require approved account mappings. Heuristic
+        // 80/10/10 splits and arbitrary health scores are not financial reports.
+        cashFlowAnalysis: null,
+        financialHealthScore: null,
       };
     },
-    enabled: !!user?.profile?.company_id,
   });
 };
-
-function calculateMonthlyTrends(journalEntries: JournalEntry[], payments: Payment[]): MonthlyTrend[] {
-  const monthlyData: { [key: string]: { revenue: number; expenses: number } } = {};
-
-  // تجميع البيانات حسب الشهر
-  journalEntries.forEach(entry => {
-    const month = new Date(entry.entry_date).toLocaleDateString('ar-EG', {
-      year: 'numeric',
-      month: 'long'
-    });
-
-    if (!monthlyData[month]) {
-      monthlyData[month] = { revenue: 0, expenses: 0 };
-    }
-
-    entry.journal_entry_lines?.forEach((line) => {
-      if (line.chart_of_accounts?.account_type === 'revenue') {
-        monthlyData[month].revenue += line.credit_amount || 0;
-      } else if (line.chart_of_accounts?.account_type === 'expenses') {
-        monthlyData[month].expenses += line.debit_amount || 0;
-      }
-    });
-  });
-
-  return Object.entries(monthlyData).map(([month, data]) => ({
-    month,
-    revenue: data.revenue,
-    expenses: data.expenses,
-    profit: data.revenue - data.expenses,
-    profitMargin: data.revenue > 0 ? ((data.revenue - data.expenses) / data.revenue) * 100 : 0,
-  })).slice(-6); // آخر 6 أشهر فقط
-}
-
-function calculateCostCenterPerformance(
-  costCenters: CostCenter[],
-  journalEntries: JournalEntry[]
-): CostCenterPerformance[] {
-  return costCenters.map(center => {
-    let actualAmount = 0;
-    const budgetAmount = center.budget_amount ?? 0;
-
-    journalEntries.forEach(entry => {
-      entry.journal_entry_lines?.forEach((line) => {
-        if (line.cost_center_id === center.id) {
-          actualAmount += line.debit_amount || 0;
-        }
-      });
-    });
-
-    const variance = actualAmount - budgetAmount;
-    const variancePercentage = budgetAmount > 0 
-      ? (variance / budgetAmount) * 100 
-      : 0;
-
-    return {
-      centerName: center.center_name,
-      centerCode: center.center_code,
-      budgetAmount,
-      actualAmount,
-      variance,
-      variancePercentage,
-    };
-  });
-}
-
-function calculateCashFlowAnalysis(
-  payments: Payment[],
-  bankTransactions: BankTransaction[]
-): CashFlowAnalysis {
-  let totalInflow = 0;
-  let totalOutflow = 0;
-
-  // حساب التدفقات من المدفوعات
-  payments.forEach(payment => {
-    if (payment.payment_type === 'receipt') {
-      totalInflow += payment.amount;
-    } else {
-      totalOutflow += payment.amount;
-    }
-  });
-
-  // حساب التدفقات من العمليات البنكية
-  bankTransactions.forEach(transaction => {
-    if (transaction.transaction_type === 'deposit') {
-      totalInflow += transaction.amount;
-    } else {
-      totalOutflow += transaction.amount;
-    }
-  });
-
-  const netCashFlow = totalInflow - totalOutflow;
-
-  return {
-    totalInflow,
-    totalOutflow,
-    netCashFlow,
-    operatingCashFlow: netCashFlow * 0.8, // تقدير
-    investingCashFlow: netCashFlow * 0.1, // تقدير
-    financingCashFlow: netCashFlow * 0.1, // تقدير
-  };
-}
-
-function calculateFinancialHealthScore(
-  monthlyTrends: MonthlyTrend[],
-  cashFlowAnalysis: CashFlowAnalysis
-): FinancialHealthScore {
-  // حساب درجة الربحية
-  const avgProfitMargin = monthlyTrends.length > 0
-    ? monthlyTrends.reduce((sum, trend) => sum + trend.profitMargin, 0) / monthlyTrends.length
-    : 0;
-  const profitabilityScore = Math.min(100, Math.max(0, avgProfitMargin * 5));
-
-  // حساب درجة السيولة
-  const liquidityScore = cashFlowAnalysis.netCashFlow > 0 ? 80 : 40;
-
-  // حساب درجة الكفاءة
-  const revenueGrowth = monthlyTrends.length >= 2
-    ? ((monthlyTrends[monthlyTrends.length - 1].revenue - monthlyTrends[0].revenue) / monthlyTrends[0].revenue) * 100
-    : 0;
-  const efficiencyScore = Math.min(100, Math.max(0, 50 + revenueGrowth));
-
-  // حساب درجة الملاءة المالية
-  const solvencyScore = cashFlowAnalysis.totalInflow > cashFlowAnalysis.totalOutflow ? 85 : 50;
-
-  // حساب الدرجة الإجمالية
-  const score = Math.round(
-    (profitabilityScore * 0.3) +
-    (liquidityScore * 0.25) +
-    (efficiencyScore * 0.25) +
-    (solvencyScore * 0.2)
-  );
-
-  return {
-    score,
-    factors: {
-      profitabilityScore: Math.round(profitabilityScore),
-      liquidityScore: Math.round(liquidityScore),
-      efficiencyScore: Math.round(efficiencyScore),
-      solvencyScore: Math.round(solvencyScore),
-    },
-  };
-}
-
-function getEmptyAnalytics(): AdvancedFinancialAnalytics {
-  return {
-    monthlyTrends: [],
-    costCenterPerformance: [],
-    cashFlowAnalysis: {
-      totalInflow: 0,
-      totalOutflow: 0,
-      netCashFlow: 0,
-      operatingCashFlow: 0,
-      investingCashFlow: 0,
-      financingCashFlow: 0,
-    },
-    financialHealthScore: {
-      score: 0,
-      factors: {
-        profitabilityScore: 0,
-        liquidityScore: 0,
-        efficiencyScore: 0,
-        solvencyScore: 0,
-      },
-    },
-  };
-}

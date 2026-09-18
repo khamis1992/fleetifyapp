@@ -86,6 +86,8 @@ const maintenanceTypeLabels: Record<string, string> = {
   repair: 'إصلاح',
   emergency: 'صيانة طارئة',
   preventive: 'صيانة وقائية',
+  historical_excel_import: 'صيانة سابقة',
+  maintenance: 'صيانة',
 };
 
 export function MaintenanceSidePanel({
@@ -136,7 +138,7 @@ export function MaintenanceSidePanel({
             animate={{ x: 0 }}
             exit={{ x: '100%' }}
             transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-            className="fixed top-0 right-0 h-full w-full md:w-[550px] bg-neutral-50 shadow-2xl z-50 overflow-hidden flex flex-col"
+            className="opw-details-drawer fixed top-0 right-0 h-full w-full md:w-[550px] bg-neutral-50 shadow-2xl z-50 overflow-hidden flex flex-col"
           >
             {isLoading ? (
               <div className="flex-1 flex items-center justify-center">
@@ -145,14 +147,14 @@ export function MaintenanceSidePanel({
             ) : maintenance ? (
               <>
                 {/* Header */}
-                <div className="bg-white border-b border-neutral-200 p-4">
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center gap-3">
+                <div className="opw-maintenance-drawer-header bg-white border-b border-neutral-200 p-4">
+                  <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+                    <div className="flex min-w-0 items-center gap-3">
                       <div className="p-2.5 bg-rose-100 rounded-xl">
                         <TypeIcon className="w-6 h-6 text-coral-600" />
                       </div>
-                      <div>
-                        <h2 className="text-lg font-bold text-neutral-900">
+                      <div className="min-w-0">
+                        <h2 className="break-words text-lg font-bold text-neutral-900">
                           طلب #{maintenance.maintenance_number || maintenance.id.slice(0, 6)}
                         </h2>
                         <p className="text-sm text-neutral-500">
@@ -171,6 +173,7 @@ export function MaintenanceSidePanel({
                         ابدأ الجولة التعريفية
                       </Button>
                       <button
+                        aria-label="إغلاق تفاصيل الصيانة"
                         onClick={onClose}
                         className="p-2 hover:bg-neutral-100 rounded-lg transition-colors"
                       >
@@ -180,7 +183,7 @@ export function MaintenanceSidePanel({
                   </div>
 
                   {/* Status & Priority */}
-                  <div className="flex items-center gap-2">
+                  <div className="flex flex-wrap items-center gap-2">
                     <Badge className={cn(
                       "px-3 py-1 rounded-full text-sm font-medium border",
                       statusColors[maintenance.status || 'pending']

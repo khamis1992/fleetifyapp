@@ -13,7 +13,7 @@ export default function JournalPermissions() {
             صلاحيات القيود المحاسبية
           </h1>
           <p className="text-muted-foreground mt-1">
-            عرض وإدارة صلاحيات مراحل القيود المحاسبية (Workflow Permissions)
+            عرض وإدارة صلاحيات مراحل القيود المحاسبية
           </p>
         </div>
 

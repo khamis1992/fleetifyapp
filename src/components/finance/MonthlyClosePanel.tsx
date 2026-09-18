@@ -17,6 +17,7 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { supabase } from "@/integrations/supabase/client";
+import { useCurrencyFormatter } from "@/hooks/useCurrencyFormatter";
 import { useUnifiedCompanyAccess } from "@/hooks/useUnifiedCompanyAccess";
 
 type AccountingPeriod = {
@@ -80,6 +81,7 @@ const ANNUAL_CLOSE_STATUS_LABELS: Record<string, string> = {
 export function MonthlyClosePanel() {
   const queryClient = useQueryClient();
   const { companyId } = useUnifiedCompanyAccess();
+  const { formatCurrency } = useCurrencyFormatter();
   const defaultPeriod = useMemo(() => getPreviousMonthRange(), []);
   const [periodName, setPeriodName] = useState(defaultPeriod.periodName);
   const [startDate, setStartDate] = useState(defaultPeriod.startDate);
@@ -227,7 +229,7 @@ export function MonthlyClosePanel() {
       queryClient.invalidateQueries({ queryKey: ["accounting-periods"] });
       setCalculatedRunId(null);
       setCalculatedResult(null);
-      toast.success(`تم اعتماد الإقفال السنوي. صافي الدخل: ${Number(result?.net_income ?? 0).toLocaleString()} QAR`);
+      toast.success(`تم اعتماد الإقفال السنوي. صافي الدخل: ${formatCurrency(Number(result?.net_income ?? 0))}`);
     },
     onError: (error) => {
       const msg = error instanceof Error ? error.message : "تعذر اعتماد الإقفال السنوي";
@@ -241,7 +243,6 @@ export function MonthlyClosePanel() {
 
   const latestClosed = periodsQuery.data?.find((period) => ["closed", "locked"].includes(period.status));
 
-  const formatCurrency = (amount: number) => `${Number(amount).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 3 })} QAR`;
 
   return (
     <div className="space-y-6">

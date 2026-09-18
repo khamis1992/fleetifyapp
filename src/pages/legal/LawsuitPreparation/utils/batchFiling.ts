@@ -1,3 +1,5 @@
+import { loadLegalQueueClaims, type QueueClaimResult } from '../../utils/legalQueueClaims';
+import { buildLegalMemoFactsText } from '@/utils/legal-document-generator';
 /**
  * Batch Filing Service — خدمة الرفع الجماعي للدعاوى
  *
@@ -9,6 +11,11 @@
 import { supabase } from '@/integrations/supabase/client';
 import { calculateDelinquencyAmounts } from '@/utils/calculateDelinquencyAmounts';
 import { lawsuitService } from '@/services/LawsuitService';
+import {
+  normalizeLegalContractDocumentIdentityRow,
+  normalizeLegalIdentityMatchStatus,
+  toLegalIdentityVerification,
+} from '@/services/legalContractIdentityVerifier';
 import { formatCustomerName } from '@/utils/formatCustomerName';
 import { createInitialState } from '../store/reducer';
 import type {
@@ -19,28 +26,39 @@ import type {
   TrafficViolation,
   Vehicle,
   ViolationEvidenceDocument,
+  LegalMemoSnapshot,
 } from '../store/types';
-import { generateDocument } from './documentGenerators';
-import { selectLegalContractDocument } from './contractDocumentSelection';
+import {
+  buildMemoDocumentData,
+  isMemoSnapshotCurrent,
+  prepareCurrentFilingState,
+} from './documentGenerators';
+import {
+  getEffectiveLegalIdentityMatchStatus,
+  isActiveLegalEvidenceDocument,
+  selectLegalContractDocument,
+} from './contractDocumentSelection';
 import { registerLegalCase } from './caseRegistration';
 import { getCurrentLegalCase, type LawsuitLegalCase } from './taqadiFiling';
 import {
-  buildTaqadiFilingPayload,
+  prepareTaqadiFilingPayload,
   enqueueTaqadiFilingJob,
   getLatestTaqadiFilingJob,
   TERMINAL_TAQADI_STATUSES,
 } from './taqadiAutomation';
 import {
-  buildFactsAdditions,
-  buildTaqadiClaims,
-  type TaqadiNarrativeInput,
+  inferTaqadiIdType,
 } from './taqadiNarrative';
-import {
-  TAQADI_DEFAULT_DEFENDANT_ADDRESS,
-  TAQADI_DEFAULT_DEFENDANT_EMAIL,
-} from './taqadiDefaults';
+import { buildLegalMemoClaimsText } from '@/utils/legal-memo-requests';
 import { getLawsuitClaimAmounts } from './claimAmounts';
-import { isClaimableRentalInvoice } from './legalClaimInvoiceFilter';
+import { loadLegalClaimProjection } from './legalClaimSources';
+import {
+  calculateRetentionClaim,
+  evaluateLegalCaseReadiness,
+  getDefendantContact,
+  getVerifiedDamageNet,
+} from './legalCaseWorkflow';
+import { isTrafficViolationsOnlyScope } from '@/types/legalClaimScope';
 
 // ==========================================
 // Candidate listing (قائمة العقود المرشحة)
@@ -53,18 +71,9 @@ export interface BatchCandidate {
   customerName: string;
   hasNationalId: boolean;
   hasSignedContract: boolean;
-  overdueInvoicesCount: number;
-  totalRemaining: number;
-}
-
-interface CandidateInvoiceRow {
-  contract_id: string | null;
-  total_amount: number | null;
-  paid_amount: number | null;
-  invoice_type?: string | null;
-  penalty_id?: string | null;
-  payment_status?: string | null;
-  status?: string | null;
+  overdueRent: number | null;
+  totalRemaining: number | null;
+  financialReview: string | null;
 }
 
 interface CandidateContractRow {
@@ -90,24 +99,13 @@ type CandidateDocumentRow = Parameters<typeof selectLegalContractDocument>[0][nu
   contract_id: string | null;
 };
 
-/** دالة نقية: تجمع الفواتير المتأخرة لكل عقد وتبني صفوف المرشحين */
+/** Build candidates from the same statement as the memo; never invoice caches. */
 export function buildBatchCandidates(input: {
-  invoices: CandidateInvoiceRow[];
+  claims: ReadonlyMap<string, QueueClaimResult>;
   contracts: CandidateContractRow[];
   customers: CandidateCustomerRow[];
   documents: CandidateDocumentRow[];
 }): BatchCandidate[] {
-  const remainingByContract = new Map<string, { count: number; total: number }>();
-  for (const invoice of input.invoices) {
-    if (!isClaimableRentalInvoice(invoice)) continue;
-    const remaining = Number(invoice.total_amount || 0) - Number(invoice.paid_amount || 0);
-    if (remaining <= 0 || !invoice.contract_id) continue;
-    const entry = remainingByContract.get(invoice.contract_id) ?? { count: 0, total: 0 };
-    entry.count += 1;
-    entry.total += remaining;
-    remainingByContract.set(invoice.contract_id, entry);
-  }
-
   const customerById = new Map(input.customers.map((customer) => [customer.id, customer]));
   const documentsByContract = new Map<string, CandidateDocumentRow[]>();
   for (const document of input.documents) {
@@ -118,10 +116,13 @@ export function buildBatchCandidates(input: {
   }
 
   return input.contracts
-    .filter((contract) => remainingByContract.has(contract.id))
+    .filter((contract) => {
+      const claim = input.claims.get(contract.id);
+      return !claim?.amounts || claim.amounts.total > 0;
+    })
     .map((contract) => {
       const customer = contract.customer_id ? customerById.get(contract.customer_id) : null;
-      const totals = remainingByContract.get(contract.id)!;
+      const claim = input.claims.get(contract.id);
       return {
         contractId: contract.id,
         contractNumber: contract.contract_number,
@@ -131,39 +132,28 @@ export function buildBatchCandidates(input: {
         hasSignedContract: Boolean(
           selectLegalContractDocument(documentsByContract.get(contract.id) ?? []),
         ),
-        overdueInvoicesCount: totals.count,
-        totalRemaining: totals.total,
+        overdueRent: claim?.amounts?.overdueRent ?? null,
+        totalRemaining: claim?.amounts?.total ?? null,
+        financialReview: claim?.error ?? (!claim?.amounts ? 'تعذر التحقق من المطالبة المالية' : null),
       };
     })
-    .sort((a, b) => b.totalRemaining - a.totalRemaining);
+    .sort((a, b) => (b.totalRemaining ?? -1) - (a.totalRemaining ?? -1));
 }
 
-export async function listBatchCandidates(companyId: string): Promise<BatchCandidate[]> {
-  const today = new Date().toISOString().split('T')[0];
-
-  const { data: invoices, error: invoicesError } = await supabase
-    .from('invoices')
-    .select('contract_id, total_amount, paid_amount, invoice_type, penalty_id, payment_status, status')
-    .eq('company_id', companyId)
-    .lt('due_date', today)
-    .not('contract_id', 'is', null);
-  if (invoicesError) throw invoicesError;
-
-  const contractIds = [...new Set(
-    (invoices ?? [])
-      .filter((invoice) => Number(invoice.total_amount || 0) - Number(invoice.paid_amount || 0) > 0)
-      .map((invoice) => invoice.contract_id)
-      .filter((id): id is string => Boolean(id)),
-  )];
-  if (contractIds.length === 0) return [];
-
-  const { data: contracts, error: contractsError } = await supabase
-    .from('contracts')
+export async function listBatchCandidates(companyId: string, page = 0, pageSize = 25): Promise<{ items: BatchCandidate[]; hasMore: boolean }> {
+  if (!Number.isInteger(page) || page < 0 || !Number.isInteger(pageSize) || pageSize < 1 || pageSize > 100) {
+    throw new Error('نطاق صفحة العقود غير صالح');
+  }
+  // Read one extra contract for pagination. Include traffic-only/extension claims
+  // even when invoice caches show zero or there is no rental invoice.
+  const { data, error } = await supabase.from('contracts')
     .select('id, contract_number, status, customer_id')
-    .eq('company_id', companyId)
-    .in('id', contractIds);
-  if (contractsError) throw contractsError;
-
+    .eq('company_id', companyId).order('id')
+    .range(page * pageSize, (page + 1) * pageSize);
+  if (error) throw error;
+  const contracts = (data ?? []).slice(0, pageSize);
+  const contractIds = contracts.map(contract => contract.id);
+  if (!contracts.length) return { items: [], hasMore: false };
   const customerIds = [...new Set(
     (contracts ?? []).map((contract) => contract.customer_id).filter(Boolean),
   )] as string[];
@@ -179,19 +169,20 @@ export async function listBatchCandidates(companyId: string): Promise<BatchCandi
         : Promise.resolve({ data: [] as never[], error: null }),
       supabase
         .from('contract_documents')
-        .select('id, contract_id, document_name, document_type, file_path, mime_type')
+        .select('id, contract_id, document_name, document_type, file_path, mime_type, legal_identity_match_status, legal_identity_expected_id, legal_identity_extracted_id, legal_evidence_state')
         .eq('company_id', companyId)
         .in('contract_id', contractIds),
     ]);
   if (customersError) throw customersError;
   if (documentsError) throw documentsError;
 
-  return buildBatchCandidates({
-    invoices: invoices ?? [],
+  const claims = await loadLegalQueueClaims(companyId, contractIds);
+  return { hasMore: (data?.length ?? 0) > pageSize, items: buildBatchCandidates({
+    claims,
     contracts: contracts ?? [],
     customers: (customers ?? []) as CandidateCustomerRow[],
     documents: documents ?? [],
-  });
+  }) };
 }
 
 // ==========================================
@@ -240,27 +231,25 @@ async function loadBatchContractState(
   state.customer = customer;
   state.vehicle = vehicle;
 
-  // الفواتير المتأخرة غير المسددة بالكامل
-  const today = new Date().toISOString().split('T')[0];
-  const { data: invoiceRows, error: invoicesError } = await supabase
-    .from('invoices')
-    .select('id, invoice_number, due_date, total_amount, paid_amount, invoice_type, penalty_id, payment_status, status')
-    .eq('contract_id', contractId)
-    .eq('company_id', companyId)
-    .lt('due_date', today);
-  if (invoicesError) throw invoicesError;
-  const overdueInvoices: OverdueInvoice[] = (invoiceRows ?? [])
-    .filter(isClaimableRentalInvoice)
-    .filter((invoice) => Boolean(invoice.due_date)
-      && Number(invoice.total_amount || 0) - Number(invoice.paid_amount || 0) > 0)
-    .map((invoice) => ({
-      id: invoice.id,
-      invoice_number: invoice.invoice_number,
-      due_date: invoice.due_date!,
-      total_amount: Number(invoice.total_amount || 0),
-      paid_amount: Number(invoice.paid_amount || 0),
-    }));
+  const currentLegalCase = await getCurrentLegalCase(companyId, contractId);
+  state.legalCase = currentLegalCase
+    ? {
+        id: currentLegalCase.id,
+        case_number: currentLegalCase.case_number,
+        case_reference: currentLegalCase.case_reference,
+        filing_date: currentLegalCase.filing_date,
+        case_status: currentLegalCase.case_status || 'pending',
+        workflow_stage: currentLegalCase.workflow_stage || 'preparation',
+        claim_scope: currentLegalCase.claim_scope,
+      }
+    : null;
+  const trafficOnlyClaim = isTrafficViolationsOnlyScope(currentLegalCase?.claim_scope);
+
+  // المصدر الموحد: الفواتير، ثم الاستحقاقات القديمة غير المفوترة دون ازدواج.
+  const claimProjection = await loadLegalClaimProjection(contractId, companyId);
+  const overdueInvoices: OverdueInvoice[] = claimProjection.rows;
   state.overdueInvoices = overdueInvoices;
+  state.financialClaimSource = claimProjection.summary;
 
   // المخالفات المرورية غير المسددة
   const { data: penaltyRows, error: penaltiesError } = await supabase
@@ -272,7 +261,7 @@ async function loadBatchContractState(
     .neq('status', 'cancelled')
     .order('penalty_date', { ascending: false });
   if (penaltiesError) throw penaltiesError;
-  const trafficViolations: TrafficViolation[] = (penaltyRows ?? []).map((violation) => ({
+  const trafficViolations: TrafficViolation[] = claimProjection.trafficViolations ?? (penaltyRows ?? []).map((violation) => ({
     id: violation.id,
     violation_number: violation.penalty_number,
     violation_date: violation.penalty_date,
@@ -328,7 +317,7 @@ async function loadBatchContractState(
   // العقد الموقع + أدلة المخالفات من contract_documents
   const { data: contractDocumentRows } = await supabase
     .from('contract_documents')
-    .select('id, file_path, document_name, document_type, mime_type')
+    .select('id, file_path, document_name, document_type, mime_type, legal_identity_match_status, legal_evidence_state, superseded_by_document_id, legal_identity_expected_name, legal_identity_extracted_name, legal_identity_expected_id, legal_identity_extracted_id, legal_identity_match_reason, legal_identity_checked_at')
     .eq('contract_id', contractId)
     .eq('company_id', companyId)
     .order('created_at', { ascending: false });
@@ -347,13 +336,17 @@ async function loadBatchContractState(
         ...state.documents.contract,
         status: 'ready',
         url: documentUrl,
+        sourceDocumentId: signedContract.id,
+        identityVerification: toLegalIdentityVerification(
+          normalizeLegalContractDocumentIdentityRow(signedContract),
+        ),
       };
     }
   }
 
   const evidenceDocuments: ViolationEvidenceDocument[] = (await Promise.all(
     (contractDocumentRows ?? [])
-      .filter((document) => document.document_type === 'violations_proof' && document.file_path)
+      .filter((document) => document.document_type === 'violations_proof' && isActiveLegalEvidenceDocument(document))
       .map(async (document) => {
         const { data: signedUrl, error: signedUrlError } = await supabase.storage
           .from('contract-documents')
@@ -374,76 +367,132 @@ async function loadBatchContractState(
     url: evidenceDocuments[0]?.url || null,
   };
 
+  state.contractEvidenceDocuments = (contractDocumentRows ?? []).map((document) => ({
+    id: document.id,
+    document_name: document.document_name,
+    document_type: document.document_type,
+    file_path: document.file_path,
+    mime_type: document.mime_type,
+    legal_identity_match_status: normalizeLegalIdentityMatchStatus(
+      getEffectiveLegalIdentityMatchStatus(document),
+    ),
+    legal_identity_expected_id: document.legal_identity_expected_id,
+    legal_identity_extracted_id: document.legal_identity_extracted_id,
+  }));
+
+  const [profileResult, noticesResult, damagesResult, snapshotsResult] = await Promise.all([
+    supabase
+      .from('legal_case_litigation_profile')
+      .select('*')
+      .eq('contract_id', contractId)
+      .eq('company_id', companyId)
+      .maybeSingle(),
+    supabase
+      .from('legal_case_formal_notices')
+      .select('*')
+      .eq('contract_id', contractId)
+      .eq('company_id', companyId)
+      .order('sent_on'),
+    supabase
+      .from('legal_case_damage_costs')
+      .select('*')
+      .eq('contract_id', contractId)
+      .eq('company_id', companyId)
+      .order('created_at'),
+    supabase
+      .from('legal_case_memo_snapshots')
+      .select('*')
+      .eq('contract_id', contractId)
+      .eq('company_id', companyId)
+      .order('version', { ascending: false }),
+  ]);
+  if (profileResult.error) throw profileResult.error;
+  if (noticesResult.error) throw noticesResult.error;
+  if (damagesResult.error) throw damagesResult.error;
+  if (snapshotsResult.error) throw snapshotsResult.error;
+  state.litigationProfile = profileResult.data as typeof state.litigationProfile;
+  state.formalNotices = (noticesResult.data || []) as typeof state.formalNotices;
+  state.damageCosts = (damagesResult.data || []) as typeof state.damageCosts;
+  state.memoSnapshots = (snapshotsResult.data || []) as unknown as LegalMemoSnapshot[];
+
   // الحسابات المالية
+  const profile = state.litigationProfile;
+  const compensation = !trafficOnlyClaim && profile?.contractual_compensation_enabled
+    && profile.contractual_compensation_method
+    && profile.contractual_compensation_document_id
+    && profile.contractual_compensation_clause_number?.trim()
+    && profile.contractual_compensation_clause_text?.trim()
+    && Number(profile.contractual_compensation_rate) > 0
+    ? {
+        enabled: true,
+        method: profile.contractual_compensation_method,
+        rate: Number(profile.contractual_compensation_rate),
+        cap: profile.contractual_compensation_cap,
+      }
+    : null;
+  const verifiedDamages = trafficOnlyClaim ? 0 : getVerifiedDamageNet(state);
   const calculations = calculateDelinquencyAmounts(
-    overdueInvoices.map((invoice) => ({
+    (trafficOnlyClaim ? [] : overdueInvoices).map((invoice) => ({
       id: invoice.id,
       invoice_number: invoice.invoice_number || undefined,
       due_date: invoice.due_date,
       total_amount: invoice.total_amount || 0,
       paid_amount: invoice.paid_amount || 0,
+      source: invoice.source,
     })),
-    trafficViolations.map((violation) => ({
+    (evidenceDocuments.length > 0 ? trafficViolations : []).map((violation) => ({
       id: violation.id,
       violation_number: violation.violation_number || undefined,
       fine_amount: Number(violation.fine_amount || 0),
       total_amount: Number(violation.total_amount || 0),
       status: violation.status,
     })),
-    { includeDamagesFee: true },
+    { documentedDamagesAmount: verifiedDamages, contractualCompensation: compensation },
   );
+  const readiness = evaluateLegalCaseReadiness(state);
+  const retention = trafficOnlyClaim
+    ? { amount: 0, days: 0, from: null, to: null }
+    : calculateRetentionClaim(profile, readiness.legalPath);
+  const deposit = !trafficOnlyClaim && profile?.apply_security_deposit
+    ? Number(profile.security_deposit_amount || 0)
+    : 0;
+  const total = getLawsuitClaimAmounts(
+    { ...calculations, retentionCompensation: retention.amount },
+    { securityDepositDeduction: deposit },
+  ).cashClaimAmount;
   state.calculations = {
     ...calculations,
-    amountInWords: lawsuitService.convertAmountToWords(calculations.total),
+    retentionCompensation: retention.amount,
+    securityDepositDeduction: deposit,
+    total,
+    amountInWords: lawsuitService.convertAmountToWords(total),
   };
+  if (claimProjection.summary.authoritativeAmounts) {
+    const authoritative = claimProjection.summary.authoritativeAmounts;
+    state.calculations = { ...state.calculations, ...authoritative,
+      contractualCompensationUnits: claimProjection.summary.authoritativeCompensationUnits,
+      amountInWords: lawsuitService.convertAmountToWords(authoritative.total) };
+  }
 
   // بيانات التقاضي (نفس منطق صفحة التجهيز)
   if (state.contract && state.customer) {
     const customerName = formatCustomerName(state.customer, { preferArabic: true }) || 'غير محدد';
-    const { cashClaimAmount, taqadiClaimAmount } = getLawsuitClaimAmounts(state.calculations);
+    const { taqadiClaimAmount } = getLawsuitClaimAmounts(state.calculations!);
 
-    let factsText = lawsuitService.generateFactsText(
-      customerName,
-      state.contract.start_date,
-      `${vehicle?.make || ''} ${vehicle?.model || ''} ${vehicle?.year || ''}`,
-      cashClaimAmount,
-    );
-
-    const narrativeInput: TaqadiNarrativeInput = {
-      claimAmount: cashClaimAmount,
-      violationsCount: state.calculations.violationsCount,
-      violationsFines: state.calculations.violationsFines,
-      paidTotal: overdueInvoices.reduce(
-        (sum, invoice) => sum + Number(invoice.paid_amount || 0),
-        0,
-      ),
-      reminders: state.paymentReminders,
-      vehicleStatus: vehicle?.status ?? null,
-      contractEndDate: state.contract.end_date,
-      contractStatus: state.contract.status ?? null,
-    };
-
-    const additions = buildFactsAdditions(narrativeInput);
-    if (additions.length > 0) {
-      factsText += `\n\n${additions.join('\n\n')}`;
-    }
+    const factsText = buildLegalMemoFactsText(buildMemoDocumentData(state));
 
     const fullName = customerName;
+    const defendantContact = getDefendantContact(state);
     const nameParts = fullName.split(' ');
-    let idType = 'بطاقة شخصية';
-    if (state.customer.nationality === 'Qatar' || state.customer.nationality === 'قطر') {
-      idType = 'بطاقة قطرية';
-    } else if (
-      state.customer.national_id
-      && state.customer.national_id.replace(/\D/g, '').length === 11
-    ) {
-      idType = 'رخصة مقيم';
-    }
+    const idType = inferTaqadiIdType(
+      state.customer.national_id,
+      state.customer.nationality || state.customer.country,
+    );
 
     state.taqadiData = {
-      caseTitle: lawsuitService.generateCaseTitle(customerName),
+      caseTitle: lawsuitService.generateCaseTitle(customerName, state.legalCase?.claim_scope),
       facts: factsText,
-      claims: buildTaqadiClaims(narrativeInput),
+      claims: buildLegalMemoClaimsText(buildMemoDocumentData(state)),
       amount: taqadiClaimAmount,
       amountInWords: lawsuitService.convertAmountToWords(taqadiClaimAmount),
       defendant: {
@@ -455,8 +504,8 @@ async function loadBatchContractState(
         idType,
         nationality: state.customer.nationality || state.customer.country,
         phone: state.customer.phone,
-        email: TAQADI_DEFAULT_DEFENDANT_EMAIL,
-        address: TAQADI_DEFAULT_DEFENDANT_ADDRESS,
+        email: defendantContact.email,
+        address: defendantContact.address,
       },
       contract: {
         contractNumber: state.contract.contract_number,
@@ -468,58 +517,19 @@ async function loadBatchContractState(
         make: vehicle?.make || null,
         model: vehicle?.model || null,
         year: vehicle?.year || null,
-        plateNumber: vehicle?.plate_number || null,
+        plateNumber: vehicle?.plate_number || state.contract.license_plate || null,
         color: vehicle?.color || null,
         vin: vehicle?.vin || null,
         fullDescription: vehicle
-          ? `${vehicle.make || ''} ${vehicle.model || ''} ${vehicle.year || ''} - ${vehicle.plate_number || ''}`.trim()
-          : 'غير محدد',
+          ? `${vehicle.make || ''} ${vehicle.model || ''} ${vehicle.year || ''} - ${vehicle.plate_number || state.contract.license_plate || ''}`.trim()
+          : state.contract.license_plate
+            ? `المركبة ذات اللوحة ${state.contract.license_plate}`
+            : 'غير محدد',
       },
     };
   }
 
   return state;
-}
-
-async function generateFilingDocuments(state: LawsuitPreparationState): Promise<void> {
-  const memo = await generateDocument('memo', state);
-  state.documents.memo = {
-    ...state.documents.memo,
-    status: 'ready',
-    url: memo.url,
-    htmlContent: memo.html,
-    generatedAt: new Date().toISOString(),
-  };
-
-  const claims = await generateDocument('claims', state);
-  state.documents.claims = {
-    ...state.documents.claims,
-    status: 'ready',
-    url: claims.url,
-    htmlContent: claims.html,
-    generatedAt: new Date().toISOString(),
-  };
-
-  // كشف المستندات يعتمد على المذكرة وكشف المطالبات الجاهزين أعلاه
-  const docsList = await generateDocument('docsList', state);
-  state.documents.docsList = {
-    ...state.documents.docsList,
-    status: 'ready',
-    url: docsList.url,
-    htmlContent: docsList.html,
-    generatedAt: new Date().toISOString(),
-  };
-
-  if (state.trafficViolations.length > 0) {
-    const violations = await generateDocument('violations', state);
-    state.documents.violations = {
-      ...state.documents.violations,
-      status: 'ready',
-      url: violations.url,
-      htmlContent: violations.html,
-      generatedAt: new Date().toISOString(),
-    };
-  }
 }
 
 // ==========================================
@@ -562,6 +572,7 @@ async function resolveLegalCase(
     court_fees: null,
     filing_date: null,
     created_at: null,
+    claim_scope: state.legalCase?.claim_scope ?? 'full_outstanding',
   };
 }
 
@@ -602,9 +613,20 @@ export async function enqueueContractFiling(input: {
     if (!state.calculations || state.calculations.total <= 0) {
       return { ...base, status: 'skipped', reason: 'مبلغ المطالبة صفر — لا مديونية متأخرة' };
     }
+    const readiness = evaluateLegalCaseReadiness(state);
+    if (readiness.status === 'not_ready') {
+      return { ...base, status: 'skipped', reason: `الملف القانوني غير جاهز: ${readiness.issues.join('، ')}` };
+    }
+    if (
+      state.litigationProfile?.legal_review_status !== 'approved'
+      || state.memoSnapshots[0]?.readiness_status !== 'approved'
+      || !isMemoSnapshotCurrent(state, state.memoSnapshots[0])
+    ) {
+      return { ...base, status: 'skipped', reason: 'لا توجد نسخة مذكرة معتمدة وحديثة لهذا العقد' };
+    }
 
     report('generating');
-    await generateFilingDocuments(state);
+    const filingState = await prepareCurrentFilingState(state);
 
     report('registering');
     const legalCase = await resolveLegalCase(companyId, contractId, state, userId);
@@ -629,7 +651,7 @@ export async function enqueueContractFiling(input: {
 
     report('enqueuing');
     // يرمي خطأً برسالة المستندات الناقصة عند عدم اكتمال الحزمة
-    const payload = buildTaqadiFilingPayload(state, sourceUrl);
+    const payload = await prepareTaqadiFilingPayload(filingState, sourceUrl);
     const job = await enqueueTaqadiFilingJob({
       companyId,
       legalCaseId: legalCase.id,

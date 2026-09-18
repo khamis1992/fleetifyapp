@@ -1,0 +1,452 @@
+{
+  "contract": {
+    "status": "cancelled",
+    "total_paid": 10476,
+    "updated_at": "2026-09-06T15:55:47.83913+00:00",
+    "balance_due": 43524
+  },
+  "triggers": [
+    {
+      "name": "normalize_contract_payment_schedule_status_trigger",
+      "table": "contract_payment_schedules",
+      "definition": "CREATE TRIGGER normalize_contract_payment_schedule_status_trigger BEFORE INSERT OR UPDATE OF status ON public.contract_payment_schedules FOR EACH ROW EXECUTE FUNCTION normalize_contract_payment_schedule_status()"
+    },
+    {
+      "name": "preserve_inactive_duplicate_schedule_state_trigger",
+      "table": "contract_payment_schedules",
+      "definition": "CREATE TRIGGER preserve_inactive_duplicate_schedule_state_trigger BEFORE UPDATE OF status, invoice_id, paid_amount, paid_date ON public.contract_payment_schedules FOR EACH ROW EXECUTE FUNCTION preserve_inactive_duplicate_schedule_state()"
+    },
+    {
+      "name": "trg_enforce_payment_schedule_first_of_month",
+      "table": "contract_payment_schedules",
+      "definition": "CREATE TRIGGER trg_enforce_payment_schedule_first_of_month BEFORE INSERT OR UPDATE ON public.contract_payment_schedules FOR EACH ROW EXECUTE FUNCTION enforce_payment_schedule_first_of_month()"
+    },
+    {
+      "name": "update_payment_schedules_updated_at",
+      "table": "contract_payment_schedules",
+      "definition": "CREATE TRIGGER update_payment_schedules_updated_at BEFORE UPDATE ON public.contract_payment_schedules FOR EACH ROW EXECUTE FUNCTION update_updated_at_column()"
+    },
+    {
+      "name": "assign_contract_cost_center_trigger",
+      "table": "contracts",
+      "definition": "CREATE TRIGGER assign_contract_cost_center_trigger BEFORE INSERT OR UPDATE ON public.contracts FOR EACH ROW EXECUTE FUNCTION assign_contract_cost_center()"
+    },
+    {
+      "name": "auto_calculate_contract_amount",
+      "table": "contracts",
+      "definition": "CREATE TRIGGER auto_calculate_contract_amount BEFORE INSERT OR UPDATE ON public.contracts FOR EACH ROW EXECUTE FUNCTION trigger_calculate_contract_amount()"
+    },
+    {
+      "name": "log_contract_operations_trigger",
+      "table": "contracts",
+      "definition": "CREATE TRIGGER log_contract_operations_trigger AFTER INSERT OR UPDATE ON public.contracts FOR EACH ROW EXECUTE FUNCTION log_contract_operations_improved()"
+    },
+    {
+      "name": "log_contracts_activity",
+      "table": "contracts",
+      "definition": "CREATE TRIGGER log_contracts_activity AFTER INSERT OR DELETE OR UPDATE ON public.contracts FOR EACH ROW EXECUTE FUNCTION log_activity_trigger()"
+    },
+    {
+      "name": "set_contract_default_status_trigger",
+      "table": "contracts",
+      "definition": "CREATE TRIGGER set_contract_default_status_trigger BEFORE INSERT ON public.contracts FOR EACH ROW EXECUTE FUNCTION set_contract_default_status()"
+    },
+    {
+      "name": "system_monitoring_trigger",
+      "table": "contracts",
+      "definition": "CREATE TRIGGER system_monitoring_trigger AFTER INSERT OR DELETE OR UPDATE ON public.contracts FOR EACH ROW EXECUTE FUNCTION trigger_system_monitoring()"
+    },
+    {
+      "name": "trg_00_resolve_and_guard_contract_vehicle_identity",
+      "table": "contracts",
+      "definition": "CREATE TRIGGER trg_00_resolve_and_guard_contract_vehicle_identity BEFORE INSERT OR UPDATE OF status, vehicle_id, license_plate, company_id, start_date, end_date ON public.contracts FOR EACH ROW EXECUTE FUNCTION resolve_and_guard_contract_vehicle_identity()"
+    },
+    {
+      "name": "trg_audit_contracts",
+      "table": "contracts",
+      "definition": "CREATE TRIGGER trg_audit_contracts AFTER INSERT OR DELETE OR UPDATE ON public.contracts FOR EACH ROW EXECUTE FUNCTION log_audit_trail()"
+    },
+    {
+      "name": "trg_block_contract_close_with_unpaid_penalties",
+      "table": "contracts",
+      "definition": "CREATE TRIGGER trg_block_contract_close_with_unpaid_penalties BEFORE UPDATE OF status ON public.contracts FOR EACH ROW EXECUTE FUNCTION trg_block_contract_close_with_unpaid_penalties()"
+    },
+    {
+      "name": "trg_cancel_contract_future_schedules",
+      "table": "contracts",
+      "definition": "CREATE TRIGGER trg_cancel_contract_future_schedules AFTER UPDATE OF status ON public.contracts FOR EACH ROW EXECUTE FUNCTION cancel_contract_future_schedules()"
+    },
+    {
+      "name": "trg_enforce_contract_rental_eligibility",
+      "table": "contracts",
+      "definition": "CREATE TRIGGER trg_enforce_contract_rental_eligibility BEFORE INSERT OR UPDATE OF status, vehicle_id, customer_id ON public.contracts FOR EACH ROW EXECUTE FUNCTION trg_enforce_rental_eligibility()"
+    },
+    {
+      "name": "trg_require_atomic_contract_billing_graph",
+      "table": "contracts",
+      "definition": "CREATE TRIGGER trg_require_atomic_contract_billing_graph BEFORE INSERT OR UPDATE OF status, contract_amount, monthly_amount, start_date, end_date, customer_id, vehicle_id, cost_center_id ON public.contracts FOR EACH ROW EXECUTE FUNCTION require_atomic_contract_billing_graph()"
+    },
+    {
+      "name": "trg_sync_contract_amount",
+      "table": "contracts",
+      "definition": "CREATE TRIGGER trg_sync_contract_amount BEFORE INSERT OR UPDATE OF start_date, end_date, monthly_amount ON public.contracts FOR EACH ROW EXECUTE FUNCTION sync_contract_amount()"
+    },
+    {
+      "name": "trg_update_vehicle_status_after",
+      "table": "contracts",
+      "definition": "CREATE TRIGGER trg_update_vehicle_status_after AFTER INSERT OR DELETE OR UPDATE OF vehicle_id, company_id, status, start_date, end_date ON public.contracts FOR EACH ROW EXECUTE FUNCTION update_vehicle_status_from_contract()"
+    },
+    {
+      "name": "trigger_auto_tag_contract",
+      "table": "contracts",
+      "definition": "CREATE TRIGGER trigger_auto_tag_contract BEFORE INSERT OR UPDATE OF contract_amount, monthly_amount ON public.contracts FOR EACH ROW EXECUTE FUNCTION auto_tag_contract()"
+    },
+    {
+      "name": "trigger_generate_contract_number",
+      "table": "contracts",
+      "definition": "CREATE TRIGGER trigger_generate_contract_number BEFORE INSERT ON public.contracts FOR EACH ROW EXECUTE FUNCTION handle_contract_number_generation()"
+    },
+    {
+      "name": "trigger_handle_contract_status_change_unified",
+      "table": "contracts",
+      "definition": "CREATE TRIGGER trigger_handle_contract_status_change_unified BEFORE UPDATE ON public.contracts FOR EACH ROW WHEN ((new.status IS DISTINCT FROM old.status)) EXECUTE FUNCTION handle_contract_status_change_unified()"
+    },
+    {
+      "name": "trigger_handle_new_contract",
+      "table": "contracts",
+      "definition": "CREATE TRIGGER trigger_handle_new_contract BEFORE INSERT ON public.contracts FOR EACH ROW EXECUTE FUNCTION handle_new_contract()"
+    },
+    {
+      "name": "update_contracts_updated_at",
+      "table": "contracts",
+      "definition": "CREATE TRIGGER update_contracts_updated_at BEFORE UPDATE ON public.contracts FOR EACH ROW EXECUTE FUNCTION update_updated_at_column()"
+    },
+    {
+      "name": "validate_company_isolation_trigger",
+      "table": "contracts",
+      "definition": "CREATE TRIGGER validate_company_isolation_trigger BEFORE INSERT OR UPDATE ON public.contracts FOR EACH ROW EXECUTE FUNCTION validate_company_isolation()"
+    },
+    {
+      "name": "validate_contract_account_trigger",
+      "table": "contracts",
+      "definition": "CREATE TRIGGER validate_contract_account_trigger BEFORE INSERT OR UPDATE ON public.contracts FOR EACH ROW EXECUTE FUNCTION validate_contract_account_improved()"
+    },
+    {
+      "name": "validate_customer_documents_for_contracts_trigger",
+      "table": "contracts",
+      "definition": "CREATE TRIGGER validate_customer_documents_for_contracts_trigger BEFORE INSERT ON public.contracts FOR EACH ROW EXECUTE FUNCTION validate_customer_documents_for_contracts()"
+    },
+    {
+      "name": "auto_generate_payment_reminders",
+      "table": "invoices",
+      "definition": "CREATE TRIGGER auto_generate_payment_reminders AFTER INSERT ON public.invoices FOR EACH ROW EXECUTE FUNCTION trigger_generate_reminders()"
+    },
+    {
+      "name": "cancel_reminders_on_invoice_payment",
+      "table": "invoices",
+      "definition": "CREATE TRIGGER cancel_reminders_on_invoice_payment AFTER UPDATE ON public.invoices FOR EACH ROW EXECUTE FUNCTION cancel_reminders_on_payment()"
+    },
+    {
+      "name": "enforce_invoice_financial_controls_trigger",
+      "table": "invoices",
+      "definition": "CREATE TRIGGER enforce_invoice_financial_controls_trigger BEFORE INSERT OR DELETE OR UPDATE ON public.invoices FOR EACH ROW EXECUTE FUNCTION enforce_invoice_financial_controls()"
+    },
+    {
+      "name": "invoice_budget_update_trigger",
+      "table": "invoices",
+      "definition": "CREATE TRIGGER invoice_budget_update_trigger AFTER INSERT OR DELETE OR UPDATE ON public.invoices FOR EACH ROW EXECUTE FUNCTION handle_invoice_budget_update()"
+    },
+    {
+      "name": "log_invoices_activity",
+      "table": "invoices",
+      "definition": "CREATE TRIGGER log_invoices_activity AFTER INSERT OR DELETE OR UPDATE ON public.invoices FOR EACH ROW EXECUTE FUNCTION log_activity_trigger()"
+    },
+    {
+      "name": "normalize_invoice_payment_state_trigger",
+      "table": "invoices",
+      "definition": "CREATE TRIGGER normalize_invoice_payment_state_trigger BEFORE INSERT OR UPDATE OF total_amount, paid_amount, balance_due, payment_status, status ON public.invoices FOR EACH ROW EXECUTE FUNCTION normalize_invoice_payment_state()"
+    },
+    {
+      "name": "trg_audit_invoices",
+      "table": "invoices",
+      "definition": "CREATE TRIGGER trg_audit_invoices AFTER INSERT OR DELETE OR UPDATE ON public.invoices FOR EACH ROW EXECUTE FUNCTION financial_audit_trigger_fn()"
+    },
+    {
+      "name": "trg_detach_schedules_on_invoice_cancel",
+      "table": "invoices",
+      "definition": "CREATE TRIGGER trg_detach_schedules_on_invoice_cancel AFTER UPDATE OF status, payment_status ON public.invoices FOR EACH ROW EXECUTE FUNCTION detach_schedules_on_invoice_cancel()"
+    },
+    {
+      "name": "trg_enforce_invoice_date_first_of_month",
+      "table": "invoices",
+      "definition": "CREATE TRIGGER trg_enforce_invoice_date_first_of_month BEFORE INSERT OR UPDATE OF invoice_month, invoice_date, due_date ON public.invoices FOR EACH ROW EXECUTE FUNCTION enforce_invoice_date_first_of_month()"
+    },
+    {
+      "name": "trg_ensure_invoice_balance_due",
+      "table": "invoices",
+      "definition": "CREATE TRIGGER trg_ensure_invoice_balance_due BEFORE INSERT OR UPDATE ON public.invoices FOR EACH ROW EXECUTE FUNCTION ensure_invoice_balance_due()"
+    },
+    {
+      "name": "trg_invoice_journal_entry",
+      "table": "invoices",
+      "definition": "CREATE TRIGGER trg_invoice_journal_entry BEFORE INSERT ON public.invoices FOR EACH ROW EXECUTE FUNCTION trg_invoice_journal_entry_fn()"
+    },
+    {
+      "name": "trg_sync_receipt_on_invoice_update",
+      "table": "invoices",
+      "definition": "CREATE TRIGGER trg_sync_receipt_on_invoice_update AFTER UPDATE OF payment_status, paid_amount ON public.invoices FOR EACH ROW EXECUTE FUNCTION sync_receipt_on_invoice_update()"
+    },
+    {
+      "name": "trg_update_invoice_month",
+      "table": "invoices",
+      "definition": "CREATE TRIGGER trg_update_invoice_month BEFORE INSERT OR UPDATE OF invoice_date ON public.invoices FOR EACH ROW EXECUTE FUNCTION update_invoice_month()"
+    },
+    {
+      "name": "trigger_auto_link_invoice",
+      "table": "invoices",
+      "definition": "CREATE TRIGGER trigger_auto_link_invoice AFTER INSERT ON public.invoices FOR EACH ROW EXECUTE FUNCTION auto_link_invoice_to_schedule()"
+    },
+    {
+      "name": "trigger_check_duplicate_monthly_invoice",
+      "table": "invoices",
+      "definition": "CREATE TRIGGER trigger_check_duplicate_monthly_invoice BEFORE INSERT OR UPDATE OF company_id, contract_id, invoice_month, invoice_date, status, payment_status ON public.invoices FOR EACH ROW EXECUTE FUNCTION check_duplicate_monthly_invoice()"
+    },
+    {
+      "name": "trigger_invoice_changes",
+      "table": "invoices",
+      "definition": "CREATE TRIGGER trigger_invoice_changes AFTER INSERT OR UPDATE ON public.invoices FOR EACH ROW EXECUTE FUNCTION handle_invoice_changes()"
+    },
+    {
+      "name": "update_invoices_updated_at",
+      "table": "invoices",
+      "definition": "CREATE TRIGGER update_invoices_updated_at BEFORE UPDATE ON public.invoices FOR EACH ROW EXECUTE FUNCTION update_updated_at_column()"
+    },
+    {
+      "name": "validate_invoice_dates_trigger",
+      "table": "invoices",
+      "definition": "CREATE TRIGGER validate_invoice_dates_trigger BEFORE INSERT OR UPDATE ON public.invoices FOR EACH ROW EXECUTE FUNCTION validate_invoice_date_before_insert()"
+    },
+    {
+      "name": "zz_persist_invoice_reference_journal_link",
+      "table": "invoices",
+      "definition": "CREATE TRIGGER zz_persist_invoice_reference_journal_link BEFORE INSERT ON public.invoices FOR EACH ROW EXECUTE FUNCTION persist_invoice_reference_journal_link_before_insert()"
+    },
+    {
+      "name": "after_payment_allocation_change_trigger",
+      "table": "payment_allocations",
+      "definition": "CREATE TRIGGER after_payment_allocation_change_trigger AFTER INSERT OR DELETE OR UPDATE ON public.payment_allocations FOR EACH ROW EXECUTE FUNCTION after_payment_allocation_change()"
+    },
+    {
+      "name": "trg_00_guard_payment_allocation_identity",
+      "table": "payment_allocations",
+      "definition": "CREATE TRIGGER trg_00_guard_payment_allocation_identity BEFORE INSERT OR UPDATE OF company_id, payment_id, allocation_type, target_id, is_active ON public.payment_allocations FOR EACH ROW EXECUTE FUNCTION guard_payment_allocation_identity()"
+    },
+    {
+      "name": "validate_payment_allocation_row_trigger",
+      "table": "payment_allocations",
+      "definition": "CREATE TRIGGER validate_payment_allocation_row_trigger BEFORE INSERT OR UPDATE ON public.payment_allocations FOR EACH ROW EXECUTE FUNCTION validate_payment_allocation_row()"
+    },
+    {
+      "name": "contract_payment_delete_trigger",
+      "table": "payments",
+      "definition": "CREATE TRIGGER contract_payment_delete_trigger AFTER DELETE ON public.payments FOR EACH ROW WHEN ((old.contract_id IS NOT NULL)) EXECUTE FUNCTION update_contract_payment_totals()"
+    },
+    {
+      "name": "contract_payment_insert_trigger",
+      "table": "payments",
+      "definition": "CREATE TRIGGER contract_payment_insert_trigger AFTER INSERT ON public.payments FOR EACH ROW WHEN ((new.contract_id IS NOT NULL)) EXECUTE FUNCTION update_contract_payment_totals()"
+    },
+    {
+      "name": "contract_payment_update_trigger",
+      "table": "payments",
+      "definition": "CREATE TRIGGER contract_payment_update_trigger AFTER UPDATE ON public.payments FOR EACH ROW WHEN ((((old.contract_id IS NOT NULL) OR (new.contract_id IS NOT NULL)) AND ((old.payment_status <> new.payment_status) OR (old.amount <> new.amount) OR (old.contract_id <> new.contract_id) OR (old.company_id <> new.company_id)))) EXECUTE FUNCTION update_contract_payment_totals()"
+    },
+    {
+      "name": "enforce_payment_financial_controls_trigger",
+      "table": "payments",
+      "definition": "CREATE TRIGGER enforce_payment_financial_controls_trigger BEFORE INSERT OR UPDATE ON public.payments FOR EACH ROW EXECUTE FUNCTION enforce_payment_financial_controls()"
+    },
+    {
+      "name": "invoice_payment_delete_trigger",
+      "table": "payments",
+      "definition": "CREATE TRIGGER invoice_payment_delete_trigger AFTER DELETE ON public.payments FOR EACH ROW WHEN ((old.invoice_id IS NOT NULL)) EXECUTE FUNCTION update_invoice_payment_totals()"
+    },
+    {
+      "name": "invoice_payment_insert_trigger",
+      "table": "payments",
+      "definition": "CREATE TRIGGER invoice_payment_insert_trigger AFTER INSERT ON public.payments FOR EACH ROW WHEN ((new.invoice_id IS NOT NULL)) EXECUTE FUNCTION update_invoice_payment_totals()"
+    },
+    {
+      "name": "invoice_payment_update_trigger",
+      "table": "payments",
+      "definition": "CREATE TRIGGER invoice_payment_update_trigger AFTER UPDATE ON public.payments FOR EACH ROW WHEN ((((old.invoice_id IS NOT NULL) OR (new.invoice_id IS NOT NULL)) AND ((old.payment_status <> new.payment_status) OR (old.amount <> new.amount) OR (old.invoice_id <> new.invoice_id) OR (old.company_id <> new.company_id)))) EXECUTE FUNCTION update_invoice_payment_totals()"
+    },
+    {
+      "name": "log_payments_activity",
+      "table": "payments",
+      "definition": "CREATE TRIGGER log_payments_activity AFTER INSERT OR DELETE OR UPDATE ON public.payments FOR EACH ROW EXECUTE FUNCTION log_activity_trigger()"
+    },
+    {
+      "name": "payment_allocation_auto_seed_after_payment",
+      "table": "payments",
+      "definition": "CREATE TRIGGER payment_allocation_auto_seed_after_payment AFTER INSERT OR UPDATE OF payment_status, invoice_id ON public.payments FOR EACH ROW EXECUTE FUNCTION auto_seed_payment_invoice_allocation()"
+    },
+    {
+      "name": "payment_budget_update_trigger",
+      "table": "payments",
+      "definition": "CREATE TRIGGER payment_budget_update_trigger AFTER INSERT OR DELETE OR UPDATE ON public.payments FOR EACH ROW EXECUTE FUNCTION handle_payment_budget_update()"
+    },
+    {
+      "name": "payment_financial_integration_trigger",
+      "table": "payments",
+      "definition": "CREATE TRIGGER payment_financial_integration_trigger BEFORE INSERT OR UPDATE ON public.payments FOR EACH ROW EXECUTE FUNCTION handle_payment_financial_integration()"
+    },
+    {
+      "name": "payment_journal_before_completion",
+      "table": "payments",
+      "definition": "CREATE TRIGGER payment_journal_before_completion BEFORE UPDATE OF payment_status ON public.payments FOR EACH ROW WHEN (((new.payment_status = 'completed'::text) AND (old.payment_status IS DISTINCT FROM new.payment_status))) EXECUTE FUNCTION trg_payment_journal_entry_fn()"
+    },
+    {
+      "name": "payment_journal_before_insert",
+      "table": "payments",
+      "definition": "CREATE TRIGGER payment_journal_before_insert BEFORE INSERT ON public.payments FOR EACH ROW EXECUTE FUNCTION trg_payment_journal_entry_fn()"
+    },
+    {
+      "name": "payment_totals_after_delete",
+      "table": "payments",
+      "definition": "CREATE TRIGGER payment_totals_after_delete AFTER DELETE ON public.payments FOR EACH ROW EXECUTE FUNCTION update_invoice_on_payment_completion()"
+    },
+    {
+      "name": "payment_totals_after_insert",
+      "table": "payments",
+      "definition": "CREATE TRIGGER payment_totals_after_insert AFTER INSERT ON public.payments FOR EACH ROW EXECUTE FUNCTION update_invoice_on_payment_completion()"
+    },
+    {
+      "name": "payment_totals_after_update",
+      "table": "payments",
+      "definition": "CREATE TRIGGER payment_totals_after_update AFTER UPDATE OF amount, payment_status, invoice_id, contract_id, transaction_type ON public.payments FOR EACH ROW WHEN (((old.amount IS DISTINCT FROM new.amount) OR (old.payment_status IS DISTINCT FROM new.payment_status) OR (old.invoice_id IS DISTINCT FROM new.invoice_id) OR (old.contract_id IS DISTINCT FROM new.contract_id) OR (old.transaction_type IS DISTINCT FROM new.transaction_type))) EXECUTE FUNCTION update_invoice_on_payment_completion()"
+    },
+    {
+      "name": "payments_update_contract_balance",
+      "table": "payments",
+      "definition": "CREATE TRIGGER payments_update_contract_balance AFTER INSERT OR DELETE OR UPDATE ON public.payments FOR EACH ROW EXECUTE FUNCTION update_contract_balance()"
+    },
+    {
+      "name": "prevent_payments_hard_delete_trigger",
+      "table": "payments",
+      "definition": "CREATE TRIGGER prevent_payments_hard_delete_trigger BEFORE DELETE ON public.payments FOR EACH ROW EXECUTE FUNCTION prevent_payment_hard_delete()"
+    },
+    {
+      "name": "refresh_legal_cases_after_payment",
+      "table": "payments",
+      "definition": "CREATE TRIGGER refresh_legal_cases_after_payment AFTER UPDATE OF amount, payment_status, journal_entry_id, transaction_type ON public.payments FOR EACH ROW EXECUTE FUNCTION refresh_legal_cases_after_payment_v1()"
+    },
+    {
+      "name": "sync_contract_last_payment_date_trigger",
+      "table": "payments",
+      "definition": "CREATE TRIGGER sync_contract_last_payment_date_trigger AFTER INSERT OR DELETE OR UPDATE OF payment_status, payment_date, contract_id ON public.payments FOR EACH ROW EXECUTE FUNCTION sync_contract_last_payment_date_from_payment()"
+    },
+    {
+      "name": "trg_00_guard_payment_invoice_identity",
+      "table": "payments",
+      "definition": "CREATE TRIGGER trg_00_guard_payment_invoice_identity BEFORE INSERT OR UPDATE OF invoice_id, contract_id, customer_id, company_id ON public.payments FOR EACH ROW EXECUTE FUNCTION guard_payment_invoice_identity()"
+    },
+    {
+      "name": "trg_audit_payments",
+      "table": "payments",
+      "definition": "CREATE TRIGGER trg_audit_payments AFTER INSERT OR DELETE OR UPDATE ON public.payments FOR EACH ROW EXECUTE FUNCTION financial_audit_trigger_fn()"
+    },
+    {
+      "name": "trg_enforce_payment_approval",
+      "table": "payments",
+      "definition": "CREATE TRIGGER trg_enforce_payment_approval BEFORE UPDATE OF payment_status ON public.payments FOR EACH ROW WHEN ((new.payment_status = 'completed'::text)) EXECUTE FUNCTION enforce_payment_approval()"
+    },
+    {
+      "name": "trg_enforce_payment_approval_insert",
+      "table": "payments",
+      "definition": "CREATE TRIGGER trg_enforce_payment_approval_insert BEFORE INSERT ON public.payments FOR EACH ROW WHEN ((new.payment_status = 'completed'::text)) EXECUTE FUNCTION enforce_payment_approval_insert_fn()"
+    },
+    {
+      "name": "trg_sync_payment_invoice",
+      "table": "payments",
+      "definition": "CREATE TRIGGER trg_sync_payment_invoice BEFORE INSERT ON public.payments FOR EACH ROW EXECUTE FUNCTION sync_payment_with_invoice()"
+    },
+    {
+      "name": "trigger_auto_calculate_late_fee_on_payment",
+      "table": "payments",
+      "definition": "CREATE TRIGGER trigger_auto_calculate_late_fee_on_payment AFTER INSERT ON public.payments FOR EACH ROW WHEN ((new.invoice_id IS NOT NULL)) EXECUTE FUNCTION check_and_calculate_late_fee_on_payment()"
+    },
+    {
+      "name": "trigger_check_overpayment",
+      "table": "payments",
+      "definition": "CREATE TRIGGER trigger_check_overpayment BEFORE INSERT ON public.payments FOR EACH ROW EXECUTE FUNCTION check_payment_overpayment()"
+    },
+    {
+      "name": "trigger_update_invoice_on_payment",
+      "table": "payments",
+      "definition": "CREATE TRIGGER trigger_update_invoice_on_payment AFTER INSERT OR UPDATE OF amount, payment_status ON public.payments FOR EACH ROW EXECUTE FUNCTION update_invoice_on_payment()"
+    },
+    {
+      "name": "trigger_update_legal_collection_on_payment",
+      "table": "payments",
+      "definition": "CREATE TRIGGER trigger_update_legal_collection_on_payment AFTER INSERT OR UPDATE OF payment_status ON public.payments FOR EACH ROW EXECUTE FUNCTION update_legal_collection_on_payment()"
+    },
+    {
+      "name": "trigger_update_schedule_on_payment",
+      "table": "payments",
+      "definition": "CREATE TRIGGER trigger_update_schedule_on_payment AFTER INSERT OR UPDATE ON public.payments FOR EACH ROW WHEN (((new.invoice_id IS NOT NULL) AND (new.payment_status = 'completed'::text))) EXECUTE FUNCTION update_schedule_on_payment()"
+    },
+    {
+      "name": "update_payments_updated_at",
+      "table": "payments",
+      "definition": "CREATE TRIGGER update_payments_updated_at BEFORE UPDATE ON public.payments FOR EACH ROW EXECUTE FUNCTION update_updated_at_column()"
+    }
+  ],
+  "functions": [
+    {
+      "hash": "131ab058a0e0df0221947bcff99c0cda",
+      "name": "auto_link_invoice_to_schedule",
+      "definition": "CREATE OR REPLACE FUNCTION public.auto_link_invoice_to_schedule()\n RETURNS trigger\n LANGUAGE plpgsql\n SET search_path TO 'public'\nAS $function$\nDECLARE\n  v_schedule_id UUID;\nBEGIN\n  -- فقط للفواتير المرتبطة بعقد\n  IF NEW.contract_id IS NULL THEN\n    RETURN NEW;\n  END IF;\n  \n  -- البحث عن قسط غير مرتبط لنفس الشهر\n  SELECT id INTO v_schedule_id\n  FROM contract_payment_schedules\n  WHERE contract_id = NEW.contract_id\n    AND invoice_id IS NULL\n    AND DATE_TRUNC('month', due_date)::DATE = NEW.invoice_month\n  LIMIT 1;\n  \n  IF v_schedule_id IS NOT NULL THEN\n    UPDATE contract_payment_schedules\n    SET \n      invoice_id = NEW.id,\n      status = CASE \n        WHEN COALESCE(NEW.paid_amount, 0) >= NEW.total_amount THEN 'paid'\n        WHEN COALESCE(NEW.paid_amount, 0) > 0 THEN 'partially_paid'\n        WHEN NEW.due_date < CURRENT_DATE THEN 'overdue'\n        ELSE 'pending'\n      END,\n      paid_amount = COALESCE(NEW.paid_amount, 0),\n      updated_at = NOW()\n    WHERE id = v_schedule_id;\n  END IF;\n  \n  RETURN NEW;\nEND;\n$function$\n"
+    },
+    {
+      "hash": "c815685c79f17b67caa61846a0b0f254",
+      "name": "cancel_contract_future_schedules",
+      "definition": "CREATE OR REPLACE FUNCTION public.cancel_contract_future_schedules()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\nBEGIN\n  IF lower(COALESCE(NEW.status, '')) IN ('cancelled', 'canceled')\n     AND lower(COALESCE(OLD.status, '')) NOT IN ('cancelled', 'canceled')\n  THEN\n    -- Future unpaid unlinked rows become cancelled with the contract.\n    UPDATE public.contract_payment_schedules AS schedule\n    SET status = 'cancelled',\n        invoice_id = NULL,\n        updated_at = now()\n    WHERE schedule.contract_id = NEW.id\n      AND lower(COALESCE(schedule.status, '')) NOT IN (\n        'cancelled', 'canceled', 'void', 'voided', 'deleted'\n      )\n      AND schedule.invoice_id IS NULL\n      AND round(COALESCE(schedule.paid_amount, 0)::numeric, 2) <= 0.01;\n\n    -- Rows linked to a dead invoice cannot prove settlement; cancel and detach.\n    UPDATE public.contract_payment_schedules AS schedule\n    SET status = 'cancelled',\n        invoice_id = NULL,\n        updated_at = now()\n    WHERE schedule.contract_id = NEW.id\n      AND lower(COALESCE(schedule.status, '')) NOT IN (\n        'cancelled', 'canceled', 'void', 'voided', 'deleted'\n      )\n      AND EXISTS (\n        SELECT 1\n        FROM public.invoices AS invoice\n        WHERE invoice.id = schedule.invoice_id\n          AND lower(COALESCE(invoice.status, '')) IN (\n            'cancelled', 'canceled', 'void', 'voided', 'deleted'\n          )\n      );\n  END IF;\n\n  RETURN NEW;\nEND;\n$function$\n"
+    },
+    {
+      "hash": "043518a9bce81736a7a57ededdd5e213",
+      "name": "contract_financial_self_healing_sweep",
+      "definition": "CREATE OR REPLACE FUNCTION public.contract_financial_self_healing_sweep()\n RETURNS jsonb\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\nDECLARE\n  v_reconcile_before jsonb;\n  v_generation jsonb;\n  v_reconcile_after jsonb;\nBEGIN\n  v_reconcile_before := public.reconcile_all_contract_schedules();\n  v_generation := public.generate_due_contract_invoices_v1(\n    jsonb_build_object('dry_run', false)\n  );\n  v_reconcile_after := public.reconcile_all_contract_schedules();\n\n  RETURN jsonb_build_object(\n    'reconcile_before', v_reconcile_before,\n    'generation', v_generation,\n    'reconcile_after', v_reconcile_after\n  );\nEND;\n$function$\n"
+    },
+    {
+      "hash": "b8d2411886294d7790c267ad4e4497f1",
+      "name": "detach_schedules_on_invoice_cancel",
+      "definition": "CREATE OR REPLACE FUNCTION public.detach_schedules_on_invoice_cancel()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\nBEGIN\n  IF lower(COALESCE(NEW.status, '')) IN (\n       'cancelled', 'canceled', 'void', 'voided', 'deleted'\n     )\n     OR lower(COALESCE(NEW.payment_status, '')) IN (\n       'cancelled', 'canceled', 'void', 'voided', 'deleted'\n     )\n  THEN\n    UPDATE public.contract_payment_schedules AS schedule\n    SET invoice_id = NULL,\n        updated_at = now()\n    WHERE schedule.invoice_id = NEW.id\n      AND lower(COALESCE(schedule.status, '')) NOT IN (\n        'cancelled', 'canceled', 'void', 'voided', 'deleted', 'inactive'\n      );\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
+    },
+    {
+      "hash": "26e1d042941b2d30e09d68f1abd987e9",
+      "name": "recalculate_contract_financial_state",
+      "definition": "CREATE OR REPLACE FUNCTION public.recalculate_contract_financial_state(p_contract_id uuid)\n RETURNS numeric\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\nDECLARE\n  v_contract public.contracts%ROWTYPE;\n  v_canonical_paid numeric := 0;\n  v_paid numeric := 0;\n  v_previous_bypass text := COALESCE(current_setting('app.financial_controls_bypass', true), '');\nBEGIN\n  IF p_contract_id IS NULL THEN\n    RETURN 0;\n  END IF;\n\n  SELECT *\n  INTO v_contract\n  FROM public.contracts contract\n  WHERE contract.id = p_contract_id\n  FOR UPDATE;\n\n  IF NOT FOUND THEN\n    RETURN 0;\n  END IF;\n\n  v_canonical_paid := public.canonical_contract_paid_amount(p_contract_id);\n  v_paid := CASE\n    WHEN COALESCE(v_contract.contract_amount, 0) > 0\n      THEN LEAST(v_canonical_paid, v_contract.contract_amount)\n    ELSE v_canonical_paid\n  END;\n\n  PERFORM set_config('app.financial_controls_bypass', 'on', true);\n\n  UPDATE public.contracts contract\n  SET\n    total_paid = v_paid,\n    balance_due = GREATEST(COALESCE(v_contract.contract_amount, 0) - v_paid, 0),\n    payment_status = CASE\n      WHEN v_paid <= 0.01 THEN 'unpaid'\n      WHEN v_paid >= COALESCE(v_contract.contract_amount, 0) - 0.01 THEN 'paid'\n      ELSE 'partial'\n    END,\n    updated_at = now()\n  WHERE contract.id = p_contract_id;\n\n  PERFORM set_config('app.financial_controls_bypass', v_previous_bypass, true);\n  RETURN v_paid;\nEXCEPTION\n  WHEN OTHERS THEN\n    PERFORM set_config('app.financial_controls_bypass', v_previous_bypass, true);\n    RAISE;\nEND;\n$function$\n"
+    },
+    {
+      "hash": "901d9bfce4f34b0fef8a5ba159a86ec6",
+      "name": "recalculate_invoice_financial_state",
+      "definition": "CREATE OR REPLACE FUNCTION public.recalculate_invoice_financial_state(p_invoice_id uuid)\n RETURNS numeric\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\nDECLARE\n  v_invoice public.invoices%ROWTYPE;\n  v_paid numeric := 0;\n  v_previous_bypass text := COALESCE(current_setting('app.financial_controls_bypass', true), '');\nBEGIN\n  IF p_invoice_id IS NULL THEN\n    RETURN 0;\n  END IF;\n\n  SELECT * INTO v_invoice\n  FROM public.invoices invoice\n  WHERE invoice.id = p_invoice_id\n  FOR UPDATE;\n  IF NOT FOUND THEN\n    RETURN 0;\n  END IF;\n\n  v_paid := public.canonical_invoice_paid_amount(p_invoice_id, NULL);\n  PERFORM set_config('app.financial_controls_bypass', 'on', true);\n\n  UPDATE public.invoices invoice\n  SET\n    paid_amount = v_paid,\n    balance_due = GREATEST(COALESCE(v_invoice.total_amount, 0) - v_paid, 0),\n    payment_status = CASE\n      WHEN v_paid <= 0.01 THEN 'unpaid'\n      WHEN v_paid >= COALESCE(v_invoice.total_amount, 0) - 0.01 THEN 'paid'\n      ELSE 'partial'\n    END,\n    status = CASE\n      WHEN lower(COALESCE(v_invoice.status, '')) IN ('cancelled', 'canceled', 'void', 'voided', 'deleted')\n        THEN v_invoice.status\n      WHEN v_paid >= COALESCE(v_invoice.total_amount, 0) - 0.01 THEN 'paid'\n      WHEN v_invoice.due_date IS NOT NULL AND v_invoice.due_date < CURRENT_DATE THEN 'overdue'\n      WHEN lower(COALESCE(v_invoice.status, '')) = 'draft' THEN 'draft'\n      ELSE 'sent'\n    END,\n    updated_at = now()\n  WHERE invoice.id = p_invoice_id;\n\n  PERFORM set_config('app.financial_controls_bypass', v_previous_bypass, true);\n  RETURN v_paid;\nEXCEPTION\n  WHEN OTHERS THEN\n    PERFORM set_config('app.financial_controls_bypass', v_previous_bypass, true);\n    RAISE;\nEND;\n$function$\n"
+    },
+    {
+      "hash": "4bae220787e76ff2e7779c9da79782d4",
+      "name": "reconcile_contract_rental_schedule_invoice_state",
+      "definition": "CREATE OR REPLACE FUNCTION public.reconcile_contract_rental_schedule_invoice_state(p_company_id uuid, p_contract_id uuid, p_affected_invoice_ids uuid[])\n RETURNS jsonb\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\nDECLARE\n  v_schedule public.contract_payment_schedules%ROWTYPE;\n  v_invoice public.invoices%ROWTYPE;\n  v_candidate_ids uuid[];\n  v_paid numeric;\n  v_status text;\n  v_paid_date date;\n  v_updated integer := 0;\n  v_relinked integer := 0;\n  v_amount_normalized integer := 0;\n  v_ambiguous_months date[] := ARRAY[]::date[];\nBEGIN\n  IF p_company_id IS NULL OR p_contract_id IS NULL THEN\n    RETURN jsonb_build_object(\n      'updated', 0,\n      'relinked', 0,\n      'amounts_normalized', 0,\n      'ambiguous_months', '[]'::jsonb\n    );\n  END IF;\n\n  FOR v_schedule IN\n    SELECT schedule.*\n    FROM public.contract_payment_schedules schedule\n    WHERE schedule.company_id = p_company_id\n      AND schedule.contract_id = p_contract_id\n      AND lower(COALESCE(schedule.status, '')) NOT IN (\n        'cancelled', 'canceled', 'void', 'voided', 'deleted', 'inactive'\n      )\n      AND (\n        p_affected_invoice_ids IS NULL\n        OR EXISTS (\n          SELECT 1\n          FROM public.invoices affected\n          WHERE affected.id = ANY(COALESCE(p_affected_invoice_ids, ARRAY[]::uuid[]))\n            AND affected.company_id = p_company_id\n            AND affected.contract_id = p_contract_id\n            AND date_trunc(\n              'month',\n              COALESCE(affected.invoice_month, affected.due_date, affected.invoice_date)::timestamp without time zone\n            )::date = date_trunc(\n              'month',\n              schedule.due_date::timestamp without time zone\n            )::date\n        )\n      )\n    ORDER BY schedule.due_date, schedule.installment_number, schedule.id\n    FOR UPDATE OF schedule\n  LOOP\n    SELECT array_agg(invoice.id ORDER BY invoice.created_at, invoice.id)\n    INTO v_candidate_ids\n    FROM public.invoices invoice\n    WHERE invoice.company_id = p_company_id\n      AND invoice.contract_id = p_contract_id\n      AND invoice.penalty_id IS NULL\n      AND COALESCE(invoice.total_amount, 0) > 0.01\n      AND date_trunc(\n        'month',\n        COALESCE(invoice.invoice_month, invoice.due_date, invoice.invoice_date)::timestamp without time zone\n      )::date = date_trunc(\n        'month',\n        v_schedule.due_date::timestamp without time zone\n      )::date\n      AND lower(COALESCE(invoice.status, '')) NOT IN (\n        'cancelled', 'canceled', 'void', 'voided', 'deleted', 'inactive'\n      )\n      AND lower(COALESCE(invoice.payment_status, '')) NOT IN (\n        'cancelled', 'canceled', 'void', 'voided', 'deleted', 'inactive'\n      );\n\n    IF COALESCE(cardinality(v_candidate_ids), 0) = 0 THEN\n      CONTINUE;\n    END IF;\n\n    IF cardinality(v_candidate_ids) > 1 THEN\n      v_ambiguous_months := array_append(\n        v_ambiguous_months,\n        date_trunc('month', v_schedule.due_date::timestamp without time zone)::date\n      );\n      CONTINUE;\n    END IF;\n\n    SELECT invoice.*\n    INTO STRICT v_invoice\n    FROM public.invoices invoice\n    WHERE invoice.id = v_candidate_ids[1]\n      AND invoice.company_id = p_company_id\n      AND invoice.contract_id = p_contract_id\n    FOR UPDATE;\n\n    v_paid := round(\n      GREATEST(public.canonical_invoice_paid_amount(v_invoice.id, NULL), 0)::numeric,\n      2\n    );\n\n    v_status := CASE\n      WHEN v_paid >= COALESCE(v_invoice.total_amount, 0) - 0.01 THEN 'paid'\n      WHEN v_paid > 0.01 THEN 'partially_paid'\n      WHEN v_schedule.due_date < CURRENT_DATE THEN 'overdue'\n      ELSE 'pending'\n    END;\n\n    v_paid_date := NULL;\n    IF v_status = 'paid' THEN\n      SELECT max(source.payment_date)\n      INTO v_paid_date\n      FROM (\n        SELECT payment.payment_date\n        FROM public.payments payment\n        WHERE payment.company_id = p_company_id\n          AND payment.invoice_id = v_invoice.id\n          AND lower(COALESCE(payment.payment_status, '')) IN (\n            'completed', 'paid', 'success', 'succeeded', 'cleared'\n          )\n          AND lower(COALESCE(payment.transaction_type::text, 'receipt')) = 'receipt'\n          AND NOT EXISTS (\n            SELECT 1\n            FROM public.payment_allocations allocation\n            WHERE allocation.company_id = p_company_id\n              AND allocation.payment_id = payment.id\n              AND allocation.is_active = true\n          )\n\n        UNION ALL\n\n        SELECT payment.payment_date\n        FROM public.payment_allocations allocation\n        JOIN public.payments payment\n          ON payment.id = allocation.payment_id\n         AND payment.company_id = p_company_id\n        WHERE allocation.company_id = p_company_id\n          AND allocation.allocation_type = 'invoice'\n          AND allocation.target_id = v_invoice.id\n          AND allocation.is_active = true\n          AND lower(COALESCE(payment.payment_status, '')) IN (\n            'completed', 'paid', 'success', 'succeeded', 'cleared'\n          )\n          AND lower(COALESCE(payment.transaction_type::text, 'receipt')) = 'receipt'\n      ) source;\n    END IF;\n\n    IF v_schedule.invoice_id IS DISTINCT FROM v_invoice.id THEN\n      v_relinked := v_relinked + 1;\n    END IF;\n    IF round(COALESCE(v_schedule.amount, 0)::numeric, 2)\n       IS DISTINCT FROM round(COALESCE(v_invoice.total_amount, 0)::numeric, 2)\n    THEN\n      v_amount_normalized := v_amount_normalized + 1;\n    END IF;\n\n    IF v_schedule.invoice_id IS DISTINCT FROM v_invoice.id\n       OR round(COALESCE(v_schedule.amount, 0)::numeric, 2)\n          IS DISTINCT FROM round(COALESCE(v_invoice.total_amount, 0)::numeric, 2)\n       OR round(COALESCE(v_schedule.paid_amount, 0)::numeric, 2)\n          IS DISTINCT FROM LEAST(v_paid, COALESCE(v_invoice.total_amount, v_paid))\n       OR COALESCE(v_schedule.status, '') IS DISTINCT FROM v_status\n       OR v_schedule.paid_date IS DISTINCT FROM v_paid_date\n    THEN\n      UPDATE public.contract_payment_schedules schedule\n      SET invoice_id = v_invoice.id,\n          amount = round(v_invoice.total_amount::numeric, 2),\n          paid_amount = LEAST(v_paid, COALESCE(v_invoice.total_amount, v_paid)),\n          paid_date = v_paid_date,\n          status = v_status,\n          updated_at = now()\n      WHERE schedule.id = v_schedule.id\n        AND schedule.company_id = p_company_id\n        AND schedule.contract_id = p_contract_id;\n\n      v_updated := v_updated + 1;\n    END IF;\n  END LOOP;\n\n  RETURN jsonb_build_object(\n    'updated', v_updated,\n    'relinked', v_relinked,\n    'amounts_normalized', v_amount_normalized,\n    'ambiguous_months', to_jsonb(v_ambiguous_months)\n  );\nEND;\n$function$\n"
+    },
+    {
+      "hash": "bac5ed1a6aad20e7b619c5317038e522",
+      "name": "refresh_contract_financial_state_v1",
+      "definition": "CREATE OR REPLACE FUNCTION public.refresh_contract_financial_state_v1(p_contract_id uuid)\n RETURNS jsonb\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\nDECLARE\n  v_actor uuid := auth.uid();\n  v_jwt_role text := COALESCE(\n    current_setting('request.jwt.claim.role', true),\n    auth.jwt() ->> 'role',\n    ''\n  );\n  v_contract_before public.contracts%ROWTYPE;\n  v_contract_after public.contracts%ROWTYPE;\n  v_invoice_id uuid;\n  v_schedule_report jsonb;\nBEGIN\n  IF p_contract_id IS NULL THEN\n    RAISE EXCEPTION 'contract id is required' USING ERRCODE = '22023';\n  END IF;\n\n  IF v_actor IS NULL AND v_jwt_role <> 'service_role' THEN\n    RAISE EXCEPTION 'authenticated user is required' USING ERRCODE = '42501';\n  END IF;\n\n  SELECT contract.*\n  INTO v_contract_before\n  FROM public.contracts AS contract\n  WHERE contract.id = p_contract_id\n    FOR UPDATE;\n\n  IF NOT FOUND THEN\n    RAISE EXCEPTION 'contract not found' USING ERRCODE = 'P0002';\n  END IF;\n\n  IF v_actor IS NOT NULL AND NOT EXISTS (\n    SELECT 1\n    FROM public.profiles AS profile\n    WHERE profile.user_id = v_actor\n      AND profile.company_id = v_contract_before.company_id\n      AND COALESCE(profile.is_active, true)\n  ) THEN\n    RAISE EXCEPTION 'contract is outside the current company scope'\n      USING ERRCODE = '42501';\n  END IF;\n\n  FOR v_invoice_id IN\n    SELECT invoice.id\n    FROM public.invoices AS invoice\n    WHERE invoice.contract_id = p_contract_id\n      AND invoice.company_id = v_contract_before.company_id\n      AND lower(COALESCE(invoice.status, '')) NOT IN (\n        'cancelled', 'canceled', 'void', 'voided', 'deleted'\n      )\n    ORDER BY invoice.id\n  LOOP\n    PERFORM public.recalculate_invoice_financial_state(v_invoice_id);\n  END LOOP;\n\n  PERFORM public.recalculate_contract_financial_state(p_contract_id);\n\n  v_schedule_report := public.reconcile_contract_schedules_v1(\n    p_contract_id,\n    jsonb_build_object('link_repair', true, 'settlement_sync', true)\n  );\n\n  SELECT contract.*\n  INTO STRICT v_contract_after\n  FROM public.contracts AS contract\n  WHERE contract.id = p_contract_id;\n\n  RETURN jsonb_build_object(\n    'contract_id', p_contract_id,\n    'contract_number', v_contract_after.contract_number,\n    'changed',\n      round(COALESCE(v_contract_before.total_paid, 0)::numeric, 2)\n        IS DISTINCT FROM round(COALESCE(v_contract_after.total_paid, 0)::numeric, 2)\n      OR round(COALESCE(v_contract_before.balance_due, 0)::numeric, 2)\n        IS DISTINCT FROM round(COALESCE(v_contract_after.balance_due, 0)::numeric, 2)\n      OR COALESCE(v_contract_before.payment_status, '')\n        IS DISTINCT FROM COALESCE(v_contract_after.payment_status, '')\n      OR COALESCE((v_schedule_report ->> 'changed')::boolean, false),\n    'schedules', v_schedule_report,\n    'before', jsonb_build_object(\n      'total_paid', COALESCE(v_contract_before.total_paid, 0),\n      'balance_due', COALESCE(v_contract_before.balance_due, 0),\n      'payment_status', v_contract_before.payment_status\n    ),\n    'after', jsonb_build_object(\n      'total_paid', COALESCE(v_contract_after.total_paid, 0),\n      'balance_due', COALESCE(v_contract_after.balance_due, 0),\n      'payment_status', v_contract_after.payment_status\n    )\n  );\nEND;\n$function$\n"
+    },
+    {
+      "hash": "6051314941348f1edd6002f7c0788369",
+      "name": "update_invoice_on_payment_completion",
+      "definition": "CREATE OR REPLACE FUNCTION public.update_invoice_on_payment_completion()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\nDECLARE\n  v_payment_id uuid;\n  v_invoice_id uuid;\n  v_contract_id uuid;\n  v_invoice_ids uuid[] := ARRAY[]::uuid[];\n  v_contract_ids uuid[] := ARRAY[]::uuid[];\nBEGIN\n  IF TG_OP IN ('INSERT', 'UPDATE') THEN\n    v_payment_id := NEW.id;\n    IF NEW.invoice_id IS NOT NULL THEN v_invoice_ids := array_append(v_invoice_ids, NEW.invoice_id); END IF;\n    IF NEW.contract_id IS NOT NULL THEN v_contract_ids := array_append(v_contract_ids, NEW.contract_id); END IF;\n  END IF;\n  IF TG_OP IN ('UPDATE', 'DELETE') THEN\n    v_payment_id := OLD.id;\n    IF OLD.invoice_id IS NOT NULL THEN v_invoice_ids := array_append(v_invoice_ids, OLD.invoice_id); END IF;\n    IF OLD.contract_id IS NOT NULL THEN v_contract_ids := array_append(v_contract_ids, OLD.contract_id); END IF;\n  END IF;\n\n  SELECT\n    v_invoice_ids || COALESCE(array_agg(DISTINCT allocation.target_id), ARRAY[]::uuid[])\n  INTO v_invoice_ids\n  FROM public.payment_allocations allocation\n  WHERE allocation.payment_id = v_payment_id\n    AND allocation.allocation_type = 'invoice';\n\n  FOR v_invoice_id IN\n    SELECT DISTINCT candidate_id\n    FROM unnest(v_invoice_ids) candidate(candidate_id)\n    WHERE candidate_id IS NOT NULL\n  LOOP\n    PERFORM public.recalculate_invoice_financial_state(v_invoice_id);\n    SELECT invoice.contract_id INTO v_contract_id\n    FROM public.invoices invoice WHERE invoice.id = v_invoice_id;\n    IF v_contract_id IS NOT NULL THEN\n      v_contract_ids := array_append(v_contract_ids, v_contract_id);\n    END IF;\n  END LOOP;\n\n  FOR v_contract_id IN\n    SELECT DISTINCT candidate_id\n    FROM unnest(v_contract_ids) candidate(candidate_id)\n    WHERE candidate_id IS NOT NULL\n  LOOP\n    PERFORM public.recalculate_contract_financial_state(v_contract_id);\n  END LOOP;\n\n  IF TG_OP = 'DELETE' THEN\n    RETURN OLD;\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
+    }
+  ]
+}

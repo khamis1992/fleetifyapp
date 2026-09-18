@@ -22,7 +22,6 @@ import { useFleetifyTranslation } from "@/hooks/useTranslation";
 interface PermissionRow {
   id: string;
   title: string;
-  titleEn: string;
   description: string;
   icon: LucideIcon;
   permissionKey: keyof ReturnType<typeof useJournalEntryPermissions>;
@@ -44,7 +43,6 @@ export function JournalEntryPermissionsManager() {
     {
       id: 'create_draft',
       title: 'إنشاء قيود مسودة',
-      titleEn: 'Create Draft Entries',
       description: 'إنشاء قيود محاسبية جديدة في حالة مسودة',
       icon: FileEdit,
       permissionKey: 'canCreateDraft',
@@ -53,7 +51,6 @@ export function JournalEntryPermissionsManager() {
     {
       id: 'submit_for_review',
       title: 'تقديم للمراجعة',
-      titleEn: 'Submit for Review',
       description: 'تقديم القيود المسودة للمراجعة',
       icon: Send,
       permissionKey: 'canSubmitForReview',
@@ -62,7 +59,6 @@ export function JournalEntryPermissionsManager() {
     {
       id: 'review',
       title: 'مراجعة القيود',
-      titleEn: 'Review Entries',
       description: 'مراجعة القيود المقدمة وإرجاعها أو الموافقة عليها',
       icon: Eye,
       permissionKey: 'canReview',
@@ -71,7 +67,6 @@ export function JournalEntryPermissionsManager() {
     {
       id: 'approve',
       title: 'اعتماد القيود',
-      titleEn: 'Approve Entries',
       description: 'اعتماد القيود بعد المراجعة',
       icon: CheckCircle,
       permissionKey: 'canApprove',
@@ -80,7 +75,6 @@ export function JournalEntryPermissionsManager() {
     {
       id: 'post',
       title: 'ترحيل القيود',
-      titleEn: 'Post Entries',
       description: 'ترحيل القيود المعتمدة إلى دفتر الأستاذ',
       icon: Upload,
       permissionKey: 'canPost',
@@ -89,7 +83,6 @@ export function JournalEntryPermissionsManager() {
     {
       id: 'reverse',
       title: 'عكس القيود المرحلة',
-      titleEn: 'Reverse Posted Entries',
       description: 'عكس القيود المرحلة في دفتر الأستاذ',
       icon: Undo,
       permissionKey: 'canReverse',
@@ -98,7 +91,6 @@ export function JournalEntryPermissionsManager() {
     {
       id: 'cancel',
       title: 'إلغاء القيود',
-      titleEn: 'Cancel Entries',
       description: 'إلغاء القيود في أي مرحلة',
       icon: X,
       permissionKey: 'canCancel',
@@ -107,7 +99,6 @@ export function JournalEntryPermissionsManager() {
     {
       id: 'view_all',
       title: 'عرض جميع المراحل',
-      titleEn: 'View All Statuses',
       description: 'عرض القيود في جميع المراحل (مسودة، مراجعة، معتمد، مرحل)',
       icon: Info,
       permissionKey: 'canViewAllStatuses',
@@ -173,7 +164,7 @@ export function JournalEntryPermissionsManager() {
       {/* Workflow Diagram */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg">سير عمل القيود (Workflow)</CardTitle>
+          <CardTitle className="text-lg">سير عمل القيود</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="flex items-center justify-between text-sm">
@@ -232,7 +223,6 @@ export function JournalEntryPermissionsManager() {
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-1">
                       <h4 className="font-semibold">{row.title}</h4>
-                      <span className="text-xs text-muted-foreground">({row.titleEn})</span>
                       <Badge className={levelConfig.color} variant="secondary">
                         {levelConfig.label}
                       </Badge>

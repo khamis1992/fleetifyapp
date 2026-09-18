@@ -1,9 +1,9 @@
 import { useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { Car } from 'lucide-react';
-import type { NavigateFunction } from 'react-router-dom';
+import { Link, type NavigateFunction } from 'react-router-dom';
 
-const VehiclesTab = ({ contracts, navigate }: { contracts: any[], navigate: NavigateFunction }) => {
+const VehiclesTab = ({ contracts }: { contracts: any[], navigate: NavigateFunction }) => {
   const vehicles = useMemo(() => {
     return contracts
       .filter(c => c.vehicle && c.status === 'active')
@@ -35,14 +35,12 @@ const VehiclesTab = ({ contracts, navigate }: { contracts: any[], navigate: Navi
 
       {vehicles.length > 0 ? (
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
-          {vehicles.map((vehicle, index) => (
-            <motion.div
-              key={vehicle.id}
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: index * 0.1 }}
+          {vehicles.map((vehicle) => (
+            <Link
+              key={vehicle.contractId}
+
               className="group cursor-pointer rounded-xl border border-[#DDE5EF] bg-white p-5 shadow-sm transition-all hover:-translate-y-0.5 hover:border-[#173A63] hover:shadow-md"
-              onClick={() => navigate(`/fleet/vehicles/${vehicle.id}`)}
+              to={`/fleet/vehicles/${vehicle.id}`}
             >
               <div className="flex items-center gap-3 mb-4">
                 <div className="w-12 h-12 rounded-lg bg-[#EEF5FB] text-[#173A63] flex items-center justify-center group-hover:scale-105 transition-transform">
@@ -68,7 +66,7 @@ const VehiclesTab = ({ contracts, navigate }: { contracts: any[], navigate: Navi
                   <span className="font-bold text-emerald-700">{vehicle.monthlyAmount?.toLocaleString()} ر.ق</span>
                 </div>
               </div>
-            </motion.div>
+            </Link>
           ))}
         </div>
       ) : (

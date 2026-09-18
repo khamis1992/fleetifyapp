@@ -177,11 +177,16 @@ export async function createDocxDocumentFromHtml(htmlContent: string): Promise<a
   };
 
   const extractMetaInfo = () => {
-    const refDate = doc.querySelector('.ref-date');
-    const refNumber = refDate?.querySelector('div:first-child')?.textContent?.replace('الرقم المرجعي:', '').trim() || '';
-    const dateText = refDate?.querySelector('div:last-child')?.textContent?.replace('التاريخ:', '').trim() || 
-                     new Date().toLocaleDateString('ar-QA', { year: 'numeric', month: 'long', day: 'numeric' });
-    return { refNumber, dateText };
+    // Read labels, not child positions: the revised memo includes a separate
+    // official court number after its independent memorandum date.
+    const lines = Array.from(doc.querySelector('.ref-date')?.children || [])
+      .map(row => row.textContent?.trim() || '');
+    const value = (label: RegExp) => lines.find(line => label.test(line))?.replace(label, '').trim() || '';
+    const refNumber = value(/^الرقم المرجعي\s*:/);
+    const memoDate = value(/^تاريخ المذكرة\s*:/);
+    const dateText = memoDate || value(/^التاريخ\s*:/);
+    const caseNumber = value(/^الدعوى رقم\s*:/);
+    return { refNumber, dateText, caseNumber, dateLabel: memoDate ? 'تاريخ المذكرة' : 'التاريخ' };
   };
 
   const extractSubject = () => {
@@ -397,7 +402,7 @@ export async function createDocxDocumentFromHtml(htmlContent: string): Promise<a
             new TableCell({
               children: [new Paragraph({ 
                 children: [new TextRun({ 
-                  text: `التاريخ: ${metaInfo.dateText}`, 
+                  text: `${metaInfo.dateLabel}: ${metaInfo.dateText}`,
                   size: 20, 
                   font: 'Arial', 
                   rightToLeft: true 
@@ -423,6 +428,15 @@ export async function createDocxDocumentFromHtml(htmlContent: string): Promise<a
   );
 
   children.push(new Paragraph({ spacing: { before: 150 } }));
+
+  if (metaInfo.caseNumber) {
+    children.push(new Paragraph({
+      children: [new TextRun({ text: `الدعوى رقم: ${metaInfo.caseNumber}`, size: 20, font: 'Arial', rightToLeft: true })],
+      alignment: AlignmentType.RIGHT,
+      bidirectional: true,
+      spacing: { after: 150 },
+    }));
+  }
 
   // 4. صندوق الموضوع (بلون خلفية مطابق)
   children.push(
@@ -628,7 +642,9 @@ export async function createDocxDocumentFromHtml(htmlContent: string): Promise<a
       );
 
       // معالجة الجدول (جدول المطالبات المالية)
-      if (tableEl) {
+      for (const tableEl of section.querySelectorAll('table')) {
+        const groupHeading = tableEl.previousElementSibling;
+        if (groupHeading?.matches('h3')) children.push(new Paragraph({children:[new TextRun({text:groupHeading.textContent?.trim() || '',bold:true,rightToLeft:true,font:'Arial',size:23})],bidirectional:true,spacing:{before:180,after:100}}));
         const rows: TableRowType[] = [];
         tableEl.querySelectorAll('tr').forEach((tr, rowIndex) => {
           const isHeader = tr.closest('thead') !== null || rowIndex === 0;
@@ -667,7 +683,7 @@ export async function createDocxDocumentFromHtml(htmlContent: string): Promise<a
           });
           
           if (cells.length > 0) {
-            rows.push(new TableRow({ children: cells }));
+            rows.push(new TableRow({ children: cells, tableHeader: isHeader, cantSplit: true }));
           }
         });
         
@@ -682,6 +698,8 @@ export async function createDocxDocumentFromHtml(htmlContent: string): Promise<a
           );
         }
       }
+      const register = section.querySelector('.claim-register');
+      if (register) children.push(...processContentParagraphs(register as HTMLElement));
       
       // معالجة المحتوى النصي (فقط إذا لم يكن هناك جدول أو معالجة الجدول منفصلة)
       if (contentEl && !tableEl) {
@@ -1140,7 +1158,7 @@ export async function downloadTemplateAsDocx(
     new Paragraph({
       children: [
         new TextRun({
-          text: 'هاتف: 31411919 | البريد الإلكتروني: info@alaraf.qa',
+          text: 'هاتف: 31411919 | البريد الإلكتروني: khamis-1992@hotmail.com',
           size: 18,
           font: 'Arial',
           rightToLeft: true

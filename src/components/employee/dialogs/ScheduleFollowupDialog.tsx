@@ -1,4 +1,5 @@
-﻿/**
+import { WorkspaceDialogContent as DialogContent, WorkspaceDialogHeader as DialogHeader, WorkspaceDialogFooter as DialogFooter, WorkspaceButton as Button, WorkspaceFormSection } from '@/components/employee-workspace/WorkspacePresentation';
+/**
  * Schedule Follow-up Dialog
  * حوار جدولة متابعة مع العميل
  */
@@ -12,14 +13,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from '@/components/ui/dialog';
+import { Dialog, DialogDescription, DialogTitle } from '@/components/ui/dialog';
 import {
   Form,
   FormControl,
@@ -37,7 +31,7 @@ import {
 } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Button } from '@/components/ui/button';
+
 import { Loader2, Calendar, CheckCircle, Clock } from 'lucide-react';
 
 // Validation Schema
@@ -173,21 +167,15 @@ export const ScheduleFollowupDialog: React.FC<ScheduleFollowupDialogProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[550px]">
+      <DialogContent className="sm:max-w-[660px]">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2 text-xl">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-500 to-purple-600 flex items-center justify-center text-white">
-              <Calendar className="w-5 h-5" />
-            </div>
-            جدولة متابعة
-          </DialogTitle>
-          <DialogDescription>
-            حدد موعد للمتابعة مع العميل وسيتم تذكيرك في الوقت المناسب
-          </DialogDescription>
+          <DialogTitle>جدولة متابعة</DialogTitle>
+          <DialogDescription>تنظيم موعد المتابعة وربطه بالعقد وأولويات العمل.</DialogDescription>
         </DialogHeader>
 
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            <WorkspaceFormSection number="01" title="العميل وهدف المتابعة" description="اربط الموعد بالعقد وحدد عنوانًا واضحًا.">
             {/* Contract Selection */}
             <FormField
               control={form.control}
@@ -256,6 +244,8 @@ export const ScheduleFollowupDialog: React.FC<ScheduleFollowupDialogProps> = ({
               )}
             />
 
+            </WorkspaceFormSection>
+            <WorkspaceFormSection number="02" title="الموعد والأولوية" description="اختر التاريخ والوقت المناسبين للمتابعة.">
             {/* Quick Date Selection */}
             <div>
               <FormLabel>اختيار سريع للتاريخ</FormLabel>
@@ -299,7 +289,7 @@ export const ScheduleFollowupDialog: React.FC<ScheduleFollowupDialogProps> = ({
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="ew-form-grid">
               {/* Scheduled Date */}
               <FormField
                 control={form.control}
@@ -345,10 +335,10 @@ export const ScheduleFollowupDialog: React.FC<ScheduleFollowupDialogProps> = ({
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      <SelectItem value="low">منخفضة 🟢</SelectItem>
-                      <SelectItem value="medium">متوسطة 🟡</SelectItem>
-                      <SelectItem value="high">عالية 🟠</SelectItem>
-                      <SelectItem value="urgent">عاجلة 🔴</SelectItem>
+                      <SelectItem value="low">منخفضة</SelectItem>
+                      <SelectItem value="medium">متوسطة</SelectItem>
+                      <SelectItem value="high">عالية</SelectItem>
+                      <SelectItem value="urgent">عاجلة</SelectItem>
                     </SelectContent>
                   </Select>
                   <FormMessage />
@@ -356,6 +346,8 @@ export const ScheduleFollowupDialog: React.FC<ScheduleFollowupDialogProps> = ({
               )}
             />
 
+            </WorkspaceFormSection>
+            <WorkspaceFormSection number="03" title="تفاصيل إضافية" description="أضف ما تحتاج تذكّره عند التواصل مع العميل.">
             {/* Notes */}
             <FormField
               control={form.control}
@@ -376,6 +368,7 @@ export const ScheduleFollowupDialog: React.FC<ScheduleFollowupDialogProps> = ({
               )}
             />
 
+            </WorkspaceFormSection>
             <DialogFooter className="gap-2">
               <Button
                 type="button"

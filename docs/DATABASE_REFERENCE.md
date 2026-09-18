@@ -1,5 +1,366 @@
 # Fleetify Database Reference
 
+## Fixed compensation request — deployed (2026-09-09)
+
+Migration `20260909184802` adds `legal_case_litigation_profile.fixed_compensation_requested`
+(boolean, not null, default false). The existing private `claim_register` calculator
+adds QAR 10,000 once only when explicitly selected and the profile matches the current
+case. Traffic-only, zero claims and no-claim closures remain excluded. Installing the
+feature changes no existing monetary records or claim totals. Only LTO2024268 was
+enabled at the user's request. The matching rollback restores the prior calculator
+and retains the opt-in field as historical user input. Company authorization and
+existing grants remain unchanged.
+
+## Automatic external filing handoff — deployed (2026-09-08)
+
+Migration `20260908063143` adds `record_external_legal_filing_v2`, an authenticated
+invoker facade over an authorized implementation in `taqadi_private`. It requests
+a cooperative stop for active work and returns a pending state without holding
+locks while the worker stops. On continuation, paused/queued tasks are retired
+with an audit event in the existing external filing transaction. Known receipts
+are checked for conflicts and pending receipt synchronization is preserved.
+No existing data changes merely by installing the migration. The v1 command and
+its active-task guard remain intact; rollback preserves recorded legal evidence.
+Deployed after explicit user approval on 2026-09-08. Live permission checks
+confirm authenticated access, denied anonymous access, and an invoker API facade.
+
+## Manual review of unreadable quarantined contracts — deployed (2026-09-07)
+
+Migration `20260907203102` allows the existing authorized manual identity review
+to inspect a quarantined signed contract only when its persisted status is
+`unverified` and its reason code is `insufficient_identity_evidence`. Preview does
+not change the document. Approval still requires an unchanged revision, a full
+observed identity number matching the current customer, an explicit attestation,
+a reason, authorized company membership and no other active matched copy.
+
+Only after approval does the transaction set evidence active, mark identity
+matched and clear the expired OCR deadline. The original row and human observation
+remain in the private review history; the public audit includes the old/new
+evidence state. No document is approved by the migration itself. Other quarantine
+reasons, mismatches and superseded files remain blocked. Rollback preserves
+completed reviews and restores the previous eligibility rule.
+
+## External filing after acknowledged manual stop — deployed (2026-09-07)
+
+Migration `20260907183505` releases worker ownership when the trusted control
+RPC acknowledges stopping. `record_external_legal_filing_v1` now permits a
+`needs_human` job only when its code is `MANUALLY_STOPPED`, its step is
+`manual_stop`, and both ownership fields are null. Pending stop requests,
+other human pauses and uncertain submissions remain blocked.
+
+Existing stale ownership is released only for manually stopped jobs with a
+matching company/job `stopped` event. The repair emits
+`manual_stop_lock_released`; it does not register a filing or change its reference.
+Existing authentication, company checks and function grants are retained.
+Rollback restores the previous command guards without restoring stale locks or
+discarding legal evidence.
+
+## Taqadi receipt synchronization and manual stop — deployed (2026-09-07)
+
+Migration `20260907135928` synchronizes a preparation-stage legal case value with
+its exact worker-approved job/memo snapshot before approval and receipt replay,
+recording the old/new amounts in `legal_case_activities`. Existing filing
+readiness guards remain active; invoices, payments and filed values are unchanged.
+
+Migration `20260907141007` extends `cancel_taqadi_filing_job_v1` to request a
+cooperative stop during active work. `MANUAL_STOP_REQUESTED` prevents late progress
+writes; worker-only `check_taqadi_filing_control_v1` acknowledges `needs_human` with
+`MANUALLY_STOPPED` before submission or `SUBMISSION_UNCERTAIN` during submission.
+Receipt-sync and uncertain submissions cannot be cancelled through this command.
+`sync_taqadi_approved_case_value_v1` and the control RPC are invoker functions with
+execute granted only to `service_role`; cancellation retains its existing
+authenticated company check. Rollbacks preserve audit and pending-stop safety.
+
+## Manual signed-contract identity review — deployed (2026-09-07)
+
+The 2026-09-08 eligibility fix (`20260908114123`) also permits quarantined,
+unverified signed copies when the OCR reason is `tenant_name_conflict`,
+`low_ocr_confidence` or `incomplete_scan`, alongside `insufficient_identity_evidence`.
+Preview does not activate evidence. Quarantined identity-number conflicts,
+ambiguous multi-person evidence, missing/unknown reasons and superseded copies
+remain blocked. The same full observed QID, attestation, role/scope/revision checks
+and audit are required for approval. Rollback preserves completed reviews.
+
+Migration `20260907133016` adds `review_contract_document_identity_v1`. Omitting
+the revision requests an authorized preview; approval requires its unchanged
+revision, the identity number read by the reviewer, a reason and confirmation.
+Active company administrators, managers and legal staff can use the command.
+The observed full identity number must match the current customer. Foreign,
+inactive, unsigned or ambiguous evidence cannot be approved through this flow.
+
+The invoker facade calls a private authorized command. The private
+`legal_evidence_private.identity_reviews` table has RLS and no browser table
+grants. It preserves the original document/extraction, customer snapshot,
+reviewer, reason and approved values. Public audit logs record the same action.
+`contract_documents.verified_by` refers to the reviewer **profile**, while the
+audit actor is the authenticated user. The effective identity is marked matched
+and its reason starts with `مطابقة يدوية معتمدة:`. Original extracted names remain.
+The manual observation replaces the effective extracted identity number; its
+prior value remains in the immutable review and audit records.
+
+Late OCR updates cannot overwrite a stored manual decision. Existing binding
+and exact-identity guards remain active. Rollback disables new reviews while
+retaining approved evidence, audit history and overwrite protection.
+
+## Cancelled schedule closure preserving claims — deployed (2026-09-06)
+
+Migration `20260906202626` adds `preview_contract_schedule_closure_v1` and
+`close_contract_schedule_closure_v1`. These authenticated invoker facades use
+authorized private gateways, the shared financial eligibility checks and a
+`preserve_claims` decision distinct from the existing `no_claim` workflow.
+Open invoices and known customer penalties remain payable; pending receipts,
+unknown liability, invalid cancellation evidence and other integrity issues
+still block approval. Decision mode and penalty facts are included in the
+preview revision; cross-mode request replay is rejected.
+
+Only held schedules with verified cancelled invoices become `cancelled` with
+`financial_hold_reason='resolved_cancelled_schedule'`. Audit snapshots carry
+`decision='cancelled_schedules_preserving_claims'` and protected billing months.
+Invoices, payments, allocations, journals, penalties and collection records are
+not changed. Postconditions require unchanged canonical settlement, invoice
+outstanding and penalty amount, zero remaining schedule review and matched
+integrity. Rollback retains approved decisions and regeneration guards.
+
+C-ALF-0041 was approved through the UI: 9 schedules / 14,400 QAR closed, 3,050
+QAR settlement retained, 150 QAR invoice balance plus a 500 QAR customer penalty
+preserved. Before/after financial documents and remaining schedules matched
+exactly. The UI is available locally; no Vercel deployment was performed.
+See [design and usage](plans/2026-09-06-cancelled-schedules-preserve-claims-design.md)
+and [verified result](reviews/contract-financial-root-cause-2026-09-06/c-alf-0041-preserved-claims-result.json).
+
+## Self-service no-claim closure — deployed (2026-09-06)
+
+Migrations `20260906192023` and `20260906192448` add the authorized preview and
+approval workflow for cancelled contracts with held, already-cancelled rental
+invoices. `preview_contract_no_claim_closure_v1(company,contract)` returns a
+validated scope, blockers, retained settlement and revision.
+`close_contract_no_claim_closure_v1(company,contract,revision,request_id,reason)`
+requires an unchanged preview, a reason, active company membership and
+`finance.invoice.cancel` authorization (including explicit-deny precedence).
+Both public facades are security invoker, authenticated-only. Private definer
+gateways check authorization before reading or mutating data; raw helpers have
+no browser execution grants.
+
+`contract_finance_private.no_claim_closures` stores actor, reason, request,
+preview and result. It has RLS, an explicit deny-all browser policy, no direct
+browser grants, and unique `(company_id,request_id)` for replay-safe decisions.
+The command locks invoices then contract then schedules, preserves receipts,
+allocations and journals, closes only previewed schedules, records before/after
+snapshots using `contract_no_claim:<closure UUID>` markers, and refreshes the
+verified reconciliation and stale delinquency cache. Existing resolved-month
+guards prevent reactivation and recreation.
+
+Open invoices, independent customer penalties, unresolved penalty responsibility,
+pending receipts, other integrity defects, missing reversals and ambiguous source
+invoices block approval. A legacy missing cancellation pointer can be resolved
+only when exactly one cancelled rental invoice matches company, contract, month
+and amount; the accepted pointer is retained on the closed schedule.
+
+Browser verification confirmed the Arabic action and server preview. LTO2024233
+correctly remains blocked by independent customer penalties after its 36 legacy
+invoice sources were resolved in the preview. No other contract was approved by
+the agent while testing. The new UI is available on the local Vite app; no Vercel
+deployment was performed. Full type check and build passed, as did six frontend
+tests and ten isolated PostgreSQL tests. No security advisor findings concern
+the new workflow after deployment.
+
+Rollback disables the feature but retains completed decisions, audit records
+and guards; it never reopens claims as a deployment side effect. The broader
+effective cancellation date and open-invoice settlement workflow remains separate.
+See [design and usage](plans/2026-09-06-contract-no-claim-closure-action-design.md).
+
+## C-ALF-0053 no-current-claim decision — deployed (2026-09-06)
+
+`20260906185707` implements the owner's explicit no-current-claim decision for
+cancelled C-ALF-0053. It closes 17 schedules totaling 28,050 QAR, linked to
+already-cancelled invoices, and records protected billing months in the existing
+resolution guard. Seven paid schedules and 11,550 QAR of completed receipts are
+preserved. The transaction verifies unchanged invoice, receipt and allocation
+snapshots; it creates no invoice, reversal, or payment.
+
+Production verification at 18:57 UTC: matched, zero outstanding, zero review
+amount, 17 resolution guards, no active delinquency record. Historical contract
+remainder remains 28,050 QAR; it is not the current claim. Snapshot audit marker
+is `20260906185414`. Matching rollback is conditional on unchanged closed rows.
+The isolated PostgreSQL test verifies atomic rejection of changed evidence,
+preservation of paid facts, refusal to reactivate or recreate a closed schedule,
+and rollback. This is a case-specific maintenance resolution; no new UI closure
+button or general settlement RPC was added.
+See [verified result](reviews/contract-financial-root-cause-2026-09-06/c-alf-0053-no-current-claim-result.json).
+
+## Owner-confirmed cancellation and rent decisions — deployed (2026-09-06)
+
+`20260906175942` closes the 30 held schedules of cancelled LTO202410 after the
+owner explicitly confirmed no current claim. Open invoice debt and review amount
+are both zero; 9,000 QAR of completed receipts remain intact. The historical
+contract remainder is still 45,000 QAR and must not be used as a current claim.
+The existing schedule-resolution guard prevents reactivation/rebilling of the
+closed months. Its immutable repair-snapshot marker is `20260906175706`.
+
+`20260906180953` cancels the incorrect unpaid June/September 2025 invoices of
+MR202467 through exact posted journal reversals and issues replacements at
+1,700 QAR each. Original posted lines and all receipts remain unchanged.
+Original journals remain posted alongside their linked posted reversals, as
+required by the ledger's reversal semantics. Current invoice debt is 18,400 QAR;
+the other ten invoices and the contract's recorded 1,500 rent are unchanged
+pending confirmation of the scope of the 1,700 rate. The immutable audit marker
+is `20260906180050`; rollback creates compensating documents rather than deleting
+posted history. The correction helper exists only in the migration session's
+temporary schema, with no public RPC added.
+
+Original cohort at 18:13 UTC: 19 matched, LTO2024233 still requiring a business
+decision. Full company queue at 18:11 UTC: 350 matched, 4 review, including three
+cases outside the original cohort. These are technical reconciliation outcomes,
+not blanket validation of all historic charges.
+See [owner decision evidence](reviews/contract-financial-root-cause-2026-09-06/owner-decisions-final-state.json)
+and the [proposed cancellation/settlement workflow](plans/2026-09-06-contract-cancellation-financial-settlement-design.md).
+The general workflow remains a design, not a deployed feature.
+
+## Reviewed schedule projections — deployed (2026-09-06)
+
+Migrations `20260906172916` and `20260906173630` repair 39 schedule projection
+defects in 18 contracts and retain a newly discovered invoice-origin review on
+MR202467. Initial original-cohort result: 17 matched, 3 needing business facts;
+subsequent owner-confirmed decisions are documented above.
+`guard_resolved_contract_schedule_v1` consults private repair snapshots to prevent
+reactivating explicitly closed projections; approved billing cutoff months also
+block replacement schedules. No invoice face amount, receipt or journal was changed.
+Repair-snapshot markers retain `20260906172212` / `20260906173435` for audit identity.
+See [case decisions and deployment evidence](reviews/contract-financial-root-cause-2026-09-06/TWENTY-CONTRACTS-RESULT.md).
+
+## Contract financial integrity — deployed (2026-09-06)
+
+After explicit user approval, runtime `20260906165231`, activation `20260906165254`,
+and monthly conflict fix `20260906165304` were applied and verified in production.
+Local migration and rollback filenames match these database-assigned versions.
+The earlier rejected proposal versions were `20260906161957`, `20260906163157`,
+and `20260906164116`; the activation's repair-snapshot marker retains its original
+value `20260906163157` as immutable audit evidence.
+
+Runtime adds `contract_payment_schedules.financial_hold_reason text` and
+`cancelled_invoice_id uuid REFERENCES invoices(id)`, plus company-scoped
+`contract_financial_reconciliation_controls`, `contract_financial_reconciliation_queue`,
+and `contract_financial_reconciliation_runs` (RLS, authenticated SELECT only).
+Authenticated gateways: `get_contract_financial_integrity_v1(company,contract)`
+and `request_contract_financial_reconciliation_v1(company,contract)`; helpers have
+no public execution grants. The request uses `finance.payment.reconcile` authorization.
+The scheduled worker repairs derived balances and unambiguous schedule links only.
+Held cancelled obligations remain review items and cannot be automatically rebilled.
+
+At initial deployment, LTO202410 stored settlement was corrected from 10,476 to
+9,000 QAR and 30 cancelled-document obligations totaling 45,000 QAR remained on
+review hold, with zero open-invoice balance. The owner later confirmed closure
+of these obligations; see the newer decision above. The independent worker runs
+each minute; company-wide initial reconciliation was still processing at that
+initial verification.
+See [implementation and deployment scope](reviews/contract-financial-root-cause-2026-09-06/IMPLEMENTATION.md).
+
+## Taqadi receipt completion deployed (2026-09-06)
+
+Migrations `20260906064806` and `20260906064817` are deployed. The service-only
+`complete_taqadi_filing_job_v1` atomically records a proven receipt, marks the
+matching preparation registered, and advances the case through `filed` to
+`awaiting_acceptance`. Receipt replay checks worker ownership, company/case/contract,
+memo snapshot and reference, and preserves later court stages. No table columns
+changed. Matching rollbacks are in `supabase/rollbacks`; apply in reverse order.
+See [implementation and verification](plans/2026-09-06-taqadi-reliability-design.md).
+
+## Pending current-source automatic legal review (2026-09-04)
+
+`20260904040649_revalidate_canonical_legal_system_review.sql` is local, **not deployed**.
+It replaces `auto_verify_legal_transfer_review_v1` with a service-only invoker facade
+to a private authorized gateway that recalculates current claims and revalidates
+identity/proof before writing `system_verified`. Depends on the shared private
+snapshot builder added to pending `20260904034603`; rollback in reverse order.
+Original readiness records remain intact. Review events store the fresh claim.
+This does not certify the separate cancelled/expired conversion or existing-case
+reuse branches. See [design and tests](plans/2026-09-04-legal-system-review-revalidation-design.md).
+
+## Pending canonical legal readiness persistence (2026-09-04)
+
+`20260904034603_persist_canonical_legal_readiness.sql` is local, **not deployed**.
+It replaces raw-penalty/trusted-payload completion with an authorized private
+canonical calculation and audit write; existing public signatures stay intact as
+invoker facades. Requires `20260904024349` and its reader dependencies. The matching
+rollback restores three guarded legacy function bodies without deleting audit rows.
+The wizard also rejects empty, unsuccessful, inconsistent or changed completion
+results before conversion. This does not certify or repair the later automatic
+review/snapshot/filing chain. See
+[design, evidence and remaining gates](plans/2026-09-04-legal-readiness-completion-design.md).
+
+## Pending invoice-to-receipt sync retirement (2026-09-04)
+
+`20260904001503_retire_invoice_aggregate_receipt_sync.sql` is a **local candidate,
+not deployed or release-ready**. It hash/definition-checks and removes only the
+legacy invoice aggregate writer, preserving receipt facts and their guard. Its
+rollback restores the exact original trigger and therefore the known legacy defect.
+It depends on the canonical monthly reader and still requires remaining consumer
+migration, historical provenance reconciliation and full-trigger/concurrency tests.
+See [candidate verification and gates](plans/2026-09-04-invoice-receipt-retirement-design.md).
+
+## Pending invoice fee replay command (2026-09-03 audit)
+
+Migration `20260903203807` adds `create_invoice_payment_with_late_fee_v2(...)`;
+it is **not deployed and not ready for caller activation**. It restores matching
+prior payment IDs before new-payment period/balance checks and validates scoped
+fee assessment remaining amounts. The September 4 revision adds immutable
+`invoice_fee_payment_requests` (company/key unique, RLS enabled, no direct API
+role grants), recording normalized input and its receipt in one transaction.
+It fixes replay after `check_payment_overpayment` mutates stored receipt notes.
+Follow-up pending migration `20260903210643` adds protected, transaction-owned
+`invoice_fee_payment_context`, a scoped principal calculation helper and a final
+allocation proof to v2. The financial guard can then separate the fee without
+trusting bare client fields or bypassing other controls. Full-schema integration
+and caller activation remain outstanding; neither migration is deployed. The ledger checks scoped receipt
+identity and values and prevents ordinary UPDATE/DELETE/TRUNCATE or deletion of
+referenced payments/invoices. Rollback retains ledger evidence and its guards.
+Do not bypass controls or use wrapper-only tests as a deployment gate. See
+[replay audit and release gates](plans/2026-09-03-invoice-fee-replay-audit.md).
+The matching rollback removes the additive RPC only, not payment/request history;
+re-enabling requires a forward migration over the retained ledger.
+The context migration's rollback restores the original financial guard and
+removes context/helpers only when context is empty, retaining financial history.
+See [principal control verification](plans/2026-09-04-fee-principal-control-audit.md).
+
+Pending `20260903211652` preserves the invoice link for completed fee-only
+receipts only when every active allocation identifies one matching company,
+contract and customer invoice. Canonical principal totals still exclude fees.
+The existing synchronization ACL is retained, and hash-guarded rollback keeps
+all receipts and request evidence. Not deployed. See
+[fee-only link verification](plans/2026-09-04-fee-only-invoice-link-audit.md).
+
+## Legal Memo Evidence Workflow (2026-08-26)
+
+- `validate_taqadi_filing_payload_v1_pre_failure_containment(...)` now derives traffic document requirements from `calculate_legal_claim_statement_v4(...)` and the stored case scope (migration `20260907151151`). Outstanding penalties without proof do not block a full rental claim that excludes them. Included traffic, traffic-only cases, and submitted traffic documents require the generated report plus registered official evidence. New proof source IDs must match the company/contract; the outer validator continues to enforce the signed-contract identity and company scope. The validator is read-only and is also used by the portfolio preflight action.
+
+- `legal_case_litigation_profile`: one editable legal profile per company/contract. It records the selected legal path, confirmed end source, renewal, contract clauses, custody/return evidence, security deposit, documented retention rate, Article 262 exception, contractual-compensation evidence, review approval state, and verified defendant service address/email with their source and evidence document. Contractual compensation supports `fixed`, `daily`, `monthly` (once per distinct unpaid due month), and `per_invoice`, but remains disabled unless its signed clause and source document are linked. `defendant_email_status` distinguishes `unknown`, `verified`, and `unavailable`; when `defendant_contact_source = 'customer_record'`, `customers.email` is the canonical defendant email and the profile does not duplicate it. The claimant/representative email must never be substituted for the defendant. Filing preparation no longer requires the owner to approve this row: the trusted Taqadi worker records `approval_source = 'taqadi_agent'`, `approval_job_id`, and `approval_worker_id` only after the live portal review matches the frozen memo and current claim.
+- `legal_case_formal_notices`: formal written notices only. A confirmed delivery requires both a delivery date and a linked proof document; automated `reminder_history` rows are not treated as formal notices.
+- `legal_notice_agent_jobs`: automatic WhatsApp formal-notice ledger. One `payment_demand` is allowed per contract/delinquency cycle; dispatch is autonomous, while `delivery_confirmed` remains false until an Ultramsg delivered/read acknowledgement is stored as a `formal_notice_proof` contract document.
+- `agent_execution_runs` / `agent_execution_mutations`: durable execution identity and immutable before/after/postcondition evidence for writers with `execution_ledger_enabled=true` (initially PDF requests, formal notices, and contract workload assignment). Policy columns on `agent_safety_policies` cap mutations, findings and attempts and expose a kill switch. System-audit findings and repairs are stopped at their configured per-run ceilings.
+- `missing_contract_pdf_upload_tokens`: service-only SHA-256 hashes for opaque, one-use PDF upload links. Claims are nonce-locked for concurrent replay containment; tokens never encode company, customer or contract identifiers.
+- `contract_documents.legal_evidence_state`: `active`, `superseded`, or `quarantined`. Legal filing requires exactly one active identity-matched signed contract. Pending/unverified evidence expires after 24 hours; low-quality OCR cannot be marked matched without exact identity-number evidence.
+- `lawsuit_preparations.source_document_id`: composite foreign key to `(company_id, contract_id, contract_documents.id)`, preventing a filed preparation from citing a signed document owned by another contract or company.
+- `legal_case_damage_costs`: itemized damage/cost evidence. Verified rows require a linked contract document and the legal claim uses the net amount after depreciation and insurance recovery. `financing_burden_damage` records financing burdens causally linked to monetary delay without repeating principal debt; `operational_loss` records proven net loss of use/profit during the reasonable repair period after recovery and is kept separate from pre-handover rent and retention compensation to prevent double recovery.
+- `legal_case_evidence_proposals`: company-scoped review queue for evidence automation. Each row stores the proposed litigation-profile patch, human-readable value, source record/document, confidence, reason, and accept/reject audit fields. Deterministic facts bypass the queue; legal conclusions remain pending until reviewed.
+- `legal_case_memo_snapshots`: immutable, versioned JSONB snapshots used for court-ready regeneration and audit. UPDATE/DELETE are blocked; a later version must be created instead.
+- `freeze_legal_case_memo_snapshot(...)`: authenticated, tenant-isolated RPC that allocates the next version under a transaction lock and freezes the payload. Approval is limited to company managers/admins and atomically updates the litigation profile.
+- Inserts and updates validate that the contract, legal case, and every evidence document belong to the same company and contract. RLS grants authenticated users company-scoped access; anonymous access is revoked.
+- Direct snapshot inserts/updates/deletes are not granted to authenticated clients. Editing the profile, a formal notice, or a damage item invalidates the current legal approval; direct approval without a newer frozen snapshot is rejected. Filing is blocked until the current memo data matches the latest approved snapshot.
+- `legal_cases.claim_scope` is `full_outstanding` by default or `traffic_violations_only`. The traffic-only scope admits only evidenced unpaid penalties and excludes invoices, contractual compensation/late fines, damages, retention, and security-deposit adjustments from the case value, memo, and Taqadi payload.
+- Manual violations created from contract details use `traffic_violations.manual_request_id` and `create_manual_contract_traffic_violation_v1(...)`; the command validates tenant, contract, vehicle, date, and amount atomically and is safe to retry without duplicate rows or duplicate WhatsApp attempts.
+- Pending migration `20260903181343` adds `revert_contract_from_legal_v2(...)`: atomically cancels unfiled Taqadi jobs/preparations, closes the internal legal case, clears the live delinquency marker, restores the contract and derived vehicle state, and records a retry-safe `contract_operations_log.idempotency_key`. Filed, actively submitting, or submission-uncertain cases fail closed. Active company profiles plus company-scoped administrative roles authorize ordinary callers. Case/job/preparation rows are locked before state checks; conflicting writers fail with `55P03` instead of proceeding with stale state. `guard_taqadi_queue_open_case_v1` prevents enqueue/restart against a closed case. As of the 2026-09-03 audit these objects are tested locally, not deployed.
+- `complete_legal_transfer_readiness_with_scope_v1(...)` freezes the selected scope in the readiness audit and derives traffic-only amounts from unpaid `penalties` rows after requiring a `violations_proof` document. `convert_contract_to_legal_with_scope_v1(...)` rejects a scope that differs from the latest completed review and persists the scope and final amount on the case and conversion audit.
+- `restart_verified_unsubmitted_taqadi_job_v1(...)` restarts a stopped submission-uncertain job only after explicit operator verification that the portal request was not filed. Its public invoker calls a private implementation with tenant/contract authorization, job-version locking, receipt/reference/active-work blockers and idempotency. It rebuilds the existing preparation via `restart_taqadi_filing_job_v2`, resets attempts, and retains verification events and prior artifacts.
+- `complete_taqadi_filing_job_v1(...)` records a proven portal reference, preserves `filed` as an audited filing event, and atomically advances the legal case to `awaiting_acceptance`; court acceptance remains a later explicit workflow event.
+- `calculate_legal_claim_amount_v1(...)` is the database-side canonical claim: for traffic-only cases it returns the evidenced unpaid-penalty total; otherwise due invoices are used first, then due legacy schedule rows only for months with no valid invoice. Cancelled/future rows are excluded and evidenced contractual compensation, damages, violations, retention, and the security-deposit deduction are applied by the same rules as the page.
+- `calculate_legal_claim_statement_v4(...)` is the unified transfer/memo statement. It discloses every included and excluded component, uses `penalties` as the authoritative traffic source, excludes legacy `late_fine_amount` unless an evidenced contractual-compensation profile exists, and caps every component at the initial judgment date. `get_legal_transfer_readiness_v2(...)` and `complete_legal_transfer_readiness_v2(...)` use this statement.
+- `convert_contract_to_legal_collection_v2(...)` supports active and cancelled/closed contracts. For cancelled collection cases it creates the legal case while preserving the contract and vehicle state. `legal_claim_snapshots` freezes the transfer value and automatically freezes the accrued value when the initial judgment is recorded.
+- `auto_verify_legal_transfer_review_v1(...)` replaces the obsolete blocking employee-approval step during conversion. It writes an explicit `system_verified` audit row only after the latest readiness review, identity-matched signed lease, customer contact, vehicle link, financial review, violations review, and required traffic proof all pass; it never records an employee or manager approval.
+- `finalize_legal_case_filing_v1(...)` locks, revalidates, synchronizes, and transitions the case to `filed` atomically. Direct filed inserts and incomplete direct transitions are rejected by triggers.
+- `enqueue_taqadi_filing_job_v1(...)` now atomically creates or refreshes the exact `lawsuit_preparations` snapshot and freezes its active identity-matched `source_document_id` before inserting the queue job. This closes the first-filing failure where the safety trigger required a preparation row that the live preparation page had never persisted.
+- `repair_legal_preparation_case_v1(...)` is service-role only and repairs one explicitly supplied company/contract. Every changed vehicle link, preparation case value/date, and seeded draft profile is recorded in `legal_filing_repair_audit` for reversible rollback.
+- Migrations: `20260826045722_complete_legal_case_memo_workflow.sql`, `20260826091101_legal_filing_readiness_guards.sql`, `20260826142609_legal_evidence_automation_proposals.sql`; matching rollbacks are stored under `supabase/rollbacks/`.
+
 ## Excel Import Execution Agent (2026-07-15)
 
 - `excel_import_versions`: immutable file identity and approval history per company and contract.
@@ -751,6 +1112,13 @@
 
 #### Bank Reconciliation Controls
 
+- Pending, not deployed: `20260903213117` hardens legacy bank-movement adoption
+  by `create_payment_bank_transaction`. Only one completed candidate matching
+  the internal payment number, date, bank, amount, direction and journal can
+  be linked; ambiguous/external-reference-only evidence requires reconciliation.
+  Hash-guarded rollback retains rows and balances. See
+  [isolated integration audit](plans/2026-09-04-bank-payment-link-audit.md).
+
 - `payment_id` links an original bank movement to its canonical payment; reversal rows use `reversal_of_transaction_id` and are never offered for reconciliation.
 - `reconcile_payment_with_bank_transaction` validates company, permission, payment status, bank, amount, journal entry, and original movement before updating payment and bank reconciliation state.
 - Migration `20260713090000_harden_bank_statement_matching.sql` makes bank-statement matching company-scoped and permission-checked, writes before/after audit state, and prevents one payment or bank transaction from being matched to multiple statement lines.
@@ -1241,6 +1609,41 @@
 
 ### `invoices`
 
+**2026-09-04 classification audit (read-only production evidence):**
+`system_generate_invoice_for_contract_month_core` creates rental invoices with
+`invoice_type = 'service'`; do not exclude every service invoice from rental
+reports. Verify schedule links, invoice identity and amount; ambiguous service
+invoices require reconciliation. The live rental-month unique index excludes
+`penalty_id IS NOT NULL` but does not exclude TV-only references without a penalty
+link. Local billing candidate and its remaining release gates are documented in
+`docs/plans/2026-09-04-rental-invoice-classification-audit.md`; not deployed.
+
+**Pending legal-reader integration (2026-09-04, not deployed):** public v3/v4
+calculators are locally routed through canonical recorded-rent rows using a
+company-authorized gateway in non-exposed `legal_claim_internal`. Raw helpers and
+baseline backups remain non-executable by API roles; public facades stay SECURITY
+INVOKER. Actual-row tests cover receipt cancellation, partial payments, matched
+service rent and cutoff-aware exclusions. The pending penalty reader now also
+fixes partial customer settlement and company responsibility. The pending reader
+now combines `penalties` and `traffic_violations` using unique exact identities
+and matching contract/customer/vehicle/date/amount/responsibility/lifecycle facts,
+retaining both invoice aliases. It rejects conflicting or duplicate identities
+instead of double counting or choosing one copy. A read-only production audit
+found 983 identity pairs: 710 satisfy the complete merge conditions and 273
+conflict, touching 64 contracts. The 793 contract-linked legacy rows are not 793
+additional debts. Readiness/display alignment and reconciliation remain release
+blockers: live readiness v2 still hardcodes customer responsibility and uses
+cached sales-only invoices. Pending migration `20260904032401` and the local
+wizard now replace those financial arrays with a canonical, identity/date-bound
+readiness adapter, null review states and explicit proof requirements. The
+document-agent chain is preserved; the old payment-record list is informational,
+not settlement evidence. Backend dependencies must precede the new frontend,
+which rejects legacy financial payloads. See also
+`docs/plans/2026-09-04-legal-readiness-financial-source-design.md`. The pending
+internal schema was absent in production at the latest read-only check.
+See `docs/plans/2026-09-04-legal-claim-source-audit.md`; do not treat the pending
+schema as a production deployment or a whole-engine correctness certificate.
+
 **Columns**: 31
 
 #### Required Columns
@@ -1537,6 +1940,13 @@
 ### `payment_allocations`
 
 Canonical, append-preserving allocation ledger for completed receipts. Active rows are replaced through `replace_payment_invoice_allocations`; historical rows are voided with a reason rather than deleted.
+
+Pending local read-only source (not deployed, catalog checked 2026-09-04):
+`canonical_contract_invoice_settlement_v1(uuid)` settles contract-linked invoices
+of all types from active allocations, with a restricted rental projection in
+`canonical_rental_invoice_settlement_v1(uuid)`. Both helpers deny direct API-role
+execution. They do not yet replace the legal claim calculator or settle standalone
+penalties. See `docs/plans/2026-09-04-legal-claim-source-audit.md` for remaining gates.
 
 **Columns**: 17
 
@@ -2042,6 +2452,13 @@ Explicit, service-managed accounting classification for completed receipts that 
 
 ### `traffic_violation_payments`
 
+**2026-09-04 accounting-source audit:** this table records company disbursements
+to the authority, not customer receipts. Do not subtract these amounts from
+customer legal claims; customer principal settlement comes from receipt/invoice
+allocations. A company-paid penalty can still be due from the customer when
+responsibility remains with that customer. The pending shared legal source is
+documented in `docs/plans/2026-09-04-legal-claim-source-audit.md` (not deployed).
+
 **Columns**: 17
 
 #### Required Columns
@@ -2289,7 +2706,43 @@ Explicit, service-managed accounting classification for completed receipts that 
 
 ### `contract_documents`
 
-**Columns**: 26
+Saved PDF orientation (2026-09-07): `contract_document_orientation_revisions` stores
+the manual actor or explicit machine agent/request identity and orientation evidence.
+`contract_document_orientation_checks` stores the last source fingerprint, detector
+version, status, page/review counts, retry time and geometry scores for each document.
+Both tables restrict reads to the current company; only the service writes them.
+`contract_orientation_candidates_v1` selects new/changed/due signed PDFs;
+`process_automatic_contract_orientation_v1` requires a live governed machine lease,
+an enabled policy, an allowed pause state, page consensus and verified upright postchecks. It preserves
+the same filing locks and original-file history as the interactive operation.
+The 2026-09-08 activation stores an explicit document-agent-only exception for
+the existing WhatsApp pause in `agent_safety_policies.evidence_policy.approved_pause`.
+The exact company, reason and pause timestamp must match; a new pause or kill
+switch still blocks corrections. Global controls and other agents are unchanged.
+
+The revision history also stores
+the original/current storage paths, SHA-256 hashes, per-page quarter turns, actor,
+source snapshot and idempotency request. Only the authenticated
+`correct-contract-document-orientation` Edge Function may invoke the service-only
+`process_contract_document_orientation_v1` transaction. It preserves document ID
+and identity/evidence state, checks source revision and actor permissions, and
+blocks changes to filed or queued evidence. Quarantined files may be rotated for
+review without becoming approved. Old and corrected storage objects cannot be
+overwritten or deleted by clients. Rollback disables correction but retains audit
+history and originals. The contract preview downloads the earliest original from
+the correction history; legal preparation uses the current `file_path`.
+
+Identity matching v2 (2026-09-07): `legal_identity_engine_version` (nullable text) and
+`legal_identity_details` (nullable jsonb) store original/normalized values, reason code,
+source page/crop, OCR confidence, file SHA-256 and comparison context revision.
+`contract_identity_assessments` records append-only previous/new decisions with company,
+contract, document, time, actor (when available) and method. Authenticated users can read
+only their company's history; they cannot write history or invoke the automated decision RPC.
+The service-only `contract_identity_revision_v2` and `record_contract_identity_assessment_v2`
+prevent stale results and save the decision plus audit atomically. Customer identity changes
+or contract customer reassignment invalidate previously matched copies for a new review.
+
+**Columns**: 34
 
 #### Required Columns
 
@@ -2299,6 +2752,8 @@ Explicit, service-managed accounting classification for completed receipts that 
 | `document_name` | string |
 | `document_type` | string |
 | `id` | string |
+| `id_scan_status` | string |
+| `legal_identity_match_status` | `pending` \| `matched` \| `mismatch` \| `unverified` \| `failed` |
 
 #### Optional Columns
 
@@ -2326,6 +2781,67 @@ Explicit, service-managed accounting classification for completed receipts that 
 | `original_filename` | string | Yes |
 | `processing_status` | 'uploading' | Yes |
 | `processing_error` | string | Yes |
+| `legal_identity_expected_name` | string | Yes |
+| `legal_identity_extracted_name` | string | Yes |
+| `legal_identity_expected_id` | string | Yes |
+| `legal_identity_extracted_id` | string | Yes |
+| `legal_identity_match_reason` | string | Yes |
+| `legal_identity_checked_at` | string | Yes |
+
+**Legal filing safety**: `legal_identity_match_status` records whether the
+tenant named in the signed rental contract matches the contract customer who
+will become the defendant. Taqadi filing is blocked unless the value is
+`matched`; a confirmed mismatch stores both names/identity numbers for review.
+
+**Referenced-evidence deletion audit (2026-09-03, local migration pending):**
+Production already has `ON DELETE RESTRICT` on the composite
+`(company_id, contract_id, source_document_id)` references from
+`lawsuit_preparations` and `taqadi_filing_jobs`. Eleven additional evidence
+references currently use `ON DELETE SET NULL`, which can silently detach proof
+from a surviving legal record. Migration `20260903192847` changes only their
+delete actions to `RESTRICT` (no historical data rewrite):
+
+- `legal_case_damage_costs.evidence_document_id`
+- `legal_case_evidence_proposals.source_document_id`
+- `legal_case_formal_notices.proof_document_id`
+- `legal_notice_agent_jobs.proof_document_id`
+- `legal_case_litigation_profile`: `contractual_compensation_document_id`,
+  `defendant_contact_document_id`, `delivery_handover_document_id`,
+  `notice_exception_document_id`, `retention_rate_source_document_id`,
+  `termination_supporting_document_id`, `vehicle_return_document_id`.
+
+This protects existing relational links, not immutable filed snapshots or
+legacy URL-only payloads. Explicit edits to the referencing record and storage
+object lifecycle require separate controls. Do not infer that this local
+migration is deployed.
+
+---
+
+### `contract_document_canonical_links`
+
+Append-preserving identity bridge for signed documents that remain attached to
+a proven document-only contract alias. `document_id` stays on the source
+contract; `canonical_contract_id` identifies the financial/legal contract that
+may consume the evidence. Confirmed links require the same company, customer,
+normalized plate, start date, contract-number history, and no independent
+financial or legal activity on the alias.
+
+| Column | Type | Nullable |
+|--------|------|----------|
+| `id` | string | No |
+| `company_id` | string | No |
+| `document_id` | string | No |
+| `source_contract_id` | string | No |
+| `canonical_contract_id` | string | No |
+| `link_status` | `proposed` \| `confirmed` \| `rejected` | No |
+| `confidence` | number | No |
+| `match_basis` | Json | No |
+| `linked_by` | string | No |
+| `created_at` | string | No |
+| `updated_at` | string | No |
+
+The service-only `contract_documents_effective_contract_v1` security-invoker
+view exposes `effective_contract_id` without rewriting the original attachment.
 
 ---
 
@@ -2546,7 +3062,7 @@ Explicit, service-managed accounting classification for completed receipts that 
 
 ### `contracts`
 
-**Columns**: 39
+**Columns**: 40
 
 #### Required Columns
 
@@ -2577,6 +3093,7 @@ Explicit, service-managed accounting classification for completed receipts that 
 | `created_by` | string | Yes |
 | `created_via` | string | Yes |
 | `days_overdue` | number | Yes |
+| `deposit_amount` | number | Yes |
 | `description` | string | Yes |
 | `expired_at` | string | Yes |
 | `journal_entry_id` | string | Yes |
@@ -2869,6 +3386,13 @@ Explicit, service-managed accounting classification for completed receipts that 
 
 ### `customer_documents`
 
+Manual PDF orientation revisions are stored in `customer_document_orientation_revisions`
+(migration `20260908045230_customer_document_manual_orientation.sql`).
+The service-only `process_customer_document_orientation_v1` RPC retains the customer
+document ID and original file, verifies ownership through a contract, and checks
+filing activity across the customer's contracts before changing its file path.
+History is company-scoped for authenticated reads; only the server writes it.
+
 **Columns**: 14
 
 #### Required Columns
@@ -3050,6 +3574,11 @@ automatically.
 ---
 
 ### `delinquent_customers`
+
+Operational note: the daily pg_cron job `update-delinquent-customers` must call
+`public.update_delinquent_customers('24bc0b21-4e2d-4413-9842-31719a3669f4'::uuid)`.
+Direct pg_cron sessions do not carry a Supabase service-role JWT, so the
+no-argument call is intentionally rejected by the company-access guard.
 
 **Columns**: 37
 
@@ -5346,7 +5875,7 @@ automatically.
 
 ### `legal_cases`
 
-**Columns**: 47
+**Columns**: 48
 
 #### Required Columns
 
@@ -5359,6 +5888,7 @@ automatically.
 | `company_id` | string |
 | `created_at` | string |
 | `id` | string |
+| `claim_scope` | string |
 | `priority` | string |
 | `updated_at` | string |
 
@@ -9973,8 +10503,9 @@ Key RPCs: `system_agent_create_run`, `system_agent_claim_job`, `system_agent_fin
 - **journal_entries**: Header table for transactions
 - **journal_entry_lines**: Use `line_description` (NOT `description`), `line_number` for sequencing
 - Each entry must have 2+ lines (balanced debits/credits)
-- Active contract invoices are unique by `contract_id` plus the month of `invoice_date` through `idx_invoices_unique_contract_month`.
-- `invoice_date` defines the billing month. `due_date` is the payment deadline and must not reserve another billing month.
+- The live `idx_invoices_unique_contract_month` (read-only verification 2026-09-04) enforces uniqueness by `contract_id` plus `date_trunc('month', COALESCE(invoice_month, invoice_date))` for active invoices without `penalty_id`. It currently still includes TV-prefix invoices lacking that link.
+- Pending migration `20260904013746_align_rental_month_uniqueness_with_traffic_classification` excludes normalized `TV-` references consistently with the rental core; this correction is tested locally, **not deployed**.
+- `invoice_month` defines the billing month, with `invoice_date` as fallback. PREPAID `due_date` is the first day of that same month and must not reserve another billing month.
 - `generate_invoice_for_contract_month` uses the matching active schedule amount and creates the invoice in the requested issue month.
 
 ### Critical Column Names
@@ -10006,13 +10537,15 @@ Key RPCs: `system_agent_create_run`, `system_agent_claim_job`, `system_agent_fin
 - `system_agent_apply_rental_receipt_repair_v1` can reversibly derive only receipt balance and status after proving that customer, contract, date, amount, and completed canonical payment all match. Missing or conflicting payment evidence remains review-only.
 - Migrations `20260714190000` through `20260714240000` add atomic manual treasury transactions and reversals, manual journal creation/posting, invoice draft creation, derived contract last-payment dates, validated period close, and one-transaction accounting setup. Closed periods, tenant references, balanced line totals, and idempotency are enforced inside PostgreSQL.
 - Migrations `20260714250000` and `20260714260000` add canonical fleet state synchronization, safe vehicle deactivation, odometer recording, reservation overlap protection, maintenance completion, and atomic vehicle-installment agreement/schedule creation. Vehicle installment vendors and vehicles must belong to the company; schedule principal totals equal the financed principal.
+- Migration `20260830110005` adds `fleet_reconciliation_batches`, `fleet_reconciliation_assignments`, and `vehicle_current_operational_state` for audited ground-truth fleet reports. An operational custodian snapshot never rewrites a signed contract, invoice, payment, journal, or legal case. The canonical vehicle-state derivation honors an active report assignment until a later real contract or explicit manual status change supersedes it. Vehicle read hooks are side-effect free; they no longer change fleet state while fetching data.
+- Migration `20260830111652` prevents recursive vehicle-cost recalculation: `vehicle_financial_integration_trigger` now fires only when a vehicle is inserted or its purchase cost/cost center changes, and its update guard compares nullable fields with `IS NOT DISTINCT FROM`.
 - Migration `20260714270000` adds atomic legal conversion/reversal/outcome/cancellation commands and evidence retention. Legal documents and lawsuit templates are archived rather than permanently deleted. A case outcome never recognizes cash before a completed payment exists.
 - Migrations `20260714280000` and `20260714290000` add reversible agent repairs for legal contract-state mismatches, unsupported paid repayment installments, and the single verified posted maintenance journal link. Ambiguous legal outcomes, duplicate journals, and maintenance records without a verified journal remain review-only.
 - Migration `20260714310000` replaces eleven broken finance and fleet RPCs with tenant-checked implementations using canonical invoice balances, `payments.payment_status`, customer/vendor account links, valid fleet statuses, and the current chart hierarchy. Anonymous execution is removed; authenticated callers are company-validated and service operations remain available to `service_role`.
 - Migration `20260714320000` makes bulk chart deletion reference-aware, copies selected template accounts with their ancestors, processes configured overdue fees idempotently, posts one balanced vehicle-depreciation journal per vehicle and month, and atomically creates the quick customer/contract pair used by `/finance/tracking`. It preserves referenced or non-zero accounts, blocks closed periods, and refuses to invent missing fee rules or depreciation mappings.
 - Migration `20260714330000` adds the missing tenant-isolated invoice dispute workflow, notes, dashboard views, and atomic create/resolve commands used by `/legal/disputes`. Taqadi automation is contacted only when `VITE_TAQADI_AUTOMATION_URL` is configured.
 - Migration `20260714340000` rebuilds legal delinquency from canonical overdue invoice balances, completed payments, recorded late fees, violations, and legal history; it also scopes WhatsApp reminder statistics and report rows to the active company.
-- Daily and resume dispatch use `system-audit-orchestrator-v14` and `system-audit-worker-v12`. Local worker source `2026-07-14.53` audits traffic-violation payments, vehicle-installment and monthly-obligation payment ledgers, canonical rental receipts, unified maintenance journals, finalized payroll accrual/payment journals, purchase-order receipt integrity, and deterministic legal integrity while refusing to guess ambiguous historical cash, bank, legal, warehouse, or duplicate-entry facts. Production remains on worker `2026-07-13.42` until the required migrations are reconciled and deployed.
+- Daily and resume dispatch use `system-audit-orchestrator-v14` and `system-audit-worker-v12`. Local sources are orchestrator `2026-08-27.32` and worker `2026-08-27.55`; they add company-scoped ownership, cooperative pause/cancel/kill checks before persistence and repairs, while retaining the deterministic traffic, installments, rental-receipt, maintenance, payroll, warehouse, and legal audits. Production remains on orchestrator `2026-07-13.31` and worker `2026-07-13.42` until the control-plane migrations and function rollout receive explicit operational approval.
 
 ### Data Records
 
@@ -10023,4 +10556,36 @@ Key RPCs: `system_agent_create_run`, `system_agent_claim_job`, `system_agent_fin
 | Vehicles | ~510 |
 | Invoices | ~1,250 |
 | Payments | ~6,568 |
+
+## Pending financial-reporting migrations — 2026-09-18
+
+The following additions are implemented and tested locally; this section does **not** indicate production deployment. They do not insert actual accounting transactions or change historical balances during installation. Apply the matching migration and rollback files in dependency order.
+
+### Financial statement packages (`20260918002000`)
+
+Depends on `20260918001000_professional_balance_sheets.sql`. `public.professional_financial_statement_packages` stores immutable server-generated JSON in `payload`, its SHA-256 `source_fingerprint`, and `company_id`. Identity/history fields are `id`, `created_by`, `created_by_name`, `created_at`, `approved_by`, `approved_by_name`, `approved_at`, `review_notes`, `confirmations`, `voided_by`, `voided_at`, and `void_reason`. Status is `draft`, `approved`, or `voided`. Private append-only history is stored in `financial_statement_private.report_events`.
+
+| RPC | Arguments | Result |
+|---|---|---|
+| `get_financial_statement_package_v1` | `p_company_id uuid`, `p_configuration jsonb` | Calculated package |
+| `save_financial_statement_package_v1` | `p_company_id uuid`, `p_configuration jsonb` | Immutable draft row |
+| `approve_financial_statement_package_v1` | `p_report_id uuid`, `p_review_notes text`, `p_confirmations jsonb` | Independently approved row |
+| `list_financial_statement_packages_v1` | `p_company_id uuid` | Latest 50 rows for the company |
+| `void_financial_statement_package_v1` | `p_report_id uuid`, `p_reason text` | Retained row marked voided |
+
+The configuration is defined in `src/types/financialStatementPackage.ts`: annual or YTD interim period and prior-year comparisons, explicit account presentation mappings/splits, reviewed journal classifications, and numbered disclosure notes. It contains no replacement ledger balances. Monetary classification allocations are bounded to ±1 trillion and must reconcile to actual signed ledger amounts. Current, comparative, and optional opening position columns retain their own reviewed classifications. Closing journals and their reversal chains are excluded from period performance; position balances remain cumulative. Cash flows retain separate gross receipt/payment classes, with reviewed `cashFlows[].label` and `internalCashTransfer` for complex journals. Equity movements reconcile by component. Missing classifications, source comparisons, disclosures, invalid journals, or reconciliation differences block approval; draft generation remains available.
+
+Table writes and raw calculators are not granted to clients or `service_role`. Public RPCs use the existing company/finance authorization helper; explicit permission denial wins. Independent approval requires all five confirmations (`classifications`, `policies`, `reconciliations`, `disclosures`, `periodCutoff`), reviewed notes, and a fresh source fingerprint under READ COMMITTED isolation with source-table locks. This is internal review, not an audit opinion or automatic IFRS compliance assertion. Rollback disables the RPCs while retaining snapshots, audit history, tenant SELECT RLS, and immutability.
+
+### Reporting period locks (`20260918003000`)
+
+`public.financial_reporting_period_locks` stores one managed cumulative cutoff per company: `id`, `company_id` (unique), `accounting_period_id` (unique), `locked_through`, `status` (`locked`/`unlocked`), `changed_by`, `changed_by_name`, `changed_at`, and `reason`. It references an `accounting_periods` row spanning the historical ledger through the selected cutoff. Immutable audit history is `balance_sheet_private.period_lock_events`; the ungranted `period_lock_mutations` table authorizes only the controlled transaction's change to the managed accounting-period row.
+
+| RPC | Arguments | Result |
+|---|---|---|
+| `list_financial_reporting_period_locks_v1` | `p_company uuid` | Managed lock, other closed periods, latest 100 history events, `can_manage` |
+| `lock_financial_reporting_period_v1` | `p_company uuid`, `p_locked_through date`, `p_reason text` | Locked/extended managed cutoff row |
+| `unlock_financial_reporting_period_v1` | `p_company uuid`, `p_reason text` | Audited unlocked row |
+
+Only callers with financial-report approval access may manage a lock, with a reason of 20–4000 characters. Installation creates no locked period. Journal/header and line guards enforce existing closed periods and the managed cutoff, including historical edits and moves between companies/periods. Dedicated locking serializes cutoff changes with ledger writers; fixed transaction snapshots are rejected. Unlocking the managed cutoff preserves unrelated closed periods and all historical lock events. Report generation/approval does not implicitly lock or unlock periods, and lock metadata is separate from report source fingerprints. See the matching rollback for preservation of existing history and preexisting period controls.
 

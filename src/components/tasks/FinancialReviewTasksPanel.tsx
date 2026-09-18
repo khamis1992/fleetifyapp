@@ -59,7 +59,9 @@ const decisions: Array<{
 
 export function FinancialReviewTasksPanel() {
   const { canReviewFinancialIssues, isLoading: accessLoading } = useFinancialReviewAccess();
-  const { data: reviews = [], isLoading } = useManagerFinancialReviews();
+  const { data: reviews = [], isLoading, isError, refetch } = useManagerFinancialReviews();
+  const [search,setSearch] = React.useState('');
+  const filteredReviews = reviews.filter(review=>`${review.title} ${review.metadata.customerName} ${review.metadata.contractNumber} ${review.metadata.issueLabel}`.toLocaleLowerCase().includes(search.trim().toLocaleLowerCase()));
 
   if (accessLoading || isLoading) {
     return (
@@ -104,15 +106,16 @@ export function FinancialReviewTasksPanel() {
         </div>
       </section>
 
-      {reviews.length === 0 ? (
+      <div className="tw-personal-tools"><input aria-label="البحث في المراجعات المالية" placeholder="ابحث بالعميل أو العقد أو الملاحظة…" value={search} onChange={event=>setSearch(event.target.value)}/><span>{filteredReviews.length} مراجعة</span></div>
+      {isError?<div role="alert" className="tw-query-error">تعذر تحميل المراجعات المالية <Button variant="outline" onClick={()=>refetch()}>إعادة المحاولة</Button></div>:filteredReviews.length === 0 ? (
         <div className="flex min-h-[220px] flex-col items-center justify-center rounded-lg border border-dashed border-[#CBD5E1] bg-white text-center">
           <CheckCircle2 className="h-9 w-9 text-[#22C7A1]" />
-          <h3 className="mt-3 font-bold text-[#142033]">لا توجد مراجعات مالية مفتوحة</h3>
-          <p className="mt-1 text-sm text-[#6A7688]">ستظهر هنا طلبات الموظفين فور رفعها.</p>
+          <h3 className="mt-3 font-bold text-[#142033]">{search?'لا توجد نتائج مطابقة':'لا توجد مراجعات مالية مفتوحة'}</h3>
+          <p className="mt-1 text-sm text-[#6A7688]">{search?'غيّر عبارة البحث لعرض المراجعات.':'ستظهر هنا طلبات الموظفين فور رفعها.'}</p>
         </div>
       ) : (
         <div className="grid gap-4 xl:grid-cols-2">
-          {reviews.map((review) => (
+          {filteredReviews.map((review) => (
             <FinancialReviewCard key={review.id} review={review} />
           ))}
         </div>

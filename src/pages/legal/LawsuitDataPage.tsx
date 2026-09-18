@@ -1,3 +1,4 @@
+import { LegalPageHeader } from '@/components/legal/workspace/LegalPageHeader';
 /**
  * صفحة بيانات التقاضي - عرض وإدارة بيانات القضايا
  * @component LawsuitDataPage
@@ -46,6 +47,11 @@ import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
 import JSZip from 'jszip';
 import { saveAs } from 'file-saver';
+import {
+  buildClaimsStatementData,
+  getMemoDocumentDataForGeneration,
+  loadCanonicalLawsuitState,
+} from './LawsuitPreparation/utils/documentGenerators';
 import { generateLegalComplaintHTML } from '@/utils/legal-document-generator';
 import {
   generateDocumentsListHtml,
@@ -258,41 +264,11 @@ export default function LawsuitDataPage() {
 
           if (!contract) continue;
 
+          const legalState = await loadCanonicalLawsuitState(companyId, lawsuit.contract_id);
+
           // 1. المذكرة الشارحة
           try {
-            let memoHtml = generateLegalComplaintHTML({
-              customer: {
-                customer_name: customerName,
-                customer_code: lawsuit.defendant_id_number || '',
-                id_number: lawsuit.defendant_id_number || '',
-                phone: lawsuit.defendant_phone || '',
-                email: lawsuit.defendant_email || '',
-                overdue_amount: lawsuit.overdue_amount || 0,
-                late_penalty: lawsuit.late_penalty || 0,
-                days_overdue: lawsuit.days_overdue || 0,
-                violations_count: lawsuit.violations_count || 0,
-                violations_amount: lawsuit.violations_amount || 0,
-                total_debt: lawsuit.claim_amount || 0,
-              },
-              companyInfo: {
-                name_ar: 'شركة العراف لتأجير السيارات',
-                name_en: 'Al-Araf Car Rental',
-                address: 'أم صلال محمد – الشارع التجاري – مبنى (79) – الطابق الأول – مكتب (2)',
-                cr_number: '146832',
-              },
-              vehicleInfo: {
-                plate: lawsuit.vehicle_plate_number || '',
-                make: lawsuit.vehicle_type || '',
-                model: lawsuit.vehicle_model || '',
-                year: lawsuit.vehicle_year || 0,
-              },
-              contractInfo: {
-                contract_number: lawsuit.contract_number || '',
-                start_date: lawsuit.contract_start_date || '',
-                monthly_rent: Number(lawsuit.monthly_rent) || 0,
-              },
-              damages: Math.round((lawsuit.claim_amount || 0) * 0.3),
-            });
+            let memoHtml = generateLegalComplaintHTML(getMemoDocumentDataForGeneration(legalState));
             // تضمين اللوقو والتوقيع والختم في HTML
             memoHtml = await embedImagesInHtml(memoHtml, images);
             customerFolder.file('1. المذكرة الشارحة.html', memoHtml);
@@ -302,19 +278,7 @@ export default function LawsuitDataPage() {
 
           // 2. كشف المطالبات المالية
           try {
-            let claimsHtml = generateClaimsStatementHtml({
-              customerName,
-              nationalId: lawsuit.defendant_id_number || '',
-              phone: lawsuit.defendant_phone || '',
-              contractNumber: lawsuit.contract_number || '',
-              contractStartDate: lawsuit.contract_start_date || '',
-              contractEndDate: lawsuit.contract_end_date || '',
-              invoices: [],
-              violations: [],
-              totalOverdue: lawsuit.claim_amount || 0,
-              amountInWords: lawsuit.claim_amount_words || '',
-              caseTitle: lawsuit.case_title,
-            });
+            let claimsHtml = generateClaimsStatementHtml(buildClaimsStatementData(legalState));
             // تضمين اللوقو والتوقيع والختم في HTML
             claimsHtml = await embedImagesInHtml(claimsHtml, images);
             customerFolder.file('2. كشف المطالبات المالية.html', claimsHtml);
@@ -341,30 +305,6 @@ export default function LawsuitDataPage() {
             customerFolder.file('3. كشف المستندات المرفوعة.html', docsListHtml);
           } catch (error) {
             console.error('Error generating docs list:', error);
-          }
-
-          // 4. كشف المخالفات المرورية (إذا وجدت)
-          if (lawsuit.violations_count && lawsuit.violations_count > 0) {
-            try {
-              let violationsHtml = generateClaimsStatementHtml({
-                customerName,
-                nationalId: lawsuit.defendant_id_number || '',
-                phone: lawsuit.defendant_phone || '',
-                contractNumber: lawsuit.contract_number || '',
-                contractStartDate: lawsuit.contract_start_date || '',
-                contractEndDate: lawsuit.contract_end_date || '',
-                invoices: [],
-                violations: [],
-                totalOverdue: lawsuit.violations_amount || 0,
-                amountInWords: '',
-                caseTitle: `كشف المخالفات المرورية - ${customerName}`,
-              });
-              // تضمين اللوقو والتوقيع والختم في HTML
-              violationsHtml = await embedImagesInHtml(violationsHtml, images);
-              customerFolder.file('4. كشف المخالفات المرورية.html', violationsHtml);
-            } catch (error) {
-              console.error('Error generating violations:', error);
-            }
           }
 
           successCount++;
@@ -486,63 +426,7 @@ export default function LawsuitDataPage() {
   return (
     <div className="legal-system min-h-screen p-4 md:p-6" dir="rtl">
       <div className="mx-auto max-w-7xl space-y-6">
-      {/* Header */}
-      <div className="legal-hero flex flex-col gap-4 p-4 md:flex-row md:items-center md:justify-between">
-        <div className="flex items-center gap-4">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => navigate('/legal/delinquency')}
-          >
-            <ArrowLeft className="h-5 w-5" />
-          </Button>
-          <div>
-            <h1 className="text-3xl font-bold text-teal-700">بيانات التقاضي</h1>
-            <p className="text-muted-foreground mt-1">
-              إدارة وعرض بيانات القضايا المُنشأة
-            </p>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleGenerateAllDocuments}
-            disabled={isGeneratingDocs}
-            className="legal-action-secondary"
-          >
-            {isGeneratingDocs ? (
-              <>
-                <LoadingSpinner className="h-4 w-4 ml-2" />
-                جاري التوليد...
-              </>
-            ) : (
-              <>
-                <FolderDown className="h-4 w-4 ml-2" />
-                توليد المستندات القانونية
-              </>
-            )}
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleExportToExcel}
-            className="legal-action-secondary"
-          >
-            <FileSpreadsheet className="h-4 w-4 ml-2" />
-            تصدير Excel
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => refetch()}
-          >
-            <RefreshCw className="h-4 w-4 ml-2" />
-            تحديث
-          </Button>
-        </div>
-      </div>
+      <LegalPageHeader title="بيانات التقاضي" description="تابع بيانات الدعاوى المنشأة، وراجع ملفاتها والمستندات المرتبطة بها." actions={<><Button variant="ghost" onClick={() => navigate('/legal/delinquency')}><ArrowLeft className="h-4 w-4 ml-2" />تجهيز الدعاوى</Button><Button onClick={handleGenerateAllDocuments} disabled={isGeneratingDocs}><FolderDown className="h-4 w-4 ml-2" />{isGeneratingDocs ? 'جارٍ توليد المستندات…' : 'توليد المستندات'}</Button><Button variant="outline" onClick={handleExportToExcel}><FileSpreadsheet className="h-4 w-4 ml-2" />تصدير الجدول</Button><Button variant="outline" onClick={() => refetch()}><RefreshCw className="h-4 w-4 ml-2" />تحديث</Button></>} />
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -682,8 +566,8 @@ export default function LawsuitDataPage() {
                 <TableHead className="text-right font-bold bg-blue-50">الأيام المتأخرة</TableHead>
                 <TableHead className="text-right font-bold bg-blue-50">عدد الأشهر المتأخرة</TableHead>
                 <TableHead className="text-right font-bold bg-blue-50">مبلغ الإيجار المتأخر</TableHead>
-                <TableHead className="text-right font-bold bg-blue-50">غرامات التأخير</TableHead>
-                <TableHead className="text-right font-bold bg-amber-50">مبلغ التعويض</TableHead>
+                <TableHead className="text-right font-bold bg-blue-50">تعويض اتفاقي موثق</TableHead>
+                <TableHead className="text-right font-bold bg-amber-50">أضرار موثقة</TableHead>
                 <TableHead className="text-right font-bold bg-red-50">مبلغ المخالفات</TableHead>
                 <TableHead className="text-right font-bold bg-red-50">عدد المخالفات</TableHead>
                 <TableHead className="text-right font-bold">المبلغ الإجمالي</TableHead>
@@ -746,7 +630,7 @@ export default function LawsuitDataPage() {
                     <TableCell className="bg-blue-50/30 font-semibold text-blue-700">
                       {lawsuit.overdue_amount ? Math.floor(lawsuit.overdue_amount).toLocaleString() : '0'}
                     </TableCell>
-                    {/* غرامات التأخير */}
+                    {/* التعويض الاتفاقي الموثق */}
                     <TableCell className="bg-blue-50/30 font-semibold text-blue-700">
                       {lawsuit.late_penalty ? Math.floor(lawsuit.late_penalty).toLocaleString() : '0'}
                     </TableCell>
@@ -789,7 +673,7 @@ export default function LawsuitDataPage() {
                           onClick={() => {
                             navigate(`/legal/lawsuits/${lawsuit.id}`);
                           }}
-                        >
+                         aria-label="عرض التفاصيل" title="عرض التفاصيل">
                           <Eye className="h-4 w-4" />
                         </Button>
                         <Button
@@ -797,7 +681,7 @@ export default function LawsuitDataPage() {
                           size="sm"
                           className="text-red-600 hover:text-red-700 hover:bg-red-50"
                           onClick={() => handleDelete(lawsuit.id)}
-                        >
+                         aria-label="حذف السجل" title="حذف السجل">
                           <Trash2 className="h-4 w-4" />
                         </Button>
                       </div>

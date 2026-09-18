@@ -68,7 +68,7 @@ export const AccountChangeHistory: React.FC<AccountChangeHistoryProps> = ({
   };
 
   const lastUpdate = changes.length > 0 
-    ? new Date(changes[0].changed_at).toLocaleDateString('en-GB')
+    ? new Date(changes[0].changed_at).toLocaleDateString('ar-QA')
     : null;
 
   return (
@@ -126,7 +126,7 @@ export const AccountChangeHistory: React.FC<AccountChangeHistoryProps> = ({
                         </span>
                       </div>
                       <span className="text-xs text-muted-foreground">
-                        {new Date(change.changed_at).toLocaleDateString('en-GB')}
+                        {new Date(change.changed_at).toLocaleDateString('ar-QA')}
                       </span>
                     </div>
                     

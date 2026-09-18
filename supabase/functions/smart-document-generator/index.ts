@@ -1,4 +1,4 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { authorizeActiveCompanyUser } from "../_shared/privileged-admin.ts";
 import { buildLongCatHeaders, getLongCatApiKey, LONGCAT_CHAT_COMPLETIONS_URL, LONGCAT_MODEL } from "../_shared/longcat.ts";
 
 const corsHeaders = {
@@ -251,12 +251,13 @@ function generateLetterHTML(recipient: string, recipientTitle: string, subject: 
 </html>`;
 }
 
-serve(async (req) => {
+Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
+    await authorizeActiveCompanyUser(req);
     const body = await req.json();
     const { templateName, answers } = body;
     
@@ -352,3 +353,5 @@ serve(async (req) => {
     });
   }
 });
+
+

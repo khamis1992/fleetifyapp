@@ -278,6 +278,10 @@ const SendRemindersDialog: React.FC<SendRemindersDialogProps> = ({
           phone: contract.customer_phone,
           message,
           customerName,
+          companyId: companyId!,
+          purpose: 'payment_reminder_manual' as const,
+          entityType: 'contract' as const,
+          entityId: contract.id,
         };
       });
 
@@ -388,6 +392,10 @@ const SendRemindersDialog: React.FC<SendRemindersDialogProps> = ({
         phone: phone,
         message: message,
         customerName: testName,
+        companyId: companyId!,
+        purpose: 'payment_reminder_test',
+        entityType: 'company',
+        entityId: companyId!,
       });
 
       if (result.success) {

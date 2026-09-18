@@ -20,6 +20,8 @@ type ConvertLegalResult = {
   legal_case: LegalCaseSummary;
   case_number: string;
   total_case_value: number;
+  blocked?: boolean;
+  message_ar?: string;
 };
 
 const priorityForRisk = (riskScore: number) => {
@@ -71,6 +73,12 @@ const convertDelinquentCustomer = async (
   if (error) throw error;
 
   const result = data as unknown as ConvertLegalResult;
+  if (result?.blocked) {
+    throw new Error(
+      result.message_ar
+      || "لا توجد نسخة عقد PDF مطابقة للعميل. تم إنشاء طلب واتساب تلقائي للمسؤولين.",
+    );
+  }
   if (!result?.legal_case?.id || !result.case_number) {
     throw new Error("لم تُرجع عملية التحويل بيانات القضية القانونية");
   }

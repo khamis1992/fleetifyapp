@@ -1,9 +1,13 @@
+import { paginatePdfContent } from './pdfPagination';
 import JSZip from 'jszip';
 import { saveAs } from 'file-saver';
 import { toast } from 'sonner';
 import type { LawsuitPreparationState, DocumentsState } from '../store';
 import { formatCustomerName } from '@/utils/formatCustomerName';
 import { renderOfficialInvoicePdfBlob } from '@/utils/renderOfficialInvoicePdf';
+import { getCriminalComplaintEligibility } from './legalCaseWorkflow';
+import { resolveClaimEvidenceDocuments } from './claimEvidence';
+import { fixedCompensationRow } from '@/types/legalClaimRegister';
 
 interface ContentRefs {
   memoHtml: string | null;
@@ -39,10 +43,18 @@ function getGeneratedDocumentHtml(
   return null;
 }
 
-function shouldIncludeGeneratedDocument(state: LawsuitPreparationState, docId: keyof DocumentsState): boolean {
+export function shouldIncludeGeneratedDocument(state: LawsuitPreparationState, docId: keyof DocumentsState): boolean {
   const document = state.documents[docId];
   if (document.status !== 'ready') return false;
-  if (docId === 'violations') return state.trafficViolations.length > 0;
+  if (docId === 'violations') return Number(state.calculations?.violationsCount || 0) > 0;
+  if (docId === 'violationsTransfer') {
+    return state.ui.includeViolationsTransfer
+      && Number(state.calculations?.violationsCount || 0) > 0;
+  }
+  if (docId === 'criminalComplaint') {
+    return state.ui.includeCriminalComplaint
+      && getCriminalComplaintEligibility(state).eligible;
+  }
   return true;
 }
 
@@ -55,13 +67,14 @@ function getBlobExtension(blob: Blob): string {
 }
 
 export async function htmlToPdfBlob(html: string): Promise<Blob | null> {
+  let iframe: HTMLIFrameElement | null = null;
   try {
     const [{ default: html2canvas }, { jsPDF }] = await Promise.all([
       import('html2canvas'),
       import('jspdf'),
     ]);
 
-    const iframe = document.createElement('iframe');
+    iframe = document.createElement('iframe');
     iframe.style.position = 'absolute';
     iframe.style.left = '-9999px';
     iframe.style.width = '794px';
@@ -73,11 +86,20 @@ export async function htmlToPdfBlob(html: string): Promise<Blob | null> {
       return null;
     }
 
+    const frameLoaded = new Promise<void>((resolve, reject) => {
+      const timer = setTimeout(() => reject(new Error('تعذر تحميل تنسيق المستند للطباعة')), 30000);
+      iframe!.addEventListener('load', () => { clearTimeout(timer); resolve(); }, { once: true });
+    });
     iframeDoc.open();
     iframeDoc.write(html);
     iframeDoc.close();
-    await new Promise((resolve) => setTimeout(resolve, 800));
+    await frameLoaded;
+    await iframeDoc.fonts.ready;
+    await Promise.all(Array.from(iframeDoc.images).map(image => image.decode().catch(() => undefined)));
+    await new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
 
+    let contentBlocks: { top: number; bottom: number }[] = [];
+    let tableHeaders: { top: number; bottom: number; tableBottom: number }[] = [];
     const canvas = await html2canvas(iframeDoc.body, {
       scale: 1.5,
       useCORS: true,
@@ -85,6 +107,26 @@ export async function htmlToPdfBlob(html: string): Promise<Blob | null> {
       logging: false,
       backgroundColor: '#ffffff',
       width: 794,
+      onclone: (clonedDocument) => {
+        // Exclude controls explicitly marked as non-printable.
+        clonedDocument.querySelectorAll('.no-print').forEach(element => element.remove());
+        const bodyTop = clonedDocument.body.getBoundingClientRect().top;
+        tableHeaders = Array.from(clonedDocument.body.querySelectorAll('thead')).map(element => ({
+          top: element.getBoundingClientRect().top - bodyTop,
+          bottom: element.getBoundingClientRect().bottom - bodyTop,
+          tableBottom: element.closest('table')!.getBoundingClientRect().bottom - bodyTop,
+        }));
+        contentBlocks = Array.from(clonedDocument.body.querySelectorAll(
+          'tr, p, li, h1, h2, h3, h4, .section, .info-section, .closing, .legal-article, .request-item, .section-title, .footer',
+        )).map(element => {
+          const rect = element.getBoundingClientRect();
+          const following = element.matches('h1, h2, h3, h4, .section-title')
+            ? element.nextElementSibling : null;
+          const firstContent = following?.querySelector('p, tr, li, .request-item') ?? following;
+          const bottom = firstContent ? Math.max(rect.bottom, firstContent.getBoundingClientRect().bottom) : rect.bottom;
+          return { top: rect.top - bodyTop, bottom: bottom - bodyTop };
+        });
+      },
     });
 
     const pdf = new jsPDF({
@@ -94,31 +136,36 @@ export async function htmlToPdfBlob(html: string): Promise<Blob | null> {
       compress: true,
     });
 
-    const imgData = canvas.toDataURL('image/jpeg', 0.85);
+    if (!canvas.width || !canvas.height) throw new Error('تعذر تصوير المستند كاملاً');
     const pdfWidth = pdf.internal.pageSize.getWidth();
     const pdfHeight = pdf.internal.pageSize.getHeight();
-    const imgWidth = canvas.width;
-    const imgHeight = canvas.height;
-    const ratio = pdfWidth / imgWidth;
-    const contentHeight = imgHeight * ratio;
-
-    let heightLeft = contentHeight;
-    let position = 0;
-    let pageCount = 0;
-
-    while (heightLeft > 0 && pageCount < 20) {
-      if (pageCount > 0) pdf.addPage();
-      pdf.addImage(imgData, 'JPEG', 0, position, pdfWidth, contentHeight, undefined, 'FAST');
-      heightLeft -= pdfHeight;
-      position -= pdfHeight;
-      pageCount++;
+    const margin = 8;
+    const contentWidth = pdfWidth - 2 * margin;
+    const ratio = contentWidth / canvas.width;
+    const pages = paginatePdfContent(canvas.height, Math.floor((pdfHeight - 2 * margin) / ratio),
+      contentBlocks.map(block => ({ top: Math.floor(block.top * canvas.width / 794), bottom: Math.ceil(block.bottom * canvas.width / 794) })),
+      tableHeaders.map(block => ({top:Math.floor(block.top * canvas.width / 794),bottom:Math.ceil(block.bottom * canvas.width / 794),tableBottom:Math.ceil(block.tableBottom * canvas.width / 794)})));
+    const pageCanvas = document.createElement('canvas');
+    pageCanvas.width = canvas.width;
+    for (const [index, page] of pages.entries()) {
+      const headerHeight = page.header ? page.header.bottom - page.header.top : 0;
+      pageCanvas.height = page.bottom - page.top + headerHeight;
+      const context = pageCanvas.getContext('2d');
+      if (!context) throw new Error('تعذر إنشاء صفحة المستند');
+      if (page.header) context.drawImage(canvas,0,page.header.top,canvas.width,headerHeight,0,0,canvas.width,headerHeight);
+      context.drawImage(canvas, 0, page.top, canvas.width, page.bottom - page.top,
+        0, headerHeight, canvas.width, page.bottom - page.top);
+      if (index > 0) pdf.addPage();
+      pdf.addImage(pageCanvas.toDataURL('image/jpeg', 0.9), 'JPEG', margin, margin,
+        contentWidth, pageCanvas.height * ratio, undefined, 'FAST');
     }
 
-    document.body.removeChild(iframe);
     return pdf.output('blob');
   } catch (error) {
     console.error('[ZIP Export] Error converting HTML to PDF:', error);
     return null;
+  } finally {
+    iframe?.remove();
   }
 }
 
@@ -184,7 +231,12 @@ async function addGeneratedDocuments(
 async function addInvoices(zip: JSZip, folderName: string, state: LawsuitPreparationState): Promise<void> {
   if (!state.overdueInvoices.length) return;
 
-  const invoicesFolder = zip.folder(`${folderName}/الفواتير`);
+  const containsScheduleClaims = state.overdueInvoices.some(
+    (invoice) => invoice.source === 'payment_schedule',
+  );
+  const invoicesFolder = zip.folder(
+    `${folderName}/${containsScheduleClaims ? 'مستندات الاستحقاق' : 'الفواتير'}`,
+  );
   if (!invoicesFolder) return;
 
   const customerName = formatCustomerName(state.customer) || undefined;
@@ -194,7 +246,8 @@ async function addInvoices(zip: JSZip, folderName: string, state: LawsuitPrepara
 
     try {
       const pdfBlob = await renderOfficialInvoicePdfBlob(invoice, customerName);
-      const fileName = `فاتورة_${safeFileName(invoice.invoice_number || String(index + 1))}.pdf`;
+      const filePrefix = invoice.source === 'payment_schedule' ? 'استحقاق_تعاقدي' : 'فاتورة';
+      const fileName = `${filePrefix}_${safeFileName(invoice.invoice_number || String(index + 1))}.pdf`;
       invoicesFolder.file(fileName, pdfBlob);
     } catch (error) {
       console.error(`[ZIP Export] Error adding invoice ${invoice.invoice_number}:`, error);
@@ -253,6 +306,13 @@ async function addExternalDocuments(
     fileIndex++;
   }
 
+  const included = new Set([documents.contract.sourceDocumentId, ...state.violationEvidenceDocuments.map(doc => doc.id)]);
+  for (const evidence of await resolveClaimEvidenceDocuments(state)) {
+    if (included.has(evidence.sourceDocumentId)) continue;
+    const blob = await fetchFileAsBlob(evidence.url!);
+    if (!blob) throw new Error(`تعذر تضمين مستند الطلب في الحافظة: ${evidence.name}`);
+    zip.file(`${folderName}/${String(fileIndex++).padStart(2, '0')}_${safeFileName(evidence.name)}.${getBlobExtension(blob)}`, blob);
+  }
   return fileIndex;
 }
 
@@ -292,10 +352,46 @@ export async function exportDocumentsAsZip(
   }
 }
 
+/**
+ * يبني حزمة المستندات كملف بدون تحميلها — للأرشفة التلقائية في سجل القضية.
+ */
+export async function buildDocumentsZipBlob(
+  state: LawsuitPreparationState,
+  contentRefs: ContentRefs
+): Promise<{ blob: Blob; fileName: string }> {
+  const { contract, customer } = state;
+
+  if (!contract) {
+    throw new Error('بيانات العقد غير متوفرة');
+  }
+
+  const customerName = formatCustomerName(customer) || 'عميل';
+  const folderName = safeFileName(`دعوى_${customerName}_${contract.contract_number}`);
+  const zip = new JSZip();
+
+  let fileIndex = 1;
+  zip.file(`${folderName}/${String(fileIndex).padStart(2, '0')}_ملخص_الدعوى.txt`, generateCaseSummary(state));
+  fileIndex++;
+
+  const generatedResult = await addGeneratedDocuments(zip, folderName, state, contentRefs, fileIndex);
+  fileIndex = generatedResult.nextIndex;
+
+  await addInvoices(zip, folderName, state);
+  fileIndex = await addExternalDocuments(zip, folderName, state, fileIndex);
+
+  if (fileIndex === 2 && !state.overdueInvoices.length) {
+    throw new Error('لا توجد مستندات جاهزة للتحميل داخل الحافظة');
+  }
+
+  const blob = await zip.generateAsync({ type: 'blob' });
+  return { blob, fileName: `${folderName}.zip` };
+}
+
 export function generateCaseSummary(state: LawsuitPreparationState): string {
-  const { contract, customer, calculations, taqadiData, overdueInvoices, trafficViolations, documents } = state;
+  const { contract, customer, calculations, taqadiData, overdueInvoices, documents } = state;
 
   if (!contract) return '';
+  const fixedCompensation = fixedCompensationRow(state.financialClaimSource?.claimRegister);
 
   const customerName = formatCustomerName(customer) || 'غير محدد';
   const readyDocuments = Object.values(documents)
@@ -313,11 +409,14 @@ export function generateCaseSummary(state: LawsuitPreparationState): string {
 
 المطالبات المالية:
 - إيجار متأخر: ${(calculations?.overdueRent || 0).toLocaleString('en-US')} ر.ق
-- غرامات تأخير: ${(calculations?.lateFees || 0).toLocaleString('en-US')} ر.ق
-- مخالفات مرورية: ${(calculations?.violationsFines || 0).toLocaleString('en-US')} ر.ق (${calculations?.violationsCount || trafficViolations.length} مخالفة)
+- تعويض اتفاقي موثق: ${(calculations?.lateFees || 0).toLocaleString('en-US')} ر.ق
+- أضرار ومصاريف وطلبات إضافية: ${((calculations?.damagesFee || 0) - Number(fixedCompensation?.amount || 0)).toLocaleString('en-US')} ر.ق
+${fixedCompensation ? `- ${fixedCompensation.label}: ${Number(fixedCompensation.amount).toLocaleString('en-US')} ر.ق\n` : ''}- تعويض الاحتباس المحسوب بالمدة: ${(calculations?.retentionCompensation || 0).toLocaleString('en-US')} ر.ق
+- وديعة الضمان المخصومة: ${(calculations?.securityDepositDeduction || 0).toLocaleString('en-US')} ر.ق
+- مخالفات مرورية مدعومة بمستخرج رسمي: ${(calculations?.violationsFines || 0).toLocaleString('en-US')} ر.ق (${calculations?.violationsCount || 0} مخالفة)
 - إجمالي المطالبة: ${(calculations?.total || 0).toLocaleString('en-US')} ر.ق
 
-الفواتير المتأخرة: ${overdueInvoices.length} فاتورة
+الاستحقاقات الحالّة الداخلة في المطالبة: ${overdueInvoices.length}
 عنوان الدعوى: ${taqadiData?.caseTitle || ''}
 
 المستندات الجاهزة:

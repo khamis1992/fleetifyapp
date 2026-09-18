@@ -1,0 +1,12 @@
+Windows Registry Editor Version 5.00
+
+[HKEY_CURRENT_USER\Software\Classes\fleetify-taqadi]
+@="URL:Fleetify Taqadi Agent"
+"URL Protocol"=""
+
+[HKEY_CURRENT_USER\Software\Classes\fleetify-taqadi\shell]
+
+[HKEY_CURRENT_USER\Software\Classes\fleetify-taqadi\shell\open]
+
+[HKEY_CURRENT_USER\Software\Classes\fleetify-taqadi\shell\open\command]
+@="\"C:\\Users\\khamis\\Documents\\fleetifyapp\\automation\\taqadi-agent\\windows\\taqadi-launcher.exe\" \"%1\""

@@ -27,7 +27,9 @@ describe('Kimi K3 proposal review agent', () => {
   });
 
   it('requires authorization before reviewing', () => {
-    expect(reviewerSource).toContain('authorize(req)');
+    expect(reviewerSource).toContain('authorizeScheduledAgent');
+    expect(reviewerSource).toContain('"customer-proposal-ai-reviewer"');
+    expect(reviewerSource).toContain('finishAgentExecution');
     expect(reviewerSource).toContain('Unauthorized');
   });
 
@@ -58,7 +60,8 @@ describe('Kimi K3 proposal review agent', () => {
     expect(reviewerSource).toContain('AUTO_APPROVE_CONFIDENCE = 0.95');
     expect(reviewerSource).toContain('identityConfirmed');
     expect(reviewerSource).toContain('applyProposal');
-    expect(reviewerSource).toContain('اعتمد وكيل Kimi تلقائياً');
+    expect(reviewerSource).toContain('apply_customer_id_scan_proposal_v1');
+    expect(reviewerSource).toContain('اعتمد آلياً — تحقق مؤكد');
   });
 
   it('flags cross-document conflicts for human resolution', () => {

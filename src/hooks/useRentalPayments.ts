@@ -7,6 +7,7 @@ import { toast } from 'sonner';
 import * as Sentry from '@sentry/react';
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
+import { readFinancialPages } from '@/services/financialReporting';
 
 type RentalReceiptUpdate = Database['public']['Tables']['rental_payment_receipts']['Update'];
 type OutstandingBalanceRow = Database['public']['Functions']['get_all_customers_outstanding_balance']['Returns'][number];
@@ -311,6 +312,7 @@ export const useRentalPaymentReceipts = (customerId?: string) => {
         throw new Error('Company ID is required');
       }
 
+      const data = await readFinancialPages((from, to) => {
       let query = supabase
         .from('rental_payment_receipts')
         .select(`
@@ -336,15 +338,18 @@ export const useRentalPaymentReceipts = (customerId?: string) => {
             model,
             year
           )
-        `)
+        `, { count: 'exact' })
         .eq('company_id', companyId)
-        .order('payment_date', { ascending: false });
+        .order('payment_date', { ascending: false })
+        .order('id')
+        .range(from, to);
 
       if (customerId) {
         query = query.eq('customer_id', customerId);
       }
 
-      const { data, error } = await query;
+      return query;
+      });
 
       // Map vehicle_number and customer_phone from related objects
       const mappedData = (data || []).map(receipt => ({
@@ -352,19 +357,6 @@ export const useRentalPaymentReceipts = (customerId?: string) => {
         vehicle_number: receipt.vehicle?.plate_number || '',
         customer_phone: receipt.customer?.phone || ''
       }));
-
-      if (error) {
-        console.error('❌ Error fetching rental receipts:', error);
-        Sentry.captureException(error, {
-          tags: {
-            feature: 'rental_payments',
-            action: 'fetch_receipts',
-            component: 'useRentalPaymentReceipts'
-          },
-          extra: { companyId, customerId }
-        });
-        throw error;
-      }
 
       Sentry.addBreadcrumb({
         category: 'rental_payments',
@@ -375,7 +367,7 @@ export const useRentalPaymentReceipts = (customerId?: string) => {
 
       return mappedData as RentalPaymentReceipt[];
     },
-    enabled: !!companyId,
+    enabled: !!companyId && !!customerId,
     staleTime: 5 * 1000, // 5 seconds for real-time updates
     gcTime: 5 * 60 * 1000, // 5 minutes
   });

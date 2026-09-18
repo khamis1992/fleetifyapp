@@ -1,5 +1,15 @@
+import { WorkspaceButton as Button, WorkspaceDialogContent as DialogContent, WorkspaceDialogFooter as DialogFooter, WorkspaceDialogHeader as DialogHeader } from '@/components/employee-workspace/WorkspacePresentation';
 import * as React from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { invalidateContractDocumentDependents } from '@/utils/contractDocumentQueries';
+import {
+  assertLegalReadinessClaim,
+  assertLegalReadinessCompletion,
+  legalReadinessClaimMismatch,
+  legalReadinessFinancialBlocker,
+  parseLegalReadinessFinancialContext,
+  type LegalReadinessFinancialContext,
+} from '@/utils/legalReadinessFinancialContext';
 import {
   AlertCircle,
   Banknote,
@@ -25,17 +35,10 @@ import { toast } from 'sonner';
 
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
+
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
+import { Dialog, DialogDescription, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Progress } from '@/components/ui/progress';
@@ -59,6 +62,15 @@ import {
   useExistingLegalCase,
 } from '@/hooks/useConvertToLegal';
 import { useCreateContractDocument } from '@/hooks/useContractDocuments';
+import {
+  normalizeLegalContractDocumentIdentityRow,
+  verifyLegalContractDocumentIdentity,
+  type LegalContractDocumentIdentityRow,
+} from '@/services/legalContractIdentityVerifier';
+import {
+  TRAFFIC_ONLY_INVOICE_EXCLUSION_REASON,
+  type LegalClaimScope,
+} from '@/types/legalClaimScope';
 import {
   SignedContractScannerDialog,
   type SignedContractScanFiles,
@@ -96,20 +108,63 @@ type LegalTransferViolation = {
   violation_date: string;
   violation_type: string;
   description: string | null;
-  fine_amount: number;
-  total_amount: number;
-  liability_amount: number;
+  source_type: string;
+  liability_amount: number | null;
   status: string;
-  responsibility_party: string;
+  responsibility_party: string | null;
 };
 
 type LegalTransferReadiness = {
+  financial_context: LegalReadinessFinancialContext;
   invoices: LegalTransferInvoice[];
   payments: LegalTransferPayment[];
   violations: LegalTransferViolation[];
   signed_contract_ready: boolean;
+  signed_contract_identity_required?: boolean;
+  signed_contract_request?: {
+    id?: string;
+    status?: string;
+    reason?: string;
+    recipient_count?: number;
+  };
+  signed_contract_evidence?: {
+    ready?: boolean;
+    reason?: string;
+    documentId?: string | null;
+    pendingCount?: number;
+    quarantinedCount?: number;
+    activeMatchedCount?: number;
+  };
+  signed_contract_block_code?: string | null;
   violation_proof_ready: boolean;
   latest_review?: Record<string, unknown>;
+};
+
+type LegalClaimStatement = {
+  version: 'v4';
+  claim_scope: LegalClaimScope;
+  as_of_date: string;
+  cutoff_date: string;
+  cutoff_source: 'as_of_date' | 'vehicle_return' | 'initial_judgment';
+  total: number;
+  violation_count: number;
+  violations_proof_ready: boolean;
+  components: {
+    rent_due: number;
+    legal_extension_rent: number;
+    contractual_compensation: number;
+    damages: number;
+    traffic_violations: number;
+    retention: number;
+    security_deposit_deduction: number;
+  };
+  excluded_amounts: {
+    manual_invoice_exclusions: number;
+    future_rent: number;
+    penalty_linked_invoices: number;
+    non_rent_invoices: number;
+    legacy_late_fine: number;
+  };
 };
 
 type CaseType = 'payment_collection' | 'contract_breach' | 'vehicle_damage' | 'other';
@@ -138,12 +193,12 @@ const callRpc = async <T,>(
   const { data, error } = await (supabase.rpc as unknown as (
     name: string,
     parameters: Record<string, unknown>,
-  ) => Promise<{ data: unknown; error: { message?: string } | null }>)(
+  ) => Promise<{ data: unknown; error: { message?: string; code?: string } | null }>)(
     functionName,
     args,
   );
 
-  if (error) throw new Error(error.message || 'تعذر تنفيذ العملية');
+  if (error) throw Object.assign(new Error(error.message || 'تعذر تنفيذ العملية'), { code: error.code });
   return data as T;
 };
 
@@ -158,6 +213,18 @@ const statusLabel = (status: string) => {
   return status || 'غير محدد';
 };
 
+const getQatarBusinessDate = () => {
+  const parts = new Intl.DateTimeFormat('en-GB', {
+    timeZone: 'Asia/Qatar',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).formatToParts(new Date());
+  const part = (type: Intl.DateTimeFormatPartTypes) =>
+    parts.find((item) => item.type === type)?.value || '';
+  return `${part('year')}-${part('month')}-${part('day')}`;
+};
+
 export function LegalTransferReadinessWizard({
   open,
   onOpenChange,
@@ -167,14 +234,19 @@ export function LegalTransferReadinessWizard({
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const { formatCurrency } = useCurrencyFormatter();
+  const formatFinancialAmount = (value: number | null) => value === null ? 'تحتاج مطابقة' : formatCurrency(value);
+  const businessDate = getQatarBusinessDate();
   const createDocument = useCreateContractDocument();
   const convertMutation = useConvertToLegal();
   const signedFileInputRef = React.useRef<HTMLInputElement>(null);
   const violationProofInputRef = React.useRef<HTMLInputElement>(null);
+  const transferInFlightRef = React.useRef(false);
+  const [isCompletingTransfer, setIsCompletingTransfer] = React.useState(false);
 
   const [step, setStep] = React.useState(0);
   const [financialReviewed, setFinancialReviewed] = React.useState(false);
   const [violationsReviewed, setViolationsReviewed] = React.useState(false);
+  const [claimScope, setClaimScope] = React.useState<LegalClaimScope>('full_outstanding');
   const [claimAmount, setClaimAmount] = React.useState('');
   const [financialNotes, setFinancialNotes] = React.useState('');
   const [notes, setNotes] = React.useState('');
@@ -187,6 +259,9 @@ export function LegalTransferReadinessWizard({
   const [editedInvoiceAmount, setEditedInvoiceAmount] = React.useState('');
   const [invoiceEditReason, setInvoiceEditReason] = React.useState('');
   const [isCorrectingInvoice, setIsCorrectingInvoice] = React.useState(false);
+  const [isVerifyingSignedContract, setIsVerifyingSignedContract] = React.useState(false);
+  const [signedContractVerificationError, setSignedContractVerificationError] = React.useState<string | null>(null);
+  const attemptedSignedContractVerificationRef = React.useRef<Set<string>>(new Set());
   const [excludedInvoiceIds, setExcludedInvoiceIds] = React.useState<Set<string>>(new Set());
   const [invoiceExclusionReasons, setInvoiceExclusionReasons] = React.useState<Record<string, string>>({});
 
@@ -195,28 +270,32 @@ export function LegalTransferReadinessWizard({
   } = useExistingLegalCase(open ? contract?.id || '' : '');
 
   const readinessQuery = useQuery({
-    queryKey: ['legal-transfer-readiness', contract?.company_id, contract?.id],
-    queryFn: () =>
-      callRpc<LegalTransferReadiness>('get_legal_transfer_readiness_v1', {
-        p_company_id: contract?.company_id,
-        p_contract_id: contract?.id,
-      }),
+    queryKey: ['legal-transfer-readiness', contract?.company_id, contract?.id, businessDate],
+    queryFn: async () => {
+      if (!contract?.company_id || !contract.id) throw new Error('تعذر تحديد العقد والشركة');
+      const data = await callRpc<LegalTransferReadiness>('get_legal_transfer_readiness_v2', {
+        p_company_id: contract.company_id,
+        p_contract_id: contract.id,
+      });
+      parseLegalReadinessFinancialContext(data, contract.company_id, contract.id, businessDate);
+      return data;
+    },
     enabled: open && Boolean(contract?.id && contract?.company_id),
     staleTime: 0,
   });
 
   const readiness = readinessQuery.data;
-  const invoices = readiness?.invoices || [];
-  const payments = readiness?.payments || [];
-  const violations = readiness?.violations || [];
+  const financialContext = readiness?.financial_context;
+  const financialBlocker = legalReadinessFinancialBlocker(financialContext, claimScope);
+  const violationProofRequired = financialContext?.traffic_proof_required ?? true;
+  const invoices = React.useMemo(() => readiness?.invoices || [], [readiness?.invoices]);
+  const payments = React.useMemo(() => readiness?.payments || [], [readiness?.payments]);
+  const violations = React.useMemo(() => readiness?.violations || [], [readiness?.violations]);
   const hasActiveCase = Boolean(
     existingCase && ['open', 'active', 'pending', 'on_hold', 'under_review'].includes(existingCase.case_status),
   );
 
-  const invoiceOutstanding = React.useMemo(
-    () => invoices.reduce((sum, invoice) => sum + Number(invoice.balance_due || 0), 0),
-    [invoices],
-  );
+  const invoiceOutstanding = financialContext?.rent_total ?? null;
   const includedInvoices = React.useMemo(
     () => invoices.filter((invoice) => !excludedInvoiceIds.has(invoice.id)),
     [excludedInvoiceIds, invoices],
@@ -226,10 +305,117 @@ export function LegalTransferReadinessWizard({
     [excludedInvoiceIds, invoices],
   );
   const includedInvoiceOutstanding = React.useMemo(
-    () => includedInvoices.reduce((sum, invoice) => sum + Number(invoice.balance_due || 0), 0),
-    [includedInvoices],
+    () => invoiceOutstanding === null ? null : includedInvoices.reduce((sum, invoice) => sum + invoice.balance_due, 0),
+    [includedInvoices, invoiceOutstanding],
   );
-  const excludedInvoiceOutstanding = invoiceOutstanding - includedInvoiceOutstanding;
+  const excludedInvoiceOutstanding = invoiceOutstanding === null || includedInvoiceOutstanding === null
+    ? null : invoiceOutstanding - includedInvoiceOutstanding;
+  const excludedInvoiceKey = React.useMemo(
+    () => Array.from(excludedInvoiceIds).sort().join(','),
+    [excludedInvoiceIds],
+  );
+
+  const existingSignedContractQuery = useQuery({
+    queryKey: ['legal-transfer-signed-contract-document', contract?.company_id, contract?.id],
+    queryFn: async () => {
+      const companyId = contract?.company_id;
+      const contractId = contract?.id;
+      if (!companyId || !contractId) return null;
+      const { data, error } = await supabase
+        .from('contract_documents')
+        .select('id, document_name, file_path, mime_type, legal_identity_match_status, legal_identity_expected_name, legal_identity_extracted_name, legal_identity_expected_id, legal_identity_extracted_id, legal_identity_match_reason, legal_identity_checked_at')
+        .eq('company_id', companyId)
+        .eq('contract_id', contractId)
+        .in('document_type', ['signed_contract', 'signed_contract_image'])
+        .eq('legal_evidence_state', 'active')
+        .not('file_path', 'is', null)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (error) throw error;
+      if (!data) return null;
+      return normalizeLegalContractDocumentIdentityRow(data);
+    },
+    enabled: open && Boolean(contract?.id && contract?.company_id),
+    staleTime: 0,
+  });
+  const existingSignedContract = existingSignedContractQuery.data;
+  const hasStoredSignedContract = Boolean(existingSignedContract?.file_path);
+
+  const verifyStoredSignedContract = React.useCallback(async (
+    document: LegalContractDocumentIdentityRow,
+  ) => {
+    if (!contract || document.legal_identity_match_status !== 'pending') return document;
+    setIsVerifyingSignedContract(true);
+    setSignedContractVerificationError(null);
+    try {
+      const verified = await verifyLegalContractDocumentIdentity(contract.company_id, document);
+      await invalidateContractDocumentDependents(queryClient, contract.company_id, contract.id);
+      if (verified.legal_identity_match_status === 'matched') {
+        toast.success('تم التحقق من أن نسخة العقد تخص المستأجر نفسه');
+      } else if (verified.legal_identity_match_status === 'mismatch') {
+        setSignedContractVerificationError(
+          verified.legal_identity_match_reason || 'نسخة العقد لا تطابق هوية مستأجر العقد',
+        );
+      } else {
+        setSignedContractVerificationError(
+          verified.legal_identity_match_reason || 'تعذر اعتماد هوية المستأجر من النسخة الموجودة',
+        );
+      }
+      return verified;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'تعذر فحص نسخة العقد الموجودة';
+      setSignedContractVerificationError(message);
+      return document;
+    } finally {
+      setIsVerifyingSignedContract(false);
+    }
+  }, [contract, existingSignedContractQuery, queryClient, readinessQuery]);
+
+  React.useEffect(() => {
+    if (
+      !open
+      || readiness?.signed_contract_ready
+      || !existingSignedContract
+      || existingSignedContract.legal_identity_match_status !== 'pending'
+      || attemptedSignedContractVerificationRef.current.has(existingSignedContract.id)
+    ) return;
+    attemptedSignedContractVerificationRef.current.add(existingSignedContract.id);
+    void verifyStoredSignedContract(existingSignedContract);
+  }, [existingSignedContract, open, readiness?.signed_contract_ready, verifyStoredSignedContract]);
+  const claimStatementQuery = useQuery({
+    queryKey: [
+      'legal-claim-statement-v4',
+      contract?.company_id,
+      contract?.id,
+      claimScope,
+      excludedInvoiceKey,
+      businessDate,
+    ],
+    queryFn: async () => {
+      const data = await callRpc<LegalClaimStatement>('calculate_legal_claim_statement_v4', {
+        p_company_id: contract?.company_id,
+        p_contract_id: contract?.id,
+        p_as_of_date: businessDate,
+        p_claim_scope: claimScope,
+        p_excluded_invoice_ids: Array.from(excludedInvoiceIds),
+      });
+      assertLegalReadinessClaim(data, claimScope, businessDate);
+      return data;
+    },
+    enabled: open && Boolean(contract?.id && contract?.company_id),
+    staleTime: 0,
+  });
+  const claimStatement = claimStatementQuery.isFetching || claimStatementQuery.isError
+    ? undefined : claimStatementQuery.data;
+  const claimConsistencyBlocker = legalReadinessClaimMismatch(
+    financialContext, claimScope, claimStatement?.components, includedInvoiceOutstanding,
+  );
+  const financialReviewSignature = JSON.stringify({ invoices, violations, financialContext });
+  React.useEffect(() => {
+    setFinancialReviewed(false);
+    setViolationsReviewed(false);
+  }, [financialReviewSignature]);
   const hasMissingExclusionReason = excludedInvoices.some(
     (invoice) => !invoiceExclusionReasons[invoice.id]?.trim(),
   );
@@ -240,53 +426,55 @@ export function LegalTransferReadinessWizard({
         .reduce((sum, payment) => sum + Number(payment.amount || 0), 0),
     [payments],
   );
-  const violationTotal = React.useMemo(
-    () =>
-      violations.reduce(
-        (sum, violation) =>
-          sum + Number(violation.liability_amount || violation.total_amount || violation.fine_amount || 0),
-        0,
-      ),
-    [violations],
-  );
+  const violationTotal = financialContext?.traffic_total ?? null;
 
   React.useEffect(() => {
     if (!open) return;
     setStep(0);
     setFinancialReviewed(false);
     setViolationsReviewed(false);
+    setClaimScope('full_outstanding');
     setFinancialNotes('');
     setNotes('');
     setPriority('high');
     setCaseType('payment_collection');
+    setSignedContractVerificationError(null);
+    attemptedSignedContractVerificationRef.current.clear();
     setExcludedInvoiceIds(new Set());
     setInvoiceExclusionReasons({});
     setVehicleDisposition(
-      contract?.vehicle_returned || ['cancelled', 'closed'].includes(contract?.status || '')
+      contract?.vehicle_returned || ['cancelled', 'canceled', 'closed'].includes(contract?.status || '')
         ? 'returned'
         : 'keep_with_customer',
     );
   }, [contract?.id, contract?.status, contract?.vehicle_returned, open]);
 
   React.useEffect(() => {
-    if (!open || !readiness) return;
-    const defaultClaim = invoices.length > 0
-      ? includedInvoiceOutstanding + Number(contract?.late_fine_amount || 0)
-      : Number(contract?.balance_due || 0) + Number(contract?.late_fine_amount || 0);
-    setClaimAmount(defaultClaim.toFixed(2));
-  }, [
-    contract?.balance_due,
-    contract?.late_fine_amount,
-    includedInvoiceOutstanding,
-    invoices.length,
-    open,
-    readiness,
-  ]);
+    if (!open) return;
+    setClaimAmount(claimStatement && Number.isFinite(claimStatement.total) && claimStatement.total >= 0
+      ? claimStatement.total.toFixed(2) : '');
+  }, [claimStatement, open]);
+
+  const changeClaimScope = (nextScope: LegalClaimScope) => {
+    setClaimScope(nextScope);
+    setFinancialReviewed(false);
+    if (nextScope === 'traffic_violations_only') {
+      setExcludedInvoiceIds(new Set(invoices.map((invoice) => invoice.id)));
+      setInvoiceExclusionReasons(Object.fromEntries(
+        invoices.map((invoice) => [invoice.id, TRAFFIC_ONLY_INVOICE_EXCLUSION_REASON]),
+      ));
+      setFinancialNotes(TRAFFIC_ONLY_INVOICE_EXCLUSION_REASON);
+      return;
+    }
+    setExcludedInvoiceIds(new Set());
+    setInvoiceExclusionReasons({});
+    setFinancialNotes('');
+  };
 
   const resetAndClose = (nextOpen: boolean) => {
     if (
       !nextOpen
-      && (createDocument.isPending || convertMutation.isPending || isCorrectingInvoice)
+      && (createDocument.isPending || convertMutation.isPending || isCorrectingInvoice || isCompletingTransfer)
     ) {
       return;
     }
@@ -326,7 +514,11 @@ export function LegalTransferReadinessWizard({
           'رفع أثناء تجهيز العقد للتحويل إلى الشؤون القانونية',
         );
       }
-      await readinessQuery.refetch();
+      await Promise.all([
+        readinessQuery.refetch(),
+        claimStatementQuery.refetch(),
+        existingSignedContractQuery.refetch(),
+      ]);
       toast.success('تم حفظ نسخة العقد ضمن مستندات العقد');
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'تعذر رفع نسخة العقد');
@@ -354,7 +546,11 @@ export function LegalTransferReadinessWizard({
         'صورة ممسوحة مع قص A4 وتصحيح المنظور',
       );
     }
-    await readinessQuery.refetch();
+    await Promise.all([
+      readinessQuery.refetch(),
+      claimStatementQuery.refetch(),
+      existingSignedContractQuery.refetch(),
+    ]);
   };
 
   const handleViolationProof = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -371,7 +567,7 @@ export function LegalTransferReadinessWizard({
           `إثبات مرتبط بـ ${violations.length} مخالفة أثناء التجهيز القانوني`,
         );
       }
-      await readinessQuery.refetch();
+      await Promise.all([readinessQuery.refetch(), claimStatementQuery.refetch()]);
       toast.success('تم حفظ إثبات المخالفات ضمن مستندات العقد');
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'تعذر رفع إثبات المخالفات');
@@ -425,7 +621,7 @@ export function LegalTransferReadinessWizard({
         p_actor_id: user.id,
       });
       setEditingInvoice(null);
-      await readinessQuery.refetch();
+      await Promise.all([readinessQuery.refetch(), claimStatementQuery.refetch()]);
       toast.success('تم تصحيح مبلغ الفاتورة وتسجيل العملية في سجل التدقيق');
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'تعذر تصحيح مبلغ الفاتورة');
@@ -435,17 +631,33 @@ export function LegalTransferReadinessWizard({
   };
 
   const canContinue = () => {
+    if (financialBlocker || claimConsistencyBlocker || readinessQuery.isFetching || readinessQuery.isError
+      || claimStatementQuery.isFetching || claimStatementQuery.isError
+      || !readiness || !claimStatement || !Number.isFinite(claimStatement.total)
+      || claimStatement.total < 0 || isCompletingTransfer) return false;
     if (step === 0) {
-      return financialReviewed && !hasMissingExclusionReason && Number(claimAmount) >= 0;
+      return financialReviewed
+        && !hasMissingExclusionReason
+        && !claimStatementQuery.isLoading
+        && !claimStatementQuery.isError
+        && Boolean(claimStatement)
+        && Number(claimAmount) >= 0
+        && (claimScope !== 'traffic_violations_only' || (violationTotal !== null && violationTotal > 0));
     }
     if (step === 1) return Boolean(readiness?.signed_contract_ready);
     if (step === 2) return violationsReviewed;
-    if (step === 3) return violations.length === 0 || Boolean(readiness?.violation_proof_ready);
-    return true;
+    if (step === 3) return !violationProofRequired || readiness.violation_proof_ready === true;
+    return financialReviewed && violationsReviewed && !hasMissingExclusionReason
+      && readiness.signed_contract_ready === true
+      && (!violationProofRequired || readiness.violation_proof_ready === true);
   };
 
   const completeTransfer = async () => {
-    if (!contract || !user?.id || !readiness) return;
+    if (transferInFlightRef.current || !contract || !user?.id || !readiness) return;
+    if (!canContinue() || !claimStatement) {
+      toast.error(financialBlocker || claimConsistencyBlocker || 'انتظر اكتمال فحص المطالبة والجاهزية قبل التحويل');
+      return;
+    }
     if (hasMissingExclusionReason) {
       toast.error('اكتب سبب استبعاد كل فاتورة قبل إكمال التحويل');
       return;
@@ -454,12 +666,14 @@ export function LegalTransferReadinessWizard({
       !financialReviewed
       || !readiness.signed_contract_ready
       || !violationsReviewed
-      || (violations.length > 0 && !readiness.violation_proof_ready)
+      || (violationProofRequired && !readiness.violation_proof_ready)
     ) {
       toast.error('أكمل جميع مراحل الجاهزية قبل التحويل');
       return;
     }
 
+    transferInFlightRef.current = true;
+    setIsCompletingTransfer(true);
     try {
       const excludedInvoiceAudit = excludedInvoices.map((invoice) => ({
         invoice_id: invoice.id,
@@ -467,16 +681,21 @@ export function LegalTransferReadinessWizard({
         balance_due: Number(invoice.balance_due || 0),
         reason: invoiceExclusionReasons[invoice.id].trim(),
       }));
-      await callRpc('complete_legal_transfer_readiness_v1', {
+      const completion = await callRpc<{
+        blocked?: boolean;
+        message_ar?: string;
+      }>('complete_legal_transfer_readiness_v2', {
         p_company_id: contract.company_id,
         p_contract_id: contract.id,
         p_payload: {
           financial_reviewed: true,
-          claim_amount: Number(claimAmount),
+          claim_amount: claimStatement.total,
+          reviewed_claim_statement: claimStatement,
           accounting_invoice_balance: invoiceOutstanding,
           included_invoice_balance: includedInvoiceOutstanding,
           excluded_invoice_balance: excludedInvoiceOutstanding,
           included_invoice_ids: includedInvoices.map((invoice) => invoice.id),
+          excluded_invoice_ids: excludedInvoices.map((invoice) => invoice.id),
           excluded_invoices: excludedInvoiceAudit,
           completed_payments: completedPayments,
           financial_notes: financialNotes.trim(),
@@ -485,11 +704,30 @@ export function LegalTransferReadinessWizard({
           violation_count: violations.length,
           violation_total: violationTotal,
           violation_proof_ready:
-            violations.length === 0 || Boolean(readiness.violation_proof_ready),
+            !violationProofRequired || readiness.violation_proof_ready === true,
           vehicle_returned: vehicleDisposition === 'returned',
         },
+        p_claim_scope: claimScope,
         p_actor_id: user.id,
       });
+      if (completion?.blocked) {
+        throw new Error(
+          completion.message_ar
+          || 'لا توجد نسخة عقد PDF مطابقة للعميل. تم إنشاء طلب واتساب تلقائي للمسؤولين.',
+        );
+      }
+
+      try {
+        assertLegalReadinessCompletion(completion, claimStatement, claimScope, businessDate);
+      } catch (error) {
+        setFinancialReviewed(false);
+        setViolationsReviewed(false);
+        await Promise.all([
+          queryClient.invalidateQueries({ queryKey: ['legal-transfer-readiness', contract.company_id, contract.id] }),
+          queryClient.invalidateQueries({ queryKey: ['legal-claim-statement-v4', contract.company_id, contract.id] }),
+        ]);
+        throw error;
+      }
 
       await convertMutation.mutateAsync({
         contractId: contract.id,
@@ -505,6 +743,7 @@ export function LegalTransferReadinessWizard({
         priority,
         caseType,
         vehicleReturned: vehicleDisposition === 'returned',
+        claimScope,
       });
 
       await Promise.all([
@@ -514,12 +753,94 @@ export function LegalTransferReadinessWizard({
       onOpenChange(false);
       onSuccess?.();
     } catch (error) {
+      if (error && typeof error === 'object' && 'code' in error && error.code === '40001') {
+        setFinancialReviewed(false);
+        setViolationsReviewed(false);
+        await Promise.allSettled([
+          readinessQuery.refetch(),
+          claimStatementQuery.refetch(),
+        ]);
+      }
       toast.error(error instanceof Error ? error.message : 'تعذر إكمال التحويل القانوني');
+    } finally {
+      transferInFlightRef.current = false;
+      setIsCompletingTransfer(false);
     }
   };
 
   const renderFinancialStep = () => (
     <div className="space-y-4">
+      <Card className="rounded-lg border-[#DDE5EF] shadow-none">
+        <CardHeader className="border-b border-[#EEF2F6] pb-3">
+          <CardTitle className="flex items-center gap-2 text-base">
+            <Scale className="h-4 w-4 text-[#1D4F7A]" />
+            نطاق المطالبة القانونية
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="grid gap-3 p-4 sm:grid-cols-2">
+          <button
+            type="button"
+            onClick={() => changeClaimScope('full_outstanding')}
+            className={cn(
+              'rounded-lg border p-4 text-right transition-colors',
+              claimScope === 'full_outstanding'
+                ? 'border-[#1D4F7A] bg-[#EEF6FC] text-[#173A63]'
+                : 'border-[#DDE5EF] bg-white text-[#475569]',
+            )}
+          >
+            <span className="block font-black">كامل المستحقات</span>
+            <span className="mt-1 block text-xs leading-5">
+              الفواتير المشمولة وغرامة التأخير، وفق المراجعة القانونية.
+            </span>
+          </button>
+          <button
+            type="button"
+            onClick={() => changeClaimScope('traffic_violations_only')}
+            className={cn(
+              'rounded-lg border p-4 text-right transition-colors',
+              claimScope === 'traffic_violations_only'
+                ? 'border-[#B42318] bg-[#FFF7F6] text-[#8A3028]'
+                : 'border-[#DDE5EF] bg-white text-[#475569]',
+            )}
+          >
+            <span className="block font-black">مخالفات مرورية فقط</span>
+            <span className="mt-1 block text-xs leading-5">
+              يستبعد الإيجار وغرامة التأخير ويثبت قيمة المخالفات فقط.
+            </span>
+          </button>
+        </CardContent>
+      </Card>
+
+      {claimScope === 'traffic_violations_only' && (
+        <Alert className="border-[#F2B8B5] bg-[#FFF7F6]">
+          <TrafficCone className="h-4 w-4 text-[#B42318]" />
+          <AlertDescription className="leading-6 text-[#8A3028]">
+            تم استبعاد جميع الفواتير وغرامة التأخير. مبلغ المطالبة ثابت تلقائياً عند{' '}
+            {formatFinancialAmount(violationTotal)}، ويُدرج في المطالبة بعد اكتمال الإثبات ولا يمكن تعديله يدوياً.
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {claimStatement && (
+        <Alert className="border-[#BFD7EA] bg-[#F7FBFF]">
+          <Scale className="h-4 w-4 text-[#1D4F7A]" />
+          <AlertDescription className="space-y-1 leading-6 text-[#173A63]">
+            <p className="font-black">
+              القيمة محسوبة تلقائياً بمحرك المطالبة v4 حتى {claimStatement.cutoff_date}.
+            </p>
+            <p>
+              الإيجار الحال {formatCurrency(claimStatement.components.rent_due)}، والمخالفات المثبتة{' '}
+              {formatCurrency(claimStatement.components.traffic_violations)}.
+            </p>
+            <p className="text-xs text-[#6A7688]">
+              مستبعد من الإجمالي: إيجار مستقبلي {formatCurrency(claimStatement.excluded_amounts.future_rent)}،
+              وفواتير مخالفات لمنع الازدواج {formatCurrency(claimStatement.excluded_amounts.penalty_linked_invoices)}،
+              وغرامة تأخير قديمة غير موثقة {formatCurrency(claimStatement.excluded_amounts.legacy_late_fine)}.
+            </p>
+          </AlertDescription>
+        </Alert>
+      )}
+
       <Alert className="border-[#BFD7EA] bg-[#EEF6FC]">
         <ShieldCheck className="h-4 w-4 text-[#1D4F7A]" />
         <AlertDescription className="leading-6 text-[#173A63]">
@@ -531,25 +852,26 @@ export function LegalTransferReadinessWizard({
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <div className="rounded-lg border border-[#DDE5EF] bg-white p-4">
           <p className="text-xs font-bold text-[#6A7688]">رصيد الفواتير القائم</p>
-          <p className="mt-1 text-lg font-black text-[#142033]">{formatCurrency(invoiceOutstanding)}</p>
+          <p className="mt-1 text-lg font-black text-[#142033]">{formatFinancialAmount(invoiceOutstanding)}</p>
         </div>
         <div className="rounded-lg border border-[#BFEBDD] bg-[#E9FBF6] p-4">
           <p className="text-xs font-bold text-[#0D6B55]">رصيد الفواتير المشمول بالمطالبة</p>
           <p className="mt-1 text-lg font-black text-[#0D876A]">
-            {formatCurrency(includedInvoiceOutstanding)}
+            {formatFinancialAmount(includedInvoiceOutstanding)}
           </p>
           {excludedInvoices.length > 0 && (
             <p className="mt-1 text-xs text-[#B42318]">
-              مستبعد: {formatCurrency(excludedInvoiceOutstanding)}
+              مستبعد: {formatFinancialAmount(excludedInvoiceOutstanding)}
             </p>
           )}
         </div>
         <div className="rounded-lg border border-[#DDE5EF] bg-white p-4">
-          <p className="text-xs font-bold text-[#6A7688]">الدفعات المكتملة</p>
+          <p className="text-xs font-bold text-[#6A7688]">سجلات الدفعات المكتملة (للمراجعة)</p>
           <p className="mt-1 text-lg font-black text-[#0D876A]">{formatCurrency(completedPayments)}</p>
+          <p className="mt-1 text-xs text-[#6A7688]">ليست دليلًا مستقلًا على تسديد الفواتير؛ يعتمد الرصيد على تخصيصات الإيصالات.</p>
         </div>
         <div className="rounded-lg border border-[#DDE5EF] bg-white p-4">
-          <p className="text-xs font-bold text-[#6A7688]">غرامات التأخير</p>
+          <p className="text-xs font-bold text-[#6A7688]">غرامة التأخير القديمة (مستبعدة ما لم توثق)</p>
           <p className="mt-1 text-lg font-black text-[#9A5A00]">
             {formatCurrency(Number(contract?.late_fine_amount || 0))}
           </p>
@@ -563,7 +885,7 @@ export function LegalTransferReadinessWizard({
               <ReceiptText className="h-4 w-4 text-[#1D4F7A]" />
               الفواتير التي تكوّن المطالبة
             </CardTitle>
-            {excludedInvoices.length > 0 && (
+            {excludedInvoices.length > 0 && claimScope !== 'traffic_violations_only' && (
               <Button
                 type="button"
                 size="sm"
@@ -584,7 +906,9 @@ export function LegalTransferReadinessWizard({
         <CardContent className="max-h-64 space-y-2 overflow-y-auto p-3">
           {invoices.length === 0 ? (
             <p className="rounded-lg border border-dashed p-5 text-center text-sm text-[#6A7688]">
-              لا توجد فواتير فعالة مرتبطة بالعقد.
+              {financialContext?.rent_requires_review
+                ? 'لم تكتمل مطابقة الفواتير؛ غيابها من هذا العرض لا يعني أن الرصيد صفر.'
+                : 'لا توجد فواتير إيجار مستحقة قابلة للإدراج ضمن فترة المطالبة.'}
             </p>
           ) : (
             invoices.map((invoice) => {
@@ -652,6 +976,7 @@ export function LegalTransferReadinessWizard({
                         : 'border-[#F2B8B5] text-[#B42318] hover:bg-[#FFF0EE]',
                     )}
                     onClick={() => toggleInvoiceExclusion(invoice.id)}
+                    disabled={claimScope === 'traffic_violations_only'}
                   >
                     {isExcluded ? <RotateCcw className="h-3.5 w-3.5" /> : <CircleMinus className="h-3.5 w-3.5" />}
                     {isExcluded ? 'إعادة للمطالبة' : 'استبعاد'}
@@ -676,6 +1001,7 @@ export function LegalTransferReadinessWizard({
                           'bg-white',
                           !invoiceExclusionReasons[invoice.id]?.trim() && 'border-[#E17B72]',
                         )}
+                        disabled={claimScope === 'traffic_violations_only'}
                       />
                     </div>
                   )}
@@ -729,11 +1055,14 @@ export function LegalTransferReadinessWizard({
             min="0"
             step="0.01"
             value={claimAmount}
-            onChange={(event) => setClaimAmount(event.target.value)}
+            readOnly
+            disabled
             className="h-11 font-black"
           />
           <p className="text-xs leading-5 text-[#6A7688]">
-            هذا هو مبلغ المطالبة القانونية المعتمد، ويُحفظ مع سجل المراجعة.
+            {claimScope === 'traffic_violations_only'
+              ? 'يحتسب النظام المبلغ من المخالفات غير المسددة الموثقة فقط.'
+              : 'هذا هو مبلغ المطالبة القانونية المعتمد، ويُحفظ مع سجل المراجعة.'}
           </p>
         </div>
         <div className="space-y-2">
@@ -781,12 +1110,18 @@ export function LegalTransferReadinessWizard({
           'rounded-lg border p-5',
           readiness?.signed_contract_ready
             ? 'border-[#BFEBDD] bg-[#E9FBF6]'
+            : hasStoredSignedContract
+              ? 'border-[#B8D7F1] bg-[#EFF7FF]'
             : 'border-[#F4C96B] bg-[#FFF8E7]',
         )}
       >
         <div className="flex items-start gap-3">
           {readiness?.signed_contract_ready ? (
             <FileCheck2 className="mt-0.5 h-6 w-6 text-[#0D876A]" />
+          ) : hasStoredSignedContract ? (
+            isVerifyingSignedContract
+              ? <Loader2 className="mt-0.5 h-6 w-6 animate-spin text-[#2563A6]" />
+              : <FileText className="mt-0.5 h-6 w-6 text-[#2563A6]" />
           ) : (
             <AlertCircle className="mt-0.5 h-6 w-6 text-[#9A5A00]" />
           )}
@@ -794,10 +1129,28 @@ export function LegalTransferReadinessWizard({
             <h3 className="font-black text-[#142033]">
               {readiness?.signed_contract_ready
                 ? 'نسخة العقد الموقعة محفوظة'
+                : hasStoredSignedContract
+                  ? isVerifyingSignedContract
+                    ? 'نسخة العقد موجودة — جارٍ التحقق من الهوية'
+                    : 'نسخة العقد موجودة وتحتاج إكمال مطابقة الهوية'
                 : 'مستند ناقص: نسخة العقد الموقعة'}
             </h3>
             <p className="mt-1 text-sm leading-6 text-[#6A7688]">
-              يجب حفظ نسخة واضحة وكاملة من العقد قبل نقله إلى الشؤون القانونية.
+              {readiness?.signed_contract_ready
+                ? 'تم التحقق أن النسخة تخص العميل نفسه، وليست مرتبطة باللوحة فقط.'
+                : hasStoredSignedContract
+                  ? signedContractVerificationError
+                    ? signedContractVerificationError
+                    : isVerifyingSignedContract
+                      ? `يُفحص الآن الملف «${existingSignedContract?.document_name || 'نسخة العقد'}» تلقائياً، ولا حاجة لرفع نسخة أخرى.`
+                      : `الملف «${existingSignedContract?.document_name || 'نسخة العقد'}» محفوظ؛ لن يطلب النظام نسخة جديدة قبل انتهاء فحصه.`
+                : readiness?.signed_contract_request?.status === 'identity_verification_pending'
+                  ? 'توجد نسخة قيد مطابقة اسم وهوية المستأجر، ولن تعتمد قبل انتهاء الفحص.'
+                  : readiness?.signed_contract_request?.status === 'sent'
+                    ? `أرسل الوكيل طلب PDF تلقائياً عبر واتساب إلى ${readiness.signed_contract_request.recipient_count || 3} مسؤولين.`
+                    : readiness?.signed_contract_request?.status
+                      ? `أنشأ الوكيل طلب PDF تلقائياً وسيُرسله إلى ${readiness.signed_contract_request.recipient_count || 3} مسؤولين.`
+                      : 'يجب حفظ نسخة واضحة وكاملة ومطابقة للعميل قبل نقله إلى الشؤون القانونية.'}
             </p>
           </div>
         </div>
@@ -812,6 +1165,19 @@ export function LegalTransferReadinessWizard({
         onChange={handleSignedFile}
       />
       <div className="grid gap-3 sm:grid-cols-2">
+        {hasStoredSignedContract
+          && existingSignedContract?.legal_identity_match_status === 'pending'
+          && !isVerifyingSignedContract && (
+          <Button
+            type="button"
+            variant="outline"
+            className="h-14 gap-2 border-[#8BB9DF] text-[#1E5D91]"
+            onClick={() => void verifyStoredSignedContract(existingSignedContract)}
+          >
+            <RotateCcw className="h-5 w-5" />
+            إعادة فحص النسخة الموجودة
+          </Button>
+        )}
         <Button
           type="button"
           className="h-14 gap-2 bg-[#11A37F] text-white hover:bg-[#0D876A]"
@@ -842,7 +1208,7 @@ export function LegalTransferReadinessWizard({
         </div>
         <div className="rounded-lg border border-[#DDE5EF] bg-white p-4">
           <p className="text-xs font-bold text-[#6A7688]">إجمالي مسؤولية المخالفات</p>
-          <p className="mt-1 text-2xl font-black text-[#B42318]">{formatCurrency(violationTotal)}</p>
+          <p className="mt-1 text-2xl font-black text-[#B42318]">{formatFinancialAmount(violationTotal)}</p>
         </div>
       </div>
 
@@ -855,28 +1221,22 @@ export function LegalTransferReadinessWizard({
         ) : (
           violations.map((violation) => (
             <div
-              key={violation.id}
+              key={`${violation.source_type}:${violation.id}`}
               className="grid gap-2 rounded-lg border border-[#E5EAF1] bg-white p-4 sm:grid-cols-[1fr_auto]"
             >
               <div>
                 <p className="font-black text-[#142033]">مخالفة {violation.violation_number}</p>
                 <p className="mt-1 text-xs text-[#6A7688]">
                   {violation.violation_date} · {violation.violation_type} ·{' '}
-                  {violation.responsibility_party || 'المسؤولية غير محددة'}
+                  {violation.responsibility_party === 'company' ? 'على الشركة'
+                    : violation.responsibility_party === 'customer' ? 'على العميل' : 'المسؤولية غير محددة'}
                 </p>
                 {violation.description && (
                   <p className="mt-2 text-sm text-[#475569]">{violation.description}</p>
                 )}
               </div>
               <p className="font-black text-[#B42318]">
-                {formatCurrency(
-                  Number(
-                    violation.liability_amount
-                    || violation.total_amount
-                    || violation.fine_amount
-                    || 0,
-                  ),
-                )}
+                {formatFinancialAmount(violation.liability_amount)}
               </p>
             </div>
           ))
@@ -901,11 +1261,11 @@ export function LegalTransferReadinessWizard({
 
   const renderViolationProofStep = () => (
     <div className="space-y-5">
-      {violations.length === 0 ? (
+      {!violationProofRequired ? (
         <div className="rounded-lg border border-[#BFEBDD] bg-[#E9FBF6] p-8 text-center">
           <CheckCircle2 className="mx-auto h-10 w-10 text-[#0D876A]" />
           <h3 className="mt-3 font-black text-[#0D6B55]">لا يلزم إرفاق ملف مرور</h3>
-          <p className="mt-2 text-sm text-[#0D876A]">لا توجد مخالفات مرورية مرتبطة بهذا العقد.</p>
+          <p className="mt-2 text-sm text-[#0D876A]">لا توجد مسؤولية مخالفات غير مسددة على العميل ضمن هذه المطالبة.</p>
         </div>
       ) : (
         <>
@@ -967,7 +1327,7 @@ export function LegalTransferReadinessWizard({
           ['مراجعة المخالفات', violationsReviewed],
           [
             'إثبات المرور',
-            violations.length === 0 || readiness?.violation_proof_ready,
+            !violationProofRequired || readiness?.violation_proof_ready,
           ],
         ].map(([label, complete]) => (
           <div
@@ -986,6 +1346,19 @@ export function LegalTransferReadinessWizard({
       </div>
 
       <div className="rounded-lg border border-[#DDE5EF] bg-[#F8FAFC] p-4">
+        <Badge
+          variant="outline"
+          className={cn(
+            'mb-2',
+            claimScope === 'traffic_violations_only'
+              ? 'border-[#F2B8B5] bg-[#FFF7F6] text-[#B42318]'
+              : 'border-[#BFD7EA] bg-[#EEF6FC] text-[#1D4F7A]',
+          )}
+        >
+          {claimScope === 'traffic_violations_only'
+            ? 'نطاق المطالبة: مخالفات مرورية فقط'
+            : 'نطاق المطالبة: كامل المستحقات'}
+        </Badge>
         <p className="text-xs font-bold text-[#6A7688]">قيمة المطالبة القانونية المعتمدة</p>
         <p className="mt-1 text-2xl font-black text-[#142033]">
           {formatCurrency(Number(claimAmount || 0))}
@@ -993,7 +1366,7 @@ export function LegalTransferReadinessWizard({
         {excludedInvoices.length > 0 && (
           <div className="mt-3 border-t border-[#DDE5EF] pt-3 text-xs leading-6 text-[#8A3028]">
             <p className="font-black">
-              تم استبعاد {excludedInvoices.length} فاتورة بقيمة {formatCurrency(excludedInvoiceOutstanding)}
+              تم استبعاد {excludedInvoices.length} فاتورة بقيمة {formatFinancialAmount(excludedInvoiceOutstanding)}
             </p>
             {excludedInvoices.map((invoice) => (
               <p key={invoice.id}>
@@ -1004,7 +1377,7 @@ export function LegalTransferReadinessWizard({
         )}
         {violations.length > 0 && (
           <p className="mt-2 text-xs leading-5 text-[#6A7688]">
-            المخالفات بقيمة {formatCurrency(violationTotal)} محفوظة مع إثباتها وتُعرض في الملف
+            المخالفات بقيمة {formatFinancialAmount(violationTotal)} محفوظة مع إثباتها وتُعرض في الملف
             القانوني وفق مسؤوليتها.
           </p>
         )}
@@ -1102,6 +1475,7 @@ export function LegalTransferReadinessWizard({
   const isBusy =
     createDocument.isPending
     || convertMutation.isPending
+    || isCompletingTransfer
     || isCorrectingInvoice;
   const progress = ((step + 1) / steps.length) * 100;
 
@@ -1162,6 +1536,21 @@ export function LegalTransferReadinessWizard({
           </div>
 
           <div className="min-h-0 flex-1 overflow-y-auto bg-white px-4 py-5 sm:px-6">
+            {!readinessQuery.isLoading && (financialBlocker || claimConsistencyBlocker || claimStatementQuery.isError || readinessQuery.isFetching || claimStatementQuery.isFetching) && (
+              <Alert variant={financialBlocker || claimConsistencyBlocker || claimStatementQuery.isError ? 'destructive' : 'default'} className="mb-4">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>
+                  {financialBlocker || claimConsistencyBlocker || (claimStatementQuery.isError
+                    ? claimStatementQuery.error instanceof Error ? claimStatementQuery.error.message : 'تعذر حساب المطالبة'
+                    : 'جارٍ إعادة فحص الأرقام؛ التحويل متوقف حتى اكتمال الفحص.')}
+                  <Button type="button" variant="outline" size="sm" className="mr-3"
+                    disabled={readinessQuery.isFetching || claimStatementQuery.isFetching || isBusy}
+                    onClick={() => { void Promise.allSettled([readinessQuery.refetch(), claimStatementQuery.refetch()]); }}>
+                    إعادة الفحص
+                  </Button>
+                </AlertDescription>
+              </Alert>
+            )}
             {readinessQuery.isLoading ? (
               <div className="flex min-h-[360px] flex-col items-center justify-center">
                 <Loader2 className="h-9 w-9 animate-spin text-[#1D4F7A]" />

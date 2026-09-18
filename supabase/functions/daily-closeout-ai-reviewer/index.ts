@@ -8,31 +8,34 @@
  * Body: { logId } | { companyId, date?, limit? }
  */
 
-import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { callKimiJson, KIMI_MODEL } from "../_shared/kimi.ts";
 import {
   agentCorsHeaders,
-  authorizeAgent,
+  authorizeGovernedAgent,
   createServiceClient,
+  finishAgentExecution,
   jsonResponse,
   storeAgentReview,
+  type AgentInvocationContext,
 } from "../_shared/agent.ts";
 
-serve(async (req) => {
+Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: agentCorsHeaders });
 
+  let invocation: AgentInvocationContext | null = null;
+  const supabase = createServiceClient();
   try {
-    await authorizeAgent(req);
     const body = await req.json().catch(() => ({}));
-    const supabase = createServiceClient();
+    if (!body.companyId) throw new Error("companyId is required");
+    invocation = await authorizeGovernedAgent(req, "daily-closeout-ai-reviewer", body.companyId);
 
     if (body.logId) {
-      const result = await reviewLog(supabase, body.logId);
+      const result = await reviewLog(supabase, body.companyId, body.logId);
+      await finishAgentExecution(supabase, invocation, true, { reviewed: 1, verdict: result.verdict });
       return jsonResponse({ success: true, ...result });
     }
 
-    if (!body.companyId) throw new Error("companyId is required");
     let query = supabase
       .from("employee_daily_workspace_logs")
       .select("id")
@@ -46,7 +49,7 @@ serve(async (req) => {
     const summary = { reviewed: 0, consistent: 0, discrepancy: 0, errors: 0 };
     for (const log of logs || []) {
       try {
-        const result = await reviewLog(supabase, log.id);
+        const result = await reviewLog(supabase, body.companyId, log.id);
         summary.reviewed++;
         if (result.verdict === "consistent") summary.consistent++;
         else summary.discrepancy++;
@@ -55,18 +58,24 @@ serve(async (req) => {
         console.error(`Closeout review failed for ${log.id}:`, logError);
       }
     }
+    await finishAgentExecution(supabase, invocation, true, summary);
     return jsonResponse({ success: true, ...summary });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unknown error";
+    if (invocation) {
+      await finishAgentExecution(supabase, invocation, false, {}, "daily_closeout_review_failed")
+        .catch(() => undefined);
+    }
     return jsonResponse({ success: false, error: message }, message === "Unauthorized" ? 401 : 500);
   }
 });
 
-async function reviewLog(supabase: SupabaseClient, logId: string) {
+async function reviewLog(supabase: SupabaseClient, companyId: string, logId: string) {
   const { data: log, error } = await supabase
     .from("employee_daily_workspace_logs")
     .select("*")
     .eq("id", logId)
+    .eq("company_id", companyId)
     .single();
   if (error || !log) throw new Error("Daily log not found");
 

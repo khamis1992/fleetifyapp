@@ -55,7 +55,7 @@ export default function AutomaticAccountsSettings() {
 
   return (
     <div className="container mx-auto py-6 space-y-6">
-      <div className="flex items-center justify-between">
+      <div data-finance-heading="" className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold">الحسابات التلقائية</h1>
           <p className="text-muted-foreground">إعداد وإدارة ربط الحسابات الأساسية تلقائياً</p>

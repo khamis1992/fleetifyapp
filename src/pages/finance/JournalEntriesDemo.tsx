@@ -148,7 +148,7 @@ const JournalEntriesDemo = () => {
   return (
     <div className="container mx-auto p-6 space-y-6" dir="rtl">
       {/* Header */}
-      <div className="flex justify-between items-center">
+      <div data-finance-heading="" className="flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-bold">القيود المحاسبية</h1>
           <p className="text-muted-foreground">عرض وتصفية القيود المحاسبية حسب التصميم الجديد</p>

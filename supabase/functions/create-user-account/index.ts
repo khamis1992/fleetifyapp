@@ -1,239 +1,236 @@
-import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import {
+  authorizePrivilegedCompanyActor,
+  PrivilegedAuthError,
+} from "../_shared/privileged-admin.ts";
 
 const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type",
+};
+
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const PRIVILEGED_ROLES = new Set(["super_admin", "company_admin"]);
+
+type AccountRequest = {
+  employee_id?: string;
+  first_name?: string;
+  last_name?: string;
+  first_name_ar?: string;
+  last_name_ar?: string;
+  email?: string;
+  company_id?: string;
+  roles?: string[];
+  temporary_password?: string;
+};
+
+class RequestError extends Error {
+  constructor(message: string, readonly status: number) {
+    super(message);
+  }
 }
 
-serve(async (req) => {
-  // Handle CORS preflight requests
-  if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders })
-  }
+Deno.serve(async (req) => {
+  if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
+  if (req.method !== "POST") return json({ success: false, error: "Method not allowed" }, 405);
+
+  const admin = createClient(
+    Deno.env.get("SUPABASE_URL") || "",
+    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "",
+    { auth: { autoRefreshToken: false, persistSession: false } },
+  );
+  let createdAuthUserId: string | null = null;
 
   try {
-    const supabaseAdmin = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
-      {
-        auth: {
-          autoRefreshToken: false,
-          persistSession: false
-        }
-      }
-    )
-
-    const requestBody = await req.json()
-    console.log('[create-user-account] Request body:', requestBody)
-
-    const {
-      employee_id,
-      first_name,
-      last_name,
-      first_name_ar,
-      last_name_ar,
-      email,
-      company_id,
-      roles = [],
-      temporary_password,
-      requester_name,
-      notes,
-      user_id: requester_id
-    } = requestBody
-
-    // Validate required fields
-    if (!employee_id || !email || !company_id) {
-      throw new Error('Missing required fields: employee_id, email, or company_id')
+    const body = await readJson<AccountRequest>(req);
+    const employeeId = requireUuid(body.employee_id, "employee_id");
+    const companyId = requireUuid(body.company_id, "company_id");
+    const email = requireEmail(body.email);
+    const roles = normalizeRoles(body.roles);
+    const actor = await authorizePrivilegedCompanyActor(
+      req,
+      companyId,
+      ["company_admin"],
+      admin,
+    );
+    if (!actor.isSuperAdmin && roles.some((role) => PRIVILEGED_ROLES.has(role))) {
+      throw new RequestError("Only a super administrator can grant an administrator role", 403);
     }
 
-    if (!roles || roles.length === 0) {
-      throw new Error('At least one role must be specified')
+    const { data: employee, error: employeeError } = await admin
+      .from("employees")
+      .select("id,company_id,user_id,email")
+      .eq("id", employeeId)
+      .eq("company_id", companyId)
+      .maybeSingle();
+    if (employeeError) throw employeeError;
+    if (!employee) throw new RequestError("Employee was not found in the selected company", 404);
+    if (employee.email && String(employee.email).trim().toLowerCase() !== email) {
+      throw new RequestError("Employee email does not match the requested account email", 409);
     }
 
-    console.log('[create-user-account] Creating account for:', email)
-
-    // Check if user already exists with this email
-    const { data: existingUsers } = await supabaseAdmin.auth.admin.listUsers()
-    const existingUser = existingUsers?.users?.find(u => u.email === email)
-
-    let userId: string
-    let password: string
-    let linkedExistingUser = false
-
-    if (existingUser) {
-      console.log('[create-user-account] User already exists, linking to employee')
-      userId = existingUser.id
-      linkedExistingUser = true
-      
-      // Update password if provided
-      if (temporary_password) {
-        const { error: updateError } = await supabaseAdmin.auth.admin.updateUserById(
-          userId,
-          { password: temporary_password }
-        )
-        if (updateError) {
-          console.error('[create-user-account] Error updating password:', updateError)
-          throw updateError
+    let userId = typeof employee.user_id === "string" ? employee.user_id : "";
+    let linkedExistingUser = Boolean(userId);
+    if (!userId) {
+      const { data: existingProfile, error: existingProfileError } = await admin
+        .from("profiles")
+        .select("user_id,company_id")
+        .eq("email", email)
+        .maybeSingle();
+      if (existingProfileError) throw existingProfileError;
+      if (existingProfile?.user_id) {
+        if (existingProfile.company_id && existingProfile.company_id !== companyId) {
+          throw new RequestError(
+            "The existing account belongs to another company; use the audited transfer workflow",
+            409,
+          );
         }
-        password = temporary_password
-      } else {
-        // Generate new random password
-        password = generateRandomPassword()
-        const { error: updateError } = await supabaseAdmin.auth.admin.updateUserById(
-          userId,
-          { password }
-        )
-        if (updateError) {
-          console.error('[create-user-account] Error updating password:', updateError)
-          throw updateError
-        }
+        userId = existingProfile.user_id;
+        linkedExistingUser = true;
       }
+    }
+
+    let temporaryPassword: string | null = null;
+    if (userId) {
+      const { data: existingAuth, error: existingAuthError } =
+        await admin.auth.admin.getUserById(userId);
+      if (existingAuthError || !existingAuth?.user) {
+        throw new RequestError("Linked authentication account was not found", 409);
+      }
+      if (String(existingAuth.user.email || "").toLowerCase() !== email) {
+        throw new RequestError("Linked authentication email does not match", 409);
+      }
+      // Never reset an existing account's password through an account-linking
+      // request. Password recovery is a separate user-owned workflow.
+      temporaryPassword = null;
     } else {
-      // Create new user
-      password = temporary_password || generateRandomPassword()
-      
-      const { data: newUser, error: createError } = await supabaseAdmin.auth.admin.createUser({
+      temporaryPassword = validateOrGeneratePassword(body.temporary_password);
+      const { data: created, error: createError } = await admin.auth.admin.createUser({
         email,
-        password,
+        password: temporaryPassword,
         email_confirm: true,
         user_metadata: {
-          first_name: first_name || first_name_ar,
-          last_name: last_name || last_name_ar,
-          full_name: `${first_name || first_name_ar || ''} ${last_name || last_name_ar || ''}`.trim()
-        }
-      })
-
-      if (createError) {
-        console.error('[create-user-account] Error creating user:', createError)
-        throw createError
+          first_name: cleanName(body.first_name || body.first_name_ar),
+          last_name: cleanName(body.last_name || body.last_name_ar),
+        },
+      });
+      if (createError || !created?.user) {
+        throw createError || new Error("Authentication user was not created");
       }
-
-      if (!newUser.user) {
-        throw new Error('Failed to create user')
-      }
-
-      userId = newUser.user.id
-      console.log('[create-user-account] New user created:', userId)
+      userId = created.user.id;
+      createdAuthUserId = userId;
     }
 
-    // Create or update profile
-    const { error: profileError } = await supabaseAdmin
-      .from('profiles')
-      .upsert({
-        user_id: userId,
-        company_id,
-        email,
-        first_name: first_name || first_name_ar || '',
-        last_name: last_name || last_name_ar || '',
-        first_name_ar: first_name_ar || first_name || '',
-        last_name_ar: last_name_ar || last_name || '',
-        is_active: true,
-        updated_at: new Date().toISOString()
-      }, {
-        onConflict: 'user_id'
-      })
-
-    if (profileError) {
-      console.error('[create-user-account] Error creating/updating profile:', profileError)
-      throw profileError
+    // Execute all database mutations in one authenticated SECURITY DEFINER RPC.
+    // If this fails, a newly-created Auth user is removed as compensation.
+    const userClient = createClient(
+      Deno.env.get("SUPABASE_URL") || "",
+      Deno.env.get("SUPABASE_ANON_KEY") || "",
+      { global: { headers: { Authorization: req.headers.get("Authorization") || "" } } },
+    );
+    const { data: finalized, error: finalizeError } = await userClient.rpc(
+      "finalize_user_account_creation_v1",
+      {
+        p_employee_id: employeeId,
+        p_company_id: companyId,
+        p_user_id: userId,
+        p_email: email,
+        p_first_name: cleanName(body.first_name || body.first_name_ar),
+        p_last_name: cleanName(body.last_name || body.last_name_ar),
+        p_first_name_ar: cleanName(body.first_name_ar || body.first_name),
+        p_last_name_ar: cleanName(body.last_name_ar || body.last_name),
+        p_roles: roles,
+      },
+    );
+    if (finalizeError || finalized?.success !== true) {
+      throw finalizeError || new Error(String(finalized?.error || "Account database finalization failed"));
     }
 
-    console.log('[create-user-account] Profile created/updated')
-
-    // Link user to employee
-    const { error: employeeError } = await supabaseAdmin
-      .from('employees')
-      .update({
-        user_id: userId,
-        has_system_access: true,
-        account_status: 'active',
-        updated_at: new Date().toISOString()
-      })
-      .eq('id', employee_id)
-
-    if (employeeError) {
-      console.error('[create-user-account] Error linking employee:', employeeError)
-      throw employeeError
-    }
-
-    console.log('[create-user-account] Employee linked to user')
-
-    // Add roles
-    const roleInserts = roles.map((role: string) => ({
+    createdAuthUserId = null;
+    const passwordExpiresAt = temporaryPassword
+      ? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
+      : null;
+    return json({
+      success: true,
       user_id: userId,
-      role,
-      company_id,
-      granted_by: requester_id,
-      granted_at: new Date().toISOString()
-    }))
-
-    const { error: rolesError } = await supabaseAdmin
-      .from('user_roles')
-      .upsert(roleInserts, {
-        onConflict: 'user_id,role,company_id',
-        ignoreDuplicates: true
-      })
-
-    if (rolesError) {
-      console.error('[create-user-account] Error adding roles:', rolesError)
-      throw rolesError
-    }
-
-    console.log('[create-user-account] Roles added successfully')
-
-    // Calculate password expiry (30 days from now)
-    const passwordExpiresAt = new Date()
-    passwordExpiresAt.setDate(passwordExpiresAt.getDate() + 30)
-
-    return new Response(
-      JSON.stringify({
-        success: true,
-        user_id: userId,
-        temporary_password: password,
-        password_expires_at: passwordExpiresAt.toISOString(),
-        linked_existing_user: linkedExistingUser,
-        message: linkedExistingUser 
-          ? 'تم ربط المستخدم الموجود بحساب الموظف وتحديث كلمة المرور'
-          : 'تم إنشاء حساب المستخدم بنجاح'
-      }),
-      {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 200,
-      },
-    )
+      temporary_password: temporaryPassword,
+      password_expires_at: passwordExpiresAt,
+      linked_existing_user: linkedExistingUser,
+    });
   } catch (error) {
-    console.error('[create-user-account] Error:', error)
-    return new Response(
-      JSON.stringify({
-        success: false,
-        error: error.message || 'حدث خطأ أثناء إنشاء الحساب'
-      }),
-      {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 400,
-      },
-    )
+    if (createdAuthUserId) {
+      const { error: cleanupError } = await admin.auth.admin.deleteUser(createdAuthUserId);
+      if (cleanupError) console.error("create-user-account compensation failed", cleanupError.message);
+    }
+    const status = error instanceof PrivilegedAuthError || error instanceof RequestError
+      ? error.status
+      : 500;
+    console.error("create-user-account failed", error instanceof Error ? error.message : String(error));
+    return json({ success: false, error: errorMessage(error) }, status);
   }
-})
+});
 
-function generateRandomPassword(): string {
-  const length = 12
-  const charset = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*'
-  let password = ''
-  
-  // Ensure at least one of each type
-  password += 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'[Math.floor(Math.random() * 26)]
-  password += 'abcdefghijklmnopqrstuvwxyz'[Math.floor(Math.random() * 26)]
-  password += '0123456789'[Math.floor(Math.random() * 10)]
-  password += '!@#$%^&*'[Math.floor(Math.random() * 8)]
-  
-  // Fill the rest
-  for (let i = password.length; i < length; i++) {
-    password += charset[Math.floor(Math.random() * charset.length)]
+async function readJson<T>(req: Request): Promise<T> {
+  try {
+    const parsed = await req.json();
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) throw new Error();
+    return parsed as T;
+  } catch {
+    throw new RequestError("Request body must be a JSON object", 400);
   }
-  
-  // Shuffle the password
-  return password.split('').sort(() => Math.random() - 0.5).join('')
 }
 
+function requireUuid(value: unknown, field: string): string {
+  const normalized = String(value || "").trim();
+  if (!UUID_PATTERN.test(normalized)) throw new RequestError(`${field} must be a valid UUID`, 400);
+  return normalized;
+}
+
+function requireEmail(value: unknown): string {
+  const normalized = String(value || "").trim().toLowerCase();
+  if (normalized.length > 254 || !EMAIL_PATTERN.test(normalized)) {
+    throw new RequestError("A valid email is required", 400);
+  }
+  return normalized;
+}
+
+function normalizeRoles(value: unknown): string[] {
+  if (!Array.isArray(value)) throw new RequestError("At least one role is required", 400);
+  const roles = [...new Set(value.map((role) => String(role || "").trim()).filter(Boolean))];
+  if (roles.length === 0 || roles.length > 10) {
+    throw new RequestError("Between 1 and 10 unique roles are required", 400);
+  }
+  return roles;
+}
+
+function cleanName(value: unknown): string {
+  const name = String(value || "").trim().replace(/\s+/g, " ");
+  if (!name || name.length > 120) throw new RequestError("First and last names are required", 400);
+  return name;
+}
+
+function validateOrGeneratePassword(value: unknown): string {
+  const supplied = typeof value === "string" ? value : "";
+  if (supplied) {
+    if (supplied.length < 12 || supplied.length > 128) {
+      throw new RequestError("Temporary password must be between 12 and 128 characters", 400);
+    }
+    return supplied;
+  }
+  const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789!@#$%^&*";
+  const bytes = crypto.getRandomValues(new Uint8Array(20));
+  return Array.from(bytes, (byte) => alphabet[byte % alphabet.length]).join("");
+}
+
+function errorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : "Unexpected account creation failure";
+}
+
+function json(payload: unknown, status = 200): Response {
+  return new Response(JSON.stringify(payload), {
+    status,
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
+  });
+}

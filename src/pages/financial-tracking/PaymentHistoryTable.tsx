@@ -21,15 +21,6 @@ import type { CustomerWithRental, RentalPaymentReceipt } from '@/hooks/useRental
 interface PaymentHistoryTableProps {
   selectedCustomer: CustomerWithRental | null;
   customerReceipts: RentalPaymentReceipt[];
-  customerTotals: { total: number; totalFines: number; totalRent: number };
-  totalsData: { total_payments?: number; total_fines?: number; total_rent?: number; total_pending?: number; partial_payment_count?: number } | undefined;
-  unpaidMonths: Array<{
-    month_number: number;
-    month_name: string;
-    expected_date: string;
-    is_overdue: boolean;
-    days_overdue: number;
-  }>;
   onExportToExcel: () => void;
   onPrintAllReceipts: () => void;
   onPrintReceipt: (receipt: RentalPaymentReceipt) => void;
@@ -39,9 +30,6 @@ interface PaymentHistoryTableProps {
 const PaymentHistoryTable: React.FC<PaymentHistoryTableProps> = ({
   selectedCustomer,
   customerReceipts,
-  customerTotals,
-  totalsData,
-  unpaidMonths,
   onExportToExcel,
   onPrintAllReceipts,
   onPrintReceipt,
@@ -57,8 +45,8 @@ const PaymentHistoryTable: React.FC<PaymentHistoryTableProps> = ({
         <CardContent className="py-12">
           <div className="text-center text-muted-foreground">
             <DollarSign className="h-16 w-16 mx-auto mb-4 opacity-50" />
-            <p className="text-lg">لا توجد مدفوعات مسجلة لهذا العميل</p>
-            <p className="text-sm mt-2">قم بإضافة أول دفعة باستخدام النموذج أعلاه</p>
+            <p className="text-lg">لا توجد أوراق إيصالات سابقة لهذا العميل</p>
+            <p className="text-sm mt-2">ملخص الدفعات الفعلية معروض أعلى السجل.</p>
           </div>
         </CardContent>
       </Card>
@@ -67,151 +55,13 @@ const PaymentHistoryTable: React.FC<PaymentHistoryTableProps> = ({
 
   return (
     <>
-      {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card>
-          <CardContent className="pt-6">
-            <div className="text-center">
-              <p className="text-sm text-muted-foreground">إجمالي المدفوعات</p>
-              <p className="text-3xl font-bold text-primary mt-2">
-                {(customerTotals?.total || 0).toLocaleString('en-US')} ريال
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="pt-6">
-            <div className="text-center">
-              <p className="text-sm text-muted-foreground">إجمالي الغرامات</p>
-              <p className="text-3xl font-bold text-destructive mt-2">
-                {(customerTotals?.totalFines || 0).toLocaleString('en-US')} ريال
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="border-orange-200">
-          <CardContent className="pt-6">
-            <div className="text-center">
-              <p className="text-sm text-muted-foreground">الرصيد المتبقي</p>
-              <p className="text-3xl font-bold text-orange-600 mt-2">
-                {(totalsData?.total_pending || 0).toLocaleString('en-US')} ريال
-              </p>
-              {(totalsData?.partial_payment_count || 0) > 0 && (
-                <p className="text-xs text-orange-600 mt-1">
-                  {totalsData?.partial_payment_count} دفعة جزئية
-                </p>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="pt-6">
-            <div className="text-center">
-              <p className="text-sm text-muted-foreground">عدد الإيصالات</p>
-              <p className="text-3xl font-bold text-blue-600 mt-2">
-                {customerReceipts.length}
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Unpaid Months List */}
-      {unpaidMonths.length > 0 && (
-        <Card className="border-destructive">
-          <CardHeader className="bg-destructive/10">
-            <CardTitle className="flex items-center gap-2 text-destructive">
-              <Clock className="h-5 w-5" />
-              ⚠️ أشهر غير مدفوعة ({unpaidMonths.length})
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="pt-6">
-            <div className="overflow-x-auto">
-              <ResponsiveTable>
-<Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="text-right">رقم الشهر</TableHead>
-                    <TableHead className="text-right">الشهر</TableHead>
-                    <TableHead className="text-right">تاريخ الاستحقاق</TableHead>
-                    <TableHead className="text-right">الحالة</TableHead>
-                    <TableHead className="text-right">أيام التأخير</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {unpaidMonths.map((month) => (
-                    <TableRow 
-                      key={month.month_number}
-                      className={month.is_overdue ? 'bg-destructive/10 hover:bg-destructive/20' : 'bg-yellow-50 hover:bg-yellow-100'}
-                    >
-                      <TableCell className="font-semibold">
-                        <Badge variant="outline">{month.month_number}</Badge>
-                      </TableCell>
-                      <TableCell className="font-semibold">
-                        {month.month_name}
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <Calendar className="h-4 w-4 text-muted-foreground" />
-                          {month.expected_date && !isNaN(new Date(month.expected_date).getTime())
-                            ? format(new Date(month.expected_date), 'dd MMMM yyyy', { locale: ar })
-                            : 'تاريخ غير متاح'
-                          }
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        {month.is_overdue ? (
-                          <Badge variant="destructive" className="font-semibold">
-                            متأخر
-                          </Badge>
-                        ) : (
-                          <Badge className="bg-yellow-500 text-white font-semibold">
-                            قادم
-                          </Badge>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        {month.days_overdue > 0 ? (
-                          <span className="text-destructive font-bold text-lg">
-                            {month.days_overdue} يوم
-                          </span>
-                        ) : (
-                          <span className="text-muted-foreground">-</span>
-                        )}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-</ResponsiveTable>
-            </div>
-            
-            {unpaidMonths.filter(m => m.is_overdue).length > 0 && (
-              <div className="mt-4 p-4 bg-destructive/10 border border-destructive rounded-lg">
-                <div className="flex items-start gap-2">
-                  <AlertCircle className="h-5 w-5 text-destructive mt-0.5" />
-                  <div className="text-sm">
-                    <p className="font-semibold text-destructive">تنبيه: يوجد {unpaidMonths.filter(m => m.is_overdue).length} شهر متأخر</p>
-                    <p className="text-destructive/80 mt-1">
-                      يرجى سداد المدفوعات المتأخرة في أقرب وقت ممكن لتجنب غرامات إضافية.
-                    </p>
-                  </div>
-                </div>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      )}
-
+      <p className="text-sm text-muted-foreground">القيم والحالات كما سُجلت عند إصدار الورقة، وقد تتضمن ملخصًا تراكميًا. يُراجع السداد الحالي من الدفعات والفواتير.</p>
       {/* Payment History Table */}
       <Card>
         <CardHeader>
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
             <div className="flex items-center gap-3">
-              <CardTitle className="text-lg sm:text-xl">سجل المدفوعات -</CardTitle>
+              <CardTitle className="text-lg sm:text-xl">أوراق الإيصالات السابقة -</CardTitle>
               <Button
                 variant="link"
                 className="text-lg sm:text-xl p-0 h-auto font-bold text-primary hover:text-primary/80"
@@ -225,7 +75,7 @@ const PaymentHistoryTable: React.FC<PaymentHistoryTableProps> = ({
             <div className="flex gap-2 flex-wrap">
               <Button variant="outline" size="sm" onClick={onExportToExcel}>
                 <FileSpreadsheet className="h-4 w-4 ml-2" />
-                تصدير Excel
+                تصدير إكسل
               </Button>
               <Button variant="outline" size="sm" onClick={onPrintAllReceipts}>
                 <Printer className="h-4 w-4 ml-2" />

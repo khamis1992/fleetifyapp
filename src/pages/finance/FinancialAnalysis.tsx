@@ -137,11 +137,11 @@ const FinancialAnalysis = () => {
   const [activeTab, setActiveTab] = useState("trends");
   
   const { data: analysisData, isLoading, error, refetch } = useFinancialAnalysis();
-  const { data: balanceSheetData } = useBalanceSheet();
-  const { data: incomeStatementData } = useIncomeStatement();
-  const { data: advancedAnalytics, isLoading: advancedLoading } = useAdvancedFinancialAnalytics();
+  const { data: balanceSheetData, error: balanceError, isLoading: balanceLoading } = useBalanceSheet();
+  const { data: incomeStatementData, error: incomeError, isLoading: incomeLoading } = useIncomeStatement();
+  const { data: advancedAnalytics, isLoading: advancedLoading, error: advancedError } = useAdvancedFinancialAnalytics();
 
-  if (isLoading) {
+  if (isLoading || balanceLoading || incomeLoading || advancedLoading) {
     return (
       <div className="min-h-screen bg-[#F6F8FB] flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">
@@ -152,7 +152,7 @@ const FinancialAnalysis = () => {
     );
   }
 
-  if (error) {
+  if (error || balanceError || incomeError || advancedError) {
     return (
       <div className="min-h-screen bg-[#F6F8FB] flex items-center justify-center">
         <div className="text-center">
@@ -222,7 +222,7 @@ const FinancialAnalysis = () => {
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
       >
-        <div className="flex items-center justify-between flex-wrap gap-4">
+        <div data-finance-heading="" className="flex items-center justify-between flex-wrap gap-4">
           <div className="flex items-center gap-4">
             <div className="w-14 h-14 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center">
               <PieChart className="w-7 h-7 text-white" />
@@ -278,7 +278,7 @@ const FinancialAnalysis = () => {
           <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4">
             <p className="text-white/70 text-sm">هامش الربح</p>
             <p className="text-2xl font-bold mt-1">
-              {analysisData?.ratios.find(r => r.name === "هامش الربح الصافي")?.value.toFixed(1) || '0'}%
+              {analysisData?.ratios.find(r => r.name === "هامش الربح الصافي")?.value?.toFixed(1) || '0'}%
             </p>
           </div>
         </div>
@@ -459,7 +459,7 @@ const FinancialAnalysis = () => {
                   <div className="flex justify-between items-center mb-2">
                     <span className="text-neutral-600">هامش الربح الصافي</span>
                     <span className="font-bold text-coral-600">
-                      {analysisData?.ratios.find(r => r.name === "هامش الربح الصافي")?.value.toFixed(2) || '0.00'}%
+                      {analysisData?.ratios.find(r => r.name === "هامش الربح الصافي")?.value?.toFixed(2) || '0.00'}%
                     </span>
                   </div>
                   <Progress 
@@ -471,7 +471,7 @@ const FinancialAnalysis = () => {
                   <div className="flex justify-between items-center mb-2">
                     <span className="text-neutral-600">العائد على الأصول</span>
                     <span className="font-bold text-blue-600">
-                      {analysisData?.ratios.find(r => r.name === "العائد على الأصول")?.value.toFixed(2) || '0.00'}%
+                      {analysisData?.ratios.find(r => r.name === "العائد على الأصول")?.value?.toFixed(2) || '0.00'}%
                     </span>
                   </div>
                   <Progress 
@@ -483,7 +483,7 @@ const FinancialAnalysis = () => {
                   <div className="flex justify-between items-center mb-2">
                     <span className="text-neutral-600">العائد على حقوق الملكية</span>
                     <span className="font-bold text-green-600">
-                      {analysisData?.ratios.find(r => r.name === "العائد على حقوق الملكية")?.value.toFixed(2) || '0.00'}%
+                      {analysisData?.ratios.find(r => r.name === "العائد على حقوق الملكية")?.value?.toFixed(2) || '0.00'}%
                     </span>
                   </div>
                   <Progress 
@@ -979,7 +979,7 @@ const FinancialAnalysis = () => {
                     >
                       <p className="text-sm font-medium text-neutral-600 mb-2">{ratio.name}</p>
                       <p className="text-2xl font-bold text-coral-600 mb-2">
-                        {ratio.percentage 
+                        {ratio.value == null ? 'غير متاح' : ratio.percentage
                           ? `${ratio.value.toFixed(2)}%` 
                           : ratio.value.toFixed(2)
                         }
