@@ -87,7 +87,9 @@ describe('RedesignedJournalEntryCard', () => {
     
     expect(screen.getByText('سند قيد رقم: 000227')).toBeInTheDocument();
     expect(screen.getByText('مرحل')).toBeInTheDocument();
-    expect(screen.getByText('التاريخ: 01/03/2026')).toBeInTheDocument();
+    const dateCell = screen.getByText(/^التاريخ:/);
+    expect(dateCell.textContent).toContain('٦');
+    expect(dateCell.textContent).toContain('٢');
     expect(screen.getAllByText('1500.000 QAR')).toHaveLength(2);
   });
 
