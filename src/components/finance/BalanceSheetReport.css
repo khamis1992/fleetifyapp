@@ -6,11 +6,177 @@
   text-align: start;
 }
 
-.balance-sheet-workspace[dir="ltr"] .text-end {
+.balance-sheet-workspace[dir="ltr"] .text-end,
+.balance-sheet-workspace[dir="ltr"] .bs-num {
   text-align: end;
 }
 
 .balance-sheet-workspace bdi {
   direction: ltr;
   unicode-bidi: isolate;
+}
+
+/* Embedding the dashboard workspace language (dw-*) inside the finance page shell. */
+.balance-sheet-workspace.dashboard-workspace {
+  background: transparent;
+  color: #2c4136;
+}
+.balance-sheet-workspace .dw-container {
+  max-width: none;
+  padding: 0;
+  display: grid;
+  gap: 22px;
+}
+.balance-sheet-workspace .dw-metrics {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin-bottom: 0;
+}
+.balance-sheet-workspace .dw-metric strong {
+  font-size: clamp(20px, 1.8vw, 26px);
+}
+
+.bs-language {
+  display: flex;
+  justify-content: flex-end;
+  padding: 0 2px 2px;
+}
+.bs-language select {
+  min-height: 34px;
+}
+
+/* Fields match the wk-field look without replacing the shadcn inputs. */
+.balance-sheet-workspace input[type="date"],
+.balance-sheet-workspace select,
+.balance-sheet-workspace textarea {
+  border: 1px solid #dfe5d9;
+  border-radius: 8px;
+  min-height: 38px;
+  background: #fff;
+  color: #2c4136;
+  font-size: 12px;
+  padding-inline: 10px;
+  box-shadow: none;
+  width: auto;
+}
+.balance-sheet-workspace textarea {
+  width: 100%;
+  min-height: 88px;
+  padding-block: 8px;
+}
+.balance-sheet-workspace input:focus-visible,
+.balance-sheet-workspace select:focus-visible,
+.balance-sheet-workspace textarea:focus-visible {
+  outline: none;
+  border-color: #9db88a;
+  box-shadow: 0 0 0 3px rgba(47, 121, 102, 0.08);
+}
+.balance-sheet-workspace label {
+  font-size: 11px;
+  color: #6f7c68;
+}
+.bs-fields {
+  display: grid;
+  gap: 14px;
+  grid-template-columns: repeat(auto-fit, minmax(185px, 215px));
+}
+.bs-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 14px 24px 4px;
+}
+.bs-alerts {
+  padding: 12px 24px 18px;
+  display: grid;
+  gap: 8px;
+}
+.bs-alerts [role="alert"],
+.bs-alerts [role="status"] {
+  font-size: 11px;
+  line-height: 1.8;
+}
+.bs-alerts .is-error { color: #b3694c; }
+.bs-alerts .is-warn { color: #8b642b; }
+
+.bs-equation-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin: 0 2px 4px;
+  font-size: 11px;
+  color: #6b7d5f;
+}
+.bs-equation-row svg { flex-shrink: 0; }
+
+/* Statement table emphasis rows. */
+.bs-statement th { white-space: nowrap; }
+.bs-statement td.bs-num,
+.bs-statement th.bs-num {
+  text-align: end;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.bs-statement tr.bs-section td {
+  background: #f7f9f2;
+  font-weight: 600;
+  color: #405a33;
+}
+.bs-statement tr.bs-subtotal td {
+  background: #fafcf7;
+  font-weight: 600;
+}
+.bs-statement tr.bs-total td {
+  background: #eef4e7;
+  font-weight: 700;
+  color: #365e2e;
+  border-top: 1px solid #dfe7d7;
+}
+.bs-statement tr.bs-result td { color: #4a707c; }
+
+/* Workflow (save / approval record) and checks panels. */
+.bs-workflow {
+  padding: 4px 24px 22px;
+  display: grid;
+  gap: 14px;
+}
+.bs-workflow dl {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  font-size: 11px;
+  margin: 0;
+}
+.bs-workflow dt { color: #7e8b73; }
+.bs-workflow dd { color: #405a33; font-weight: 600; margin: 3px 0 0; }
+.bs-workflow fieldset {
+  border: 1px solid #e4eada;
+  border-radius: 9px;
+  padding: 12px 14px;
+  display: grid;
+  gap: 10px;
+}
+.bs-workflow legend { font-size: 11px; font-weight: 600; color: #487038; padding-inline: 6px; }
+.bs-void { border: 1px solid #f1d9ca; background: #fdf6f3; border-radius: 9px; padding: 10px 14px; display: grid; gap: 10px; }
+.bs-void summary { cursor: pointer; font-size: 11px; color: #b3694c; }
+.bs-void .dw-button { background: #b3694c; border-color: #b3694c; color: #fff; }
+.bs-void .dw-button:hover { background: #9e5840; }
+.bs-fingerprint {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 10px;
+  color: #829074;
+  word-break: break-all;
+}
+
+.bs-checklist { padding: 4px 24px 20px; display: grid; gap: 12px; font-size: 11px; }
+.bs-checklist ul { display: grid; gap: 9px; list-style: none; margin: 0; padding: 0; }
+.bs-checklist li { display: flex; gap: 8px; align-items: flex-start; color: #5b6b52; line-height: 1.8; }
+.bs-checklist li svg { flex-shrink: 0; margin-top: 3px; }
+.bs-checklist .is-error strong { color: #b3694c; }
+.bs-checklist .is-warn strong { color: #9b7c36; }
+.bs-status-links { display: flex; flex-wrap: wrap; gap: 18px; }
+.bs-status-links a, .bs-workflow a { color: #577549; }
+
+@media (max-width: 700px) {
+  .bs-actions, .bs-alerts, .bs-workflow, .bs-checklist { padding-inline: 18px; }
 }

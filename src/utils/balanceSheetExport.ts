@@ -4,7 +4,7 @@ import { formatBalanceSheetMoney, getBalanceSheetCheckMessage, getBalanceSheetRo
 
 const copy = {
   ar: {
-    title: 'قائمة المركز المالي', subtitle: 'الميزانية العمومية', asOf: 'كما في', comparison: 'للمقارنة كما في',
+    title: 'الميزانية العمومية', subtitle: 'قائمة المركز المالي', asOf: 'كما في', comparison: 'للمقارنة كما في',
     account: 'البيان', code: 'رمز الحساب', currency: 'عملة العرض', register: 'السجل التجاري',
     draft: 'مسودة للمراجعة — غير معتمدة', approved: 'معتمدة داخلياً', voided: 'نسخة ملغاة — غير صالحة للتقديم',
     approvalBasis: 'الاعتماد داخل الشركة لا يمثل رأي تدقيق أو تصديقاً من محاسب قانوني خارجي.',
@@ -14,14 +14,14 @@ const copy = {
     checks: 'ملاحظات فحص البيانات', noChecks: 'لم يظهر الفحص الآلي ملاحظات؛ تبقى المراجعة المحاسبية مطلوبة.',
     prepared: 'أعد النسخة', reviewed: 'اعتمد داخلياً', generated: 'وقت استخراج الأرصدة', saved: 'وقت حفظ النسخة', approvedAt: 'وقت الاعتماد الداخلي',
     id: 'رقم النسخة', fingerprint: 'بصمة البيانات', preview: 'معاينة غير محفوظة', notes: 'ملاحظات الإعداد', reviewNotes: 'ملاحظات المراجع',
-    page: 'صفحة', of: 'من', continuation: 'تابع', statementSheet: 'المركز المالي', metadataSheet: 'بيانات الإصدار', checksSheet: 'فحص البيانات',
+    page: 'صفحة', of: 'من', continuation: 'تابع', statementSheet: 'الميزانية العمومية', metadataSheet: 'بيانات الإصدار', checksSheet: 'فحص البيانات',
     accountsSheet: 'تفاصيل الحسابات', status: 'الحالة', company: 'الشركة', companyId: 'معرف الشركة', address: 'العنوان',
     severity: 'المستوى', checkCode: 'رمز الفحص', count: 'العدد', date: 'التاريخ', message: 'البيان',
     type: 'نوع الحساب', classification: 'التصنيف', debit: 'مدين تراكمي', credit: 'دائن تراكمي', balance: 'الرصيد',
     voidReason: 'سبب الإلغاء', internal: 'المراجعة الداخلية', unknownCurrency: 'العملة غير محددة',
   },
   en: {
-    title: 'Statement of financial position', subtitle: 'Balance sheet', asOf: 'As at', comparison: 'Comparative as at',
+    title: 'Balance sheet', subtitle: 'Statement of financial position', asOf: 'As at', comparison: 'Comparative as at',
     account: 'Description', code: 'Account code', currency: 'Presentation currency', register: 'Commercial registration',
     draft: 'DRAFT — not approved', approved: 'Internally approved', voided: 'VOIDED — not valid for submission',
     approvalBasis: 'Company approval is not an audit opinion or certification by an external auditor.',

@@ -57,7 +57,7 @@ export const EnhancedAccountEditDialog: React.FC<EnhancedAccountEditDialogProps>
   const { t, currentLanguage } = useFleetifyTranslation('financial');
   const isArabic = currentLanguage === 'ar';
   const classificationLabel = t('accountEdit.financialClassification', {
-    defaultValue: isArabic ? 'تصنيف قائمة المركز المالي' : 'Balance sheet classification',
+    defaultValue: isArabic ? 'تصنيف الميزانية العمومية' : 'Balance sheet classification',
   });
   const subtypeLabels: Record<string, string> = {
     current_asset: t('accountEdit.subtypes.currentAsset', {

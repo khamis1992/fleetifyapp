@@ -67,7 +67,7 @@ beforeEach(() => {
 describe('account financial classification editing', () => {
   it.each(['legacy_lease', 'contra_asset'])('preserves existing subtype %s when another field changes', async (subtype) => {
     mount({ account_subtype: subtype });
-    expect(screen.getByRole('combobox', { name: 'تصنيف قائمة المركز المالي' })).toHaveTextContent(`التصنيف الحالي: ${subtype}`);
+    expect(screen.getByRole('combobox', { name: 'تصنيف الميزانية العمومية' })).toHaveTextContent(`التصنيف الحالي: ${subtype}`);
     expect(screen.getByRole('button', { name: 'حفظ التغييرات' })).toBeDisabled();
 
     fireEvent.change(screen.getByLabelText('اسم الحساب (إنجليزي)'), { target: { value: 'Updated receivable' } });
@@ -86,8 +86,8 @@ describe('account financial classification editing', () => {
     ['liabilities', 'التزام غير متداول', 'non_current_liability'],
   ])('saves an explicit %s classification %s through the existing mutation', async (accountType, label, subtype) => {
     const onOpenChange = mount({ account_type: accountType });
-    await choose('تصنيف قائمة المركز المالي', label);
-    expect(screen.getByRole('combobox', { name: 'تصنيف قائمة المركز المالي' })).toHaveTextContent(label);
+    await choose('تصنيف الميزانية العمومية', label);
+    expect(screen.getByRole('combobox', { name: 'تصنيف الميزانية العمومية' })).toHaveTextContent(label);
     const updates = await save();
     expect(mutateAsync).toHaveBeenCalledWith({ id: account.id, updates: expect.objectContaining({ account_subtype: subtype }) });
     expect(updates.balance_type).toBe(account.balance_type);
@@ -97,14 +97,14 @@ describe('account financial classification editing', () => {
 
   it.each([undefined, ''])('preserves an unclassified value %s when another field changes', async (subtype) => {
     mount({ account_subtype: subtype });
-    expect(screen.getByRole('combobox', { name: 'تصنيف قائمة المركز المالي' })).toHaveTextContent('غير مصنف');
+    expect(screen.getByRole('combobox', { name: 'تصنيف الميزانية العمومية' })).toHaveTextContent('غير مصنف');
     fireEvent.change(screen.getByLabelText('اسم الحساب (إنجليزي)'), { target: { value: 'Updated receivable' } });
     expect((await save()).account_subtype).toBe(subtype ?? null);
   });
 
   it.each(['revenue', 'expenses', 'equity'])('preserves the existing subtype for %s without offering asset classifications', async (accountType) => {
     mount({ account_type: accountType, account_subtype: 'existing_custom_subtype' });
-    expect(screen.queryByRole('combobox', { name: 'تصنيف قائمة المركز المالي' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('combobox', { name: 'تصنيف الميزانية العمومية' })).not.toBeInTheDocument();
     fireEvent.change(screen.getByLabelText('اسم الحساب (إنجليزي)'), { target: { value: 'Updated account' } });
     expect((await save()).account_subtype).toBe('existing_custom_subtype');
   });
@@ -112,7 +112,7 @@ describe('account financial classification editing', () => {
   it('does not replace a legacy subtype when the account type changes', async () => {
     mount();
     await choose('نوع الحساب', 'الخصوم');
-    expect(screen.getByRole('combobox', { name: 'تصنيف قائمة المركز المالي' })).toHaveTextContent('legacy_lease');
+    expect(screen.getByRole('combobox', { name: 'تصنيف الميزانية العمومية' })).toHaveTextContent('legacy_lease');
     const updates = await save();
     expect(updates.account_type).toBe('liabilities');
     expect(updates.account_subtype).toBe('legacy_lease');

@@ -121,7 +121,7 @@ describe('statement workbooks', () => {
     value.report.configuration.notes[0].text = '+unsafe formula';
     const workbook = await buildFinancialStatementPackageWorkbook(value);
     expect(workbook.worksheets).toHaveLength(10);
-    const sheet = workbook.getWorksheet('Financial position')!;
+    const sheet = workbook.getWorksheet('Balance sheet')!;
     expect(sheet.getCell('A6').value).toBe('\'=HYPERLINK("https://example.com")');
     expect(sheet.getCell('C6').value).toBe(1000);
     expect(sheet.getCell('D6').value).toBe(800);
@@ -190,7 +190,7 @@ describe('actual SQL package response export', () => {
     expect([cash.getCell('A11').value, cash.getCell('C11').value, cash.getCell('D11').value]).toEqual(['Receipts — capital', 0, 1000]);
     expect([cash.getCell('C15').value, cash.getCell('D15').value]).toEqual([1550, 1200]);
     expect(cash.getCell('C8').numFmt).toContain('0.00');
-    const position = workbook.getWorksheet('Financial position')!;
+    const position = workbook.getWorksheet('Balance sheet')!;
     expect([position.getCell('A6').value, position.getCell('C6').value]).toEqual(['Current assets', null]);
     expect([position.getCell('A12').value, position.getCell('C12').value, position.getCell('D12').value]).toEqual(['Total current assets', 1550, 1200]);
     expect(position.getCell('A13').value).toBe('Non-current assets');

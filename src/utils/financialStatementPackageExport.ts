@@ -295,7 +295,7 @@ export async function buildFinancialStatementPackageWorkbook(options: FinancialS
   const workbook = new ExcelJS.Workbook(); workbook.creator = data.name; workbook.created = new Date(report.generatedAt);
   const safe = safeBalanceSheetSpreadsheetText, format = '#,##0.00;[Red](#,##0.00);0.00';
   const names: Record<FinancialStatementSection['key'], [string, string]> = {
-    position: ['المركز المالي', 'Financial position'], profit_loss_oci: ['الربح والدخل الشامل', 'Profit loss and OCI'], equity_current: ['حقوق الملكية الحالية', 'Equity current'], equity_comparative: ['حقوق الملكية المقارنة', 'Equity comparative'], cash_flow: ['التدفقات النقدية', 'Cash flows'],
+    position: ['الميزانية العمومية', 'Balance sheet'], profit_loss_oci: ['الربح والدخل الشامل', 'Profit loss and OCI'], equity_current: ['حقوق الملكية الحالية', 'Equity current'], equity_comparative: ['حقوق الملكية المقارنة', 'Equity comparative'], cash_flow: ['التدفقات النقدية', 'Cash flows'],
   };
   for (const statement of report.statements) {
     const section = data.sections.find(section => section.key === statement.key)!;

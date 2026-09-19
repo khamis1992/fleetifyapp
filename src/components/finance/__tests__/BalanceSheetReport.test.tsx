@@ -73,7 +73,8 @@ describe('balance sheet report workflow', () => {
   it('defaults to Arabic and exports the selected language without changing reporting dates', async () => {
     render(<MemoryRouter initialEntries={['/finance/reports/balance-sheet?asOf=2026-08-31&compare=2025-12-31']}><BalanceSheetReport /></MemoryRouter>);
     expect(screen.getByTestId('balance-sheet-report')).toHaveAttribute('dir', 'rtl');
-    expect(screen.getByText('قائمة المركز المالي')).toBeVisible();
+    expect(screen.getByText('نطاق التقرير والإصدار')).toBeVisible();
+    expect(screen.getByText('مسودة غير معتمدة')).toBeVisible();
     fireEvent.click(screen.getByRole('button', { name: 'PDF' }));
     await waitFor(() => expect(exportPDF).toHaveBeenCalledWith(expect.objectContaining({ locale: 'ar' })));
     fireEvent.change(screen.getByRole('combobox', { name: 'لغة التقرير / Report language' }), { target: { value: 'en' } });
@@ -92,6 +93,49 @@ describe('balance sheet report workflow', () => {
     expect(within(row).getAllByRole('cell')[3]).toHaveTextContent(/[-−].*50\.00/);
     fireEvent.click(screen.getByRole('button', { name: 'PDF' }));
     await waitFor(() => expect(exportPDF).toHaveBeenCalledWith({ report: state.live.data, snapshot: null, locale: 'en' }));
+  });
+
+  it('shows the variance column with signed delta and percentage against the comparison base', () => {
+    mount();
+    const cashRow = screen.getByRole('row', { name: /Cash/ });
+    const cells = within(cashRow).getAllByRole('cell');
+    expect(cells[4]).toHaveTextContent(/300\.00/);
+    expect(cells[4]).toHaveTextContent(/42\.9%/);
+    const equityTotalRow = screen.getByRole('row', { name: /Total equity/ });
+    expect(within(equityTotalRow).getAllByRole('cell')[4]).toHaveTextContent(/150\.00/);
+  });
+
+  it('derives liquidity indicators from the displayed balances', () => {
+    mount();
+    // Fixture: current assets 1000 (Cash), current liabilities 200, equity 700, no inventory.
+    expect(screen.getByText('Current ratio')).toBeVisible();
+    expect(screen.getByText('Quick ratio')).toBeVisible();
+    expect(screen.getAllByText('5.00×')).toHaveLength(2);
+    expect(screen.getByText('0.29×')).toBeVisible();
+    expect(screen.getByText(/QAR.*800\.00/)).toBeVisible();
+    expect(screen.getByText(/not statement line items/i)).toBeVisible();
+  });
+
+  it('reports full classification coverage and omits the classification link', () => {
+    mount();
+    expect(screen.getByRole('progressbar')).toHaveAttribute('aria-valuenow', '100');
+    expect(screen.queryByRole('link', { name: 'Classify the remaining items' })).not.toBeInTheDocument();
+  });
+
+  it('surfaces unclassified statement lines with a link to classify them', () => {
+    state.live.data = makeBalanceSheet({
+      accounts: [
+        ...makeBalanceSheet().accounts,
+        {
+          id: '55555555-5555-4555-8555-000000000007', code: '7000', name: 'Unclassified asset', nameAr: null,
+          type: 'asset', subtype: 'mystery', classification: 'unclassified', level: 3, isHeader: false, isActive: true,
+          debit: 50, credit: 0, balance: 50, comparisonBalance: 0,
+        },
+      ],
+    });
+    mount();
+    expect(screen.getByRole('progressbar')).toHaveAttribute('aria-valuenow', '75');
+    expect(screen.getByRole('link', { name: 'Classify the remaining items' })).toHaveAttribute('href', '/finance/chart-of-accounts');
   });
 
   it('disables export of previous data as soon as a changed date starts loading', () => {

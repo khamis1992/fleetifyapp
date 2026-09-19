@@ -51,7 +51,7 @@ import { buildOfficialReportDocumentHtml, exportOfficialHtmlToPDF } from "@/util
 const TABS = [
   { id: "trial-balance", label: "ميزان المراجعة", icon: Scale },
   { id: "income-statement", label: "قائمة الدخل", icon: TrendingUp },
-  { id: "balance-sheet", label: "المركز المالي", icon: BarChart3 },
+  { id: "balance-sheet", label: "الميزانية العمومية", icon: BarChart3 },
   { id: "cash-flow", label: "التدفقات النقدية", icon: Wallet },
   { id: "payroll", label: "الرواتب", icon: Users },
   { id: "cost-centers", label: "مراكز التكلفة", icon: Building2 },
@@ -354,7 +354,7 @@ const Reports = () => {
                   <Table className="h-4 w-4 ml-2" />
                   تصدير CSV
                 </Button>
-                <Button variant="outline" size="sm" onClick={() => exportToPDF('المركز المالي')}>
+                <Button variant="outline" size="sm" onClick={() => exportToPDF('الميزانية العمومية')}>
                   <Printer className="h-4 w-4 ml-2" />
                   طباعة PDF
                 </Button>

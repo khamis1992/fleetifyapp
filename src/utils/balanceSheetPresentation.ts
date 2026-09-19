@@ -134,3 +134,47 @@ export function formatBalanceSheetMoney(amount: number, currency: string, locale
     style: 'currency', currency, minimumFractionDigits: 2, maximumFractionDigits: 2,
   }).format(Object.is(amount, -0) ? 0 : amount);
 }
+
+export interface BalanceSheetDerivedIndicators {
+  currentAssets: number;
+  currentLiabilities: number;
+  workingCapital: number;
+  /** Null when the denominator is zero — displayed as an em dash instead of a misleading number. */
+  currentRatio: number | null;
+  quickRatio: number | null;
+  debtToEquity: number | null;
+  classificationTotal: number;
+  classificationUnclassified: number;
+}
+
+/**
+ * Reading aids derived from the same server-signed balances the statement shows.
+ * They are presentation indicators, never statement line items.
+ */
+export function deriveBalanceSheetIndicators(report: ProfessionalBalanceSheet): BalanceSheetDerivedIndicators {
+  const round = (value: number) => Math.round(value * 100) / 100;
+  const hasAmount = (account: ProfessionalBalanceSheet['accounts'][number]) =>
+    account.balance !== 0 || account.comparisonBalance !== 0;
+  const sumBy = (predicate: (account: ProfessionalBalanceSheet['accounts'][number]) => boolean) =>
+    round(report.accounts.filter(account => hasAmount(account) && predicate(account))
+      .reduce((total, account) => total + account.balance, 0));
+  const currentAssets = sumBy(account => account.type === 'asset' && account.classification === 'current');
+  const currentLiabilities = sumBy(account => account.type === 'liability' && account.classification === 'current');
+  const inventory = sumBy(account =>
+    account.type === 'asset' && account.classification === 'current' &&
+    !!account.subtype && account.subtype.startsWith('inventory'));
+  const division = (numerator: number, denominator: number) => (denominator === 0 ? null : round(numerator / denominator));
+  const statementLines = report.accounts.filter(account =>
+    hasAmount(account) && (account.type === 'asset' || account.type === 'liability'));
+  return {
+    currentAssets,
+    currentLiabilities,
+    workingCapital: round(currentAssets - currentLiabilities),
+    currentRatio: division(currentAssets, currentLiabilities),
+    quickRatio: division(round(currentAssets - inventory), currentLiabilities),
+    debtToEquity: division(report.current.liabilities, report.current.equity),
+    classificationTotal: statementLines.length,
+    classificationUnclassified: statementLines.filter(account =>
+      account.classification !== 'current' && account.classification !== 'non_current').length,
+  };
+}

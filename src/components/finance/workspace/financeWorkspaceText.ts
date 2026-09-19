@@ -175,8 +175,8 @@ const copy = {
     en: 'Open review',
   },
   balanceSheet: {
-    ar: 'المركز المالي',
-    en: 'Financial position',
+    ar: 'الميزانية العمومية',
+    en: 'Balance sheet',
   },
   assets: {
     ar: 'الأصول',
