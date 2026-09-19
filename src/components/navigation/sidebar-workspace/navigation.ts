@@ -24,7 +24,6 @@ import {
   Gavel,
   FolderOpen,
   FileWarning,
-  Banknote,
 } from 'lucide-react';
 
 // === Types ===
@@ -33,6 +32,8 @@ export interface SubItem {
   label: string;
   href: string;
   icon: React.ElementType;
+  /** Secondary destinations (e.g. individual finance reports) nested under their parent item. */
+  children?: SubItem[];
 }
 
 export interface NavItem {
@@ -91,15 +92,8 @@ export const navigation: NavItem[] = [
     ],
   },
 
-  // Administrative sections; financial navigation has its own dedicated menu.
-  {
-    id: 'finance',
-    label: 'المالية',
-    icon: Banknote,
-    href: '/finance/overview',
-    category: 'finance-admin',
-    requiresAdmin: true,
-  },
+  // Administrative sections; the finance centers are injected at render time
+  // (permission-filtered) so the sidebar stays one unified list.
   {
     id: 'hr',
     label: 'الموارد البشرية',
@@ -182,6 +176,7 @@ export const workspaceOnlyNavigation: NavItem[] = [
 export const categoryLabels: Record<string, string> = {
   main: '',
   core: 'العمليات الأساسية',
+  finance: 'المالية',
   'finance-admin': 'الإدارة',
   compliance: 'الامتثال والمتابعة',
   tools: 'الأدوات والنظام',

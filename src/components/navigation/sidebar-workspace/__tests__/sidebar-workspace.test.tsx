@@ -9,6 +9,35 @@ const access = vi.hoisted(() => ({ admin: false, global: false, roles: ['manager
 vi.mock('@/contexts/AuthContext', () => ({ useAuth: () => ({ user: { roles: access.roles, email: 'test@example.com', profile: { first_name: 'مستخدم', last_name: 'اختبار' } }, signOut: vi.fn() }) }));
 vi.mock('@/hooks/useUnifiedCompanyAccess', () => ({ useUnifiedCompanyAccess: () => ({ hasCompanyAdminAccess: access.admin, hasGlobalAccess: access.global }) }));
 vi.mock('@/components/tour-guide', () => ({ useTourGuide: () => ({ startTour: vi.fn() }) }));
+vi.mock('@/components/finance/workspace/useFinanceNavigation', () => ({
+  useFinanceNavigation: () => ({
+    groups: [
+      {
+        id: 'overview', ar: 'المركز المالي', en: 'Finance home', descriptionAr: '', descriptionEn: '',
+        icon: () => null,
+        items: [{ id: 'overview', href: '/finance/overview', ar: 'نظرة عامة', en: 'Overview' }],
+        secondaryItems: [],
+      },
+      {
+        id: 'billing', ar: 'الفوترة والتحصيل', en: 'Billing & collections', descriptionAr: '', descriptionEn: '',
+        icon: () => null,
+        items: [{ id: 'invoices', href: '/finance/invoices', ar: 'الفواتير', en: 'Invoices' }],
+        secondaryItems: [],
+      },
+      {
+        id: 'reports', ar: 'التقارير والتحليل', en: 'Reports & analysis', descriptionAr: '', descriptionEn: '',
+        icon: () => null,
+        items: [{ id: 'reports', href: '/finance/reports', ar: 'مكتبة التقارير', en: 'Reports library' }],
+        secondaryItems: [
+          { id: 'report-balance-sheet', href: '/finance/reports/balance-sheet', ar: 'الميزانية العمومية', en: 'Balance sheet', parentId: 'reports' },
+        ],
+      },
+    ],
+    searchGroups: [],
+    language: 'ar',
+    isLoading: false,
+  }),
+}));
 beforeEach(() => { access.admin = false; access.global = false; access.roles = ['manager']; });
 const mount = (path = '/dashboard', props = {}) => render(<MemoryRouter initialEntries={[path]}><BentoSidebar {...props}/></MemoryRouter>);
 
@@ -76,13 +105,23 @@ describe('sidebar workspace', () => {
     fireEvent.click(screen.getByRole('button', { name: 'إغلاق القائمة' }));
     expect(onCloseMobile).toHaveBeenCalledTimes(2);
   });
-  it('gives admins a direct finance entry that is active on the finance overview', () => {
-    expect(activeNavigationHref(navigation, '/finance/overview')).toBe('/finance/overview');
-    expect(activeNavigationHref(navigation, '/finance/overview/extra')).toBe('/finance/overview');
+  it('integrates finance centers into the unified list for admins only', () => {
     access.admin = true; const view = mount('/dashboard');
-    expect(screen.getByRole('link', { name: 'المالية' })).toHaveAttribute('href', '/finance/overview');
+    expect(screen.getByRole('button', { name: 'المركز المالي' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'الفوترة والتحصيل' })).toBeInTheDocument();
     view.unmount();
     access.admin = false; mount('/dashboard');
-    expect(screen.queryByRole('link', { name: 'المالية' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'المركز المالي' })).not.toBeInTheDocument();
+  });
+  it('expands the active finance center and highlights its current child', () => {
+    access.admin = true; mount('/finance/overview');
+    expect(screen.getByRole('button', { name: 'المركز المالي' })).toHaveAttribute('aria-expanded', 'true');
+    expect(screen.getByRole('link', { name: 'نظرة عامة', exact: true })).toHaveAttribute('aria-current', 'page');
+  });
+  it('nests secondary finance destinations under their parent and marks the current one', () => {
+    access.admin = true; mount('/finance/reports/balance-sheet');
+    expect(screen.getByRole('button', { name: 'التقارير والتحليل' })).toHaveAttribute('aria-expanded', 'true');
+    expect(screen.getByRole('link', { name: 'مكتبة التقارير' })).toHaveAttribute('aria-current', 'location');
+    expect(screen.getByRole('link', { name: 'الميزانية العمومية' })).toHaveAttribute('aria-current', 'page');
   });
 });
