@@ -33,7 +33,7 @@ export function FinancialStatementPeriodEditor({ configuration: config, onChange
     </div>
     <div className="rounded-md bg-muted p-3 text-sm">
       <p>{tr('نطاق هذه الحزمة: قوائم الكيان الفردي؛ إطار الإعداد المستهدف IFRS. لا تمثل قوائم مجموعة موحدة أو إقرارًا بالمطابقة.', 'Scope: individual entity statements targeting IFRS preparation. This is not a consolidated group package or a declaration of compliance.')}</p>
-      <p className="mt-2">{tr('مقارنة المركز المالي:', 'Position comparison:')} <bdi>{config.positionComparisonDate}</bdi> · {tr('مقارنة النتائج والتدفقات:', 'Performance and cash-flow comparison:')} <bdi>{config.comparativePeriodStart} — {config.comparativePeriodEnd}</bdi></p>
+      <p className="mt-2">{tr('مقارنة الميزانية العمومية:', 'Balance sheet comparison:')} <bdi>{config.positionComparisonDate}</bdi> · {tr('مقارنة النتائج والتدفقات:', 'Performance and cash-flow comparison:')} <bdi>{config.comparativePeriodStart} — {config.comparativePeriodEnd}</bdi></p>
       <p className="mt-1">{tr('تُعرض الأرقام بوحدات العملة المحددة للشركة وبمنزلتين عشريتين.', 'Amounts are presented in the company currency, to two decimal places.')}</p>
     </div>
     <label className="flex items-start gap-2 text-sm"><input type="checkbox" className="mt-1" checked={config.requiresThirdPosition} onChange={event => update({ requiresThirdPosition: event.target.checked,
