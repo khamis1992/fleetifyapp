@@ -1,0 +1,233 @@
+/* Finance report pages rendered in the unified dashboard language (dw-*).
+   The root intentionally avoids the .dashboard-workspace class so that its
+   blanket `section { padding: 0 }` reset cannot strip spacing from the
+   arbitrary report bodies rendered inside the shell. */
+
+.fin-reports-workspace {
+  --dw-ink: #2c4136;
+  --dw-muted: #6f7c68;
+  --dw-line: #dfe5d9;
+  --dw-green: #2f7966;
+  /* Re-tune the shadcn/Tailwind tokens the report bodies already use, so every
+     primitive (buttons, badges, tabs, muted text, borders) adopts the approved palette. */
+  --background: 0 0% 100%;
+  --foreground: 150 19% 21%;
+  --card: 0 0% 100%;
+  --card-foreground: 150 19% 21%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 150 19% 21%;
+  --primary: 165 44% 33%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 100 20% 95%;
+  --secondary-foreground: 150 19% 21%;
+  --muted: 100 20% 95%;
+  --muted-foreground: 100 9% 43%;
+  --accent: 100 25% 93%;
+  --accent-foreground: 165 44% 30%;
+  --border: 100 15% 87%;
+  --input: 100 15% 87%;
+  --ring: 165 44% 33%;
+  color-scheme: light;
+  color: var(--dw-ink);
+  background: #f7f8f4;
+  font-family: 'Cairo', sans-serif;
+  min-height: 100%;
+  border-radius: 13px;
+}
+.fin-reports-workspace button { cursor: pointer; }
+.fin-reports-workspace button:disabled { cursor: wait; opacity: 0.55; }
+.fin-reports-workspace :is(a, button, input):focus-visible { outline: 2px solid #2f7966; outline-offset: 3px; }
+
+.fin-reports-workspace .dw-container { padding-bottom: 18px; }
+
+.fin-report-chips { display: flex; align-items: center; gap: 5px; flex-wrap: wrap; }
+.fin-report-chip { display: inline-flex; align-items: center; min-height: 34px; padding: 6px 12px; border: 1px solid transparent; border-radius: 6px; font-size: 11px; color: #7f8b75; white-space: nowrap; }
+.fin-report-chip:hover { background: #f3f6ee; }
+.fin-report-chip[aria-current="page"] { border-color: #d7e4cb; background: #edf4e6; color: #487038; font-weight: 700; }
+
+.fin-reports-shell-body { min-width: 0; display: flex; flex-direction: column; gap: 20px; }
+
+/* dw-metrics strip with three cells instead of the dashboard's four. */
+.fin-reports-workspace .dw-metrics.cells-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+@media (max-width: 700px) {
+  .fin-reports-workspace .dw-metrics.cells-3 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .fin-reports-workspace .dw-metrics.cells-3 .dw-metric:nth-child(2) { border-inline-end: 0; }
+  .fin-reports-workspace .dw-metrics.cells-3 .dw-metric:nth-child(-n+2) { border-bottom: 1px solid #e5eade; }
+}
+
+/* ==== Report-body primitives in the dw language ==== */
+
+/* Cards become dw panels: hairline border, no shadow, 13px radius; nested cards (metric tiles) 9px. */
+.fin-reports-workspace.fin-reports-workspace .bg-card {
+  border: 1px solid var(--dw-line);
+  border-radius: 13px;
+  background: #fff;
+  color: var(--dw-ink);
+  box-shadow: none !important;
+}
+.fin-reports-workspace.fin-reports-workspace .bg-card .bg-card { border-radius: 9px; }
+
+/* Card titles adopt the dw panel heading voice. */
+.fin-reports-workspace.fin-reports-workspace .bg-card .font-semibold.tracking-tight {
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0;
+  line-height: 1.7;
+  color: var(--dw-ink);
+}
+
+/* Metric values on tiles read like dw metrics, not marketing numbers. */
+.fin-reports-workspace.fin-reports-workspace .bg-card .bg-card .text-2xl,
+.fin-reports-workspace.fin-reports-workspace .bg-card .bg-card .text-xl {
+  font-size: 22px;
+  font-weight: 600;
+  line-height: 1.5;
+  color: #3f6136;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+.fin-reports-workspace.fin-reports-workspace .bg-card .bg-card .text-2xl[class*="red"],
+.fin-reports-workspace.fin-reports-workspace .bg-card .bg-card .text-xl[class*="red"] { color: #b3694c; }
+
+/* Tables adopt the dw reading rhythm. */
+.fin-reports-workspace.fin-reports-workspace table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+.fin-reports-workspace.fin-reports-workspace table thead { background: #f7f9f2; }
+.fin-reports-workspace.fin-reports-workspace table th {
+  height: 40px;
+  padding: 10px 16px;
+  background: #f7f9f2;
+  color: #829174 !important;
+  font-size: 11px;
+  font-weight: 600;
+  text-align: start;
+  white-space: nowrap;
+}
+.fin-reports-workspace.fin-reports-workspace table td {
+  padding: 12px 16px;
+  border-bottom: 1px solid #edf1e5;
+  font-size: 12px;
+  color: #6b7d5f;
+}
+.fin-reports-workspace.fin-reports-workspace table tbody tr:hover { background: #fafcf7; }
+.fin-reports-workspace.fin-reports-workspace table td:is([class*="font-bold"], [class*="font-semibold"]) { color: #405a33; }
+
+/* Tabs become the dw filter-chip group. */
+.fin-reports-workspace.fin-reports-workspace [role="tablist"] {
+  height: auto;
+  gap: 4px;
+  padding: 4px;
+  background: #fff !important;
+  border: 1px solid var(--dw-line);
+  border-radius: 10px;
+  box-shadow: none;
+}
+.fin-reports-workspace.fin-reports-workspace [role="tab"] {
+  min-height: 38px;
+  padding: 8px 14px;
+  border-radius: 7px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #7f8b75;
+  box-shadow: none !important;
+  white-space: nowrap;
+}
+.fin-reports-workspace.fin-reports-workspace [role="tab"]:hover:not([data-state="active"]) { background: #f3f6ee; }
+.fin-reports-workspace.fin-reports-workspace [role="tab"][data-state="active"] {
+  background: var(--dw-green) !important;
+  color: #fff !important;
+}
+
+/* Badges become wk-style tone chips (div distinguishes them from buttons). */
+.fin-reports-workspace.fin-reports-workspace div.bg-primary {
+  background: #2f7966 !important;
+  color: #fff;
+  border-radius: 5px;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 3px 8px;
+}
+.fin-reports-workspace.fin-reports-workspace div.bg-secondary {
+  background: #f1f4ec !important;
+  color: #5b6b52 !important;
+  border: 1px solid #dfe5d9;
+  border-radius: 5px;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 3px 8px;
+}
+.fin-reports-workspace.fin-reports-workspace div.bg-destructive {
+  background: #fdf1eb !important;
+  color: #b3694c !important;
+  border: 1px solid #f1d9ca;
+  border-radius: 5px;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 3px 8px;
+}
+.fin-reports-workspace.fin-reports-workspace div[class*="border"].text-foreground[class*="text-xs"],
+.fin-reports-workspace.fin-reports-workspace span[class*="border"].text-foreground[class*="text-xs"] {
+  border-color: #dfe5d9;
+  color: #5b6b52;
+  border-radius: 5px;
+}
+
+/* Buttons adopt the dw-button voice. */
+.fin-reports-workspace.fin-reports-workspace button.bg-primary {
+  background: var(--dw-green) !important;
+  color: #fff;
+  min-height: 40px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  box-shadow: none;
+}
+.fin-reports-workspace.fin-reports-workspace button.bg-primary:hover { background: #256450 !important; }
+.fin-reports-workspace.fin-reports-workspace button.border.bg-background {
+  background: #fff;
+  border: 1px solid var(--dw-line);
+  color: var(--dw-ink);
+  min-height: 40px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  box-shadow: none;
+}
+.fin-reports-workspace.fin-reports-workspace button.border.bg-background:hover { background: #eff4e9; }
+.fin-reports-workspace.fin-reports-workspace button.bg-destructive {
+  background: #b3694c !important;
+  color: #fff;
+  min-height: 40px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  box-shadow: none;
+}
+.fin-reports-workspace.fin-reports-workspace button.size-sm,
+.fin-reports-workspace.fin-reports-workspace button[class*="h-9"],
+.fin-reports-workspace.fin-reports-workspace button[class*="h-8"] { min-height: 34px; border-radius: 7px; }
+
+/* Form fields adopt the wk-field look. */
+.fin-reports-workspace.fin-reports-workspace input:not([type="checkbox"]):not([type="radio"]):not([type="color"]),
+.fin-reports-workspace.fin-reports-workspace textarea,
+.fin-reports-workspace.fin-reports-workspace [role="combobox"] {
+  min-height: 40px;
+  border: 1px solid var(--dw-line);
+  border-radius: 8px;
+  background: #fff;
+  color: var(--dw-ink);
+  font-size: 12px;
+  box-shadow: none !important;
+}
+.fin-reports-workspace.fin-reports-workspace input:focus-visible,
+.fin-reports-workspace.fin-reports-workspace textarea:focus-visible,
+.fin-reports-workspace.fin-reports-workspace [role="combobox"]:focus-visible {
+  outline: none;
+  border-color: #9db88a;
+  box-shadow: 0 0 0 3px rgba(47, 121, 102, 0.08) !important;
+}
+
+@media (max-width: 700px) {
+  .fin-reports-workspace { border-radius: 0; }
+  .fin-reports-workspace table th,
+  .fin-reports-workspace.fin-reports-workspace table td { padding-inline: 11px; }
+}

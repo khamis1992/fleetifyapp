@@ -34,6 +34,10 @@ const GeneralLedger = lazyWithRetry(
   () => import("./finance/GeneralLedger"),
   "GeneralLedger"
 );
+const OpeningBalancesImport = lazyWithRetry(
+  () => import("./finance/OpeningBalancesImport"),
+  "OpeningBalancesImport"
+);
 const Ledger = lazyWithRetry(() => import("./finance/Ledger"), "Ledger");
 const Treasury = lazyWithRetry(() => import("./finance/Treasury"), "Treasury");
 const ReconciliationPage = lazyWithRetry(
@@ -257,6 +261,14 @@ export default function Finance() {
           element={
             <ProtectedFinanceRoute permission="finance.accounts.view">
               <Ledger />
+            </ProtectedFinanceRoute>
+          }
+        />
+        <Route
+          path="opening-balances"
+          element={
+            <ProtectedFinanceRoute permission="finance.accounts.view">
+              <OpeningBalancesImport />
             </ProtectedFinanceRoute>
           }
         />

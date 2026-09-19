@@ -17,6 +17,7 @@ export interface FinanceDestination {
   href: string;
   ar: string;
   en: string;
+  descriptionAr?: string;
   permission?: string;
   admin?: boolean;
   superAdmin?: boolean;
@@ -189,6 +190,15 @@ export const financeNavigation: FinanceNavigationGroup[] = [
         permission: "finance.accounts.view",
       },
       {
+        id: "opening-balances",
+        href: "/finance/opening-balances",
+        ar: "الأرصدة الافتتاحية",
+        en: "Opening balances",
+        descriptionAr: "استيراد أوراق العمل المالية وترحيل قيد افتتاحي متوازن.",
+        permission: "finance.journal.create_draft",
+        parentId: "entries",
+      },
+      {
         id: "ledger",
         href: "/finance/general-ledger",
         ar: "دفتر الأستاذ",
@@ -347,6 +357,7 @@ export const financeNavigation: FinanceNavigationGroup[] = [
     secondaryItems: [
       {
         id: "report-trial-balance",
+        descriptionAr: "أرصدة جميع الحسابات بمدينها ودائنها للتحقق من التوازن.",
         href: "/finance/reports/trial-balance",
         ar: "ميزان المراجعة",
         en: "Trial balance",
@@ -355,6 +366,7 @@ export const financeNavigation: FinanceNavigationGroup[] = [
       },
       {
         id: "report-income-statement",
+        descriptionAr: "الإيرادات والمصروفات ونتيجة الأعمال للفترة المحددة.",
         href: "/finance/reports/income-statement",
         ar: "قائمة الدخل",
         en: "Income statement",
@@ -363,6 +375,7 @@ export const financeNavigation: FinanceNavigationGroup[] = [
       },
       {
         id: "report-financial-statements",
+        descriptionAr: "حزمة القوائم المالية والإيضاحات في ملف واحد قابل للتصدير.",
         href: "/finance/reports/financial-statements",
         ar: "حزمة القوائم المالية",
         en: "Financial statement package",
@@ -371,14 +384,16 @@ export const financeNavigation: FinanceNavigationGroup[] = [
       },
       {
         id: "report-balance-sheet",
+        descriptionAr: "الأصول والالتزامات وحقوق الملكية كما في تاريخ محدد.",
         href: "/finance/reports/balance-sheet",
-        ar: "المركز المالي",
+        ar: "الميزانية العمومية",
         en: "Balance sheet",
         permission: "finance.view",
         parentId: "reports",
       },
       {
         id: "report-cash-flow",
+        descriptionAr: "التدفقات النقدية التشغيلية والاستثمارية والتمويلية.",
         href: "/finance/reports/cash-flow",
         ar: "التدفقات النقدية",
         en: "Cash flow",
@@ -387,6 +402,7 @@ export const financeNavigation: FinanceNavigationGroup[] = [
       },
       {
         id: "report-receivables",
+        descriptionAr: "أعمار الذمم المدينة ومتابعة التحصيل.",
         href: "/finance/reports/receivables",
         ar: "الذمم المدينة",
         en: "Receivables",
@@ -395,6 +411,7 @@ export const financeNavigation: FinanceNavigationGroup[] = [
       },
       {
         id: "report-payables",
+        descriptionAr: "أعمار الذمم الدائنة والالتزامات تجاه الموردين.",
         href: "/finance/reports/payables",
         ar: "الذمم الدائنة",
         en: "Payables",
@@ -403,6 +420,7 @@ export const financeNavigation: FinanceNavigationGroup[] = [
       },
       {
         id: "report-payroll",
+        descriptionAr: "تقارير الرواتب والأثر المالي المرتبط بها.",
         href: "/finance/reports/payroll",
         ar: "تقارير الرواتب",
         en: "Payroll reports",
@@ -411,6 +429,7 @@ export const financeNavigation: FinanceNavigationGroup[] = [
       },
       {
         id: "report-cost-centers",
+        descriptionAr: "تحليل الأداء والتكاليف حسب مراكز التكلفة.",
         href: "/finance/reports/cost-centers",
         ar: "تقارير مراكز التكلفة",
         en: "Cost center reports",

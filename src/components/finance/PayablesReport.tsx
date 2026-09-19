@@ -1,12 +1,10 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { LoadingSpinner } from "@/components/ui/loading-spinner"
 import { Badge } from "@/components/ui/badge"
-import { Download, FileText } from "lucide-react"
+import { Download, FileText, Inbox } from "lucide-react"
 import { usePayablesReport, exportToHTML } from "@/hooks/useFinancialReportsExport"
 import { useCurrencyFormatter } from "@/hooks/useCurrencyFormatter"
-import { StatCardNumber } from "@/components/ui/NumberDisplay"
 
 interface PayablesReportProps {
   companyName?: string
@@ -41,7 +39,7 @@ const { data: payablesData, isLoading } = usePayablesReport()
               <td style="color: ${item.status === 'متأخر' ? '#ef4444' : '#22c55e'}">${item.status}</td>
             </tr>
           `).join('')}
-          
+
           <tr class="total-row">
             <td><strong>الإجمالي</strong></td>
             <td><strong>${formatCurrency(payablesData.reduce((sum, item) => sum + item.amount, 0))}</strong></td>
@@ -56,19 +54,23 @@ const { data: payablesData, isLoading } = usePayablesReport()
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-32">
-        <LoadingSpinner />
+      <div className="dw-panel">
+        <div className="dw-state" role="status">
+          <LoadingSpinner />
+          <p>جاري تحميل أرصدة الموردين…</p>
+        </div>
       </div>
     )
   }
 
   if (!payablesData || payablesData.length === 0) {
     return (
-      <Card>
-        <CardContent className="flex items-center justify-center h-32">
-          <p className="text-muted-foreground">لا توجد حسابات دائنة مستحقة</p>
-        </CardContent>
-      </Card>
+      <div className="dw-panel">
+        <div className="dw-state">
+          <Inbox size={28} />
+          <p>لا توجد حسابات دائنة مستحقة</p>
+        </div>
+      </div>
     )
   }
 
@@ -78,80 +80,80 @@ const { data: payablesData, isLoading } = usePayablesReport()
     .reduce((sum, item) => sum + item.amount, 0)
 
   return (
-    <Card>
-      <CardHeader>
-        <div className="flex items-center justify-between">
+    <section className="dw-panel" aria-label="تقرير الحسابات الدائنة">
+      <header className="dw-panel-heading">
+        <div className="dw-panel-title">
+          <span className="dw-section-number">01</span>
           <div>
-            <CardTitle className="flex items-center gap-2">
-              <FileText className="h-5 w-5" />
-              تقرير الحسابات الدائنة
-            </CardTitle>
-            <CardDescription>
-              المبالغ المستحقة للموردين كما في {new Date().toLocaleDateString('ar-QA')}
-            </CardDescription>
+            <h2>أرصدة الموردين المستحقة</h2>
+            <p>المبالغ المستحقة للموردين كما في {new Date().toLocaleDateString('ar-QA')}</p>
           </div>
-          <Button onClick={handleExportHTML} size="sm">
-            <Download className="h-4 w-4 mr-2" />
-            تحميل التقرير
-          </Button>
         </div>
-      </CardHeader>
-      <CardContent className="space-y-6">
-        {/* Summary Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <Card>
-            <CardContent className="p-4">
-              <StatCardNumber value={formatCurrency(totalAmount)} className="inline" />
-              <p className="text-xs text-muted-foreground">إجمالي المبالغ المستحقة</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-4">
-              <StatCardNumber value={formatCurrency(overdueAmount)} className="inline text-red-600" />
-              <p className="text-xs text-muted-foreground">المبالغ المتأخرة</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-4">
-              <StatCardNumber value={payablesData.length} />
-              <p className="text-xs text-muted-foreground">عدد الفواتير المستحقة</p>
-            </CardContent>
-          </Card>
+        <Button onClick={handleExportHTML} size="sm" variant="outline">
+          <Download className="h-4 w-4 mr-2" />
+          تحميل التقرير
+        </Button>
+      </header>
+
+      <div className="p-5 pt-0">
+        <div className="dw-metrics cells-3" style={{ marginBottom: 20 }}>
+          <div className="dw-metric dw-metric-accent">
+            <div className="dw-metric-top">
+              <span>إجمالي المبالغ المستحقة</span>
+              <FileText size={19} />
+            </div>
+            <strong>{formatCurrency(totalAmount)}</strong>
+          </div>
+          <div className="dw-metric">
+            <div className="dw-metric-top">
+              <span>المبالغ المتأخرة</span>
+              <FileText size={19} />
+            </div>
+            <strong>{formatCurrency(overdueAmount)}</strong>
+          </div>
+          <div className="dw-metric">
+            <div className="dw-metric-top">
+              <span>عدد الفواتير المستحقة</span>
+              <FileText size={19} />
+            </div>
+            <strong>{payablesData.length}</strong>
+          </div>
         </div>
 
-        {/* Payables Table */}
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>اسم المورد</TableHead>
-              <TableHead className="text-right">المبلغ المستحق</TableHead>
-              <TableHead>تاريخ الاستحقاق</TableHead>
-              <TableHead>أيام التأخير</TableHead>
-              <TableHead>الحالة</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {payablesData.map((item, index) => (
-              <TableRow key={index}>
-                <TableCell className="font-medium">{item.vendor_name}</TableCell>
-                <TableCell className="text-right">{formatCurrency(item.amount)}</TableCell>
-                <TableCell>{new Date(item.due_date).toLocaleDateString('ar-QA')}</TableCell>
-                <TableCell>{item.overdue_days}</TableCell>
-                <TableCell>
-                  <Badge variant={item.status === 'متأخر' ? 'destructive' : 'default'}>
-                    {item.status}
-                  </Badge>
-                </TableCell>
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>اسم المورد</TableHead>
+                <TableHead className="text-right">المبلغ المستحق</TableHead>
+                <TableHead>تاريخ الاستحقاق</TableHead>
+                <TableHead>أيام التأخير</TableHead>
+                <TableHead>الحالة</TableHead>
               </TableRow>
-            ))}
-            <TableRow className="border-t-2 font-bold">
-              <TableCell>الإجمالي</TableCell>
-              <TableCell className="text-right">{formatCurrency(totalAmount)}</TableCell>
-              <TableCell colSpan={3}></TableCell>
-            </TableRow>
-          </TableBody>
-        </Table>
-      </CardContent>
-    </Card>
+            </TableHeader>
+            <TableBody>
+              {payablesData.map((item, index) => (
+                <TableRow key={index}>
+                  <TableCell className="font-medium">{item.vendor_name}</TableCell>
+                  <TableCell className="text-right">{formatCurrency(item.amount)}</TableCell>
+                  <TableCell>{new Date(item.due_date).toLocaleDateString('ar-QA')}</TableCell>
+                  <TableCell>{item.overdue_days}</TableCell>
+                  <TableCell>
+                    <Badge variant={item.status === 'متأخر' ? 'destructive' : 'default'}>
+                      {item.status}
+                    </Badge>
+                  </TableCell>
+                </TableRow>
+              ))}
+              <TableRow className="border-t-2 font-bold">
+                <TableCell>الإجمالي</TableCell>
+                <TableCell className="text-right">{formatCurrency(totalAmount)}</TableCell>
+                <TableCell colSpan={3}></TableCell>
+              </TableRow>
+            </TableBody>
+          </Table>
+        </div>
+      </div>
+    </section>
   )
 }

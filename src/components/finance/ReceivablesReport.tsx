@@ -1,9 +1,8 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { LoadingSpinner } from "@/components/ui/loading-spinner"
 import { Badge } from "@/components/ui/badge"
-import { Download, FileText } from "lucide-react"
+import { Download, FileText, Inbox } from "lucide-react"
 import { useReceivablesReport, exportToHTML } from "@/hooks/useFinancialReportsExport"
 import { useCurrencyFormatter } from "@/hooks/useCurrencyFormatter"
 
@@ -40,7 +39,7 @@ const { data: receivablesData, isLoading } = useReceivablesReport()
               <td style="color: ${item.status === 'متأخر' ? '#ef4444' : '#22c55e'}">${item.status}</td>
             </tr>
           `).join('')}
-          
+
           <tr class="total-row">
             <td><strong>الإجمالي</strong></td>
             <td><strong>${formatCurrency(receivablesData.reduce((sum, item) => sum + item.amount, 0))}</strong></td>
@@ -55,19 +54,23 @@ const { data: receivablesData, isLoading } = useReceivablesReport()
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-32">
-        <LoadingSpinner />
+      <div className="dw-panel">
+        <div className="dw-state" role="status">
+          <LoadingSpinner />
+          <p>جاري تحميل أرصدة العملاء…</p>
+        </div>
       </div>
     )
   }
 
   if (!receivablesData || receivablesData.length === 0) {
     return (
-      <Card>
-        <CardContent className="flex items-center justify-center h-32">
-          <p className="text-muted-foreground">لا توجد حسابات مدينة مستحقة</p>
-        </CardContent>
-      </Card>
+      <div className="dw-panel">
+        <div className="dw-state">
+          <Inbox size={28} />
+          <p>لا توجد حسابات مدينة مستحقة</p>
+        </div>
+      </div>
     )
   }
 
@@ -77,80 +80,80 @@ const { data: receivablesData, isLoading } = useReceivablesReport()
     .reduce((sum, item) => sum + item.amount, 0)
 
   return (
-    <Card>
-      <CardHeader>
-        <div className="flex items-center justify-between">
+    <section className="dw-panel" aria-label="تقرير الحسابات المدينة">
+      <header className="dw-panel-heading">
+        <div className="dw-panel-title">
+          <span className="dw-section-number">01</span>
           <div>
-            <CardTitle className="flex items-center gap-2">
-              <FileText className="h-5 w-5" />
-              تقرير الحسابات المدينة
-            </CardTitle>
-            <CardDescription>
-              المبالغ المستحقة من العملاء كما في {new Date().toLocaleDateString('ar-QA')}
-            </CardDescription>
+            <h2>أرصدة العملاء المستحقة</h2>
+            <p>المبالغ المستحقة من العملاء كما في {new Date().toLocaleDateString('ar-QA')}</p>
           </div>
-          <Button onClick={handleExportHTML} size="sm">
-            <Download className="h-4 w-4 mr-2" />
-            تحميل التقرير
-          </Button>
         </div>
-      </CardHeader>
-      <CardContent className="space-y-6">
-        {/* Summary Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <Card>
-            <CardContent className="p-4">
-              <div className="text-2xl font-bold">{formatCurrency(totalAmount)}</div>
-              <p className="text-xs text-muted-foreground">إجمالي المبالغ المستحقة</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-4">
-              <div className="text-2xl font-bold text-red-600">{formatCurrency(overdueAmount)}</div>
-              <p className="text-xs text-muted-foreground">المبالغ المتأخرة</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-4">
-              <div className="text-2xl font-bold">{receivablesData.length}</div>
-              <p className="text-xs text-muted-foreground">عدد الفواتير المستحقة</p>
-            </CardContent>
-          </Card>
+        <Button onClick={handleExportHTML} size="sm" variant="outline">
+          <Download className="h-4 w-4 mr-2" />
+          تحميل التقرير
+        </Button>
+      </header>
+
+      <div className="p-5 pt-0">
+        <div className="dw-metrics cells-3" style={{ marginBottom: 20 }}>
+          <div className="dw-metric dw-metric-accent">
+            <div className="dw-metric-top">
+              <span>إجمالي المبالغ المستحقة</span>
+              <FileText size={19} />
+            </div>
+            <strong>{formatCurrency(totalAmount)}</strong>
+          </div>
+          <div className="dw-metric">
+            <div className="dw-metric-top">
+              <span>المبالغ المتأخرة</span>
+              <FileText size={19} />
+            </div>
+            <strong>{formatCurrency(overdueAmount)}</strong>
+          </div>
+          <div className="dw-metric">
+            <div className="dw-metric-top">
+              <span>عدد الفواتير المستحقة</span>
+              <FileText size={19} />
+            </div>
+            <strong>{receivablesData.length}</strong>
+          </div>
         </div>
 
-        {/* Receivables Table */}
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>اسم العميل</TableHead>
-              <TableHead className="text-right">المبلغ المستحق</TableHead>
-              <TableHead>تاريخ الاستحقاق</TableHead>
-              <TableHead>أيام التأخير</TableHead>
-              <TableHead>الحالة</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {receivablesData.map((item, index) => (
-              <TableRow key={index}>
-                <TableCell className="font-medium">{item.customer_name}</TableCell>
-                <TableCell className="text-right">{formatCurrency(item.amount)}</TableCell>
-                <TableCell>{new Date(item.due_date).toLocaleDateString('ar-QA')}</TableCell>
-                <TableCell>{item.overdue_days}</TableCell>
-                <TableCell>
-                  <Badge variant={item.status === 'متأخر' ? 'destructive' : 'default'}>
-                    {item.status}
-                  </Badge>
-                </TableCell>
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>اسم العميل</TableHead>
+                <TableHead className="text-right">المبلغ المستحق</TableHead>
+                <TableHead>تاريخ الاستحقاق</TableHead>
+                <TableHead>أيام التأخير</TableHead>
+                <TableHead>الحالة</TableHead>
               </TableRow>
-            ))}
-            <TableRow className="border-t-2 font-bold">
-              <TableCell>الإجمالي</TableCell>
-              <TableCell className="text-right">{formatCurrency(totalAmount)}</TableCell>
-              <TableCell colSpan={3}></TableCell>
-            </TableRow>
-          </TableBody>
-        </Table>
-      </CardContent>
-    </Card>
+            </TableHeader>
+            <TableBody>
+              {receivablesData.map((item, index) => (
+                <TableRow key={index}>
+                  <TableCell className="font-medium">{item.customer_name}</TableCell>
+                  <TableCell className="text-right">{formatCurrency(item.amount)}</TableCell>
+                  <TableCell>{new Date(item.due_date).toLocaleDateString('ar-QA')}</TableCell>
+                  <TableCell>{item.overdue_days}</TableCell>
+                  <TableCell>
+                    <Badge variant={item.status === 'متأخر' ? 'destructive' : 'default'}>
+                      {item.status}
+                    </Badge>
+                  </TableCell>
+                </TableRow>
+              ))}
+              <TableRow className="border-t-2 font-bold">
+                <TableCell>الإجمالي</TableCell>
+                <TableCell className="text-right">{formatCurrency(totalAmount)}</TableCell>
+                <TableCell colSpan={3}></TableCell>
+              </TableRow>
+            </TableBody>
+          </Table>
+        </div>
+      </div>
+    </section>
   )
 }

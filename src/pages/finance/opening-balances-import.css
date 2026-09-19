@@ -1,0 +1,88 @@
+/* Opening balances importer — page-specific pieces over the dw- and wk- kit. */
+
+.ob-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  padding: 4px 24px 18px;
+}
+.ob-file-input { display: none; }
+
+.ob-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 0 24px 14px;
+}
+.ob-summary .wk-badge { gap: 5px; }
+
+.ob-note {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 0 24px 18px;
+  font-size: 11px;
+  color: #7e8c72;
+  line-height: 1.8;
+  flex-wrap: wrap;
+}
+.ob-inline-link { color: #577549; font-weight: 700; margin-inline: 4px; }
+
+.ob-date-field { display: flex; align-items: center; gap: 10px; }
+.ob-date-field label { font-size: 11px; color: #6f7c68; }
+.ob-date-field input {
+  min-height: 38px;
+  border: 1px solid #dfe5d9;
+  border-radius: 8px;
+  background: #fff;
+  color: #2c4136;
+  font-size: 12px;
+  padding-inline: 10px;
+}
+.ob-note-inline { display: flex; align-items: center; gap: 6px; font-size: 11px; color: #7e8c72; }
+
+.ob-totals { display: flex; align-items: center; gap: 14px; font-size: 11px; color: #5b6b52; }
+.ob-totals span { display: inline-flex; align-items: center; gap: 5px; }
+.ob-totals bdi { font-weight: 700; color: #365e2e; }
+
+.ob-lines-table td { vertical-align: middle; }
+.ob-lines-table .ob-detail { font-size: 10px; color: #7e8b73; max-width: 260px; }
+.ob-lines-table .ob-num { text-align: end; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.ob-lines-table tr.ob-balance-row td { background: #eef4e7; font-weight: 700; color: #365e2e; }
+
+.ob-account-select {
+  min-height: 34px;
+  min-width: 220px;
+  max-width: 320px;
+  border: 1px solid #dfe5d9;
+  border-radius: 7px;
+  background: #fff;
+  color: #2c4136;
+  font-size: 11px;
+  padding-inline: 8px;
+}
+.ob-account-select:focus-visible { outline: none; border-color: #9db88a; box-shadow: 0 0 0 3px rgba(47, 121, 102, 0.08); }
+
+.ob-lines-table .wk-badge { margin-inline-start: 8px; }
+
+.ob-post-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  padding: 14px 24px 4px;
+}
+
+.ob-alert {
+  padding: 0 24px 16px;
+  font-size: 11px;
+  line-height: 1.8;
+}
+.ob-alert.is-error { color: #b3694c; }
+.ob-alert.is-warn { color: #8b642b; }
+
+@media (max-width: 700px) {
+  .ob-toolbar, .ob-summary, .ob-note, .ob-alert, .ob-post-row { padding-inline: 18px; }
+  .ob-account-select { min-width: 0; width: 100%; }
+}

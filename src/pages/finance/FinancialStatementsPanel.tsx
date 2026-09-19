@@ -1,9 +1,8 @@
 import { Suspense, lazy } from "react";
 import { Link, useParams } from "react-router-dom";
 import { FileText } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { FinancePageHeader } from "@/components/ui/FinancePageHeader";
 import { allFinanceDestinations } from "@/components/finance/workspace/financeNavigation";
+import { FinanceReportShell } from "@/components/finance/workspace/FinanceReportShell";
 import { PageSkeletonFallback } from "@/components/common/LazyPageWrapper";
 const reports = {
   "financial-statements": lazy(() =>
@@ -59,29 +58,27 @@ export default function FinancialStatementsPanel() {
   );
   if (!Object.hasOwn(reports, reportId) || !destination)
     return (
-      <section className="space-y-4 p-6" dir="rtl">
-        <h1 className="text-xl font-bold">التقرير غير موجود</h1>
-        <Button asChild variant="outline">
-          <Link to="/finance/reports">مكتبة التقارير</Link>
-        </Button>
-      </section>
+      <div className="fin-reports-workspace" dir="rtl">
+        <div className="dw-container">
+          <div className="dw-state" role="status">
+            <FileText size={28} />
+            <p>التقرير غير موجود في مكتبة التقارير</p>
+            <Link to="/finance/reports" className="dw-button">
+              مكتبة التقارير
+            </Link>
+          </div>
+        </div>
+      </div>
     );
   const Report = reports[reportId as keyof typeof reports];
   return (
-    <section className="space-y-5" dir="rtl">
-      <FinancePageHeader
-        title={destination.ar}
-        description="راجع الفترة والمرشحات قبل التصدير أو الطباعة."
-        icon={FileText}
-        actions={
-          <Button variant="outline" asChild>
-            <Link to="/finance/reports">مكتبة التقارير</Link>
-          </Button>
-        }
-      />
+    <FinanceReportShell
+      title={destination.ar}
+      description={destination.descriptionAr}
+    >
       <Suspense fallback={<PageSkeletonFallback />}>
         <Report />
       </Suspense>
-    </section>
+    </FinanceReportShell>
   );
 }

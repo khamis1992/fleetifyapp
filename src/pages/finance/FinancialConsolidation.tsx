@@ -25,6 +25,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { supabase } from "@/integrations/supabase/client";
 import { useUnifiedCompanyAccess } from "@/hooks/useUnifiedCompanyAccess";
 import { useCurrencyFormatter } from "@/hooks/useCurrencyFormatter";
+import { FinanceReportShell } from "@/components/finance/workspace/FinanceReportShell";
 
 type ConsolidationRun = {
   id: string;
@@ -340,25 +341,16 @@ export default function FinancialConsolidation() {
   const fmt = (amount: number) => `${Number(amount).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 3 })}`;
 
   return (
-    <div className="space-y-6 p-4" dir="rtl">
-      <div data-finance-heading="" className="flex items-center justify-between">
-        <div className="flex items-start gap-3">
-          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#ECEEFE] text-[#7C83F6]">
-            <Globe2 className="h-6 w-6" />
-          </div>
-          <div>
-            <h1 className="text-xl font-black text-[#020617]">التوحيد المالي متعدد الشركات</h1>
-            <p className="mt-1 text-sm font-medium text-[#94A3B8]">
-              تجميع القوائم المالية لشركات المجموعة مع إزالة المعاملات البينية.
-            </p>
-          </div>
-        </div>
+    <FinanceReportShell
+      title="التوحيد المالي"
+      description="تجميع القوائم المالية لشركات المجموعة مع إزالة المعاملات البينية."
+      actions={
         <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
           <DialogTrigger asChild>
-            <Button className="gap-2 rounded-lg bg-[#020617] text-white hover:bg-[#020617]/90">
+            <button type="button" className="dw-button dw-button-primary">
               <Plus className="h-4 w-4" />
               عملية توحيد جديدة
-            </Button>
+            </button>
           </DialogTrigger>
           <DialogContent dir="rtl">
             <DialogHeader>
@@ -408,7 +400,9 @@ export default function FinancialConsolidation() {
             </div>
           </DialogContent>
         </Dialog>
-      </div>
+      }
+    >
+      <div className="space-y-6" dir="rtl">
 
       <Card className="rounded-2xl border-slate-200 bg-white shadow-sm">
         <CardHeader className="border-b border-slate-100 pb-4">
@@ -674,6 +668,7 @@ export default function FinancialConsolidation() {
         <Globe2 className="mt-0.5 h-4 w-4 shrink-0" />
         <span>نظام التوحيد المالي يدعم: شركات متعددة بعملات مختلفة، إزالة المعاملات البينية، فصل المهام (المنشئ ≠ المعتمد)، قفل نهائي بعد الاعتماد.</span>
       </div>
-    </div>
+      </div>
+    </FinanceReportShell>
   );
 }
