@@ -1,0 +1,66 @@
+/* Fleet reports page — page-specific pieces built on the shared dashboard workspace language (dw-*). */
+
+.fr-panel-main { grid-column: span 7; min-width: 0; display: flex; flex-direction: column; }
+.fr-panel-side { grid-column: span 5; min-width: 0; }
+
+.fr-chart-box { height: 320px; padding: 0 24px 20px; direction: ltr; }
+
+/* Vehicle summary rows reuse the dashboard list; money values must not wrap. */
+.fr-panel-side .dw-maintenance-row time { white-space: nowrap; }
+
+.fr-summary-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; padding: 0 24px 18px; }
+.fr-summary-tile { border: 1px solid #eef1e7; border-radius: 9px; padding: 13px 15px; min-width: 0; }
+.fr-summary-tile small { display: block; font-size: 10px; color: #7e8b73; line-height: 1.7; }
+.fr-summary-tile strong { display: block; margin-top: 7px; font-size: 23px; font-weight: 600; font-variant-numeric: tabular-nums; line-height: 1.5; }
+.fr-summary-tile.is-ok strong { color: #487038; }
+.fr-summary-tile.is-warn strong { color: #9b7c36; }
+.fr-summary-tile.is-risk strong { color: #b3694c; }
+.fr-summary-tile.is-info strong { color: #4a707c; }
+
+.fr-badge { display: inline-flex; align-items: center; gap: 4px; font-size: 9px; padding: 3px 7px; border-radius: 5px; border: 1px solid; white-space: nowrap; }
+.fr-badge.is-ok { color: #487038; background: #edf4e6; border-color: #d7e4cb; }
+.fr-badge.is-warn { color: #9b7c36; background: #faf5e7; border-color: #ecdfbf; }
+.fr-badge.is-risk { color: #b3694c; background: #fdf1eb; border-color: #f1d9ca; }
+.fr-badge.is-info { color: #4a707c; background: #e9f1f3; border-color: #d3e2e6; }
+.fr-badges { display: flex; gap: 6px; flex-wrap: wrap; }
+
+.fr-doc-list { padding: 4px 24px 20px; }
+.fr-doc-row { display: flex; align-items: center; gap: 13px; padding: 14px 0; border-top: 1px solid #eef1e9; flex-wrap: wrap; }
+.fr-doc-copy { flex: 1; min-width: 0; }
+.fr-doc-copy h3 { font-size: 12px; font-weight: 600; line-height: 1.85; }
+.fr-doc-copy p { font-size: 10px; color: #7d8975; margin-top: 3px; line-height: 1.8; }
+
+/* Insight rows are anchors within the page; keep dashboard row look. */
+a.dw-priority-row { color: inherit; text-decoration: none; }
+.fr-row-copy { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.fr-row-copy h3 { font-size: 12px; font-weight: 600; line-height: 1.85; }
+.fr-row-copy p { font-size: 10px; color: #7d8975; line-height: 1.9; margin-top: 3px; }
+.fr-row-track { width: 100%; margin-top: 9px; }
+.fr-more-note { padding: 0 24px 18px; font-size: 10px; color: #829074; }
+
+.fr-financial { padding: 2px 24px 22px; }
+
+/* Top-vehicle ranking rows follow the dashboard forecast-row pattern. */
+.fr-vehicle-rank { padding: 2px 24px 20px; }
+.fr-rank-row { display: flex; gap: 12px; align-items: flex-start; padding: 11px 0; border-top: 1px solid #eef1e9; }
+.fr-rank-row:first-child { border-top: 0; padding-top: 2px; }
+.fr-rank-number { width: 22px; height: 22px; border-radius: 6px; background: #f2f6eb; color: #487038; font-size: 10px; font-weight: 700; display: grid; place-items: center; flex-shrink: 0; margin-top: 1px; font-variant-numeric: tabular-nums; }
+.fr-rank-copy { flex: 1; min-width: 0; }
+.fr-rank-head { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
+.fr-rank-head h3 { font-size: 11px; font-weight: 600; }
+.fr-rank-head strong { font-size: 11px; color: #3f6136; font-weight: 600; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.fr-rank-copy .dw-forecast-track { margin-top: 7px; }
+
+.dw-utility-links button { display: inline-flex; align-items: center; gap: 7px; font-size: 10px; color: #6e8660; min-height: 32px; background: none; border: 0; padding: 0; font-family: inherit; }
+.dw-utility-links button:hover { color: #47733a; }
+.dw-utility-links button[aria-pressed="true"] { color: #3f6136; font-weight: 700; }
+
+@media (max-width: 1050px) {
+  .fr-panel-main, .fr-panel-side { grid-column: span 12; }
+}
+@media (max-width: 700px) {
+  .fr-chart-box { height: 260px; padding-inline: 14px; }
+  .fr-summary-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); padding-inline: 18px; }
+  .fr-doc-list, .fr-financial, .fr-more-note { padding-inline: 18px; }
+  .fr-doc-row { gap: 9px; }
+}

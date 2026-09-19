@@ -1,10 +1,6 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Card, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
-import { Plus, Search, Edit, Trash2, Users, DollarSign, UserCheck, UserX, Building2, Filter, ChevronDown, ChevronUp } from 'lucide-react';
+import { useMemo, useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { Plus, Search, Edit, Trash2, Users, DollarSign, UserCheck, UserX, Building2, CalendarDays, RefreshCw, Filter, ChevronDown, ChevronUp } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -17,13 +13,16 @@ import AccountCreatedDialog from '@/components/hr/AccountCreatedDialog';
 import EmployeePayrollDetails from '@/components/hr/EmployeePayrollDetails';
 import { EmployeeFormData } from '@/components/hr/EmployeeForm';
 import { AttendancePermissionsPanel } from '@/components/hr/AttendancePermissionsPanel';
-import { HRMetricCard, HRPageHeader, HRPageShell, HRSectionCard, hrButtonClassName, hrFieldClassName } from '@/components/hr/HRDesignSystem';
 import { useCreatePayroll, CreatePayrollData } from '@/hooks/usePayroll';
 import { useCompanyFilter } from '@/hooks/useUnifiedCompanyAccess';
 import { PageHelp } from "@/components/help";
 import { EmployeesPageHelpContent } from "@/components/help/content";
 import { useAuditLog } from '@/hooks/useAuditLog';
 import { useRolePermissions } from '@/hooks/useRolePermissions';
+import { PageEmpty, PageLoading, PagePanel } from '@/components/dashboard/workspace/PageKit';
+import '@/components/dashboard/workspace/dashboard-workspace.css';
+import '@/components/dashboard/workspace/page-kit.css';
+
 interface Employee {
   id: string;
   company_id: string;
@@ -44,6 +43,8 @@ interface Employee {
   is_active: boolean;
 }
 
+type StatusFilter = 'all' | 'active' | 'inactive';
+
 export default function Employees() {
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
@@ -54,10 +55,12 @@ export default function Employees() {
   const [showAccountDialog, setShowAccountDialog] = useState(false);
   const [showAdvancedfilters, setShowAdvancedFilters] = useState(false);
   const [filterDepartment, setFilterDepartment] = useState<string>('');
-  const [filterStatus, setFilterStatus] = useState<string>('');
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
   const [filterContractType, setFilterContractType] = useState<string>('');
+  const [refreshing, setRefreshing] = useState(false);
+  const [refreshedAt, setRefreshedAt] = useState(() => Date.now());
   const { hasPermission } = useRolePermissions();
-  
+
   const canEdit = hasPermission('edit_employees' as any);
   const canDelete = hasPermission('delete_employees' as any);
   const [accountData, setAccountData] = useState<any>(null);
@@ -68,8 +71,8 @@ export default function Employees() {
   const queryClient = useQueryClient();
   const { user: _user } = useAuth();
   const { logAudit } = useAuditLog();
- 
-   const { formatCurrency } = useCurrencyFormatter();
+
+  const { formatCurrency } = useCurrencyFormatter();
 
   // Company scope filter
   const companyFilter = useCompanyFilter();
@@ -90,7 +93,7 @@ export default function Employees() {
         .match(companyFilter as Record<string, string>)
         .eq('is_active', true)
         .order('created_at', { ascending: false });
-      
+
       if (error) throw error;
       return data as Employee[];
     },
@@ -175,7 +178,7 @@ export default function Employees() {
     },
     onSuccess: async ({ employee, employeeData }) => {
       queryClient.invalidateQueries({ queryKey: ['employees', companyFilter?.company_id ?? 'all'] });
-      
+
       // Log audit trail
       await logAudit({
         action: 'CREATE',
@@ -197,7 +200,7 @@ export default function Employees() {
         },
         severity: 'medium',
       });
-      
+
       // If account creation is requested, create account after employee is added
       if (employeeData.createAccount && employeeData.accountEmail && employeeData.accountRoles) {
         setIsCreatingAccount(true);
@@ -244,15 +247,6 @@ export default function Employees() {
         if (error) throw error;
         if (!result?.success) throw new Error(result?.error || 'فشل في إنشاء الحساب');
 
-        // Show account details dialog
-        console.log('[ACCOUNT_CREATED_WHATSAPP] accountData (Employees createUserAccount):', {
-          employee_name: `${employee.first_name} ${employee.last_name}`,
-          employee_email: employeeData.accountEmail,
-          temporary_password: result.temporary_password || employeeData.accountPassword,
-          password_expires_at: result.password_expires_at,
-          employee_phone: employee.phone,
-          employee_id: employee.id,
-        });
         setAccountData({
           employee_name: `${employee.first_name} ${employee.last_name}`,
           employee_email: employeeData.accountEmail,
@@ -435,7 +429,7 @@ export default function Employees() {
     },
     onSuccess: async (data) => {
       queryClient.invalidateQueries({ queryKey: ['employees', companyFilter?.company_id ?? 'all'] });
-      
+
       // Log audit trail
       await logAudit({
         action: 'DELETE',
@@ -450,7 +444,7 @@ export default function Employees() {
         },
         severity: 'high',
       });
-      
+
       setIsDeleteDialogOpen(false);
       setSelectedEmployee(null);
       toast({
@@ -500,243 +494,345 @@ export default function Employees() {
     createPayrollMutation.mutate(data);
   };
 
-  const filteredEmployees = employees?.filter(employee => {
-    const matchesSearch = employee.first_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      employee.last_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      employee.employee_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      employee.email?.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    const matchesDepartment = !filterDepartment || employee.department === filterDepartment || employee.department_ar === filterDepartment;
-    const matchesStatus = !filterStatus || 
-      (filterStatus === 'active' && employee.is_active) ||
-      (filterStatus === 'on_leave' && !employee.is_active) ||
-      (filterStatus === 'terminated' && !employee.is_active);
-    
-    return matchesSearch && matchesDepartment && matchesStatus;
-  }) || [];
+  const filteredEmployees = useMemo(() => {
+    const term = searchTerm.trim().toLowerCase();
+    return (employees || []).filter(employee => {
+      const matchesSearch = !term ||
+        employee.first_name.toLowerCase().includes(term) ||
+        employee.last_name.toLowerCase().includes(term) ||
+        employee.employee_number.toLowerCase().includes(term) ||
+        employee.email?.toLowerCase().includes(term);
+
+      const matchesDepartment = !filterDepartment || employee.department === filterDepartment || employee.department_ar === filterDepartment;
+      // "on_leave" and "terminated" both map to inactive employees, matching the legacy filters.
+      const matchesStatus = statusFilter === 'all' ||
+        (statusFilter === 'active' ? employee.is_active : !employee.is_active);
+
+      return matchesSearch && matchesDepartment && matchesStatus;
+    });
+  }, [employees, searchTerm, filterDepartment, statusFilter]);
 
   const departments = [...new Set(employees?.map(e => e.department).filter(Boolean) || [])];
-  
+
+  const departmentRows = departments
+    .map(dept => ({ label: dept || 'غير محدد', value: employees?.filter(e => e.department === dept).length || 0 }))
+    .sort((a, b) => b.value - a.value)
+    .map(row => ({ ...row, percent: employees?.length ? (row.value / employees.length) * 100 : 0 }));
+
   const stats = {
     total: employees?.length || 0,
     active: employees?.filter(e => e.is_active).length || 0,
-    onLeave: employees?.filter(e => !e.is_active).length || 0,
+    inactive: employees?.filter(e => !e.is_active).length || 0,
     departments: departments.length,
   };
 
-  if (isLoading) {
-    return (
-      <div className="p-6">
-        <div className="animate-pulse space-y-4">
-          <div className="h-8 bg-muted rounded w-1/3"></div>
-          <div className="h-64 bg-muted rounded"></div>
-        </div>
-      </div>
-    );
-  }
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    try {
+      await queryClient.invalidateQueries({ queryKey: ['employees'] });
+      setRefreshedAt(Date.now());
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
+  const visibleEmployees = filteredEmployees.slice(0, 12);
+
+  const metrics = [
+    { label: 'إجمالي الموظفين', value: stats.total, hint: 'ملفات الموظفين النشطة', icon: Users, accent: true },
+    { label: 'نشط', value: stats.active, hint: 'على رأس العمل حالياً', icon: UserCheck, accent: false },
+    { label: 'غير نشط', value: stats.inactive, hint: 'موقوفون أو منتهية خدماتهم', icon: UserX, accent: false },
+    { label: 'الأقسام', value: stats.departments, hint: 'أقسام مفعلة في الهيكل', icon: Building2, accent: false },
+  ];
 
   return (
-    <HRPageShell>
-      <HRPageHeader
-        title="إدارة الموظفين"
-        description="ملف موحد للموظفين يشمل البيانات الأساسية، الرواتب، الصلاحيات، وحالة العمل."
-        icon={Users}
-        action={
-          <Button onClick={() => setIsDialogOpen(true)} className={`${hrButtonClassName} w-full sm:w-auto`}>
-            <Plus className="h-4 w-4 ml-2" />
-            إضافة موظف جديد
-          </Button>
-        }
-      />
-
-      {/* Quick Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <HRMetricCard title="إجمالي الموظفين" value={stats.total} icon={Users} tone="info" />
-        <HRMetricCard title="نشط" value={stats.active} icon={UserCheck} tone="success" />
-        <HRMetricCard title="غير نشط" value={stats.onLeave} icon={UserX} tone="danger" />
-        <HRMetricCard title="الأقسام" value={stats.departments} icon={Building2} tone="focus" />
-      </div>
-
-      {/* Advanced Filters */}
-      <HRSectionCard>
-        <button
-          onClick={() => setShowAdvancedFilters(!showAdvancedfilters)}
-          className="w-full p-4 flex items-center justify-between hover:bg-[#F6F8FB] transition-colors rounded-2xl"
-        >
-          <div className="flex items-center gap-2">
-            <Filter className="h-4 w-4 text-[#38BDF8]" />
-            <span className="font-black text-[#020617]">الفلاتر المتقدمة</span>
+    <div className="dashboard-workspace" dir="rtl">
+      <div className="dw-container">
+        <header className="dw-header">
+          <div>
+            <div className="dw-eyebrow">
+              <span className="dw-mark" />
+              العراف لتأجير السيارات <span>/</span> الموارد البشرية <span>/</span> الموظفون
+            </div>
+            <h1>إدارة الموظفين</h1>
+            <p>ملف موحد للموظفين يشمل البيانات الأساسية، الرواتب، الصلاحيات، وحالة العمل.</p>
           </div>
-          {showAdvancedfilters ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-        </button>
-        {showAdvancedfilters && (
-          <div className="p-4 pt-0 border-t border-slate-200 mt-2 grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div>
-              <label className="text-sm text-slate-600 dark:text-slate-400 mb-1 block">القسم</label>
-              <Select value={filterDepartment} onValueChange={setFilterDepartment}>
-                <SelectTrigger className={hrFieldClassName}>
-                  <SelectValue placeholder="جميع الأقسام" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="">جميع الأقسام</SelectItem>
-                  {departments.map(dept => (
-                    <SelectItem key={dept} value={dept || ''}>{dept}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <label className="text-sm text-slate-600 dark:text-slate-400 mb-1 block">الحالة</label>
-              <Select value={filterStatus} onValueChange={setFilterStatus}>
-                <SelectTrigger className={hrFieldClassName}>
-                  <SelectValue placeholder="جميع الحالات" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="">جميع الحالات</SelectItem>
-                  <SelectItem value="active">نشط</SelectItem>
-                  <SelectItem value="on_leave">في إجازة</SelectItem>
-                  <SelectItem value="terminated">منتهي</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <label className="text-sm text-slate-600 dark:text-slate-400 mb-1 block">نوع العقد</label>
-              <Select value={filterContractType} onValueChange={setFilterContractType}>
-                <SelectTrigger className={hrFieldClassName}>
-                  <SelectValue placeholder="جميع العقود" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="">جميع العقود</SelectItem>
-                  <SelectItem value="full_time">دوام كامل</SelectItem>
-                  <SelectItem value="part_time">دوام جزئي</SelectItem>
-                  <SelectItem value="contract">عقد</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-        )}
-      </HRSectionCard>
-
-      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4">
-        <div className="relative flex-1 sm:max-w-md">
-          <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400 h-4 w-4" />
-          <Input
-            placeholder="البحث عن موظف..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className={`${hrFieldClassName} pr-10`}
-          />
-        </div>
-      </div>
-
-      {/* Attendance Permissions Panel */}
-      <AttendancePermissionsPanel />
-
-      <div className="grid gap-4">
-        {filteredEmployees.length === 0 ? (
-          <Card className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl">
-            <CardContent className="p-8">
-              <div className="text-center">
-                <div className="w-16 h-16 bg-teal-500 rounded-xl shadow-sm flex items-center justify-center mx-auto mb-4">
-                  <Users className="h-8 w-8 text-white" />
-                </div>
-                <p className="text-slate-600 dark:text-slate-400">لا توجد موظفين مسجلين</p>
-                <Button className="mt-4 bg-teal-500 hover:bg-teal-600 text-white shadow-sm" onClick={() => setIsDialogOpen(true)}>
-                  <Plus className="h-4 w-4 ml-2" />
-                  إضافة أول موظف
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        ) : (
-          filteredEmployees.map((employee) => (
-            <Card 
-              key={employee.id} 
-              className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl hover:border-teal-500/50 dark:hover:border-teal-500/50 hover:shadow-md transition-all duration-300 cursor-pointer"
-              onClick={() => navigate(`/hr/employees/${employee.id}`)}
+          <div className="dw-header-tools">
+            <button
+              className="dw-icon-button"
+              onClick={handleRefresh}
+              disabled={refreshing}
+              aria-label="تحديث بيانات الموظفين"
             >
-              <CardContent className="p-4">
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                  <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 bg-teal-500 rounded-xl shadow-sm flex items-center justify-center shrink-0">
-                      <Users className="h-6 w-6 text-white" />
-                    </div>
-                    <div>
-                      <h3 className="font-semibold text-lg text-slate-900 dark:text-slate-100">
-                        {employee.first_name} {employee.last_name}
-                      </h3>
-                      <p className="text-slate-600 dark:text-slate-400">رقم الموظف: {employee.employee_number}</p>
-                      <div className="flex items-center gap-2 mt-1 flex-wrap">
-                        <span className="text-sm text-slate-600 dark:text-slate-400">
-                          {employee.position || 'غير محدد'}
-                        </span>
-                        <span className="text-sm text-slate-600 dark:text-slate-400">•</span>
-                        <span className="text-sm text-slate-600 dark:text-slate-400">
-                          {employee.department || 'غير محدد'}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
+              <RefreshCw size={17} className={refreshing ? 'animate-spin' : ''} />
+            </button>
+          </div>
+        </header>
 
-                  <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4 w-full md:w-auto">
-                    <div className="flex items-center gap-4 w-full sm:w-auto">
-                      <div className="text-right sm:text-left flex-1 sm:flex-initial">
-                        <p className="text-sm text-slate-600 dark:text-slate-400">الراتب الأساسي</p>
-                        <p className="font-semibold text-slate-900 dark:text-slate-100">
-                          {formatCurrency(employee.basic_salary)}
-                        </p>
-                      </div>
-                      <div className="text-right sm:text-left flex-1 sm:flex-initial">
-                        <p className="text-sm text-slate-600 dark:text-slate-400">البدلات</p>
-                        <p className="font-semibold text-slate-900 dark:text-slate-100">
-                          {formatCurrency(employee.allowances)}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2 w-full sm:w-auto">
-                      <Badge variant={employee.is_active ? "default" : "secondary"} className={employee.is_active ? "bg-teal-500 text-white" : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400"}>
-                        {employee.is_active ? "نشط" : "غير نشط"}
-                      </Badge>
-                      <div className="flex gap-2 mr-auto sm:mr-0">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={(e) => { e.stopPropagation(); handleViewPayroll(employee); }}
-                          title="عرض الرواتب"
-                          className="min-h-[44px] border-slate-200 dark:border-slate-700 hover:border-teal-500/50 dark:hover:border-teal-500/50"
-                        >
-                          <DollarSign className="h-4 w-4" />
-                        </Button>
-                        {canEdit && (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={(e) => { e.stopPropagation(); handleEditEmployee(employee); }}
-                            disabled={updateEmployeeMutation.isPending}
-                            className="min-h-[44px] border-slate-200 dark:border-slate-700 hover:border-teal-500/50 dark:hover:border-teal-500/50"
-                          >
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                        )}
-                        {canDelete && (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={(e) => { e.stopPropagation(); handleDeleteEmployee(employee); }}
-                            disabled={deleteEmployeeMutation.isPending}
-                            className="min-h-[44px] border-slate-200 dark:border-slate-700 hover:border-red-500/30 dark:hover:border-red-500/50"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        )}
-                      </div>
-                    </div>
+        <div className="dw-daybar">
+          <div className="dw-date">
+            <CalendarDays size={17} />
+            <span>{new Date().toLocaleDateString('ar-QA', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</span>
+          </div>
+          <div className="dw-primary-actions">
+            <button className="dw-button dw-button-primary" onClick={() => setIsDialogOpen(true)}>
+              <Plus size={17} />
+              إضافة موظف جديد
+            </button>
+          </div>
+        </div>
+
+        <section className="dw-metrics" aria-label="مؤشرات الموظفين">
+          {metrics.map((metric) => (
+            <div key={metric.label} className={`dw-metric ${metric.accent ? 'dw-metric-accent' : ''}`}>
+              <div className="dw-metric-top">
+                <span>{metric.label}</span>
+                <metric.icon size={19} />
+              </div>
+              <strong>{metric.value}</strong>
+              <div className="dw-metric-bottom">
+                <small>{metric.hint}</small>
+              </div>
+            </div>
+          ))}
+        </section>
+
+        <div className="dw-main-grid">
+          <PagePanel number="01" title="توزيع الأقسام" subtitle="حجم كل قسم من إجمالي القوى العاملة" className="wk-panel-side">
+            {isLoading ? (
+              <PageLoading />
+            ) : departmentRows.length === 0 ? (
+              <PageEmpty icon={Building2} message="لم تُسجل أقسام بعد" />
+            ) : (
+              <div className="wk-legend">
+                {departmentRows.map(row => (
+                  <div key={row.label} className="wk-legend-row">
+                    <i style={{ background: '#7c9e65' }} />
+                    <span>{row.label}</span>
+                    <strong>{row.value}</strong>
+                    <small>{Math.round(row.percent)}%</small>
                   </div>
+                ))}
+              </div>
+            )}
+            <div className="dw-panel-foot">
+              <Users size={14} />
+              <span>اختر موظفاً من السجل لعرض ملفه الكامل ورواتبَه وصلاحياته.</span>
+            </div>
+          </PagePanel>
+
+          <PagePanel
+            number="02"
+            title="سجل الموظفين"
+            subtitle="بحث وتصفية وفتح ملف أي موظف"
+            className="wk-panel-main"
+          >
+            <div className="wk-toolbar">
+              <div className="wk-toolbar-group">
+                <div className="relative">
+                  <Search className="absolute right-3 top-1/2 -translate-y-1/2 text-[#9aa791]" size={14} />
+                  <input
+                    className="wk-field"
+                    style={{ paddingRight: 32, minWidth: 200 }}
+                    placeholder="ابحث بالاسم أو الرقم أو البريد…"
+                    value={searchTerm}
+                    onChange={(event) => setSearchTerm(event.target.value)}
+                    aria-label="بحث في الموظفين"
+                  />
                 </div>
-              </CardContent>
-            </Card>
-          ))
-        )}
+                <button
+                  className="dw-button"
+                  onClick={() => setShowAdvancedFilters(!showAdvancedfilters)}
+                  aria-expanded={showAdvancedfilters}
+                >
+                  <Filter size={15} />
+                  فلاتر متقدمة
+                  {showAdvancedfilters ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+                </button>
+              </div>
+              <div className="dw-filters" role="group" aria-label="تصفية حالة الموظف">
+                {([
+                  { value: 'all', label: 'الكل' },
+                  { value: 'active', label: 'نشط' },
+                  { value: 'inactive', label: 'غير نشط' },
+                ] as const).map(chip => (
+                  <button key={chip.value} aria-pressed={statusFilter === chip.value} onClick={() => setStatusFilter(chip.value)}>
+                    {chip.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+            {showAdvancedfilters && (
+              <div className="wk-toolbar" style={{ borderBottom: 'none', paddingBottom: 0, paddingTop: 12 }}>
+                <div className="wk-toolbar-group" style={{ flex: 1 }}>
+                  <Select value={filterDepartment} onValueChange={setFilterDepartment}>
+                    <SelectTrigger className="wk-field" style={{ minWidth: 170 }} aria-label="تصفية بالقسم">
+                      <SelectValue placeholder="جميع الأقسام" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="">جميع الأقسام</SelectItem>
+                      {departments.map(dept => (
+                        <SelectItem key={dept} value={dept || ''}>{dept}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Select value={filterContractType} onValueChange={setFilterContractType}>
+                    <SelectTrigger className="wk-field" style={{ minWidth: 170 }} aria-label="تصفية بنوع العقد">
+                      <SelectValue placeholder="جميع العقود" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="">جميع العقود</SelectItem>
+                      <SelectItem value="full_time">دوام كامل</SelectItem>
+                      <SelectItem value="part_time">دوام جزئي</SelectItem>
+                      <SelectItem value="contract">عقد</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            )}
+            {isLoading ? (
+              <PageLoading />
+            ) : visibleEmployees.length === 0 ? (
+              <PageEmpty icon={Users} message={employees?.length ? 'لا يوجد موظفون مطابقون لبحثك' : 'لا يوجد موظفون مسجلون'}>
+                {!employees?.length && (
+                  <button className="dw-button" onClick={() => setIsDialogOpen(true)}>
+                    <Plus size={16} />
+                    إضافة أول موظف
+                  </button>
+                )}
+              </PageEmpty>
+            ) : (
+              <>
+                <div className="wk-table-wrap">
+                  <table>
+                    <caption className="sr-only">سجل الموظفين</caption>
+                    <thead>
+                      <tr>
+                        <th scope="col">الموظف</th>
+                        <th scope="col">المنصب / القسم</th>
+                        <th scope="col">الراتب الأساسي</th>
+                        <th scope="col">البدلات</th>
+                        <th scope="col">الحالة</th>
+                        <th scope="col"><span className="sr-only">إجراءات</span></th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {visibleEmployees.map((employee) => (
+                        <tr
+                          key={employee.id}
+                          style={{ cursor: 'pointer' }}
+                          onClick={() => navigate(`/hr/employees/${employee.id}`)}
+                        >
+                          <td>
+                            <strong>
+                              <bdi>{employee.first_name} {employee.last_name}</bdi>
+                            </strong>
+                            <span>رقم الموظف: {employee.employee_number}</span>
+                          </td>
+                          <td>
+                            {employee.position || 'غير محدد'}
+                            <span>{employee.department || 'غير محدد'}</span>
+                          </td>
+                          <td>{formatCurrency(employee.basic_salary)}</td>
+                          <td>{formatCurrency(employee.allowances)}</td>
+                          <td>
+                            <span className={`wk-badge ${employee.is_active ? 'is-ok' : 'is-neutral'}`}>
+                              {employee.is_active ? 'نشط' : 'غير نشط'}
+                            </span>
+                          </td>
+                          <td>
+                            <div className="wk-actions">
+                              <button
+                                type="button"
+                                className="wk-action"
+                                title="عرض الرواتب"
+                                aria-label={`عرض رواتب ${employee.first_name} ${employee.last_name}`}
+                                onClick={(e) => { e.stopPropagation(); handleViewPayroll(employee); }}
+                              >
+                                <DollarSign size={15} />
+                              </button>
+                              {canEdit && (
+                                <button
+                                  type="button"
+                                  className="wk-action"
+                                  title="تعديل البيانات"
+                                  aria-label={`تعديل بيانات ${employee.first_name} ${employee.last_name}`}
+                                  disabled={updateEmployeeMutation.isPending}
+                                  onClick={(e) => { e.stopPropagation(); handleEditEmployee(employee); }}
+                                >
+                                  <Edit size={15} />
+                                </button>
+                              )}
+                              {canDelete && (
+                                <button
+                                  type="button"
+                                  className="wk-action"
+                                  title="حذف الموظف"
+                                  aria-label={`حذف ${employee.first_name} ${employee.last_name}`}
+                                  disabled={deleteEmployeeMutation.isPending}
+                                  onClick={(e) => { e.stopPropagation(); handleDeleteEmployee(employee); }}
+                                >
+                                  <Trash2 size={15} />
+                                </button>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                {filteredEmployees.length > visibleEmployees.length && (
+                  <p className="wk-more-note">+{filteredEmployees.length - visibleEmployees.length} موظف آخر — استخدم البحث أو الفلاتر لتضييق النتائج</p>
+                )}
+              </>
+            )}
+          </PagePanel>
+
+          <PagePanel
+            number="03"
+            title="صلاحيات تسجيل الحضور"
+            subtitle="التحكم بصلاحيات تسجيل الحضور والانصراف للموظفين"
+            className="wk-panel-full"
+          >
+            <div style={{ padding: '0 24px 20px' }}>
+              <AttendancePermissionsPanel />
+            </div>
+          </PagePanel>
+        </div>
+
+        <section className="dw-shortcuts" aria-labelledby="hr-employees-shortcuts-title">
+          <div className="dw-shortcut-heading">
+            <div className="dw-eyebrow">مساحات العمل</div>
+            <h2 id="hr-employees-shortcuts-title">انتقل إلى التفاصيل</h2>
+            <p>أدوات الموارد البشرية اليومية، في مكان واحد.</p>
+          </div>
+          <div className="dw-shortcut-grid">
+            {[
+              { label: 'الحضور والانصراف', detail: 'متابعة يومية للحضور والتأخير', icon: UserCheck, path: '/hr/attendance' },
+              { label: 'الرواتب', detail: 'سجلات الرواتب والمراجعات', icon: DollarSign, path: '/hr/payroll' },
+              { label: 'الإجازات', detail: 'طلبات الإجازات والموافقات', icon: CalendarDays, path: '/hr/leave' },
+              { label: 'إدارة المهام', detail: 'تنسيق العمل وتوزيع المسؤوليات', icon: Users, path: '/tasks' },
+            ].map((item) => (
+              <Link key={item.path} to={item.path}>
+                <item.icon size={23} />
+                <div>
+                  <h3>{item.label}</h3>
+                  <p>{item.detail}</p>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </section>
+
+        <footer className="dw-footer">
+          <span>
+            Fleetify <span>/</span> إدارة الموظفين
+          </span>
+          <span role="status">
+            {refreshing ? 'جاري تحديث البيانات…' : `آخر تحديث ${new Date(refreshedAt).toLocaleTimeString('ar-QA', { hour: '2-digit', minute: '2-digit' })}`}
+          </span>
+        </footer>
       </div>
 
       {/* نموذج إضافة موظف جديد - الموحد */}
@@ -785,6 +881,6 @@ export default function Employees() {
       <EmployeesPageHelpContent />
     </PageHelp>
 
-    </HRPageShell>
+    </div>
   );
 }

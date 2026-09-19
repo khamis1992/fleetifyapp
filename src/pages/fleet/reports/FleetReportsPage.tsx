@@ -1,44 +1,47 @@
-import React, { useCallback, useMemo, useState } from 'react';
-import { motion } from 'framer-motion';
+/**
+ * Fleet Reports Page — rebuilt on the shared dashboard workspace design language (dw-*).
+ * Data hooks and routes are unchanged; only the presentation layer was redesigned,
+ * keeping every previous capability (period filter, exports, view sections, health score).
+ */
+import { useCallback, useMemo, useState, type CSSProperties, type ElementType, type FunctionComponent, type ReactNode } from 'react';
+import { Link } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import {
-  Activity,
-  AlertTriangle,
+  ArrowLeft,
   BarChart3,
   CalendarDays,
   Car,
   CheckCircle2,
   ChevronLeft,
-  Clock,
-  Download,
   FileSpreadsheet,
   Gauge,
+  Printer,
   RefreshCw,
+  Search,
+  ShieldAlert,
   ShieldCheck,
-  TrendingUp,
   Wallet,
   Wrench,
 } from 'lucide-react';
 import {
   Area,
   AreaChart,
-  Bar,
-  BarChart,
   CartesianGrid,
-  Cell,
-  Pie,
-  PieChart,
   ResponsiveContainer,
   Tooltip,
   XAxis,
   YAxis,
 } from 'recharts';
 
-import { Button } from '@/components/ui/button';
-import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
-import { cn } from '@/lib/utils';
-import { systemColorPattern } from '@/lib/design-system/systemColorPattern';
-import type { DateFilterPeriod, ExportFormat, ReportFilters as IReportFilters } from './types/reports.types';
+import '@/components/dashboard/workspace/dashboard-workspace.css';
+import { fleetGradient, formatDashboardCurrency as money } from '@/components/dashboard/workspace/model';
+import type {
+  DateFilterPeriod,
+  ExportFormat,
+  FleetStatusData,
+  ReportFilters as IReportFilters,
+} from './types/reports.types';
 import {
   useFleetAnalytics,
   useFleetStatus,
@@ -50,19 +53,22 @@ import {
   useVehiclesNeedingMaintenance,
   useVehiclesReport,
 } from './hooks/useFleetReports';
+import './fleet-reports-workspace.css';
 
-const theme = {
-  text: systemColorPattern.colors.text,
-  muted: systemColorPattern.colors.secondaryText,
-  border: systemColorPattern.colors.border,
-  surface: '#FFFFFF',
-  page: '#F4F7FA',
-  navy: '#173A63',
-  success: systemColorPattern.colors.success,
-  info: systemColorPattern.colors.info,
-  alert: systemColorPattern.colors.alert,
-  amber: '#F59E0B',
-  focus: systemColorPattern.colors.focus,
+const chartPalette = {
+  revenue: '#2f7966',
+  profit: '#7c9e65',
+  maintenance: '#d5ad69',
+  ticks: '#7d8975',
+  grid: '#edf1e7',
+};
+const barColors = ['#2f7966', '#7c9e65', '#9db88a', '#d5ad69'];
+const tooltipStyle: CSSProperties = {
+  borderRadius: 9,
+  border: '1px solid #dfe5d9',
+  fontSize: 11,
+  fontFamily: 'Cairo, sans-serif',
+  direction: 'rtl',
 };
 
 const periodOptions: Array<{ label: string; value: DateFilterPeriod }> = [
@@ -83,88 +89,104 @@ const statusLabels: Record<string, string> = {
   completed: 'مكتملة',
 };
 
-type ReportView = 'overview' | 'financial' | 'maintenance' | 'compliance';
+const statusTone: Record<string, 'ok' | 'warn' | 'risk' | 'info'> = {
+  available: 'ok',
+  rented: 'info',
+  maintenance: 'warn',
+  reserved: 'info',
+  pending: 'warn',
+  in_progress: 'warn',
+  completed: 'ok',
+};
 
-const viewOptions: Array<{ label: string; value: ReportView; icon: React.ElementType }> = [
-  { label: 'لوحة الأداء', value: 'overview', icon: Gauge },
-  { label: 'التحليل المالي', value: 'financial', icon: Wallet },
-  { label: 'الصيانة', value: 'maintenance', icon: Wrench },
-  { label: 'التأمين والتسجيل', value: 'compliance', icon: ShieldCheck },
-];
-
-const chartColors = [theme.success, theme.info, theme.amber, theme.focus, theme.alert];
+const docStatusLabels: Record<string, string> = {
+  valid: 'ساري',
+  expiring_soon: 'قريب الانتهاء',
+  expired: 'منتهي',
+  none: 'غير مسجل',
+};
+const docStatusTone = (status: string): 'ok' | 'warn' | 'risk' | 'info' =>
+  status === 'valid' ? 'ok' : status === 'expiring_soon' ? 'warn' : status === 'expired' ? 'risk' : 'info';
 
 const formatPercent = (value?: number) => `${Math.round(value || 0)}%`;
 
-const ShellCard: React.FC<React.PropsWithChildren<{ className?: string }>> = ({ children, className }) => (
-  <motion.div
-    initial={{ opacity: 0, y: 14 }}
-    animate={{ opacity: 1, y: 0 }}
-    transition={{ duration: 0.25 }}
-    className={cn('rounded-lg border bg-white shadow-sm', className)}
-    style={{ borderColor: theme.border }}
-  >
-    {children}
-  </motion.div>
-);
+type FleetRow = { label: string; value: number; color: string; path: string; percent: number };
 
-const MetricCard: React.FC<{
-  label: string;
-  value: string | number;
-  hint: string;
-  icon: React.ElementType;
-  tone: 'navy' | 'success' | 'info' | 'warning' | 'danger';
-}> = ({ label, value, hint, icon: Icon, tone }) => {
-  const color =
-    tone === 'success' ? theme.success :
-    tone === 'info' ? theme.info :
-    tone === 'warning' ? theme.amber :
-    tone === 'danger' ? theme.alert :
-    theme.navy;
+/** Same visual breakdown as the dashboard readiness ring, scoped to the reports data shape. */
+function fleetBreakdown(fleet: FleetStatusData): FleetRow[] {
+  const rows: FleetRow[] = [
+    { label: 'متاحة للتأجير', value: fleet.available, color: '#7c9e65', path: '/fleet?status=available', percent: 0 },
+    { label: 'مؤجرة', value: fleet.rented, color: '#2f7966', path: '/fleet?status=rented', percent: 0 },
+    { label: 'في الصيانة', value: fleet.maintenance, color: '#d5ad69', path: '/fleet/maintenance', percent: 0 },
+    { label: 'محجوزة', value: fleet.reserved, color: '#83a9b2', path: '/fleet/reservations', percent: 0 },
+  ];
+  const rest = Math.max(0, fleet.total - rows.reduce((sum, row) => sum + row.value, 0));
+  return [...rows, { label: 'حالات أخرى', value: rest, color: '#d2d9cd', path: '/fleet', percent: 0 }].map((row) => ({
+    ...row,
+    percent: fleet.total > 0 ? (row.value / fleet.total) * 100 : 0,
+  }));
+}
 
-  return (
-    <ShellCard className="min-h-[132px] p-4">
-      <div className="flex h-full items-start justify-between gap-3">
-        <div className="min-w-0">
-          <p className="text-sm font-semibold" style={{ color: theme.muted }}>{label}</p>
-          <p className="mt-2 text-2xl font-black tracking-normal" style={{ color: theme.text }}>{value}</p>
-          <p className="mt-2 text-xs font-medium leading-5" style={{ color: theme.muted }}>{hint}</p>
-        </div>
-        <span className="rounded-lg p-3" style={{ backgroundColor: `${color}14`, color }}>
-          <Icon className="h-5 w-5" />
-        </span>
-      </div>
-    </ShellCard>
-  );
-};
-
-const SectionTitle: React.FC<{ title: string; subtitle?: string; icon: React.ElementType; action?: React.ReactNode }> = ({
+function Panel({
+  number,
   title,
   subtitle,
-  icon: Icon,
   action,
-}) => (
-  <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
-    <div className="flex items-start gap-3">
-      <span className="rounded-lg p-2.5" style={{ backgroundColor: `${theme.navy}10`, color: theme.navy }}>
-        <Icon className="h-5 w-5" />
-      </span>
-      <div>
-        <h2 className="text-xl font-black" style={{ color: theme.text }}>{title}</h2>
-        {subtitle && <p className="mt-1 text-sm font-medium" style={{ color: theme.muted }}>{subtitle}</p>}
-      </div>
-    </div>
-    {action}
-  </div>
-);
+  className = '',
+  id,
+  children,
+}: {
+  number: string;
+  title: string;
+  subtitle: string;
+  action?: ReactNode;
+  className?: string;
+  id?: string;
+  children: ReactNode;
+}) {
+  return (
+    <section id={id} className={`dw-panel ${className}`}>
+      <header className="dw-panel-heading">
+        <div className="dw-panel-title">
+          <span className="dw-section-number">{number}</span>
+          <div>
+            <h2>{title}</h2>
+            <p>{subtitle}</p>
+          </div>
+        </div>
+        {action}
+      </header>
+      {children}
+    </section>
+  );
+}
 
-const FleetReportsPage: React.FC = () => {
-  const { formatCurrency } = useCurrencyFormatter();
-  const [activeView, setActiveView] = useState<ReportView>('overview');
+function LoadingState({ label = 'جاري تحميل البيانات…' }: { label?: string }) {
+  return (
+    <div className="dw-state" role="status">
+      <RefreshCw className="animate-spin" size={20} />
+      <p>{label}</p>
+    </div>
+  );
+}
+
+function EmptyState({ icon: Icon, message }: { icon: ElementType; message: string }) {
+  return (
+    <div className="dw-state">
+      <Icon size={28} />
+      <p>{message}</p>
+    </div>
+  );
+}
+
+const FleetReportsPage: FunctionComponent = () => {
+  const queryClient = useQueryClient();
   const [filters, setFilters] = useState<IReportFilters>({
     period: 'month',
     compareWithPrevious: false,
   });
+  const [refreshing, setRefreshing] = useState(false);
+  const [refreshedAt, setRefreshedAt] = useState(() => Date.now());
 
   const { data: analytics, isLoading: analyticsLoading } = useFleetAnalytics();
   const { data: vehicles = [], isLoading: vehiclesLoading } = useVehiclesReport(filters);
@@ -176,444 +198,655 @@ const FleetReportsPage: React.FC = () => {
   const { data: insuranceReport = [], isLoading: insuranceLoading } = useInsuranceRegistrationReport();
   const { data: insuranceSummary } = useInsuranceRegistrationSummary();
 
-  const isLoading = analyticsLoading || vehiclesLoading || maintenanceLoading || revenueLoading || statusLoading || insuranceLoading;
-
   const healthScore = useMemo(() => {
     if (!analytics || !insuranceSummary) return 0;
     const utilization = Math.min(analytics.utilizationRate || 0, 100);
-    const availability = analytics.totalVehicles > 0 ? ((analytics.availableVehicles + analytics.rentedVehicles) / analytics.totalVehicles) * 100 : 0;
-    const compliance = insuranceSummary.total_vehicles > 0 ? (insuranceSummary.fully_compliant / insuranceSummary.total_vehicles) * 100 : 0;
+    const availability =
+      analytics.totalVehicles > 0
+        ? ((analytics.availableVehicles + analytics.rentedVehicles) / analytics.totalVehicles) * 100
+        : 0;
+    const compliance =
+      insuranceSummary.total_vehicles > 0
+        ? (insuranceSummary.fully_compliant / insuranceSummary.total_vehicles) * 100
+        : 0;
     const maintenancePenalty = Math.min(analytics.maintenanceRate || 0, 40);
-    return Math.max(0, Math.round((utilization * 0.35) + (availability * 0.25) + (compliance * 0.3) + (100 - maintenancePenalty) * 0.1));
+    return Math.max(
+      0,
+      Math.round(utilization * 0.35 + availability * 0.25 + compliance * 0.3 + (100 - maintenancePenalty) * 0.1),
+    );
   }, [analytics, insuranceSummary]);
 
-  const fleetStatusData = useMemo(() => ([
-    { name: 'متاحة', value: fleetStatus?.available || 0, color: theme.success },
-    { name: 'مؤجرة', value: fleetStatus?.rented || 0, color: theme.info },
-    { name: 'صيانة', value: fleetStatus?.maintenance || 0, color: theme.amber },
-    { name: 'محجوزة', value: fleetStatus?.reserved || 0, color: theme.focus },
-  ]), [fleetStatus]);
+  const fleetRows = useMemo(() => (fleetStatus ? fleetBreakdown(fleetStatus) : []), [fleetStatus]);
+  const occupancy = fleetStatus && fleetStatus.total > 0 ? Math.round((fleetStatus.rented / fleetStatus.total) * 100) : 0;
+  const maintenanceCostRatio =
+    analytics && analytics.totalRevenue > 0 ? (analytics.monthlyMaintenanceCost / analytics.totalRevenue) * 100 : 0;
 
-  const decisionItems = [
-    {
-      title: 'مركبات تحتاج صيانة',
-      value: maintenanceAlerts.length,
-      detail: maintenanceAlerts.length > 0 ? 'راجع أوامر الصيانة قبل تأثيرها على الجاهزية' : 'لا توجد تنبيهات صيانة حرجة',
-      tone: maintenanceAlerts.length > 0 ? theme.amber : theme.success,
-      icon: Wrench,
-      view: 'maintenance' as ReportView,
-    },
-    {
-      title: 'التأمين والتسجيل',
-      value: insuranceSummary?.needs_attention || 0,
-      detail: 'مركبات تحتاج متابعة وثائق أو تجديدات',
-      tone: (insuranceSummary?.needs_attention || 0) > 0 ? theme.alert : theme.success,
-      icon: ShieldCheck,
-      view: 'compliance' as ReportView,
-    },
-    {
-      title: 'صحة الأسطول',
-      value: `${healthScore}/100`,
-      detail: healthScore >= 75 ? 'الأداء التشغيلي جيد' : 'هناك فرصة لتحسين الجاهزية والتحصيل',
-      tone: healthScore >= 75 ? theme.success : theme.info,
-      icon: Gauge,
-      view: 'overview' as ReportView,
-    },
-  ];
+  const openMaintenance = maintenanceAlerts.length;
+  const vehiclesNeedingDocs = insuranceReport.filter(
+    (item) => item.insurance_status !== 'valid' || item.registration_status !== 'valid',
+  ).length;
+  const expiredDocs = insuranceReport.filter(
+    (item) => item.insurance_status === 'expired' || item.registration_status === 'expired',
+  ).length;
+
+  const insightRows = useMemo(
+    () => [
+      {
+        key: 'maintenance',
+        href: '#fr-maintenance',
+        icon: Wrench,
+        urgent: openMaintenance > 0,
+        title: 'أوامر صيانة مفتوحة',
+        reason:
+          openMaintenance > 0
+            ? 'راجع أوامر الصيانة قبل تأثيرها على جاهزية المركبات'
+            : 'لا توجد أوامر صيانة مفتوحة حالياً',
+        badge: `${openMaintenance} أمر`,
+        track: undefined as number | undefined,
+      },
+      {
+        key: 'docs',
+        href: '#fr-compliance',
+        icon: ShieldAlert,
+        urgent: expiredDocs > 0,
+        title: 'وثائق تحتاج متابعة',
+        reason: 'تأمين أو استمارة منتهية أو تنتهي خلال 30 يوماً',
+        badge: `${vehiclesNeedingDocs} مركبة`,
+        track: undefined as number | undefined,
+      },
+      {
+        key: 'health',
+        href: '#fr-readiness',
+        icon: Gauge,
+        urgent: healthScore < 75,
+        title: 'صحة الأسطول',
+        reason: healthScore >= 75 ? 'الأداء التشغيلي جيد ومستقر' : 'هناك فرصة لتحسين الجاهزية والتحصيل',
+        badge: `${healthScore}/100`,
+        track: healthScore as number | undefined,
+      },
+    ],
+    [openMaintenance, expiredDocs, vehiclesNeedingDocs, healthScore],
+  );
 
   const handleExport = useCallback((format: ExportFormat) => {
     toast.success(`جاري تجهيز تقرير الأسطول بصيغة ${format.toUpperCase()}`);
   }, []);
 
-  const handleRefresh = useCallback(() => {
-    toast.success('تم طلب تحديث بيانات التقارير');
+  const handleRefresh = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      await Promise.allSettled([
+        queryClient.invalidateQueries({ queryKey: ['fleet-vehicles-report'] }),
+        queryClient.invalidateQueries({ queryKey: ['fleet-maintenance-report'] }),
+        queryClient.invalidateQueries({ queryKey: ['fleet-monthly-revenue'] }),
+        queryClient.invalidateQueries({ queryKey: ['fleet-status-report'] }),
+        queryClient.invalidateQueries({ queryKey: ['fleet-insurance-registration-report'] }),
+      ]);
+      setRefreshedAt(Date.now());
+    } finally {
+      setRefreshing(false);
+    }
+  }, [queryClient]);
+
+  const triggerSearch = useCallback(() => {
+    document.dispatchEvent(new Event('fleetify:open-global-search'));
   }, []);
 
-  if (isLoading && !analytics) {
-    return (
-      <div className="flex min-h-screen items-center justify-center" style={{ backgroundColor: theme.page }}>
-        <div className="flex flex-col items-center gap-4">
-          <div className="h-12 w-12 animate-spin rounded-full border-4 border-t-transparent" style={{ borderColor: `${theme.success}55`, borderTopColor: 'transparent' }} />
-          <p className="text-sm font-bold" style={{ color: theme.muted }}>جاري تحميل تقارير الأسطول...</p>
-        </div>
-      </div>
-    );
-  }
+  const metricValue = (loading: boolean, value: string | number | undefined) =>
+    loading || value === undefined ? '—' : value;
+
+  const metrics = [
+    {
+      label: 'إجمالي الأسطول',
+      value: metricValue(analyticsLoading, analytics?.totalVehicles),
+      hint: analytics ? `${analytics.availableVehicles} متاحة و ${analytics.rentedVehicles} مؤجرة` : 'حالة المركبات الحالية',
+      icon: Car,
+      path: '/fleet',
+      accent: true,
+    },
+    {
+      label: 'معدل الإشغال',
+      value: metricValue(analyticsLoading, analytics ? formatPercent(analytics.utilizationRate) : undefined),
+      hint: 'نسبة المركبات المؤجرة من إجمالي الأسطول',
+      icon: Gauge,
+      path: '/fleet',
+      accent: false,
+    },
+    {
+      label: 'الإيراد الشهري',
+      value: metricValue(analyticsLoading, analytics ? money(analytics.totalRevenue) : undefined),
+      hint: analytics ? `متوسط ${money(analytics.averageRevenue)} لكل مركبة` : 'من العقود النشطة',
+      icon: Wallet,
+      path: '/finance',
+      accent: false,
+    },
+    {
+      label: 'تكلفة الصيانة',
+      value: metricValue(analyticsLoading, analytics ? money(analytics.monthlyMaintenanceCost) : undefined),
+      hint: `${maintenance.length} أمر صيانة مسجل`,
+      icon: Wrench,
+      path: '/fleet/maintenance',
+      accent: false,
+    },
+  ];
+
+  const vehiclesNeedingDocsList = insuranceReport.filter(
+    (item) => item.insurance_status !== 'valid' || item.registration_status !== 'valid',
+  );
+  const urgentVehicles = vehiclesNeedingDocsList.slice(0, 6);
+  const urgentVehiclesTotal = vehiclesNeedingDocsList.length;
+  // Compliance tiles share the list's definition so counts stay consistent on screen.
+  const fullyCompliantVehicles = insuranceReport.length - urgentVehiclesTotal;
+  const expiredInsuranceCount = insuranceReport.filter((item) => item.insurance_status === 'expired').length;
+  const expiredRegistrationCount = insuranceReport.filter((item) => item.registration_status === 'expired').length;
+
+  const maintenanceRows = (maintenanceAlerts.length > 0 ? maintenanceAlerts : maintenance).slice(0, 8);
+  const maxVehicleRate = topVehicles.length > 0 ? Math.max(...topVehicles.map((vehicle) => vehicle.monthly_rate)) : 0;
 
   return (
-    <div dir="rtl" className="min-h-screen" style={{ backgroundColor: theme.page }}>
-      <main className="w-full space-y-6 px-6 py-6">
-        <section className="grid grid-cols-1 gap-5 2xl:grid-cols-[minmax(0,1fr)_380px]">
-          <ShellCard className="overflow-hidden">
-            <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_340px]">
-              <div className="p-6">
-                <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
-                  <div className="flex items-start gap-4">
-                    <span className="flex h-14 w-14 items-center justify-center rounded-lg text-white" style={{ backgroundColor: theme.navy }}>
-                      <BarChart3 className="h-7 w-7" />
+    <div className="dashboard-workspace" dir="rtl">
+      <div className="dw-container">
+        <header className="dw-header">
+          <div>
+            <div className="dw-eyebrow">
+              <span className="dw-mark" />
+              العراف لتأجير السيارات <span>/</span> الأسطول <span>/</span> التقارير
+            </div>
+            <h1>تقارير الأسطول</h1>
+            <p>قراءة شاملة لأداء المركبات: التشغيل والإيراد والصيانة والامتثال في مكان واحد.</p>
+          </div>
+          <div className="dw-header-tools">
+            <button className="dw-search-button" onClick={triggerSearch}>
+              <Search size={17} />
+              <span>البحث في النظام</span>
+              <kbd>⌘ K</kbd>
+            </button>
+            <button
+              className="dw-icon-button"
+              onClick={handleRefresh}
+              disabled={refreshing}
+              aria-label="تحديث بيانات التقارير"
+            >
+              <RefreshCw size={17} className={refreshing ? 'animate-spin' : ''} />
+            </button>
+          </div>
+        </header>
+
+        <div className="dw-daybar">
+          <div className="dw-date">
+            <CalendarDays size={17} />
+            <span>{new Date().toLocaleDateString('ar-QA', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</span>
+          </div>
+          <div className="dw-primary-actions">
+            <button className="dw-button" onClick={() => handleExport('csv')}>
+              تصدير CSV
+            </button>
+            <button className="dw-button" onClick={() => handleExport('excel')}>
+              <FileSpreadsheet size={16} />
+              تصدير Excel
+            </button>
+            <button className="dw-button dw-button-primary" onClick={() => handleExport('pdf')}>
+              <Printer size={16} />
+              تقرير PDF تنفيذي
+            </button>
+          </div>
+        </div>
+
+        <section className="dw-metrics" aria-label="المؤشرات الرئيسية">
+          {metrics.map((metric) => (
+            <Link key={metric.label} to={metric.path} className={`dw-metric ${metric.accent ? 'dw-metric-accent' : ''}`}>
+              <div className="dw-metric-top">
+                <span>{metric.label}</span>
+                <metric.icon size={19} />
+              </div>
+              <strong>{metric.value}</strong>
+              <div className="dw-metric-bottom">
+                <small>{metric.hint}</small>
+              </div>
+            </Link>
+          ))}
+        </section>
+
+        <div className="dw-main-grid">
+          <Panel number="01" title="أولويات المتابعة" subtitle="الحالات التي تستحق انتباهك أولاً" className="fr-panel-main">
+            <div className="dw-priority-toolbar">
+              <div className="dw-filters" role="group" aria-label="فترة التقرير">
+                {periodOptions.map((period) => (
+                  <button
+                    key={period.value}
+                    aria-pressed={filters.period === period.value}
+                    onClick={() => setFilters((current) => ({ ...current, period: period.value }))}
+                  >
+                    {period.label}
+                  </button>
+                ))}
+              </div>
+              <span className="dw-priority-note">
+                <CalendarDays size={13} />
+                فترة التقرير
+              </span>
+            </div>
+            <div className="dw-priority-list" aria-live="polite">
+              {insightRows.map((row) => {
+                const Icon = row.icon;
+                return (
+                  <a key={row.key} href={row.href} className="dw-priority-row">
+                    <span className={`dw-priority-icon ${row.urgent ? 'is-urgent' : ''}`}>
+                      <Icon size={19} />
                     </span>
+                    <div className="fr-row-copy">
+                      <h3>{row.title}</h3>
+                      <p>{row.reason}</p>
+                      {row.track !== undefined && (
+                        <div className="dw-forecast-track fr-row-track" aria-hidden="true">
+                          <i style={{ width: `${Math.max(0, Math.min(100, row.track))}%`, background: row.track >= 75 ? '#7c9e65' : '#d5ad69' }} />
+                        </div>
+                      )}
+                    </div>
+                    <span className={`dw-priority-badge ${row.urgent ? 'is-urgent' : ''}`}>{row.badge}</span>
+                    <ChevronLeft className="dw-row-arrow" size={16} />
+                  </a>
+                );
+              })}
+            </div>
+            <div className="dw-panel-foot">
+              <ShieldCheck size={14} />
+              <span>اختر أي حالة للانتقال إلى تفاصيلها أسفل الصفحة مباشرة.</span>
+            </div>
+          </Panel>
+
+          <Panel number="02" title="جاهزية الأسطول" subtitle="توزيع جميع المركبات حسب الحالة" className="fr-panel-side" id="fr-readiness">
+            {statusLoading ? (
+              <LoadingState />
+            ) : (
+              <>
+                <div className="dw-fleet-visual">
+                  <div
+                    className="dw-fleet-ring"
+                    style={{ background: fleetGradient(fleetRows) }}
+                    role="img"
+                    aria-label={`نسبة إشغال الأسطول ${occupancy}%`}
+                  >
                     <div>
-                      <p className="text-sm font-black" style={{ color: theme.success }}>مركز تقارير الأسطول</p>
-                      <h1 className="mt-1 text-3xl font-black tracking-normal" style={{ color: theme.text }}>
-                        اقرأ أداء الأسطول واتخذ القرار بسرعة
-                      </h1>
-                      <p className="mt-2 max-w-3xl text-sm font-medium leading-6" style={{ color: theme.muted }}>
-                        لوحة جديدة تجمع التشغيل، الإيراد، الصيانة، والامتثال في مكان واحد بدل التنقل بين تقارير منفصلة.
-                      </p>
+                      <strong>
+                        {fleetStatus ? occupancy : '—'}
+                        <small>%</small>
+                      </strong>
+                      <span>نسبة الإشغال</span>
                     </div>
                   </div>
-
-                  <div className="flex flex-wrap items-center gap-2">
-                    <Button variant="outline" className="gap-2 bg-white" onClick={handleRefresh}>
-                      <RefreshCw className="h-4 w-4" />
-                      تحديث
-                    </Button>
-                    <Button className="gap-2 text-white" style={{ backgroundColor: theme.navy }} onClick={() => handleExport('pdf')}>
-                      <Download className="h-4 w-4" />
-                      تصدير PDF
-                    </Button>
+                  <div className="dw-fleet-annotation">
+                    <span>جاهزة للانطلاق</span>
+                    <strong>{fleetStatus?.available ?? '—'}</strong>
+                    <small>مركبة متاحة للتأجير</small>
+                    <Link to="/fleet?status=available">
+                      عرض المتاح
+                      <ArrowLeft size={13} />
+                    </Link>
                   </div>
                 </div>
-
-                <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-                  {decisionItems.map((item) => {
-                    const Icon = item.icon;
-                    return (
-                      <button
-                        type="button"
-                        key={item.title}
-                        onClick={() => setActiveView(item.view)}
-                        className="group rounded-lg border bg-white p-4 text-right transition-all hover:-translate-y-0.5 hover:shadow-md"
-                        style={{ borderColor: `${item.tone}45` }}
-                      >
-                        <div className="flex items-start justify-between gap-3">
-                          <div>
-                            <p className="text-sm font-black" style={{ color: theme.text }}>{item.title}</p>
-                            <p className="mt-2 text-xs font-medium leading-5" style={{ color: theme.muted }}>{item.detail}</p>
-                          </div>
-                          <span className="rounded-lg p-2.5" style={{ backgroundColor: `${item.tone}14`, color: item.tone }}>
-                            <Icon className="h-5 w-5" />
-                          </span>
-                        </div>
-                        <div className="mt-4 flex items-center justify-between">
-                          <span className="text-2xl font-black" style={{ color: item.tone }}>{item.value}</span>
-                          <span className="inline-flex items-center gap-1 text-xs font-black" style={{ color: theme.navy }}>
-                            فتح التقرير
-                            <ChevronLeft className="h-4 w-4 transition-transform group-hover:-translate-x-1" />
-                          </span>
-                        </div>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-
-              <div className="border-t bg-slate-50 p-6 xl:border-r xl:border-t-0" style={{ borderColor: theme.border }}>
-                <p className="text-sm font-black" style={{ color: theme.text }}>فترة التقرير</p>
-                <div className="mt-4 grid grid-cols-2 gap-2">
-                  {periodOptions.map((period) => (
-                    <button
-                      type="button"
-                      key={period.value}
-                      onClick={() => setFilters((current) => ({ ...current, period: period.value }))}
-                      className={cn(
-                        'rounded-lg border px-3 py-2 text-sm font-bold transition-colors',
-                        filters.period === period.value ? 'text-white' : 'bg-white text-slate-700 hover:bg-slate-50'
-                      )}
-                      style={{
-                        borderColor: filters.period === period.value ? theme.navy : theme.border,
-                        backgroundColor: filters.period === period.value ? theme.navy : undefined,
-                      }}
-                    >
-                      {period.label}
-                    </button>
+                <div className="dw-fleet-legend">
+                  {fleetRows.map((row) => (
+                    <Link key={row.label} to={row.path}>
+                      <i style={{ background: row.color }} />
+                      <span>{row.label}</span>
+                      <strong>{row.value}</strong>
+                      <small>{Math.round(row.percent)}%</small>
+                    </Link>
                   ))}
                 </div>
+              </>
+            )}
+          </Panel>
 
-                <div className="mt-5 rounded-lg border bg-white p-4" style={{ borderColor: theme.border }}>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-bold" style={{ color: theme.muted }}>صحة الأسطول</span>
-                    <span className="text-2xl font-black" style={{ color: healthScore >= 75 ? theme.success : theme.amber }}>{healthScore}</span>
-                  </div>
-                  <div className="mt-3 h-2 overflow-hidden rounded-full bg-slate-100">
-                    <div className="h-full rounded-full" style={{ width: `${healthScore}%`, backgroundColor: healthScore >= 75 ? theme.success : theme.amber }} />
-                  </div>
-                </div>
-              </div>
-            </div>
-          </ShellCard>
-        </section>
-
-        <section className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
-          <MetricCard label="إجمالي المركبات" value={analytics?.totalVehicles || 0} hint={`${analytics?.availableVehicles || 0} متاحة و ${analytics?.rentedVehicles || 0} مؤجرة`} icon={Car} tone="navy" />
-          <MetricCard label="معدل الاستخدام" value={formatPercent(analytics?.utilizationRate)} hint="نسبة المركبات المؤجرة من إجمالي الأسطول" icon={Activity} tone="success" />
-          <MetricCard label="الإيراد الشهري" value={formatCurrency(analytics?.totalRevenue || 0)} hint={`متوسط ${formatCurrency(analytics?.averageRevenue || 0)} لكل مركبة`} icon={Wallet} tone="info" />
-          <MetricCard label="تكلفة الصيانة" value={formatCurrency(analytics?.monthlyMaintenanceCost || 0)} hint={`${maintenance.length} أوامر صيانة مسجلة`} icon={Wrench} tone={(analytics?.monthlyMaintenanceCost || 0) > 0 ? 'warning' : 'success'} />
-        </section>
-
-        <section className="sticky top-0 z-20 rounded-lg border bg-white/95 p-2 shadow-sm backdrop-blur" style={{ borderColor: theme.border }}>
-          <div className="flex gap-2 overflow-x-auto">
-            {viewOptions.map((view) => {
-              const Icon = view.icon;
-              const active = activeView === view.value;
-              return (
-                <button
-                  type="button"
-                  key={view.value}
-                  onClick={() => setActiveView(view.value)}
-                  className={cn(
-                    'inline-flex min-h-[42px] shrink-0 items-center gap-2 rounded-lg px-4 text-sm font-black transition-colors',
-                    active ? 'text-white' : 'text-slate-600 hover:bg-slate-50'
-                  )}
-                  style={{ backgroundColor: active ? theme.navy : undefined }}
-                >
-                  <Icon className="h-4 w-4" />
-                  {view.label}
-                </button>
-              );
-            })}
-            <div className="mr-auto flex shrink-0 gap-2">
-              <button type="button" onClick={() => handleExport('excel')} className="inline-flex items-center gap-2 rounded-lg border bg-white px-3 text-sm font-bold" style={{ borderColor: theme.border }}>
-                <FileSpreadsheet className="h-4 w-4" />
-                Excel
-              </button>
-              <button type="button" onClick={() => handleExport('csv')} className="inline-flex items-center gap-2 rounded-lg border bg-white px-3 text-sm font-bold" style={{ borderColor: theme.border }}>
-                <Download className="h-4 w-4" />
-                CSV
-              </button>
-            </div>
-          </div>
-        </section>
-
-        {activeView === 'overview' && (
-          <section className="grid grid-cols-1 gap-5 xl:grid-cols-[1.15fr_0.85fr]">
-            <ShellCard className="p-5">
-              <SectionTitle title="اتجاه الإيرادات والصيانة" subtitle="آخر ستة أشهر: الإيراد، الربح، وتكلفة الصيانة" icon={TrendingUp} />
-              <div className="h-[340px]">
+          <Panel number="03" title="اتجاه الإيراد والتكاليف" subtitle="آخر ستة أشهر: الإيراد والربح وتكلفة الصيانة" className="fr-panel-main">
+            {revenueLoading ? (
+              <LoadingState />
+            ) : monthlyRevenue.length === 0 ? (
+              <EmptyState icon={BarChart3} message="لا توجد بيانات إيرادات متاحة حالياً" />
+            ) : (
+              <div className="fr-chart-box">
                 <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart data={monthlyRevenue}>
+                  <AreaChart data={monthlyRevenue} margin={{ top: 6, right: 12, left: 12, bottom: 0 }}>
                     <defs>
-                      <linearGradient id="fleetRevenueFill" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor={theme.success} stopOpacity={0.28} />
-                        <stop offset="95%" stopColor={theme.success} stopOpacity={0} />
+                      <linearGradient id="frRevenueFill" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor={chartPalette.revenue} stopOpacity={0.22} />
+                        <stop offset="95%" stopColor={chartPalette.revenue} stopOpacity={0} />
                       </linearGradient>
                     </defs>
-                    <CartesianGrid strokeDasharray="3 3" stroke={theme.border} />
-                    <XAxis dataKey="month" tick={{ fontSize: 12, fill: theme.muted }} />
-                    <YAxis tick={{ fontSize: 12, fill: theme.muted }} tickFormatter={(value) => `${Number(value) / 1000}k`} />
-                    <Tooltip formatter={(value: number, name: string) => [formatCurrency(value), name === 'revenue' ? 'الإيراد' : name === 'profit' ? 'الربح' : 'الصيانة']} contentStyle={{ borderRadius: 8, borderColor: theme.border }} />
-                    <Area type="monotone" dataKey="revenue" stroke={theme.success} strokeWidth={3} fill="url(#fleetRevenueFill)" />
-                    <Area type="monotone" dataKey="profit" stroke={theme.info} strokeWidth={2} fill="transparent" />
-                    <Area type="monotone" dataKey="maintenance" stroke={theme.amber} strokeWidth={2} fill="transparent" />
+                    <CartesianGrid strokeDasharray="3 3" stroke={chartPalette.grid} vertical={false} />
+                    <XAxis dataKey="month" tick={{ fontSize: 10, fill: chartPalette.ticks }} axisLine={false} tickLine={false} />
+                    <YAxis
+                      tick={{ fontSize: 10, fill: chartPalette.ticks }}
+                      tickFormatter={(value) => `${Math.round(Number(value) / 1000)}k`}
+                      axisLine={false}
+                      tickLine={false}
+                      width={38}
+                    />
+                    <Tooltip
+                      contentStyle={tooltipStyle}
+                      formatter={(value: number, name: string) => [
+                        money(value),
+                        name === 'revenue' ? 'الإيراد' : name === 'profit' ? 'الربح' : 'الصيانة',
+                      ]}
+                    />
+                    <Area type="monotone" dataKey="revenue" stroke={chartPalette.revenue} strokeWidth={2} fill="url(#frRevenueFill)" />
+                    <Area type="monotone" dataKey="profit" stroke={chartPalette.profit} strokeWidth={2} fill="transparent" />
+                    <Area type="monotone" dataKey="maintenance" stroke={chartPalette.maintenance} strokeWidth={2} fill="transparent" />
                   </AreaChart>
                 </ResponsiveContainer>
               </div>
-            </ShellCard>
+            )}
+          </Panel>
 
-            <ShellCard className="p-5">
-              <SectionTitle title="توزيع حالة الأسطول" subtitle="قراءة مباشرة لجاهزية المركبات" icon={Gauge} />
-              <div className="grid grid-cols-1 items-center gap-4 md:grid-cols-[220px_1fr] xl:grid-cols-1 2xl:grid-cols-[220px_1fr]">
-                <div className="h-[220px]">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Pie data={fleetStatusData} dataKey="value" innerRadius={58} outerRadius={90} paddingAngle={3}>
-                        {fleetStatusData.map((entry) => <Cell key={entry.name} fill={entry.color} />)}
-                      </Pie>
-                      <Tooltip contentStyle={{ borderRadius: 8, borderColor: theme.border }} />
-                    </PieChart>
-                  </ResponsiveContainer>
-                </div>
-                <div className="space-y-2">
-                  {fleetStatusData.map((item) => (
-                    <div key={item.name} className="flex items-center justify-between rounded-lg border px-3 py-3" style={{ borderColor: theme.border }}>
-                      <span className="flex items-center gap-2 text-sm font-bold" style={{ color: theme.text }}>
-                        <span className="h-3 w-3 rounded-full" style={{ backgroundColor: item.color }} />
-                        {item.name}
-                      </span>
-                      <span className="text-lg font-black" style={{ color: item.color }}>{item.value}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </ShellCard>
-          </section>
-        )}
-
-        {activeView === 'financial' && (
-          <section className="grid grid-cols-1 gap-5 xl:grid-cols-[0.85fr_1.15fr]">
-            <ShellCard className="p-5">
-              <SectionTitle title="الأداء المالي" subtitle="إيرادات، ربح، وهامش الأسطول" icon={Wallet} />
-              <div className="space-y-3">
+          <Panel number="04" title="الملخص المالي للأسطول" subtitle="الإيراد والربح والقيمة الدفترية" className="fr-panel-side">
+            {analyticsLoading || !analytics ? (
+              <LoadingState />
+            ) : (
+              <div className="fr-financial">
                 {[
-                  { label: 'إجمالي الإيرادات', value: formatCurrency(analytics?.totalRevenue || 0), color: theme.success },
-                  { label: 'إجمالي الربح', value: formatCurrency(analytics?.totalProfit || 0), color: theme.info },
-                  { label: 'هامش الربح', value: formatPercent(analytics?.profitMargin), color: theme.navy },
-                  { label: 'قيمة الأسطول الدفترية', value: formatCurrency(analytics?.totalBookValue || 0), color: theme.focus },
-                  { label: 'الاستهلاك المتراكم', value: formatCurrency(analytics?.totalDepreciation || 0), color: theme.alert },
-                ].map((item) => (
-                  <div key={item.label} className="flex items-center justify-between rounded-lg bg-slate-50 px-4 py-3">
-                    <span className="text-sm font-bold" style={{ color: theme.muted }}>{item.label}</span>
-                    <span className="text-lg font-black" style={{ color: item.color }}>{item.value}</span>
+                  { label: 'إجمالي الإيرادات الشهرية', value: money(analytics.totalRevenue), track: undefined },
+                  { label: 'صافي الربح (تقديري)', value: money(analytics.totalProfit), track: undefined },
+                  {
+                    label: 'هامش الربح',
+                    value: formatPercent(analytics.profitMargin),
+                    track: Math.max(0, Math.min(100, analytics.profitMargin || 0)),
+                  },
+                  { label: 'القيمة الدفترية للأسطول', value: money(analytics.totalBookValue), track: undefined },
+                  { label: 'الاستهلاك المتراكم', value: money(analytics.totalDepreciation), track: undefined },
+                  {
+                    label: 'تكلفة الصيانة من الإيراد',
+                    value: formatPercent(maintenanceCostRatio),
+                    track: Math.max(0, Math.min(100, maintenanceCostRatio)),
+                  },
+                ].map((row, index) => (
+                  <div key={row.label} className="dw-forecast-row">
+                    <div>
+                      <span>{row.label}</span>
+                      <strong>{row.value}</strong>
+                    </div>
+                    {row.track !== undefined && (
+                      <div className="dw-forecast-track" aria-hidden="true">
+                        <i style={{ width: `${row.track}%`, background: index === 5 ? '#d5ad69' : '#7c9e65' }} />
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
-            </ShellCard>
+            )}
+          </Panel>
 
-            <ShellCard className="p-5">
-              <SectionTitle title="أفضل المركبات أداءً" subtitle="المركبات الأعلى إيرادًا حسب البيانات الحالية" icon={BarChart3} />
-              <div className="h-[340px]">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={topVehicles.slice(0, 8)} layout="vertical">
-                    <CartesianGrid strokeDasharray="3 3" stroke={theme.border} />
-                    <XAxis type="number" tick={{ fontSize: 12, fill: theme.muted }} />
-                    <YAxis dataKey="plate_number" type="category" tick={{ fontSize: 12, fill: theme.muted }} width={88} />
-                    <Tooltip formatter={(value: number) => formatCurrency(value)} contentStyle={{ borderRadius: 8, borderColor: theme.border }} />
-                    <Bar dataKey="revenue" radius={[6, 6, 6, 6]}>
-                      {topVehicles.slice(0, 8).map((_, index) => <Cell key={index} fill={chartColors[index % chartColors.length]} />)}
-                    </Bar>
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-            </ShellCard>
-          </section>
-        )}
-
-        {activeView === 'maintenance' && (
-          <section className="grid grid-cols-1 gap-5 xl:grid-cols-[0.8fr_1.2fr]">
-            <ShellCard className="p-5">
-              <SectionTitle title="ملخص الصيانة" subtitle="حالة أوامر الصيانة والتكلفة المقدرة" icon={Wrench} />
-              <div className="space-y-3">
-                {[
-                  { label: 'أوامر الصيانة', value: maintenance.length, icon: Wrench, color: theme.navy },
-                  { label: 'قيد التنفيذ', value: maintenance.filter((item) => item.status === 'in_progress').length, icon: Clock, color: theme.info },
-                  { label: 'معلقة', value: maintenance.filter((item) => item.status === 'pending').length, icon: AlertTriangle, color: theme.amber },
-                  { label: 'مكتملة', value: maintenance.filter((item) => item.status === 'completed').length, icon: CheckCircle2, color: theme.success },
-                ].map((item) => {
-                  const Icon = item.icon;
+          <Panel number="05" title="أعلى المركبات إيراداً" subtitle="المركبات المؤجرة الأعلى قيمة تعاقد" className="fr-panel-side">
+            {analyticsLoading ? (
+              <LoadingState />
+            ) : topVehicles.length === 0 ? (
+              <EmptyState icon={Car} message="لا توجد مركبات مؤجرة لعرض الأداء" />
+            ) : (
+              <div className="fr-vehicle-rank">
+                {topVehicles.map((vehicle, index) => {
+                  const share = maxVehicleRate > 0 ? (vehicle.monthly_rate / maxVehicleRate) * 100 : 0;
                   return (
-                    <div key={item.label} className="flex items-center justify-between rounded-lg border bg-white px-4 py-3" style={{ borderColor: theme.border }}>
-                      <span className="flex items-center gap-2 text-sm font-bold" style={{ color: theme.text }}>
-                        <Icon className="h-4 w-4" style={{ color: item.color }} />
-                        {item.label}
-                      </span>
-                      <span className="text-xl font-black" style={{ color: item.color }}>{item.value}</span>
+                    <div key={vehicle.id} className="fr-rank-row">
+                      <span className="fr-rank-number">{index + 1}</span>
+                      <div className="fr-rank-copy">
+                        <div className="fr-rank-head">
+                          <h3>
+                            <bdi>{vehicle.plate_number}</bdi>
+                          </h3>
+                          <strong>{money(vehicle.monthly_rate)}</strong>
+                        </div>
+                        <div className="dw-forecast-track" aria-hidden="true">
+                          <i style={{ width: `${Math.max(4, share)}%`, background: barColors[index % barColors.length] }} />
+                        </div>
+                      </div>
                     </div>
                   );
                 })}
               </div>
-            </ShellCard>
+            )}
+          </Panel>
 
-            <ShellCard className="p-5">
-              <SectionTitle title="قائمة الصيانة الأخيرة" subtitle="أحدث المركبات التي تحتاج متابعة" icon={CalendarDays} />
-              <div className="max-h-[430px] space-y-3 overflow-y-auto pr-1">
-                {(maintenanceAlerts.length > 0 ? maintenanceAlerts : maintenance).slice(0, 8).map((item) => (
-                  <div key={item.id} className="flex flex-wrap items-center justify-between gap-3 rounded-lg border bg-white px-4 py-3" style={{ borderColor: theme.border }}>
-                    <div>
-                      <p className="text-base font-black" style={{ color: theme.text }}>{item.plate_number || 'مركبة غير محددة'}</p>
-                      <p className="mt-1 text-sm font-medium" style={{ color: theme.muted }}>{item.maintenance_type || 'صيانة'} - {item.scheduled_date ? new Date(item.scheduled_date).toLocaleDateString('ar-QA') : '-'}</p>
-                    </div>
-                    <div className="text-left">
-                      <p className="text-sm font-black" style={{ color: theme.navy }}>{formatCurrency(item.estimated_cost || 0)}</p>
-                      <span className="mt-1 inline-flex rounded-lg px-2 py-1 text-xs font-bold" style={{ backgroundColor: `${theme.amber}12`, color: theme.amber }}>
-                        {statusLabels[item.status] || item.status || 'غير محدد'}
-                      </span>
-                    </div>
+          <Panel
+            number="06"
+            title="التأمين والتسجيل"
+            subtitle="ملخص الامتثال والمركبات التي تحتاج إجراء"
+            className="fr-panel-main"
+            id="fr-compliance"
+            action={
+              <Link to="/fleet" className="dw-text-link">
+                سجل المركبات
+                <ArrowLeft size={15} />
+              </Link>
+            }
+          >
+            {insuranceLoading ? (
+              <LoadingState />
+            ) : (
+              <>
+                <div className="fr-summary-grid">
+                  <div className="fr-summary-tile is-ok">
+                    <small>ملتزمة بالكامل</small>
+                    <strong>{fullyCompliantVehicles}</strong>
                   </div>
-                ))}
-                {maintenance.length === 0 && maintenanceAlerts.length === 0 && (
-                  <div className="rounded-lg border border-dashed p-10 text-center" style={{ borderColor: theme.border }}>
-                    <CheckCircle2 className="mx-auto mb-3 h-10 w-10" style={{ color: theme.success }} />
-                    <p className="text-sm font-bold" style={{ color: theme.text }}>لا توجد أوامر صيانة حاليًا</p>
+                  <div className="fr-summary-tile is-warn">
+                    <small>تحتاج متابعة</small>
+                    <strong>{urgentVehiclesTotal}</strong>
                   </div>
-                )}
-              </div>
-            </ShellCard>
-          </section>
-        )}
-
-        {activeView === 'compliance' && (
-          <section className="grid grid-cols-1 gap-5 xl:grid-cols-[0.85fr_1.15fr]">
-            <ShellCard className="p-5">
-              <SectionTitle title="التأمين والتسجيل" subtitle="ملخص الامتثال لوثائق المركبات" icon={ShieldCheck} />
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                {[
-                  { label: 'ملتزمة بالكامل', value: insuranceSummary?.fully_compliant || 0, color: theme.success },
-                  { label: 'تحتاج متابعة', value: insuranceSummary?.needs_attention || 0, color: theme.alert },
-                  { label: 'تأمين منتهي', value: insuranceSummary?.with_expired_insurance || 0, color: theme.amber },
-                  { label: 'استمارة منتهية', value: insuranceSummary?.with_expired_registration || 0, color: theme.focus },
-                ].map((item) => (
-                  <div key={item.label} className="rounded-lg border bg-white p-4" style={{ borderColor: theme.border }}>
-                    <p className="text-sm font-bold" style={{ color: theme.muted }}>{item.label}</p>
-                    <p className="mt-2 text-2xl font-black" style={{ color: item.color }}>{item.value}</p>
+                  <div className="fr-summary-tile is-risk">
+                    <small>تأمين منتهي</small>
+                    <strong>{expiredInsuranceCount}</strong>
                   </div>
-                ))}
-              </div>
-            </ShellCard>
-
-            <ShellCard className="p-5">
-              <SectionTitle title="المركبات التي تحتاج إجراء" subtitle="أقرب حالات التأمين أو التسجيل التي تحتاج متابعة" icon={AlertTriangle} />
-              <div className="max-h-[430px] space-y-3 overflow-y-auto pr-1">
-                {insuranceReport
-                  .filter((item) => item.insurance_status !== 'valid' || item.registration_status !== 'valid')
-                  .slice(0, 10)
-                  .map((item) => (
-                    <div key={item.id} className="flex flex-wrap items-center justify-between gap-3 rounded-lg border bg-white px-4 py-3" style={{ borderColor: theme.border }}>
-                      <div>
-                        <p className="text-base font-black" style={{ color: theme.text }}>{item.plate_number}</p>
-                        <p className="mt-1 text-sm font-medium" style={{ color: theme.muted }}>{item.make} {item.model} {item.year}</p>
-                      </div>
-                      <div className="flex flex-wrap gap-2">
-                        <span className="rounded-lg px-2 py-1 text-xs font-bold" style={{ backgroundColor: item.insurance_status === 'valid' ? `${theme.success}12` : `${theme.alert}12`, color: item.insurance_status === 'valid' ? theme.success : theme.alert }}>
-                          التأمين: {item.insurance_status === 'valid' ? 'ساري' : item.insurance_status === 'expiring_soon' ? 'قريب الانتهاء' : item.insurance_status === 'expired' ? 'منتهي' : 'غير مسجل'}
-                        </span>
-                        <span className="rounded-lg px-2 py-1 text-xs font-bold" style={{ backgroundColor: item.registration_status === 'valid' ? `${theme.success}12` : `${theme.amber}12`, color: item.registration_status === 'valid' ? theme.success : theme.amber }}>
-                          التسجيل: {item.registration_status === 'valid' ? 'ساري' : item.registration_status === 'expiring_soon' ? 'قريب الانتهاء' : item.registration_status === 'expired' ? 'منتهي' : 'غير مسجل'}
-                        </span>
-                      </div>
-                    </div>
-                  ))}
-                {insuranceReport.filter((item) => item.insurance_status !== 'valid' || item.registration_status !== 'valid').length === 0 && (
-                  <div className="rounded-lg border border-dashed p-10 text-center" style={{ borderColor: theme.border }}>
-                    <CheckCircle2 className="mx-auto mb-3 h-10 w-10" style={{ color: theme.success }} />
-                    <p className="text-sm font-bold" style={{ color: theme.text }}>كل الوثائق المسجلة سليمة</p>
-                  </div>
-                )}
-              </div>
-            </ShellCard>
-          </section>
-        )}
-
-        <section className="grid grid-cols-1 gap-4 xl:grid-cols-3">
-          <ShellCard className="p-5">
-            <SectionTitle title="أوامر سريعة" subtitle="إجراءات مرتبطة بالتقارير" icon={Download} />
-            <div className="grid grid-cols-1 gap-2">
-              <button type="button" onClick={() => handleExport('pdf')} className="rounded-lg border px-4 py-3 text-sm font-black transition-colors hover:bg-slate-50" style={{ borderColor: theme.border }}>تصدير تقرير تنفيذي PDF</button>
-              <button type="button" onClick={() => handleExport('excel')} className="rounded-lg border px-4 py-3 text-sm font-black transition-colors hover:bg-slate-50" style={{ borderColor: theme.border }}>تصدير بيانات Excel</button>
-              <button type="button" onClick={() => setFilters((current) => ({ ...current, compareWithPrevious: !current.compareWithPrevious }))} className="rounded-lg border px-4 py-3 text-sm font-black transition-colors hover:bg-slate-50" style={{ borderColor: theme.border }}>
-                {filters.compareWithPrevious ? 'إلغاء المقارنة السابقة' : 'تفعيل المقارنة السابقة'}
-              </button>
-            </div>
-          </ShellCard>
-
-          <ShellCard className="p-5 xl:col-span-2">
-            <SectionTitle title="ملخص المركبات" subtitle="قراءة سريعة لأهم المركبات في التقرير" icon={Car} />
-            <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-              {vehicles.slice(0, 6).map((vehicle) => (
-                <div key={vehicle.id} className="flex items-center justify-between rounded-lg border bg-white px-4 py-3" style={{ borderColor: theme.border }}>
-                  <div>
-                    <p className="text-sm font-black" style={{ color: theme.text }}>{vehicle.plate_number}</p>
-                    <p className="mt-1 text-xs font-medium" style={{ color: theme.muted }}>{vehicle.make} {vehicle.model} {vehicle.year}</p>
-                  </div>
-                  <div className="text-left">
-                    <p className="text-sm font-black" style={{ color: theme.navy }}>{formatCurrency(vehicle.monthly_rate || 0)}</p>
-                    <span className="text-xs font-bold" style={{ color: theme.muted }}>{statusLabels[vehicle.status] || vehicle.status}</span>
+                  <div className="fr-summary-tile is-info">
+                    <small>استمارة منتهية</small>
+                    <strong>{expiredRegistrationCount}</strong>
                   </div>
                 </div>
-              ))}
-            </div>
-          </ShellCard>
+                {urgentVehicles.length ? (
+                  <div className="fr-doc-list">
+                    {urgentVehicles.map((item) => (
+                      <div key={item.id} className="fr-doc-row">
+                        <div className="fr-doc-copy">
+                          <h3>
+                            <bdi>{item.plate_number}</bdi>
+                          </h3>
+                          <p>
+                            {item.make} {item.model} {item.year}
+                          </p>
+                        </div>
+                        <div className="fr-badges">
+                          <span className={`fr-badge is-${docStatusTone(item.insurance_status)}`}>
+                            تأمين: {docStatusLabels[item.insurance_status]}
+                          </span>
+                          <span className={`fr-badge is-${docStatusTone(item.registration_status)}`}>
+                            تسجيل: {docStatusLabels[item.registration_status]}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                    {urgentVehiclesTotal > urgentVehicles.length && (
+                      <p className="fr-more-note">+{urgentVehiclesTotal - urgentVehicles.length} حالة أخرى تحتاج متابعة</p>
+                    )}
+                  </div>
+                ) : (
+                  <EmptyState icon={CheckCircle2} message="كل الوثائق المسجلة سليمة" />
+                )}
+              </>
+            )}
+          </Panel>
+
+          <Panel
+            number="07"
+            title="سجل الصيانة"
+            subtitle="أحدث أوامر الصيانة وتكلفتها المقدرة"
+            className="fr-panel-main"
+            id="fr-maintenance"
+            action={
+              <Link to="/fleet/maintenance" className="dw-text-link">
+                إدارة الصيانة
+                <ArrowLeft size={15} />
+              </Link>
+            }
+          >
+            {maintenanceLoading ? (
+              <LoadingState />
+            ) : maintenanceRows.length === 0 ? (
+              <EmptyState icon={CheckCircle2} message="لا توجد أوامر صيانة حالياً" />
+            ) : (
+              <>
+                <div className="fr-summary-grid">
+                  <div className="fr-summary-tile is-info">
+                    <small>إجمالي الأوامر</small>
+                    <strong>{maintenance.length}</strong>
+                  </div>
+                  <div className="fr-summary-tile is-warn">
+                    <small>قيد التنفيذ</small>
+                    <strong>{maintenance.filter((item) => item.status === 'in_progress').length}</strong>
+                  </div>
+                  <div className="fr-summary-tile is-warn">
+                    <small>معلقة</small>
+                    <strong>{maintenance.filter((item) => item.status === 'pending').length}</strong>
+                  </div>
+                  <div className="fr-summary-tile is-ok">
+                    <small>مكتملة</small>
+                    <strong>{maintenance.filter((item) => item.status === 'completed').length}</strong>
+                  </div>
+                </div>
+                <div className="dw-contract-table" style={{ padding: '0 0 18px' }}>
+                  <table>
+                    <caption className="sr-only">أوامر الصيانة</caption>
+                    <thead>
+                      <tr>
+                        <th scope="col">المركبة / النوع</th>
+                        <th scope="col">التاريخ المجدول</th>
+                        <th scope="col">التكلفة التقديرية</th>
+                        <th scope="col">الحالة</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {maintenanceRows.map((item) => (
+                        <tr key={item.id}>
+                          <td>
+                            <strong>
+                              <bdi>{item.plate_number || 'مركبة غير محددة'}</bdi>
+                            </strong>
+                            <span>{item.maintenance_type || 'صيانة'}</span>
+                          </td>
+                          <td>
+                            <bdi>
+                              {item.scheduled_date
+                                ? new Date(item.scheduled_date).toLocaleDateString('ar-QA')
+                                : 'غير مجدول'}
+                            </bdi>
+                          </td>
+                          <td>{money(item.estimated_cost || 0)}</td>
+                          <td>
+                            <span className={`fr-badge is-${statusTone[item.status] || "info"}`}>
+                              {statusLabels[item.status] || item.status || 'غير محدد'}
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </>
+            )}
+          </Panel>
+
+          <Panel
+            number="08"
+            title="ملخص المركبات"
+            subtitle="قراءة سريعة لأهم المركبات في التقرير"
+            className="fr-panel-side"
+            action={
+              <Link to="/fleet" className="dw-text-link">
+                كل المركبات
+                <ArrowLeft size={15} />
+              </Link>
+            }
+          >
+            {vehiclesLoading ? (
+              <LoadingState />
+            ) : vehicles.length === 0 ? (
+              <EmptyState icon={Car} message="لا توجد مركبات مطابقة للفترة المحددة" />
+            ) : (
+              <div className="dw-maintenance-list">
+                {vehicles.slice(0, 6).map((vehicle) => (
+                  <div key={vehicle.id} className="dw-maintenance-row">
+                    <div className="dw-maintenance-icon">
+                      <Car size={18} />
+                    </div>
+                    <div>
+                      <h3>
+                        <bdi>{vehicle.plate_number}</bdi>
+                      </h3>
+                      <p>
+                        {vehicle.make} {vehicle.model} {vehicle.year} · {statusLabels[vehicle.status] || vehicle.status}
+                      </p>
+                    </div>
+                    <time>{money(vehicle.monthly_rate || 0)}</time>
+                  </div>
+                ))}
+              </div>
+            )}
+          </Panel>
+        </div>
+
+        <section className="dw-shortcuts" aria-labelledby="fr-shortcuts-title">
+          <div className="dw-shortcut-heading">
+            <div className="dw-eyebrow">مساحات العمل</div>
+            <h2 id="fr-shortcuts-title">انتقل إلى التفاصيل</h2>
+            <p>أدوات الأسطول اليومية، في مكان واحد.</p>
+          </div>
+          <div className="dw-shortcut-grid">
+            {[
+              { label: 'إدارة الأسطول', detail: 'المركبات والجاهزية التشغيلية', icon: Car, path: '/fleet' },
+              { label: 'الصيانة', detail: 'أوامر الصيانة والجداول', icon: Wrench, path: '/fleet/maintenance' },
+              { label: 'المخالفات المرورية', detail: 'المخالفات والمدفوعات', icon: ShieldAlert, path: '/fleet/traffic-violations' },
+              { label: 'الحجوزات', detail: 'حجوزات وإيجارات المركبات', icon: CalendarDays, path: '/fleet/reservations' },
+            ].map((item) => (
+              <Link key={item.path} to={item.path}>
+                <item.icon size={23} />
+                <div>
+                  <h3>{item.label}</h3>
+                  <p>{item.detail}</p>
+                </div>
+              </Link>
+            ))}
+          </div>
         </section>
-      </main>
+
+        <nav className="dw-utility-links" aria-label="إجراءات إضافية">
+          <button
+            type="button"
+            aria-pressed={filters.compareWithPrevious}
+            onClick={() => {
+              setFilters((current) => ({ ...current, compareWithPrevious: !current.compareWithPrevious }));
+              toast.success(filters.compareWithPrevious ? 'تم إلغاء المقارنة السابقة' : 'تم تفعيل المقارنة السابقة');
+            }}
+          >
+            <BarChart3 size={15} />
+            {filters.compareWithPrevious ? 'إلغاء المقارنة السابقة' : 'تفعيل المقارنة السابقة'}
+          </button>
+          <button type="button" onClick={() => window.print()}>
+            <Printer size={15} />
+            طباعة التقرير
+          </button>
+          <Link to="/finance/reports-analysis?tab=reports">
+            <FileSpreadsheet size={15} />
+            التقارير المالية
+          </Link>
+        </nav>
+
+        <footer className="dw-footer">
+          <span>
+            Fleetify <span>/</span> تقارير الأسطول
+          </span>
+          <span role="status">
+            {refreshing ? 'جاري تحديث البيانات…' : `آخر تحديث ${new Date(refreshedAt).toLocaleTimeString('ar-QA', { hour: '2-digit', minute: '2-digit' })}`}
+          </span>
+        </footer>
+      </div>
     </div>
   );
 };

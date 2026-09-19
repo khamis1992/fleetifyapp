@@ -1,22 +1,19 @@
-import React, { useState } from 'react';
-import { Card, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { DollarSign, Search, Plus, FileText, Clock, Calculator, CheckCircle, AlertCircle } from 'lucide-react';
+import { useMemo, useState } from 'react';
+import {
+  DollarSign, Search, Plus, FileText, Clock, Calculator, CheckCircle,
+  CalendarDays, RefreshCw,
+} from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
-import { useQuery } from '@tanstack/react-query';
-import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
-import { 
-  usePayrollRecords, 
-  usePayrollReviews, 
-  useCreatePayroll, 
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import {
+  usePayrollRecords,
+  usePayrollReviews,
+  useCreatePayroll,
   useUpdatePayrollStatus,
   useUpdatePayroll,
   useDeletePayroll,
   CreatePayrollData,
-  PayrollRecord 
+  PayrollRecord
 } from '@/hooks/usePayroll';
 import PayrollDialog from '@/components/hr/PayrollDialog';
 import PayrollDetailsModal from '@/components/hr/PayrollDetailsModal';
@@ -24,8 +21,28 @@ import EditPayrollDialog from '@/components/hr/EditPayrollDialog';
 import PayrollActionButtons from '@/components/hr/PayrollActionButtons';
 import { PageHelp } from "@/components/help";
 import { PayrollPageHelpContent } from "@/components/help/content";
-import { HRMetricCard, HRPageHeader, HRPageShell, HRSectionCard, hrButtonClassName, hrFieldClassName } from '@/components/hr/HRDesignSystem';
 import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
+import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
+import { Link } from 'react-router-dom';
+import { PageEmpty, PageLoading, PagePanel } from '@/components/dashboard/workspace/PageKit';
+import '@/components/dashboard/workspace/dashboard-workspace.css';
+import '@/components/dashboard/workspace/page-kit.css';
+
+const statusMeta: Record<string, { label: string; tone: 'ok' | 'warn' | 'risk' | 'info' | 'neutral' }> = {
+  draft: { label: 'مسودة', tone: 'neutral' },
+  pending_approval: { label: 'في انتظار الموافقة', tone: 'warn' },
+  approved: { label: 'معتمد', tone: 'info' },
+  paid: { label: 'مدفوع', tone: 'ok' },
+};
+
+const statusColors: Record<string, string> = {
+  draft: '#d2d9cd',
+  pending_approval: '#d5ad69',
+  approved: '#83a9b2',
+  paid: '#7c9e65',
+};
+
+const formatDay = (value: string) => new Date(value).toLocaleDateString('en-GB')
 
 export default function Payroll() {
   const [searchTerm, setSearchTerm] = useState('');
@@ -33,7 +50,10 @@ export default function Payroll() {
   const [showPayrollDetails, setShowPayrollDetails] = useState(false);
   const [showEditPayroll, setShowEditPayroll] = useState(false);
   const [selectedPayroll, setSelectedPayroll] = useState<PayrollRecord | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
+  const [refreshedAt, setRefreshedAt] = useState(() => Date.now());
   const { companyId } = useUnifiedCompanyAccess();
+  const queryClient = useQueryClient();
 
   // Fetch data
   const { data: payrollRecords, isLoading: recordsLoading } = usePayrollRecords();
@@ -41,9 +61,9 @@ export default function Payroll() {
   const createPayrollMutation = useCreatePayroll();
   const updatePayrollStatusMutation = useUpdatePayrollStatus();
   const updatePayrollMutation = useUpdatePayroll();
-const deletePayrollMutation = useDeletePayroll();
- 
-   const { formatCurrency } = useCurrencyFormatter();
+  const deletePayrollMutation = useDeletePayroll();
+
+  const { formatCurrency } = useCurrencyFormatter();
 
   // Fetch employees for payroll creation
   const { data: employees } = useQuery({
@@ -57,7 +77,7 @@ const deletePayrollMutation = useDeletePayroll();
         .eq('company_id', companyId)
         .eq('is_active', true)
         .order('first_name');
-      
+
       if (error) throw error;
       return (data || []).map(employee => ({
         ...employee,
@@ -70,17 +90,6 @@ const deletePayrollMutation = useDeletePayroll();
     },
     enabled: !!companyId,
   });
-
-  const getStatusBadge = (status: string) => {
-    const statusMap = {
-      draft: { label: 'مسودة', variant: 'secondary' as const },
-      pending_approval: { label: 'في انتظار الموافقة', variant: 'outline' as const },
-      approved: { label: 'معتمد', variant: 'default' as const },
-      paid: { label: 'مدفوع', variant: 'destructive' as const },
-    };
-    
-    return statusMap[status as keyof typeof statusMap] || { label: status, variant: 'outline' as const };
-  };
 
   const handleCreatePayroll = (data: CreatePayrollData) => {
     createPayrollMutation.mutate(data, {
@@ -127,16 +136,22 @@ const deletePayrollMutation = useDeletePayroll();
     deletePayrollMutation.mutate(payrollId);
   };
 
-  const filteredReviews = payrollReviews?.filter(review =>
-    review.period_start.includes(searchTerm) ||
-    review.period_end.includes(searchTerm)
-  ) || [];
+  const filteredReviews = useMemo(() => {
+    const term = searchTerm.trim();
+    return payrollReviews?.filter(review =>
+      review.period_start.includes(term) ||
+      review.period_end.includes(term)
+    ) || [];
+  }, [payrollReviews, searchTerm]);
 
-  const filteredRecords = payrollRecords?.filter(record =>
-    record.employee?.first_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    record.employee?.last_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    record.payroll_number.toLowerCase().includes(searchTerm.toLowerCase())
-  ) || [];
+  const filteredRecords = useMemo(() => {
+    const term = searchTerm.trim().toLowerCase();
+    return payrollRecords?.filter(record =>
+      record.employee?.first_name.toLowerCase().includes(term) ||
+      record.employee?.last_name.toLowerCase().includes(term) ||
+      record.payroll_number.toLowerCase().includes(term)
+    ) || [];
+  }, [payrollRecords, searchTerm]);
 
   const payrollStats = {
     records: payrollRecords?.length || 0,
@@ -145,217 +160,303 @@ const deletePayrollMutation = useDeletePayroll();
     pending: payrollRecords?.filter(record => record.status !== 'paid').length || 0,
   };
 
-  if (recordsLoading || reviewsLoading) {
-    return (
-      <div className="p-6">
-        <div className="animate-pulse space-y-4">
-          <div className="h-8 bg-muted rounded w-1/3"></div>
-          <div className="h-64 bg-muted rounded"></div>
-        </div>
-      </div>
-    );
-  }
+  const statusRows = Object.keys(statusMeta).map(status => ({
+    status,
+    label: statusMeta[status].label,
+    color: statusColors[status],
+    value: payrollRecords?.filter(record => record.status === status).length || 0,
+  })).map(row => ({
+    ...row,
+    percent: payrollStats.records > 0 ? (row.value / payrollStats.records) * 100 : 0,
+  }));
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    try {
+      await Promise.allSettled([
+        queryClient.invalidateQueries({ queryKey: ['payroll-records'] }),
+        queryClient.invalidateQueries({ queryKey: ['payroll-reviews'] }),
+      ]);
+      setRefreshedAt(Date.now());
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
+  const visibleRecords = filteredRecords.slice(0, 10);
+  const visibleReviews = filteredReviews.slice(0, 8);
+
+  const metrics = [
+    { label: 'سجلات الرواتب', value: payrollStats.records, hint: 'سجلات صرف مسجلة', icon: FileText, accent: true },
+    { label: 'مراجعات الرواتب', value: payrollStats.reviews, hint: 'دورات صرف مُجمعة', icon: Calculator, accent: false },
+    { label: 'إجمالي الصافي', value: formatCurrency(payrollStats.totalNet), hint: 'مجموع صافي السجلات', icon: DollarSign, accent: false },
+    { label: 'غير مدفوعة', value: payrollStats.pending, hint: 'تحتاج اعتماداً أو صرفاً', icon: Clock, accent: false },
+  ];
+
+  const isLoading = recordsLoading || reviewsLoading;
 
   return (
-    <HRPageShell>
-      <HRPageHeader
-        title="إدارة الرواتب"
-        description="إدارة سجلات الرواتب، المراجعات، الاعتماد، والتكامل المحاسبي من مساحة تشغيلية واحدة."
-        icon={DollarSign}
-        badge="الرواتب"
-        action={
-          <Button onClick={() => setShowCreatePayroll(true)} className={`${hrButtonClassName} w-full sm:w-auto`}>
-            <Plus className="h-4 w-4 ml-2" />
-            إضافة راتب جديد
-          </Button>
-        }
-      />
+    <div className="dashboard-workspace" dir="rtl">
+      <div className="dw-container">
+        <header className="dw-header">
+          <div>
+            <div className="dw-eyebrow">
+              <span className="dw-mark" />
+              العراف لتأجير السيارات <span>/</span> الموارد البشرية <span>/</span> الرواتب
+            </div>
+            <h1>إدارة الرواتب</h1>
+            <p>إدارة سجلات الرواتب، المراجعات، الاعتماد، والتكامل المحاسبي من مساحة تشغيلية واحدة.</p>
+          </div>
+          <div className="dw-header-tools">
+            <button
+              className="dw-icon-button"
+              onClick={handleRefresh}
+              disabled={refreshing}
+              aria-label="تحديث بيانات الرواتب"
+            >
+              <RefreshCw size={17} className={refreshing ? 'animate-spin' : ''} />
+            </button>
+          </div>
+        </header>
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <HRMetricCard title="سجلات الرواتب" value={payrollStats.records} icon={FileText} tone="info" />
-        <HRMetricCard title="مراجعات الرواتب" value={payrollStats.reviews} icon={Calculator} tone="focus" />
-        <HRMetricCard title="إجمالي الصافي" value={formatCurrency(payrollStats.totalNet)} icon={DollarSign} tone="success" />
-        <HRMetricCard title="غير مدفوعة" value={payrollStats.pending} icon={Clock} tone="danger" />
-      </div>
-
-      <Tabs defaultValue="records" className="space-y-4">
-        <TabsList className="h-auto rounded-lg border border-slate-200 bg-white p-1 shadow-sm">
-          <TabsTrigger value="records" className="h-11 rounded-xl px-4 text-[#94A3B8] data-[state=active]:bg-[#22C7A1] data-[state=active]:text-white">سجلات الرواتب</TabsTrigger>
-          <TabsTrigger value="reviews" className="h-11 rounded-xl px-4 text-[#94A3B8] data-[state=active]:bg-[#22C7A1] data-[state=active]:text-white">مراجعات الرواتب</TabsTrigger>
-        </TabsList>
-
-        <HRSectionCard className="p-4">
-        <div className="flex items-center gap-4">
-          <div className="relative flex-1 w-full sm:max-w-md">
-            <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400 h-4 w-4" />
-            <Input
-              placeholder="البحث..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className={`${hrFieldClassName} pr-10`}
-            />
+        <div className="dw-daybar">
+          <div className="dw-date">
+            <CalendarDays size={17} />
+            <span>{new Date().toLocaleDateString('ar-QA', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</span>
+          </div>
+          <div className="dw-primary-actions">
+            <button className="dw-button dw-button-primary" onClick={() => setShowCreatePayroll(true)}>
+              <Plus size={17} />
+              إضافة راتب جديد
+            </button>
           </div>
         </div>
-        </HRSectionCard>
 
-        <TabsContent value="records">
-          <div className="grid gap-4">
-            {filteredRecords.length === 0 ? (
-              <Card className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl">
-                <CardContent className="p-8">
-                  <div className="text-center">
-                    <div className="w-16 h-16 bg-teal-500 rounded-xl shadow-sm flex items-center justify-center mx-auto mb-4">
-                      <DollarSign className="h-8 w-8 text-white" />
-                    </div>
-                    <p className="text-slate-600 dark:text-slate-400">لا توجد سجلات رواتب</p>
-                    <Button className="mt-4 w-full sm:w-auto min-h-[44px] bg-teal-500 hover:bg-teal-600 text-white shadow-sm" onClick={() => setShowCreatePayroll(true)}>
-                      <Plus className="h-4 w-4 ml-2" />
-                      إضافة أول راتب
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
+        <section className="dw-metrics" aria-label="مؤشرات الرواتب">
+          {metrics.map((metric) => (
+            <div key={metric.label} className={`dw-metric ${metric.accent ? 'dw-metric-accent' : ''}`}>
+              <div className="dw-metric-top">
+                <span>{metric.label}</span>
+                <metric.icon size={19} />
+              </div>
+              <strong>{isLoading ? '—' : metric.value}</strong>
+              <div className="dw-metric-bottom">
+                <small>{metric.hint}</small>
+              </div>
+            </div>
+          ))}
+        </section>
+
+        <div className="dw-main-grid">
+          <PagePanel number="01" title="توزيع الحالات" subtitle="مراحل دورة صرف الرواتب" className="wk-panel-side">
+            {isLoading ? (
+              <PageLoading />
+            ) : payrollStats.records === 0 ? (
+              <PageEmpty icon={DollarSign} message="لا توجد سجلات رواتب بعد" />
             ) : (
-              filteredRecords.map((record) => {
-                const statusInfo = getStatusBadge(record.status);
-                return (
-                  <Card key={record.id} className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl hover:border-teal-500/50 dark:hover:border-teal-500/50 transition-all duration-300">
-                    <CardContent className="p-4 md:p-6">
-                      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                        <div className="flex items-center gap-4">
-                          <div className="w-12 h-12 bg-teal-500 rounded-xl shadow-sm flex items-center justify-center shrink-0">
-                            <DollarSign className="h-6 w-6 text-white" />
-                          </div>
-                          <div>
-                            <h3 className="font-semibold text-lg text-slate-900 dark:text-slate-100">
-                              {record.employee?.first_name} {record.employee?.last_name}
-                            </h3>
-                            <p className="text-slate-600 dark:text-slate-400">رقم الراتب: {record.payroll_number}</p>
-                            <p className="text-sm text-slate-600 dark:text-slate-400">
-                              {new Date(record.pay_period_start).toLocaleDateString('en-GB')} - {' '}
-                              {new Date(record.pay_period_end).toLocaleDateString('en-GB')}
-                            </p>
-                          </div>
-                        </div>
+              <div className="wk-legend">
+                {statusRows.map(row => (
+                  <div key={row.status} className="wk-legend-row">
+                    <i style={{ background: row.color }} />
+                    <span>{row.label}</span>
+                    <strong>{row.value}</strong>
+                    <small>{Math.round(row.percent)}%</small>
+                  </div>
+                ))}
+              </div>
+            )}
+            <div className="dw-panel-foot">
+              <CheckCircle size={14} />
+              <span>السجلات المدفوعة تُدمج تلقائياً مع القيود المحاسبية.</span>
+            </div>
+          </PagePanel>
 
-                        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between w-full md:w-auto md:flex-1 gap-4">
-                          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6 w-full sm:w-auto">
-                            <div className="text-right sm:text-center flex-1 sm:flex-initial">
-                              <p className="text-sm text-slate-600 dark:text-slate-400">صافي الراتب</p>
-                              <p className="font-semibold text-green-600 text-lg">
+          <PagePanel
+            number="02"
+            title="سجلات الرواتب"
+            subtitle="اعتماد أو صرف أو تعديل سجلات الصرف"
+            className="wk-panel-main"
+          >
+            <div className="wk-toolbar">
+              <div className="wk-toolbar-group">
+                <div className="relative">
+                  <Search className="absolute right-3 top-1/2 -translate-y-1/2 text-[#9aa791]" size={14} />
+                  <input
+                    className="wk-field"
+                    style={{ paddingRight: 32, minWidth: 220 }}
+                    placeholder="ابحث باسم الموظف أو رقم الراتب…"
+                    value={searchTerm}
+                    onChange={(event) => setSearchTerm(event.target.value)}
+                    aria-label="بحث في سجلات الرواتب"
+                  />
+                </div>
+              </div>
+              <span className="wk-note"><Clock size={13} />يشمل المراجعات أدناه</span>
+            </div>
+            {isLoading ? (
+              <PageLoading />
+            ) : visibleRecords.length === 0 ? (
+              <PageEmpty icon={DollarSign} message={payrollStats.records ? 'لا توجد سجلات مطابقة لبحثك' : 'لا توجد سجلات رواتب'}>
+                {!payrollStats.records && (
+                  <button className="dw-button" onClick={() => setShowCreatePayroll(true)}>
+                    <Plus size={16} />
+                    إضافة أول راتب
+                  </button>
+                )}
+              </PageEmpty>
+            ) : (
+              <>
+                <div className="wk-table-wrap">
+                  <table>
+                    <caption className="sr-only">سجلات الرواتب</caption>
+                    <thead>
+                      <tr>
+                        <th scope="col">الموظف / السجل</th>
+                        <th scope="col">دورة الصرف</th>
+                        <th scope="col">الصافي</th>
+                        <th scope="col">التكامل</th>
+                        <th scope="col">الحالة</th>
+                        <th scope="col"><span className="sr-only">إجراءات</span></th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {visibleRecords.map((record) => {
+                        const meta = statusMeta[record.status] || { label: record.status, tone: 'neutral' as const };
+                        return (
+                          <tr key={record.id}>
+                            <td>
+                              <strong>
+                                <bdi>{record.employee?.first_name} {record.employee?.last_name}</bdi>
+                              </strong>
+                              <span>رقم الراتب: {record.payroll_number}</span>
+                            </td>
+                            <td>
+                              <bdi>{formatDay(record.pay_period_start)}</bdi>
+                              <span>حتى {formatDay(record.pay_period_end)}</span>
+                            </td>
+                            <td>
+                              <span className="wk-sub" style={{ color: '#487038', fontWeight: 600, fontSize: 12, marginTop: 0 }}>
                                 {formatCurrency(record.net_amount)}
-                              </p>
-                            </div>
-
-                            <div className="text-right sm:text-center flex-1 sm:flex-initial">
-                              <p className="text-sm text-slate-600 dark:text-slate-400">حالة التكامل</p>
-                              <div className="flex items-center gap-1 justify-start sm:justify-center">
-                                {record.journal_entry_id ? (
-                                  <>
-                                    <CheckCircle className="h-4 w-4 text-green-600" />
-                                    <span className="text-sm text-green-600">مدمج</span>
-                                  </>
-                                ) : record.status === 'paid' ? (
-                                  <>
-                                    <AlertCircle className="h-4 w-4 text-red-600" />
-                                    <span className="text-sm text-red-600">خطأ</span>
-                                  </>
-                                ) : (
-                                  <>
-                                    <Clock className="h-4 w-4 text-yellow-600" />
-                                    <span className="text-sm text-yellow-600">معلق</span>
-                                  </>
-                                )}
-                              </div>
-                              {record.journal_entry_id && (
-                                <p className="text-xs text-slate-600 dark:text-slate-400 mt-1">
-                                  قيد رقم: {record.journal_entry_id.substring(0, 8)}...
-                                </p>
+                              </span>
+                            </td>
+                            <td>
+                              {record.journal_entry_id ? (
+                                <span className="wk-badge is-ok">مدمج</span>
+                              ) : record.status === 'paid' ? (
+                                <span className="wk-badge is-risk">خطأ</span>
+                              ) : (
+                                <span className="wk-badge is-warn">معلق</span>
                               )}
-                            </div>
-
-                            <div className="flex items-center gap-2">
-                              <Badge variant={statusInfo.variant} className={statusInfo.variant === 'default' ? 'bg-teal-500 text-white' : ''}>
-                                {statusInfo.label}
-                              </Badge>
-                            </div>
-                          </div>
-
-                          <PayrollActionButtons
-                            payroll={record}
-                            onView={handleViewPayroll}
-                            onEdit={handleEditPayroll}
-                            onApprove={() => handleApprovePayroll(record)}
-                            onPay={() => handlePayPayroll(record)}
-                            onDelete={() => handleDeletePayroll(record.id)}
-                            isUpdating={updatePayrollStatusMutation.isPending || updatePayrollMutation.isPending}
-                            isDeleting={deletePayrollMutation.isPending}
-                          />
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                );
-              })
+                              {record.journal_entry_id && (
+                                <span className="wk-sub">قيد رقم: {record.journal_entry_id.substring(0, 8)}…</span>
+                              )}
+                            </td>
+                            <td>
+                              <span className={`wk-badge is-${meta.tone}`}>{meta.label}</span>
+                            </td>
+                            <td>
+                              <PayrollActionButtons
+                                payroll={record}
+                                onView={handleViewPayroll}
+                                onEdit={handleEditPayroll}
+                                onApprove={() => handleApprovePayroll(record)}
+                                onPay={() => handlePayPayroll(record)}
+                                onDelete={() => handleDeletePayroll(record.id)}
+                                isUpdating={updatePayrollStatusMutation.isPending || updatePayrollMutation.isPending}
+                                isDeleting={deletePayrollMutation.isPending}
+                              />
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+                {filteredRecords.length > visibleRecords.length && (
+                  <p className="wk-more-note">+{filteredRecords.length - visibleRecords.length} سجل آخر — استخدم البحث لتضييق النتائج</p>
+                )}
+              </>
             )}
-          </div>
-        </TabsContent>
+          </PagePanel>
 
-        <TabsContent value="reviews">
-          <div className="grid gap-4">
-            {filteredReviews.length === 0 ? (
-              <Card className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl">
-                <CardContent className="p-8">
-                  <div className="text-center">
-                    <div className="w-16 h-16 bg-teal-500 rounded-xl shadow-sm flex items-center justify-center mx-auto mb-4">
-                      <FileText className="h-8 w-8 text-white" />
-                    </div>
-                    <p className="text-slate-600 dark:text-slate-400">لا توجد مراجعات رواتب</p>
-                  </div>
-                </CardContent>
-              </Card>
+          <PagePanel
+            number="03"
+            title="مراجعات الرواتب"
+            subtitle="دورات الصرف المجمعة حسب الفترة"
+            className="wk-panel-full"
+          >
+            {isLoading ? (
+              <PageLoading />
+            ) : visibleReviews.length === 0 ? (
+              <PageEmpty icon={FileText} message={payrollStats.reviews ? 'لا توجد مراجعات مطابقة لبحثك' : 'لا توجد مراجعات رواتب'} />
             ) : (
-              filteredReviews.map((review) => {
-                const statusInfo = getStatusBadge(review.status);
-                return (
-                  <Card key={review.id} className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl hover:border-teal-500/50 dark:hover:border-teal-500/50 transition-all duration-300">
-                    <CardContent className="p-4 md:p-6">
-                      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                        <div className="flex items-center gap-4">
-                          <div className="w-12 h-12 bg-teal-500 rounded-xl shadow-sm flex items-center justify-center shrink-0">
-                            <DollarSign className="h-6 w-6 text-white" />
-                          </div>
-                          <div>
-                            <h3 className="font-semibold text-lg text-slate-900 dark:text-slate-100">
-                              دورة رواتب من {review.period_start} إلى {review.period_end}
-                            </h3>
-                            <p className="text-slate-600 dark:text-slate-400">
-                              {review.total_employees} موظف
-                            </p>
-                          </div>
-                        </div>
-
-                        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6">
-                          <div className="text-right sm:text-center flex-1 sm:flex-initial">
-                            <p className="text-sm text-slate-600 dark:text-slate-400">صافي المبلغ</p>
-                            <p className="font-semibold text-green-600 text-lg">
-                              {formatCurrency(review.net_amount)}
-                            </p>
-                          </div>
-
-                          <Badge variant={statusInfo.variant} className={statusInfo.variant === 'default' ? 'bg-teal-500 text-white' : ''}>
-                            {statusInfo.label}
-                          </Badge>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                );
-              })
+              <div className="wk-table-wrap">
+                <table>
+                  <caption className="sr-only">مراجعات الرواتب</caption>
+                  <thead>
+                    <tr>
+                      <th scope="col">دورة الرواتب</th>
+                      <th scope="col">عدد الموظفين</th>
+                      <th scope="col">صافي المبلغ</th>
+                      <th scope="col">الحالة</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {visibleReviews.map((review) => {
+                      const meta = statusMeta[review.status] || { label: review.status, tone: 'neutral' as const };
+                      return (
+                        <tr key={review.id}>
+                          <td>
+                            <strong>دورة من {review.period_start} إلى {review.period_end}</strong>
+                          </td>
+                          <td>{review.total_employees} موظف</td>
+                          <td>{formatCurrency(review.net_amount)}</td>
+                          <td>
+                            <span className={`wk-badge is-${meta.tone}`}>{meta.label}</span>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
             )}
+          </PagePanel>
+        </div>
+
+        <section className="dw-shortcuts" aria-labelledby="hr-payroll-shortcuts-title">
+          <div className="dw-shortcut-heading">
+            <div className="dw-eyebrow">مساحات العمل</div>
+            <h2 id="hr-payroll-shortcuts-title">انتقل إلى التفاصيل</h2>
+            <p>أدوات الموارد البشرية اليومية، في مكان واحد.</p>
           </div>
-        </TabsContent>
-      </Tabs>
+          <div className="dw-shortcut-grid">
+            {[
+              { label: 'الموظفون', detail: 'ملفات الموظفين والرواتب', icon: DollarSign, path: '/hr/employees' },
+              { label: 'الحضور والانصراف', detail: 'متابعة يومية للحضور', icon: Clock, path: '/hr/attendance' },
+              { label: 'الإجازات', detail: 'طلبات الإجازات والموافقات', icon: CalendarDays, path: '/hr/leave' },
+              { label: 'تقارير الموارد البشرية', detail: 'تقارير الأداء التشغيلي', icon: FileText, path: '/hr/reports' },
+            ].map((item) => (
+              <Link key={item.path} to={item.path}>
+                <item.icon size={23} />
+                <div>
+                  <h3>{item.label}</h3>
+                  <p>{item.detail}</p>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </section>
+
+        <footer className="dw-footer">
+          <span>
+            Fleetify <span>/</span> إدارة الرواتب
+          </span>
+          <span role="status">
+            {refreshing ? 'جاري تحديث البيانات…' : `آخر تحديث ${new Date(refreshedAt).toLocaleTimeString('ar-QA', { hour: '2-digit', minute: '2-digit' })}`}
+          </span>
+        </footer>
+      </div>
 
       <PayrollDialog
         open={showCreatePayroll}
@@ -383,6 +484,6 @@ const deletePayrollMutation = useDeletePayroll();
       <PayrollPageHelpContent />
     </PageHelp>
 
-    </HRPageShell>
+    </div>
   );
 }

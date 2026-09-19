@@ -1,9 +1,9 @@
-import { useState } from "react"
-import { Plus, FileText, DollarSign, Users, Clock, CheckCircle, XCircle, Eye, Edit, FileDown, MessageCircle, Building } from "lucide-react"
+import { useMemo, useState } from "react"
+import {
+  Plus, FileText, DollarSign, Users, Clock, CheckCircle, XCircle, Eye, FileDown,
+  MessageCircle, Building, CalendarDays, RefreshCw, Search, Sparkles, ChevronLeft,
+} from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { LoadingSpinner } from "@/components/ui/loading-spinner"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -17,13 +17,17 @@ import { useForm } from "react-hook-form"
 import { toast } from "sonner"
 import { useUnifiedCompanyAccess } from "@/hooks/useUnifiedCompanyAccess"
 import { useCurrencyFormatter } from "@/hooks/useCurrencyFormatter"
-import { ResponsivePageActions } from "@/components/ui/responsive-page-actions"
 import { PageHelp } from "@/components/help";
 import { QuotationsPageHelpContent } from "@/components/help/content";
 import { useRentalViolationOverride } from '@/contexts/RentalViolationOverrideContext';
 import { RentalEligibilityConfirmationCancelledError } from '@/contexts/rentalViolationOverrideErrors';
 
 import { useFleetifyTranslation } from "@/hooks/useTranslation";
+import { fleetGradient } from "@/components/dashboard/workspace/model";
+import { PageEmpty, PageLoading, PagePanel } from "@/components/dashboard/workspace/PageKit";
+import '@/components/dashboard/workspace/dashboard-workspace.css';
+import '@/components/dashboard/workspace/page-kit.css';
+
 interface QuotationFormData {
   customer_id: string
   vehicle_id?: string
@@ -42,16 +46,47 @@ type QuotationWithRelations = Tables<'quotations'> & {
   companies?: Pick<Tables<'companies'>, 'id' | 'name' | 'name_ar' | 'logo_url'> | null
 }
 
+type StatusFilter = 'all' | 'pending' | 'accepted' | 'rejected' | 'converted'
+
+const statusLabels: Record<string, string> = {
+  pending: 'معلق',
+  accepted: 'مقبول',
+  rejected: 'مرفوض',
+  converted: 'محول',
+}
+
+const statusTones: Record<string, 'ok' | 'warn' | 'risk' | 'info'> = {
+  pending: 'warn',
+  accepted: 'ok',
+  rejected: 'risk',
+  converted: 'info',
+}
+
+const statusColors: Record<string, string> = {
+  pending: '#d5ad69',
+  accepted: '#7c9e65',
+  rejected: '#b86d50',
+  converted: '#2f7966',
+}
+
+const typeLabels: Record<string, string> = { daily: 'يومي', weekly: 'أسبوعي', monthly: 'شهري' }
+const typeUnits: Record<string, string> = { daily: 'يوم', weekly: 'أسبوع', monthly: 'شهر' }
+
+const formatDay = (value: string) => new Date(value).toLocaleDateString('en-GB')
+
 export default function Quotations() {
   const { t } = useFleetifyTranslation("ui");
   const [showQuotationForm, setShowQuotationForm] = useState(false)
-  const [selectedQuotation, setSelectedQuotation] = useState<QuotationWithRelations | null>(null)
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>('all')
+  const [searchTerm, setSearchTerm] = useState('')
+  const [refreshing, setRefreshing] = useState(false)
+  const [refreshedAt, setRefreshedAt] = useState(() => Date.now())
   const { user } = useAuth()
   const { filter, companyId, hasGlobalAccess, getQueryKey } = useUnifiedCompanyAccess()
   const { formatCurrency } = useCurrencyFormatter()
   const queryClient = useQueryClient()
   const { confirmRentalEligibility } = useRentalViolationOverride()
-  
+
   const { register, handleSubmit, watch, reset, setValue } = useForm<QuotationFormData>({
     defaultValues: {
       quotation_type: 'daily',
@@ -67,7 +102,7 @@ export default function Quotations() {
 
   // Auto calculate total amount when duration or rate changes
   const calculatedAmount = (duration || 0) * (ratePerUnit || 0)
-  
+
   // Update total amount when calculated amount changes, but allow manual override
   if (calculatedAmount !== totalAmount && calculatedAmount > 0) {
     setValue('total_amount', calculatedAmount)
@@ -166,7 +201,7 @@ export default function Quotations() {
 
       // Generate quotation number
       const quotationNumber = `QT-${Date.now()}`
-      
+
       const { data, error } = await supabase
         .from('quotations')
         .insert([{
@@ -219,7 +254,7 @@ export default function Quotations() {
       // Calculate start and end dates
       const startDate = new Date()
       const endDate = new Date()
-      
+
       if (quotation.quotation_type === 'daily') {
         endDate.setDate(startDate.getDate() + quotation.duration)
       } else if (quotation.quotation_type === 'weekly') {
@@ -284,25 +319,39 @@ export default function Quotations() {
   const convertedQuotations = quotations?.filter(q => q.status === 'converted') || []
   const totalQuotationValue = pendingQuotations.reduce((sum, q) => sum + (q.total_amount || 0), 0)
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'pending': return 'bg-yellow-100 text-yellow-800'
-      case 'accepted': return 'bg-green-100 text-green-800'
-      case 'rejected': return 'bg-red-100 text-red-800'
-      case 'converted': return 'bg-blue-100 text-blue-800'
-      default: return 'bg-slate-100 text-slate-800'
-    }
-  }
+  const weekAhead = Date.now() + 7 * 24 * 60 * 60 * 1000
+  const expiringSoon = pendingQuotations.filter(q => new Date(q.valid_until).getTime() <= weekAhead)
 
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case 'pending': return <Clock className="h-4 w-4" />
-      case 'accepted': return <CheckCircle className="h-4 w-4" />
-      case 'rejected': return <XCircle className="h-4 w-4" />
-      case 'converted': return <FileText className="h-4 w-4" />
-      default: return <FileText className="h-4 w-4" />
-    }
-  }
+  const conversionRate = quotations?.length
+    ? Math.round((convertedQuotations.length / quotations.length) * 100)
+    : 0
+
+  const conversionRows = [
+    { label: 'معلق', value: pendingQuotations.length, color: statusColors.pending },
+    { label: 'مقبول', value: acceptedQuotations.length, color: statusColors.accepted },
+    { label: 'مرفوض', value: rejectedQuotations.length, color: statusColors.rejected },
+    { label: 'محول', value: convertedQuotations.length, color: statusColors.converted },
+  ].map(row => ({
+    ...row,
+    percent: quotations?.length ? (row.value / quotations.length) * 100 : 0,
+  }))
+
+  const filteredQuotations = useMemo(() => {
+    const term = searchTerm.trim().toLowerCase()
+    return (quotations || []).filter(q => {
+      const matchesStatus = statusFilter === 'all' || q.status === statusFilter
+      if (!matchesStatus) return false
+      if (!term) return true
+      const customerName = q.customers
+        ? q.customers.customer_type === 'corporate'
+          ? q.customers.company_name || ''
+          : `${q.customers.first_name} ${q.customers.last_name}`
+        : ''
+      return `${q.quotation_number} ${customerName}`.toLowerCase().includes(term)
+    })
+  }, [quotations, statusFilter, searchTerm])
+
+  const visibleQuotations = filteredQuotations.slice(0, 12)
 
   // Generate approval link for quotation
   const generateApprovalLink = async (quotationId: string) => {
@@ -315,7 +364,7 @@ export default function Quotations() {
 
       const approvalToken = data;
       const expiryDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
-      
+
       // Create a shorter, user-friendly approval URL that points to our app
       const approvalUrl = `${window.location.origin}/quotation-approval?token=${approvalToken}`;
 
@@ -343,10 +392,10 @@ export default function Quotations() {
     // Get customer and vehicle data from quotation relations or fallback to lookup
     const customer = quotation.customers || customers?.find(c => c.id === quotation.customer_id)
     const vehicle = quotation.vehicles || vehicles?.find(v => v.id === quotation.vehicle_id)
-    
+
     // Get customer phone number (prefer phone over alternative_phone)
     const customerPhone = customer?.phone || customer?.alternative_phone
-    
+
     if (!customerPhone) {
       toast.error('رقم هاتف العميل غير متوفر')
       return
@@ -356,8 +405,8 @@ export default function Quotations() {
     const approvalUrl = await generateApprovalLink(quotation.id);
 
     // Clean and format phone number (remove spaces, dashes, etc.)
-    const cleanPhone = customerPhone.replace(/[\s\-\(\)]/g, '')
-    
+    const cleanPhone = customerPhone.replace(/[\s-()]/g, '')
+
     // Add Kuwait country code if not present
     let formattedPhone = cleanPhone
     if (!cleanPhone.startsWith('+')) {
@@ -369,16 +418,12 @@ export default function Quotations() {
         formattedPhone = '+965' + cleanPhone
       }
     }
-    
-    const customerName = customer?.customer_type === 'corporate'
-      ? customer.company_name || 'العميل'
-      : [customer?.first_name, customer?.last_name].filter(Boolean).join(' ') || 'العميل'
 
     const vehicleInfo = vehicle
       ? `\nالمركبة: ${vehicle.make || ''} ${vehicle.model || ''} - ${vehicle.plate_number || 'غير محدد'}`
       : ''
 
-    const durationType = quotation.quotation_type === 'daily' ? 'يوم' : 
+    const durationType = quotation.quotation_type === 'daily' ? 'يوم' :
                         quotation.quotation_type === 'weekly' ? 'أسبوع' : 'شهر'
 
     const message = `*عرض سعر من شركة ${quotation.companies?.name || user?.company?.name || 'شركتنا'}*
@@ -404,10 +449,10 @@ ${approvalUrl ? `\n*للموافقة على العرض أو رفضه، يرجى 
 
     const whatsappUrl = `https://wa.me/${formattedPhone}?text=${encodeURIComponent(message)}`
     window.open(whatsappUrl, '_blank')
-    
+
     // Refresh quotations to show updated data
     queryClient.invalidateQueries({ queryKey: getQueryKey(['quotations']) });
-    
+
     toast.success('تم إرسال العرض مع رابط الموافقة عبر واتساب');
   }
 
@@ -415,212 +460,324 @@ ${approvalUrl ? `\n*للموافقة على العرض أو رفضه، يرجى 
     createQuotationMutation.mutate(data)
   }
 
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <LoadingSpinner size="lg" />
-      </div>
-    )
+  const handleRefresh = async () => {
+    setRefreshing(true)
+    try {
+      await queryClient.invalidateQueries({ queryKey: getQueryKey(['quotations']) })
+      setRefreshedAt(Date.now())
+    } finally {
+      setRefreshing(false)
+    }
   }
 
+  const insightRows = [
+    {
+      key: 'awaiting',
+      urgent: pendingQuotations.length > 0,
+      icon: Clock,
+      title: 'عروض تنتظر رد العميل',
+      reason: pendingQuotations.length > 0 ? 'تابعها أو أعد إرسالها عبر واتساب برابط الموافقة' : 'لا توجد عروض معلقة حالياً',
+      badge: `${pendingQuotations.length} عرض`,
+    },
+    {
+      key: 'ready',
+      urgent: acceptedQuotations.length > 0,
+      icon: CheckCircle,
+      title: 'مقبولة بانتظار التحويل',
+      reason: acceptedQuotations.length > 0 ? 'حوّلها إلى عقود لتثبيت الإيراد' : 'لا توجد عروض مقبولة غير محولة',
+      badge: `${acceptedQuotations.length} عرض`,
+    },
+    {
+      key: 'expiring',
+      urgent: expiringSoon.length > 0,
+      icon: CalendarDays,
+      title: 'تنتهي صلاحيتها قريبًا',
+      reason: 'عروض معلقة تنتهي صلاحيتها خلال 7 أيام أو انتهت بالفعل',
+      badge: `${expiringSoon.length} عرض`,
+    },
+  ]
+
+  const metrics = [
+    { label: 'قيد الانتظار', value: pendingQuotations.length, hint: 'بانتظار رد العميل', icon: Clock, accent: true },
+    { label: 'مقبولة', value: acceptedQuotations.length, hint: 'جاهزة للتحويل لعقد', icon: CheckCircle, accent: false },
+    { label: 'مرفوضة', value: rejectedQuotations.length, hint: 'عروض مرفوضة', icon: XCircle, accent: false },
+    { label: 'محولة لعقود', value: convertedQuotations.length, hint: 'أصبحت عقودًا فعالة', icon: FileText, accent: false },
+    { label: 'قيمة معلقة', value: formatCurrency(totalQuotationValue), hint: 'مجموع العروض المعلقة', icon: DollarSign, accent: false },
+  ]
+
+  const customerName = (quotation: QuotationWithRelations) =>
+    quotation.customers
+      ? quotation.customers.customer_type === 'corporate'
+        ? quotation.customers.company_name
+        : `${quotation.customers.first_name} ${quotation.customers.last_name}`
+      : 'عميل غير محدد'
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-teal-50/30 space-y-6">
-      {/* Header */}
-      <ResponsivePageActions
-        title="عروض الأسعار"
-        subtitle="إنشاء وإدارة عروض الأسعار للعملاء وتحويلها لعقود"
-        primaryAction={{
-          id: 'new-quotation',
-          label: 'عرض سعر جديد',
-          icon: <Plus className="h-4 w-4 mr-2" />,
-          onClick: () => setShowQuotationForm(true)
-        }}
-      />
-
-      {/* Statistics Cards */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
-        <Card className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 hover:shadow-sm transition-all">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-slate-700 dark:text-slate-300">قيد الانتظار</CardTitle>
-            <div className="w-8 h-8 rounded-full bg-teal-500 flex items-center justify-center shadow-sm">
-              <Clock className="h-4 w-4 text-white" />
+    <div className="dashboard-workspace" dir="rtl">
+      <div className="dw-container">
+        <header className="dw-header">
+          <div>
+            <div className="dw-eyebrow">
+              <span className="dw-mark" />
+              العراف لتأجير السيارات <span>/</span> المبيعات <span>/</span> عروض الأسعار
             </div>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-slate-900 dark:text-slate-100">{pendingQuotations.length}</div>
-            <p className="text-xs text-slate-500 dark:text-slate-400">عرض معلق</p>
-          </CardContent>
-        </Card>
+            <h1>عروض الأسعار</h1>
+            <p>إنشاء عروض الأسعار للعملاء، مشاركتها برابط موافقة، وتحويلها إلى عقود.</p>
+          </div>
+          <div className="dw-header-tools">
+            <button
+              className="dw-icon-button"
+              onClick={handleRefresh}
+              disabled={refreshing}
+              aria-label="تحديث عروض الأسعار"
+            >
+              <RefreshCw size={17} className={refreshing ? 'animate-spin' : ''} />
+            </button>
+          </div>
+        </header>
 
-        <Card className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 hover:shadow-sm transition-all">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-slate-700 dark:text-slate-300">مقبولة</CardTitle>
-            <div className="w-8 h-8 rounded-full bg-teal-500 flex items-center justify-center shadow-sm">
-              <CheckCircle className="h-4 w-4 text-white" />
+        <div className="dw-daybar">
+          <div className="dw-date">
+            <CalendarDays size={17} />
+            <span>{new Date().toLocaleDateString('ar-QA', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</span>
+          </div>
+          <div className="dw-primary-actions">
+            <button className="dw-button dw-button-primary" onClick={() => setShowQuotationForm(true)}>
+              <Plus size={17} />
+              عرض سعر جديد
+            </button>
+          </div>
+        </div>
+
+        <section className="dw-metrics wk-metrics-5" aria-label="مؤشرات العروض">
+          {metrics.map((metric) => (
+            <div key={metric.label} className={`dw-metric ${metric.accent ? 'dw-metric-accent' : ''}`}>
+              <div className="dw-metric-top">
+                <span>{metric.label}</span>
+                <metric.icon size={19} />
+              </div>
+              <strong>{metric.value}</strong>
+              <div className="dw-metric-bottom">
+                <small>{metric.hint}</small>
+              </div>
             </div>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-slate-900 dark:text-slate-100">{acceptedQuotations.length}</div>
-            <p className="text-xs text-slate-500 dark:text-slate-400">تم القبول</p>
-          </CardContent>
-        </Card>
+          ))}
+        </section>
 
-        <Card className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 hover:shadow-sm transition-all">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-slate-700 dark:text-slate-300">مرفوضة</CardTitle>
-            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-rose-500 to-rose-600 flex items-center justify-center shadow-lg shadow-rose-500/20">
-              <XCircle className="h-4 w-4 text-white" />
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-slate-900 dark:text-slate-100">{rejectedQuotations.length}</div>
-            <p className="text-xs text-slate-500 dark:text-slate-400">تم الرفض</p>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 hover:shadow-sm transition-all">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-slate-700 dark:text-slate-300">محولة لعقود</CardTitle>
-            <div className="w-8 h-8 rounded-full bg-teal-500 flex items-center justify-center shadow-sm">
-              <FileText className="h-4 w-4 text-white" />
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-slate-900 dark:text-slate-100">{convertedQuotations.length}</div>
-            <p className="text-xs text-slate-500 dark:text-slate-400">تم التحويل</p>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 hover:shadow-sm transition-all">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-slate-700 dark:text-slate-300">القيمة الإجمالية</CardTitle>
-            <div className="w-8 h-8 rounded-full bg-teal-500 flex items-center justify-center shadow-sm">
-              <DollarSign className="h-4 w-4 text-white" />
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-slate-900 dark:text-slate-100">{formatCurrency(totalQuotationValue)}</div>
-            <p className="text-xs text-slate-500 dark:text-slate-400">العروض المعلقة</p>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Quotations List */}
-      <div className="grid gap-4">
-        {quotations?.map((quotation) => (
-          <Card key={quotation.id} className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 hover:shadow-sm transition-all">
-            <CardContent className="pt-6">
-              <div className="flex items-start justify-between">
-                <div className="flex-1 space-y-2">
-                  <div className="flex items-center gap-2">
-                    <h3 className="font-semibold text-lg text-slate-900 dark:text-slate-100">عرض سعر رقم {quotation.quotation_number}</h3>
-                    <Badge className={getStatusColor(quotation.status)}>
-                      {getStatusIcon(quotation.status)}
-                      <span className="mr-1">
-                        {quotation.status === 'pending' ? 'معلق' :
-                         quotation.status === 'accepted' ? 'مقبول' :
-                         quotation.status === 'rejected' ? 'مرفوض' : 'محول'}
-                      </span>
-                    </Badge>
-                    {hasGlobalAccess && quotation.companies && (
-                      <Badge variant="outline" className="text-xs border-slate-200 dark:border-slate-700">
-                        <Building className="h-3 w-3 mr-1" />
-                        {quotation.companies.name}
-                      </Badge>
-                    )}
-                  </div>
-
-                  <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
-                    <div className="flex items-center gap-2">
-                      <Users className="h-4 w-4 text-slate-500 dark:text-slate-400" />
-                      <span className="text-sm text-slate-700 dark:text-slate-300">
-                        {quotation.customers ? (
-                          quotation.customers.customer_type === 'corporate'
-                            ? quotation.customers.company_name
-                            : `${quotation.customers.first_name} ${quotation.customers.last_name}`
-                        ) : (
-                          'عميل غير محدد'
-                        )}
-                      </span>
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                      <Clock className="h-4 w-4 text-slate-500 dark:text-slate-400" />
-                      <span className="text-sm text-slate-700 dark:text-slate-300">
-                        {quotation.duration} {quotation.quotation_type === 'daily' ? 'يوم' :
-                                            quotation.quotation_type === 'weekly' ? 'أسبوع' : 'شهر'}
-                      </span>
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                      <DollarSign className="h-4 w-4 text-slate-500 dark:text-slate-400" />
-                      <span className="text-sm font-medium text-slate-900 dark:text-slate-100">
-                        {formatCurrency(quotation.total_amount || 0)}
-                      </span>
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                      <FileText className="h-4 w-4 text-slate-500 dark:text-slate-400" />
-                      <span className="text-sm text-slate-700 dark:text-slate-300">
-                        صالح حتى: {new Date(quotation.valid_until).toLocaleDateString('en-GB')}
-                      </span>
-                    </div>
-                  </div>
-
-                  {quotation.description && (
-                    <p className="text-sm text-slate-500 dark:text-slate-400">{quotation.description}</p>
-                  )}
-                </div>
-
-                <div className="flex gap-2">
-                  <Button variant="outline" size="default" className="rounded-xl hover:shadow-sm min-h-[44px] border-slate-200 dark:border-slate-700">
-                    <Eye className="h-4 w-4 mr-1" />
-                    عرض
-                  </Button>
-                  <Button variant="outline" size="default" className="rounded-xl hover:shadow-sm min-h-[44px] border-slate-200 dark:border-slate-700">
-                    <FileDown className="h-4 w-4 mr-1" />{t("pdf")}</Button>
-                  <Button
-                    variant="outline"
-                    size="default"
-                    onClick={() => shareViaWhatsApp(quotation)}
-                    className="text-green-600 dark:text-green-400 hover:text-green-700 dark:hover:text-green-300 hover:bg-green-50 dark:hover:bg-green-900/20 rounded-xl hover:shadow-sm min-h-[44px] border-green-200 dark:border-green-800"
+        <div className="dw-main-grid">
+          <PagePanel number="01" title="أولويات المتابعة" subtitle="العروض التي تستحق انتباهك أولاً" className="wk-panel-main">
+            <div className="dw-priority-toolbar">
+              <div className="dw-filters" role="group" aria-label="تصفية العروض">
+                {([
+                  { value: 'all', label: 'الكل', count: quotations?.length || 0 },
+                  { value: 'pending', label: 'معلق', count: pendingQuotations.length },
+                  { value: 'accepted', label: 'مقبول', count: acceptedQuotations.length },
+                  { value: 'rejected', label: 'مرفوض', count: rejectedQuotations.length },
+                  { value: 'converted', label: 'محول', count: convertedQuotations.length },
+                ] as const).map(chip => (
+                  <button
+                    key={chip.value}
+                    aria-pressed={statusFilter === chip.value}
+                    onClick={() => setStatusFilter(chip.value)}
                   >
-                    <MessageCircle className="h-4 w-4 mr-1" />
-                    ارسال
-                  </Button>
-                  {quotation.status === 'accepted' && (
-                    <Button
-                      size="default"
-                      onClick={() => convertToContractMutation.mutate(quotation.id)}
-                      disabled={convertToContractMutation.isPending}
-                      className="bg-teal-500 hover:bg-teal-600 rounded-xl shadow-sm min-h-[44px]"
-                    >
-                      تحويل لعقد
-                    </Button>
-                  )}
+                    {chip.label}<span>{isLoading ? '—' : chip.count}</span>
+                  </button>
+                ))}
+              </div>
+              <span className="dw-priority-note"><Sparkles size={13} />تصفية سريعة</span>
+            </div>
+            <div className="dw-priority-list" aria-live="polite">
+              {insightRows.map((row) => {
+                const Icon = row.icon;
+                return (
+                  <a key={row.key} href="#fr-quotations" className="dw-priority-row">
+                    <span className={`dw-priority-icon ${row.urgent ? 'is-urgent' : ''}`}>
+                      <Icon size={19} />
+                    </span>
+                    <div className="dw-priority-copy">
+                      <h3>{row.title}</h3>
+                      <p>{row.reason}</p>
+                    </div>
+                    <span className={`dw-priority-badge ${row.urgent ? 'is-urgent' : ''}`}>{row.badge}</span>
+                    <ChevronLeft className="dw-row-arrow" size={16} />
+                  </a>
+                );
+              })}
+            </div>
+            <div className="dw-panel-foot">
+              <MessageCircle size={14} />
+              <span>مشاركة العرض عبر واتساب تولّد رابط موافقة إلكترونية صالحاً 30 يوماً.</span>
+            </div>
+          </PagePanel>
+
+          <PagePanel number="02" title="معدل التحويل" subtitle="نسبة العروض التي أصبحت عقودًا" className="wk-panel-side">
+            {isLoading ? (
+              <PageLoading />
+            ) : !quotations?.length ? (
+              <PageEmpty icon={FileText} message="لا توجد عروض أسعار بعد" />
+            ) : (
+              <>
+                <div className="dw-fleet-visual">
+                  <div
+                    className="dw-fleet-ring"
+                    style={{ background: fleetGradient(conversionRows.map(row => ({ ...row, path: '#' }))) }}
+                    role="img"
+                    aria-label={`معدل تحويل العروض ${conversionRate}%`}
+                  >
+                    <div>
+                      <strong>
+                        {conversionRate}
+                        <small>%</small>
+                      </strong>
+                      <span>معدل التحويل</span>
+                    </div>
+                  </div>
+                  <div className="dw-fleet-annotation">
+                    <span>تحولت إلى عقود</span>
+                    <strong>{convertedQuotations.length}</strong>
+                    <small>عرض من إجمالي {quotations.length}</small>
+                  </div>
+                </div>
+                <div className="wk-legend">
+                  {conversionRows.map(row => (
+                    <div key={row.label} className="wk-legend-row">
+                      <i style={{ background: row.color }} />
+                      <span>{row.label}</span>
+                      <strong>{row.value}</strong>
+                      <small>{Math.round(row.percent)}%</small>
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
+          </PagePanel>
+
+          <PagePanel
+            number="03"
+            title="سجل العروض"
+            subtitle="جميع عروض الأسعار المرتبطة بحسابك"
+            className="wk-panel-full"
+            id="fr-quotations"
+            action={
+              <div className="wk-toolbar-group">
+                <div className="relative">
+                  <Search className="absolute right-3 top-1/2 -translate-y-1/2 text-[#9aa791]" size={14} />
+                  <input
+                    className="wk-field"
+                    style={{ paddingRight: 32, minWidth: 210 }}
+                    placeholder="ابحث برقم العرض أو العميل…"
+                    value={searchTerm}
+                    onChange={(event) => setSearchTerm(event.target.value)}
+                    aria-label="بحث في العروض"
+                  />
                 </div>
               </div>
-            </CardContent>
-          </Card>
-        ))}
+            }
+          >
+            {isLoading ? (
+              <PageLoading />
+            ) : visibleQuotations.length === 0 ? (
+              <PageEmpty icon={FileText} message={quotations?.length ? 'لا توجد عروض مطابقة لبحثك' : 'لا توجد عروض أسعار بعد'}>
+                {!quotations?.length && (
+                  <button className="dw-button" onClick={() => setShowQuotationForm(true)}>
+                    <Plus size={16} />
+                    إنشاء عرض سعر جديد
+                  </button>
+                )}
+              </PageEmpty>
+            ) : (
+              <>
+                <div className="wk-table-wrap">
+                  <table>
+                    <caption className="sr-only">عروض الأسعار</caption>
+                    <thead>
+                      <tr>
+                        <th scope="col">العرض / العميل</th>
+                        <th scope="col">النوع والمدة</th>
+                        <th scope="col">المبلغ الإجمالي</th>
+                        <th scope="col">صالح حتى</th>
+                        <th scope="col">الحالة</th>
+                        <th scope="col"><span className="sr-only">إجراءات</span></th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {visibleQuotations.map((quotation) => (
+                        <tr key={quotation.id}>
+                          <td>
+                            <strong><bdi>عرض رقم {quotation.quotation_number}</bdi></strong>
+                            <span className="wk-sub">
+                              <Users size={11} style={{ marginInlineEnd: 4, verticalAlign: 'middle' }} />
+                              <bdi>{customerName(quotation)}</bdi>
+                              {hasGlobalAccess && quotation.companies && (
+                                <span style={{ marginInlineStart: 8, color: '#829174' }}>
+                                  <Building size={10} style={{ verticalAlign: 'middle' }} /> {quotation.companies.name}
+                                </span>
+                              )}
+                            </span>
+                          </td>
+                          <td>
+                            {typeLabels[quotation.quotation_type]} · {quotation.duration} {typeUnits[quotation.quotation_type]}
+                            <span className="wk-sub">{formatCurrency(quotation.rate_per_unit || 0)} للوحدة</span>
+                          </td>
+                          <td>{formatCurrency(quotation.total_amount || 0)}</td>
+                          <td><bdi>{formatDay(quotation.valid_until)}</bdi></td>
+                          <td>
+                            <span className={`wk-badge is-${statusTones[quotation.status] ?? 'neutral'}`}>
+                              {statusLabels[quotation.status] || quotation.status}
+                            </span>
+                          </td>
+                          <td>
+                            <div className="wk-actions">
+                              <button
+                                type="button"
+                                className="wk-action"
+                                title="مشاركة عبر واتساب"
+                                aria-label={`مشاركة العرض ${quotation.quotation_number} عبر واتساب`}
+                                onClick={() => shareViaWhatsApp(quotation)}
+                              >
+                                <MessageCircle size={15} />
+                              </button>
+                              <button type="button" className="wk-action" title={t("pdf")} aria-label={`تصدير العرض ${quotation.quotation_number} PDF`}>
+                                <FileDown size={15} />
+                              </button>
+                              <button type="button" className="wk-action" title="عرض التفاصيل" aria-label={`عرض تفاصيل ${quotation.quotation_number}`}>
+                                <Eye size={15} />
+                              </button>
+                              {quotation.status === 'accepted' && (
+                                <button
+                                  type="button"
+                                  className="wk-action is-primary"
+                                  title="تحويل لعقد"
+                                  aria-label={`تحويل العرض ${quotation.quotation_number} إلى عقد`}
+                                  disabled={convertToContractMutation.isPending}
+                                  onClick={() => convertToContractMutation.mutate(quotation.id)}
+                                >
+                                  <FileText size={15} />
+                                </button>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                {filteredQuotations.length > visibleQuotations.length && (
+                  <p className="wk-more-note">+{filteredQuotations.length - visibleQuotations.length} عرض آخر — استخدم التصفية أو البحث لتضييق النتائج</p>
+                )}
+              </>
+            )}
+          </PagePanel>
+        </div>
 
-        {quotations?.length === 0 && (
-          <Card className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700">
-            <CardContent className="flex flex-col items-center justify-center py-12">
-              <div className="w-16 h-16 bg-slate-100 dark:bg-slate-800 rounded-xl flex items-center justify-center mb-4">
-                <FileText className="h-8 w-8 text-slate-400 dark:text-slate-500" />
-              </div>
-              <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-2">لا توجد عروض أسعار بعد</h3>
-              <p className="text-slate-500 dark:text-slate-400 text-center mb-4">
-                ابدأ في إنشاء عروض أسعار جديدة للعملاء
-              </p>
-              <Button onClick={() => setShowQuotationForm(true)} className="bg-teal-500 hover:bg-teal-600 rounded-xl shadow-sm min-h-[44px]">
-                <Plus className="h-4 w-4 mr-2" />
-                إنشاء عرض سعر جديد
-              </Button>
-            </CardContent>
-          </Card>
-        )}
+        <footer className="dw-footer">
+          <span>
+            Fleetify <span>/</span> عروض الأسعار
+          </span>
+          <span role="status">
+            {refreshing ? 'جاري تحديث البيانات…' : `آخر تحديث ${new Date(refreshedAt).toLocaleTimeString('ar-QA', { hour: '2-digit', minute: '2-digit' })}`}
+          </span>
+        </footer>
       </div>
 
       {/* Quotation Form Dialog */}
@@ -629,7 +786,7 @@ ${approvalUrl ? `\n*للموافقة على العرض أو رفضه، يرجى 
           <DialogHeader>
             <DialogTitle className="text-xl font-bold">إنشاء عرض سعر جديد</DialogTitle>
           </DialogHeader>
-          
+
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
             {/* معلومات أساسية */}
             <div className="bg-white/50 dark:bg-slate-800/50 backdrop-blur-sm p-4 rounded-xl border border-slate-200 dark:border-slate-700">
