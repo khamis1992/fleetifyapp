@@ -147,8 +147,8 @@ export const PaymentTracking: React.FC = () => {
           paid_amount,
           balance_due,
           payment_status,
-          customers:customer_id(first_name, last_name, company_name),
-          payments(id, amount, payment_date, payment_method, payment_status, reconciliation_status)
+          customers!invoices_customer_id_fkey(first_name, last_name, company_name),
+          payments!invoices_payment_id_fkey(id, amount, payment_date, payment_method, payment_status, reconciliation_status)
         `)
         .eq('company_id', companyId)
         .neq('status', 'cancelled')
@@ -211,7 +211,7 @@ export const PaymentTracking: React.FC = () => {
       
       const { data, error } = await supabase
         .from('payments')
-        .select('id, payment_number, payment_date, amount, payment_method, payment_status, reference_number, bank_account, reconciliation_status, reconciled_at, notes, invoices:invoice_id(total_amount)')
+        .select('id, payment_number, payment_date, amount, payment_method, payment_status, reference_number, bank_account, reconciliation_status, reconciled_at, notes, invoices!payments_invoice_id_fkey(total_amount)')
         .eq('company_id', companyId)
         .eq('invoice_id', selectedInvoice)
         .order('payment_date', { ascending: true });
