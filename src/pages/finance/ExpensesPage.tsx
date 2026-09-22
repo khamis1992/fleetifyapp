@@ -31,32 +31,42 @@ export default function ExpensesPage() {
     enabled: Boolean(companyId),
     queryFn: async () => {
       if (!companyId) throw new Error('No company access');
+      // Two-step fetch avoids embedded chart filters (a known PostgREST
+      // fragility): resolve expense account ids first, then their lines.
+      const { data: accountRows, error: accountsError } = await supabase
+        .from('chart_of_accounts')
+        .select('id, account_code, account_name, account_name_ar')
+        .eq('company_id', companyId)
+        .eq('account_type', 'expenses')
+        .eq('is_header', false);
+      if (accountsError) throw accountsError;
+      const ids = (accountRows || []).map(row => row.id);
+      if (!ids.length) return [] as ExpenseRow[];
       const { data, error } = await supabase
         .from('journal_entry_lines')
         .select(
-          `id, debit_amount,
-       journal_entries!inner(id, entry_date, entry_number, description, company_id, status),
-       chart_of_accounts!account_id(account_code, account_name, account_name_ar, account_type, company_id)`
-    )
+          'id, debit_amount, account_id, journal_entries!inner(id, entry_date, entry_number, description, company_id, status)'
+        )
         .eq('journal_entries.company_id', companyId)
         .eq('journal_entries.status', 'posted')
-        .eq('chart_of_accounts.account_type', 'expenses')
+        .in('account_id', ids)
         .gt('debit_amount', 0)
         .order('journal_entries.entry_date', { ascending: false, referencedTable: 'journal_entries' })
         .limit(30);
       if (error) throw error;
+      const byId = new Map((accountRows || []).map(row => [row.id, row]));
       return (data || []).map((row: Record<string, unknown>) => {
         const entry = row.journal_entries as Record<string, string>;
-        const account = row.chart_of_accounts as Record<string, string | null>;
+        const account = byId.get(String(row.account_id));
         return {
           id: row.id as string,
           entry_date: entry.entry_date,
           entry_number: entry.entry_number,
           description: entry.description,
           amount: Number(row.debit_amount || 0),
-          account_code: account.account_code,
-          account_name: account.account_name,
-          account_name_ar: account.account_name_ar,
+          account_code: account?.account_code ?? '',
+          account_name: account?.account_name ?? null,
+          account_name_ar: account?.account_name_ar ?? null,
         };
       }) as ExpenseRow[];
     },

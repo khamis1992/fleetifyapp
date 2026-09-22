@@ -377,7 +377,14 @@ const BillingCenter = ({ section = "invoices" }: { section?: "invoices" | "payme
 
   // Data fetching
   const { data: invoicesData, isLoading: invoicesLoading, error: invoicesError, refetch: refetchInvoices } = useInvoices({ allPages: true });
-  const { data: paymentsData, isLoading: paymentsLoading, error: paymentsError, refetch: refetchPayments } = usePayments();
+  // Default window: the last 12 months keeps the payload light; older records
+  // remain reachable through the payments register filters.
+  const paymentsWindowStart = useMemo(() => {
+    const d = new Date();
+    d.setFullYear(d.getFullYear() - 1);
+    return d.toISOString().slice(0, 10);
+  }, []);
+  const { data: paymentsData, isLoading: paymentsLoading, error: paymentsError, refetch: refetchPayments } = usePayments({ payment_date_gte: paymentsWindowStart });
   const { companyId } = useUnifiedCompanyAccess();
   const { data: treasuryData } = useTreasurySummary();
 
