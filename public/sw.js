@@ -1,185 +1,69 @@
 /**
  * Fleetify Service Worker
- * 
+ *
  * Handles:
- * - Offline caching strategy
- * - Background sync
- * - Push notifications (future)
+ * - Emergency cleanup of stale caches that pinned outdated JS builds
+ * - Self-unregistration: the app no longer relies on a service worker.
+ *   Old registrations served stale chunks (cache-first) and shipped
+ *   broken queries to users; this version removes itself and its caches.
+ * - Push notification stubs kept only so old clients don't error.
  */
 
-const CACHE_NAME = 'fleetify-v2';
-const RUNTIME_CACHE = 'fleetify-runtime-v2';
+const CACHE_NAME = 'fleetify-cleanup-v3';
+const STALE_CACHE_PREFIXES = ['fleetify'];
 
-// Critical assets to cache on install
-const CRITICAL_ASSETS = [
-  '/',
-  '/index.html',
-  '/manifest.json',
-];
-
-// Install event - cache critical assets
 self.addEventListener('install', (event) => {
-  console.log('[Service Worker] Installing...');
-  
-  event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => {
-      console.log('[Service Worker] Caching critical assets');
-      return cache.addAll(CRITICAL_ASSETS);
-    })
-  );
-  
-  // Force the waiting service worker to become the active service worker
+  console.log('[Service Worker] Installing cleanup worker...');
   self.skipWaiting();
+  event.waitUntil(Promise.resolve());
 });
 
-// Activate event - clean up old caches
+// Activate: delete every legacy cache, claim clients, then unregister self.
 self.addEventListener('activate', (event) => {
-  console.log('[Service Worker] Activating...');
-  
+  console.log('[Service Worker] Activating cleanup, wiping legacy caches...');
   event.waitUntil(
-    caches.keys().then((cacheNames) => {
-      return Promise.all(
-        cacheNames.map((cacheName) => {
-          if (cacheName !== CACHE_NAME && cacheName !== RUNTIME_CACHE) {
-            console.log('[Service Worker] Deleting old cache:', cacheName);
-            return caches.delete(cacheName);
-          }
-        })
-      );
-    })
+    (async () => {
+      if ('caches' in self) {
+        const names = await caches.keys();
+        await Promise.all(
+          names.map((name) => {
+            const legacy =
+              STALE_CACHE_PREFIXES.some((prefix) => name.startsWith(prefix)) ||
+              name !== CACHE_NAME;
+            if (legacy) {
+              console.log('[Service Worker] Deleting cache:', name);
+              return caches.delete(name);
+            }
+            return undefined;
+          })
+        );
+      }
+      await self.clients.claim();
+      // Remove this service worker so no future request is intercepted.
+      try {
+        await self.registration.unregister();
+        console.log('[Service Worker] Unregistered itself.');
+        const clientList = await self.clients.matchAll({ type: 'window' });
+        clientList.forEach((client) => {
+          client.postMessage({ type: 'SW_CLEANUP_DONE' });
+        });
+      } catch (error) {
+        console.warn('[Service Worker] Unregister failed:', error);
+      }
+    })()
   );
-  
-  // Take control of all clients immediately
-  self.clients.claim();
 });
 
-// Fetch event - network first, falling back to cache
+// Fetch: pure pass-through. Never intercept; let the browser use its
+// normal HTTP cache with proper revalidation headers from the origin.
 self.addEventListener('fetch', (event) => {
-  const { request } = event;
-  const url = new URL(request.url);
-
-  // Skip cross-origin requests
-  if (url.origin !== location.origin) {
-    return;
-  }
-
-  // Skip non-GET requests (HEAD, POST, PUT, DELETE, etc.)
-  // Cache API only supports GET requests
-  if (request.method !== 'GET') {
-    event.respondWith(fetch(request));
-    return;
-  }
-
-  // Network-first strategy for API calls
-  if (request.url.includes('/api/') || request.url.includes('supabase.co')) {
-    event.respondWith(
-      fetch(request)
-        .then((response) => {
-          // Don't cache failed responses
-          if (!response || response.status !== 200) {
-            return response;
-          }
-
-          // Clone the response
-          const responseToCache = response.clone();
-
-          // Cache successful API responses (only GET requests)
-          if (request.method === 'GET') {
-            caches.open(RUNTIME_CACHE).then((cache) => {
-              cache.put(request, responseToCache).catch((error) => {
-                console.warn('[Service Worker] Failed to cache API response:', error);
-              });
-            });
-          }
-
-          return response;
-        })
-        .catch(() => {
-          // Fallback to cache if network fails
-          return caches.match(request);
-        })
-    );
-    return;
-  }
-
-  // Navigation requests (HTML) - Network First, then Cache
-  if (request.mode === 'navigate') {
-    event.respondWith(
-      fetch(request)
-        .then((response) => {
-          // Check for valid response
-          if (!response || response.status !== 200 || response.type !== 'basic') {
-            return response;
-          }
-
-          // Clone and cache the updated HTML (only GET requests)
-          if (request.method === 'GET') {
-            const responseToCache = response.clone();
-            caches.open(CACHE_NAME).then((cache) => {
-              cache.put(request, responseToCache).catch((error) => {
-                console.warn('[Service Worker] Failed to cache navigation:', error);
-              });
-            });
-          }
-
-          return response;
-        })
-        .catch(() => {
-          // If network fails, try to serve from cache (offline fallback)
-          return caches.match(request).then((response) => {
-            if (response) {
-              return response;
-            }
-            // If entry not found in cache, fallback to index.html
-            return caches.match('/index.html');
-          });
-        })
-    );
-    return;
-  }
-
-  // Cache-first strategy for static assets
-  event.respondWith(
-    caches.match(request).then((cachedResponse) => {
-      if (cachedResponse) {
-        return cachedResponse;
-      }
-
-      return fetch(request).then((response) => {
-        // Don't cache failed responses
-        if (!response || response.status !== 200) {
-          return response;
-        }
-
-        // Clone the response
-        const responseToCache = response.clone();
-
-        // Cache the fetched resource (only GET requests)
-        if (request.method === 'GET') {
-          caches.open(RUNTIME_CACHE).then((cache) => {
-            cache.put(request, responseToCache).catch((error) => {
-              console.warn('[Service Worker] Failed to cache static asset:', error);
-            });
-          });
-        }
-
-        return response;
-      });
-    })
-  );
+  return;
 });
 
 // Message event - handle messages from clients
 self.addEventListener('message', (event) => {
   if (event.data && event.data.type === 'SKIP_WAITING') {
     self.skipWaiting();
-  }
-});
-
-// Background sync event (future enhancement)
-self.addEventListener('sync', (event) => {
-  if (event.tag === 'sync-data') {
-    event.waitUntil(syncData());
   }
 });
 
@@ -199,7 +83,7 @@ self.addEventListener('push', (event) => {
   );
 });
 
-// Notification click event
+// Notification click event (future enhancement)
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
   event.waitUntil(
@@ -207,10 +91,4 @@ self.addEventListener('notificationclick', (event) => {
   );
 });
 
-// Helper function for background sync
-async function syncData() {
-  // This will be implemented when IndexedDB offline storage is added
-  console.log('[Service Worker] Background sync triggered');
-}
-
-console.log('🔧 Service Worker: Loaded successfully');
+console.log('🔧 Service Worker: cleanup build loaded');

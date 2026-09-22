@@ -40,13 +40,7 @@ const getErrorMessage = (error: unknown) => {
 };
 
 const prepareDevelopmentRuntime = async () => {
-  if (!import.meta.env.DEV || typeof window === 'undefined') return false;
-
-  const resetKey = 'fleetify_dev_cache_reset_v2';
-  if (sessionStorage.getItem(resetKey)) {
-    sessionStorage.removeItem(resetKey);
-    return false;
-  }
+  if (typeof window === 'undefined') return false;
 
   let changed = false;
 
@@ -58,14 +52,18 @@ const prepareDevelopmentRuntime = async () => {
 
   if ('caches' in window) {
     const keys = await caches.keys();
-    await Promise.all(keys.map((key) => caches.delete(key)));
-    changed = changed || keys.length > 0;
+    const stale = keys.filter((key) => key.startsWith('fleetify'));
+    await Promise.all(stale.map((key) => caches.delete(key)));
+    changed = changed || stale.length > 0;
   }
 
   if (changed) {
-    sessionStorage.setItem(resetKey, 'true');
-    window.location.reload();
-    return true;
+    const resetKey = 'fleetify_stale_cache_purged';
+    if (!sessionStorage.getItem(resetKey)) {
+      sessionStorage.setItem(resetKey, 'true');
+      window.location.reload();
+      return true;
+    }
   }
 
   return false;
