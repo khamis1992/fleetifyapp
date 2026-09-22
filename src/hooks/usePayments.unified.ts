@@ -160,21 +160,21 @@ export const usePayments = (filters?: PaymentFilters) => {
             created_by,
             created_at,
             updated_at,
-            customers (
+            customers!payments_customer_id_fkey (
               first_name,
               last_name,
               company_name,
               customer_type,
               phone
             ),
-            vendors (
+            vendors!payments_vendor_id_fkey (
               vendor_name
             ),
-            invoices (
+            invoices!payments_invoice_id_fkey (
               invoice_number,
               total_amount
             ),
-            contracts (
+            contracts!fk_payments_contract_id (
               contract_number
             )
           `, { count: 'exact' })
