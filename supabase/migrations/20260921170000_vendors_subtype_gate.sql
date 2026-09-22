@@ -28,7 +28,7 @@ BEGIN
   JOIN public.chart_of_accounts a ON a.id = l.account_id
   WHERE l.journal_entry_id = NEW.id
     AND NULLIF(btrim(COALESCE(a.account_subtype, '')), '') IS NULL
-    AND a.account_type IN ('asset','assets','liability','liabilities','equity','revenue','income','expense','expenses')
+    AND a.account_type IN ('asset','assets','liability','liabilities')
   LIMIT 1;
   IF v_missing IS NOT NULL THEN
     RAISE EXCEPTION 'لا يمكن الترحيل: الحساب % بلا تصنيف فرعي (متداول/غير متداول) — صنّفه من دليل الحسابات أولاً', v_missing
