@@ -40,10 +40,10 @@ export async function saveFinancialStatementPackage(companyId: string, configura
   if (saved.status !== 'draft') throw new Error('FINANCIAL_STATEMENT_SCOPE_MISMATCH');
   return saved;
 }
-export async function approveFinancialStatementPackage(companyId: string, id: string, notes: string, confirmations: FinancialStatementReview) {
+export async function approveFinancialStatementPackage(companyId: string, id: string, notes: string, confirmations: FinancialStatementReview, selfReviewAcknowledged = false) {
   uuid.parse(companyId); uuid.parse(id);
   if (notes.trim().length < 20 || !['classifications', 'policies', 'reconciliations', 'disclosures', 'periodCutoff'].every(key => confirmations[key as keyof FinancialStatementReview] === true)) throw new Error('Complete review confirmations and notes');
-  const { data, error } = await rpc('approve_financial_statement_package_v1', { p_report_id: id, p_review_notes: notes.trim(), p_confirmations: confirmations });
+  const { data, error } = await rpc('approve_financial_statement_package_v1', { p_report_id: id, p_review_notes: notes.trim(), p_confirmations: confirmations, p_self_review_acknowledged: selfReviewAcknowledged });
   if (error) throw error;
   const saved = parseSavedFinancialStatementPackage(data, companyId);
   if (saved.id !== id || saved.status !== 'approved') throw new Error('FINANCIAL_STATEMENT_SCOPE_MISMATCH');

@@ -17,7 +17,14 @@ import {
 } from "@/hooks/useGeneralLedger";
 export default function Ledger() {
   const [params, setParams] = useSearchParams();
-  const [filters, setFilters] = useState<LedgerFilters>({ status: "all" });
+  // Deep-linkable status filter (e.g. ?status=draft from balance-sheet readiness actions).
+  const statusParam = params.get("status");
+  const [filters, setFilters] = useState<LedgerFilters>({
+    status:
+      statusParam && ["posted", "draft", "reversed", "cancelled"].includes(statusParam)
+        ? statusParam
+        : "all",
+  });
   const query = useEnhancedJournalEntries(filters);
   const access = useFinanceAccessGuard();
   const post = usePostJournalEntry();
@@ -38,7 +45,7 @@ export default function Ledger() {
     <section dir="rtl" className="space-y-5">
       <FinancePageHeader
         title="القيود اليومية"
-        description="إنشاء القيود ومراجعتها وترحيلها وعكسها حسب الصلاحيات."
+        description="إنشاء القيود ومراجعتها وترحيلها وعكسها حسب الصلاحيات — المصروفات والمشتريات تُسجَّل هنا كقيود (مدين مصروف / دائن ذمم الموردين 21111)؛ لا موديول موردين بعد."
         icon={FileText}
         actions={
           <>

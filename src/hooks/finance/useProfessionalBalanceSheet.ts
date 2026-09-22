@@ -92,11 +92,20 @@ export function useBalanceSheetActions() {
       id,
       notes,
       confirmations,
+      selfReviewAcknowledged,
     }: {
       id: string;
       notes: string;
       confirmations: BalanceSheetReviewConfirmations;
-    }) => approveProfessionalBalanceSheet(companyId!, id, notes, confirmations),
+      selfReviewAcknowledged?: boolean;
+    }) =>
+      approveProfessionalBalanceSheet(
+        companyId!,
+        id,
+        notes,
+        confirmations,
+        Boolean(selfReviewAcknowledged)
+      ),
     onSuccess: refresh,
   });
   const voidReport = useMutation({

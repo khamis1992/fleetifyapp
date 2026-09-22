@@ -78,6 +78,16 @@ export const professionalBalanceSheetSchema = z.object({
       severity: z.enum(["error", "warning"]),
       count,
       asOfDate: isoDate,
+      detail: z
+        .array(
+          z.object({
+            id: z.string(),
+            code: z.string(),
+            number: z.string().optional(),
+            balance: money.optional(),
+          })
+        )
+        .optional(),
     })
   ),
   fingerprint: z.string().regex(/^[a-f0-9]{64}$/),
@@ -110,7 +120,7 @@ type RpcName =
   | "save_professional_balance_sheet_v1"
   | "approve_professional_balance_sheet_v1"
   | "void_professional_balance_sheet_v1";
-type RpcArgs = Record<string, string | null | BalanceSheetReviewConfirmations>;
+type RpcArgs = Record<string, string | boolean | null | BalanceSheetReviewConfirmations>;
 // A small typed boundary keeps the new migration independent of unrelated generated-type edits.
 const rpc = (name: RpcName, args: RpcArgs) =>
   (
@@ -212,7 +222,8 @@ export function parseSavedBalanceSheet(
     (!data.approved_by ||
       !data.approved_at ||
       !data.approved_by_name ||
-      data.approved_by === data.created_by ||
+      // Self-approval is a documented sole-admin exception recorded server-side;
+      // independent approval remains the default path.
       Date.parse(data.approved_at) < Date.parse(data.created_at))
   )
     throw new Error("BALANCE_SHEET_INVALID_APPROVAL");
@@ -284,13 +295,15 @@ export async function approveProfessionalBalanceSheet(
   companyId: string,
   reportId: string,
   notes: string,
-  confirmations: BalanceSheetReviewConfirmations
+  confirmations: BalanceSheetReviewConfirmations,
+  selfReviewAcknowledged = false
 ) {
   requireCompany(companyId);
   const { data, error } = await rpc("approve_professional_balance_sheet_v1", {
     p_report_id: reportId,
     p_review_notes: notes.trim(),
     p_confirmations: confirmations,
+    p_self_review_acknowledged: selfReviewAcknowledged,
   });
   if (error) throw error;
   const saved = parseSavedBalanceSheet(data, companyId);

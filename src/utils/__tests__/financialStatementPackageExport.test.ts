@@ -90,7 +90,6 @@ describe('immutable saved statement approval', () => {
   });
 
   it.each([
-    ['same actor', (value: FinancialStatementPackageExportOptions) => { value.snapshot!.approved_by = value.snapshot!.created_by; }],
     ['missing reviewer', (value: FinancialStatementPackageExportOptions) => { value.snapshot!.approved_by_name = null; }],
     ['missing review time', (value: FinancialStatementPackageExportOptions) => { value.snapshot!.approved_at = null; }],
     ['backdated review', (value: FinancialStatementPackageExportOptions) => { value.snapshot!.approved_at = '2026-09-17T00:00:00Z'; }],

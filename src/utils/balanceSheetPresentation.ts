@@ -112,6 +112,7 @@ const checkMessages: Record<string, { ar: string; en: string }> = {
   invalid_accounts: { ar: 'توجد قيود على حسابات غير صالحة للترحيل.', en: 'Some journal entries use accounts that cannot accept postings.' },
   unknown_account_types: { ar: 'توجد حسابات بنوع محاسبي غير معروف.', en: 'Some accounts have an unknown accounting type.' },
   unclassified_accounts: { ar: 'يلزم تحديد التصنيف المتداول أو غير المتداول لبعض الحسابات.', en: 'Some accounts need current or non-current classification.' },
+  missing_account_subtype: { ar: 'توجد حسابات عليها أرصدة دون تصنيف فرعي (متداول/غير متداول) — صنّفها من دليل الحسابات لفتح الاعتماد.', en: 'Some balance-bearing accounts have no current/non-current subtype — classify them in the chart of accounts to unblock approval.' },
   draft_entries: { ar: 'توجد قيود غير مرحلة حتى تاريخ التقرير؛ لم تدخل في الأرصدة.', en: 'Unposted entries exist up to the report date and are excluded from balances.' },
   no_posted_entries: { ar: 'لا توجد قيود مرحلة حتى تاريخ التقرير.', en: 'There are no posted entries up to the report date.' },
   inactive_accounts: { ar: 'توجد أرصدة على حسابات غير نشطة؛ أدرجت للحفاظ على اكتمال التقرير.', en: 'Inactive accounts have balances; they remain included for completeness.' },

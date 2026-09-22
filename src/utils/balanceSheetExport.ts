@@ -68,8 +68,9 @@ export function getMatchingBalanceSheetSnapshot(options: BalanceSheetExportOptio
 export function getBalanceSheetExportStatus(options: BalanceSheetExportOptions): 'draft' | 'approved' | 'voided' {
   const snapshot = getMatchingBalanceSheetSnapshot(options);
   if (snapshot?.status === 'voided') return 'voided';
+  // Self approval is a documented sole-admin exception validated server-side;
+  // the remaining markers must still be present and dated after preparation.
   if (snapshot?.status === 'approved' && snapshot.approved_by?.trim()
-    && snapshot.approved_by !== snapshot.created_by
     && snapshot.approved_at && Number.isFinite(Date.parse(snapshot.approved_at))
     && Date.parse(snapshot.approved_at) >= Date.parse(snapshot.created_at)) return 'approved';
   return 'draft';

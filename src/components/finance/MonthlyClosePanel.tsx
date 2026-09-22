@@ -106,6 +106,8 @@ export function MonthlyClosePanel() {
         .from("accounting_periods")
         .select("id,company_id,period_name,start_date,end_date,status,is_adjustment_period")
         .eq("company_id", companyId)
+        // Seed/placeholder periods (e.g. 1900-01 verification rows) are not real books.
+        .gte("start_date", "2000-01-01")
         .order("start_date", { ascending: false })
         .limit(8);
 
@@ -156,6 +158,18 @@ export function MonthlyClosePanel() {
       if (!companyId) throw new Error("لا توجد شركة محددة");
       if (!periodName.trim() || !startDate || !endDate) throw new Error("أكمل بيانات الفترة المالية");
       if (new Date(startDate) > new Date(endDate)) throw new Error("تاريخ البداية يجب أن يكون قبل تاريخ النهاية");
+      if (new Date(startDate) < new Date("2000-01-01")) throw new Error("لا يمكن الإغلاق على فترة seed قديمة — اختر فترة حقيقية");
+
+      // Refuse to close an empty/seed range: there must be posted entries.
+      const { count, error: countError } = await supabase
+        .from("journal_entries")
+        .select("id", { count: "exact", head: true })
+        .eq("company_id", companyId)
+        .eq("status", "posted")
+        .gte("entry_date", startDate)
+        .lte("entry_date", endDate);
+      if (countError) throw countError;
+      if (!count) throw new Error("لا توجد قيود مرحلة في هذه الفترة — لن يُغلق على بيانات فارغة أو seed");
 
       const { data, error } = await supabase.rpc("close_accounting_period_v1", {
         p_company_id: companyId,

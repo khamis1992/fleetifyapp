@@ -65,7 +65,9 @@ export function getMatchingFinancialStatementPackageSnapshot(options: FinancialS
 export function getFinancialStatementPackageExportStatus(options: FinancialStatementPackageExportOptions): 'draft' | 'approved' | 'voided' {
   const saved = getMatchingFinancialStatementPackageSnapshot(options);
   if (saved?.status === 'voided') return 'voided';
-  if (saved?.status === 'approved' && saved.approved_by && saved.approved_by !== saved.created_by && saved.approved_at
+  // Self approval is a documented sole-admin exception validated server-side;
+  // the remaining markers must still be present and dated after preparation.
+  if (saved?.status === 'approved' && saved.approved_by && saved.approved_at
     && Number.isFinite(Date.parse(saved.approved_at)) && Date.parse(saved.approved_at) >= Date.parse(saved.created_at)) return 'approved';
   return 'draft';
 }

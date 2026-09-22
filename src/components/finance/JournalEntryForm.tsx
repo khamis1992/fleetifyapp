@@ -14,6 +14,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Plus, Trash2, Calculator } from 'lucide-react'
 import { UnifiedAccountSelector } from '@/components/ui/unified-account-selector'
 import { useCreateJournalEntry } from '@/hooks/finance/useJournalEntries'
+import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess'
 import { useCostCenters } from '@/hooks/useCostCenters'
 import { ChartOfAccount } from '@/hooks/useChartOfAccounts'
 import { useQuery } from '@tanstack/react-query'
@@ -102,6 +103,7 @@ export const JournalEntryForm: React.FC<JournalEntryFormProps> = ({ open, onOpen
   
   const { data: costCenters, isLoading: costCentersLoading } = useCostCenters()
   const createJournalEntry = useCreateJournalEntry()
+  const { companyId } = useUnifiedCompanyAccess()
 
   // Fetch fixed assets
   const { data: assets, isLoading: assetsLoading } = useQuery({
@@ -207,17 +209,45 @@ export const JournalEntryForm: React.FC<JournalEntryFormProps> = ({ open, onOpen
       return
     }
 
+    // Drop all-zero lines silently, then validate the meaningful ones.
+    const meaningfulLines = lines.filter(
+      line => (Number(line.debit_amount) || 0) > 0 || (Number(line.credit_amount) || 0) > 0
+    )
+    if (lines.length !== meaningfulLines.length) {
+      setLines(meaningfulLines.length > 0 ? meaningfulLines : lines)
+    }
+    if (meaningfulLines.length < 2) {
+      toast.error('يلزم بندين محاسبين على الأقل بمبالغ غير صفرية')
+      return
+    }
+    const bothSides = meaningfulLines.find(
+      line => (Number(line.debit_amount) || 0) > 0 && (Number(line.credit_amount) || 0) > 0
+    )
+    if (bothSides) {
+      toast.error('كل بيد يجب أن يكون مديناً أو دائناً — لا الاثنين معاً')
+      return
+    }
+
     // Enhanced validation for accounts
-    const invalidLines = lines.filter(line => !line.account_id || line.account_id.trim() === '')
+    const invalidLines = meaningfulLines.filter(line => !line.account_id || line.account_id.trim() === '')
     if (invalidLines.length > 0) {
       toast.error(`يجب اختيار حساب لكل بند - البنود غير الصحيحة: ${invalidLines.map((_, index) => index + 1).join(', ')}`)
       return
     }
 
-    // Check if at least one line has an amount
-    const hasAmounts = lines.some(line => (line.debit_amount > 0) || (line.credit_amount > 0))
-    if (!hasAmounts) {
-      toast.error('يجب إدخال مبلغ مدين أو دائن واحد على الأقل')
+    if (!entryData.reference_type?.trim()) {
+      toast.error('يلزم تحديد نوع المرجع (يدوي / فاتورة / عقد …) لتتبع القيد')
+      return
+    }
+
+    // The accounting period must be open before creating the draft.
+    try {
+      const { assertFinancialPeriodOpen } = await import('@/services/financialControls')
+      if (companyId && entryData.entry_date) {
+        await assertFinancialPeriodOpen(companyId, entryData.entry_date)
+      }
+    } catch {
+      toast.error('الفترة المحاسبية لهذا التاريخ مقفلة — اختر تاريخاً داخل فترة مفتوحة')
       return
     }
 
@@ -605,16 +635,21 @@ export const JournalEntryForm: React.FC<JournalEntryFormProps> = ({ open, onOpen
           </Card>
 
           {/* Actions */}
-          <div className="flex justify-end gap-3">
-            <Button type="button" variant="outline" onClick={() => onOpenChange?.(false)}>
-              إلغاء
-            </Button>
-            <Button 
-              type="submit" 
-              disabled={!isBalanced || createJournalEntry.isPending}
-            >
-              {createJournalEntry.isPending ? 'جاري الحفظ...' : 'حفظ القيد'}
-            </Button>
+          <div className="flex flex-col items-end gap-2">
+            <div className="flex justify-end gap-3">
+              <Button type="button" variant="outline" onClick={() => onOpenChange?.(false)}>
+                إلغاء
+              </Button>
+              <Button
+                type="submit"
+                disabled={!isBalanced || createJournalEntry.isPending}
+              >
+                {createJournalEntry.isPending ? 'جاري الحفظ...' : 'حفظ كمسودة'}
+              </Button>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              يُحفظ القيد مسودةً أولاً؛ الاعتماد والترحيل من سجل القيود (أو بمستخدم آخر وفق فصل المهام).
+            </p>
           </div>
         </form>
       </DialogContent>

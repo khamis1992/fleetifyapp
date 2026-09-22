@@ -97,10 +97,17 @@ describe('financial statement package workspace', () => {
     mount(); selectVersion(); fireEvent.click(screen.getByRole('button', { name: 'PDF' }));
     await waitFor(() => expect(toastError).toHaveBeenCalled()); expect(exportPDF).not.toHaveBeenCalled();
   });
-  it('does not permit the preparer to approve their own package', () => {
+  it('requires the documented self-review acknowledgment before preparer self approval', () => {
     state.access.user.id = fixturePreparerId; state.history.data = [makeSavedFinancialStatementPackageFixture(makeFinancialStatementPackageFixture(), 'draft')];
-    mount(); selectVersion(); expect(screen.getByRole('button', { name: 'Approve package internally' })).toBeDisabled();
-    expect(screen.getByText(/a different authorized user must review/)).toBeVisible();
+    mount(); selectVersion();
+    const button = screen.getByRole('button', { name: 'Approve package internally' });
+    // The strict note is replaced by the documented sole-admin acknowledgment path.
+    expect(screen.queryByText(/a different authorized user must review/)).not.toBeInTheDocument();
+    const reviewChecks = within(screen.getByRole('tabpanel', { name: 'Versions and review' })).getAllByRole('checkbox');
+    expect(reviewChecks).toHaveLength(6); // five confirmations + the self-review acknowledgment
+    reviewChecks.forEach(input => fireEvent.click(input));
+    fireEvent.change(screen.getByLabelText('Review conclusion — at least 20 characters'), { target: { value: 'Reviewed all policy evidence and ledger reconciliations.' } });
+    expect(button).toBeEnabled();
   });
   it('blocks approval on findings and stale source fingerprints', () => {
     const saved = makeSavedFinancialStatementPackageFixture(makeFinancialStatementPackageFixture(), 'draft'); state.history.data = [saved];

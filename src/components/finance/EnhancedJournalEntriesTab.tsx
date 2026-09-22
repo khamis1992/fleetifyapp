@@ -497,7 +497,10 @@ export function EnhancedJournalEntriesTab({
   onExport,
 }: EnhancedJournalEntriesTabProps) {
   const { formatCurrency } = useCurrencyFormatter();
-  const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
+  // A deep-linked status filter (e.g. ?status=draft) should be visible on arrival.
+  const [showAdvancedFilters, setShowAdvancedFilters] = useState(
+    Boolean(filters?.status && filters.status !== 'all')
+  );
 
   // حساب الإحصائيات
   const stats = useMemo(() => {

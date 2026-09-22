@@ -1,6 +1,5 @@
 import {
   BookOpen,
-  Building2,
   ChartNoAxesCombined,
   Landmark,
   LayoutDashboard,
@@ -199,6 +198,15 @@ export const financeNavigation: FinanceNavigationGroup[] = [
         parentId: "entries",
       },
       {
+        id: "fleet-bridge",
+        href: "/finance/fleet-bridge",
+        ar: "ترحيل الأسطول والتمويل",
+        en: "Fleet & financing bridge",
+        descriptionAr: "رسملة المركبات والتزامات التمويل والإهلاك الافتتاحي كقيود فعلية في الدفتر.",
+        permission: "finance.journal.create_draft",
+        parentId: "entries",
+      },
+      {
         id: "ledger",
         href: "/finance/general-ledger",
         ar: "دفتر الأستاذ",
@@ -247,6 +255,14 @@ export const financeNavigation: FinanceNavigationGroup[] = [
         permission: "finance.treasury.view",
       },
       {
+        id: "bank-ledger-reconciliation",
+        href: "/finance/bank-reconciliation",
+        ar: "مطابقة البنك مع الدفتر",
+        en: "Bank ↔ ledger reconciliation",
+        descriptionAr: "مقارنة وحدة البنوك مع حساب البنك بالدفتر ومزامنة الحركات وترحيل ما بلا قيد.",
+        permission: "finance.treasury.view",
+      },
+      {
         id: "obligations",
         href: "/finance/obligations",
         ar: "الالتزامات الشهرية",
@@ -266,40 +282,10 @@ export const financeNavigation: FinanceNavigationGroup[] = [
     ],
     icon: Landmark,
   },
-  {
-    id: "purchasing",
-    ar: "الموردون والمشتريات",
-    en: "Vendors & purchasing",
-    descriptionAr: "بيانات الموردين وتصنيفاتهم وأوامر الشراء.",
-    descriptionEn: "Vendor records, categories and purchase orders.",
-    items: [
-      {
-        id: "vendors",
-        href: "/finance/vendors",
-        ar: "الموردون",
-        en: "Vendors",
-        admin: true,
-      },
-      {
-        id: "purchase-orders",
-        href: "/finance/purchase-orders",
-        ar: "أوامر الشراء",
-        en: "Purchase orders",
-        admin: true,
-      },
-    ],
-    secondaryItems: [
-      {
-        id: "vendor-categories",
-        href: "/finance/vendors/categories",
-        ar: "تصنيفات الموردين",
-        en: "Vendor categories",
-        admin: true,
-        parentId: "vendors",
-      },
-    ],
-    icon: Building2,
-  },
+  // Vendors & purchasing menus are removed until a vendors/expenses module exists:
+  // supplier and expense postings go through manual journal entries only
+  // (PAYABLES role is mapped to 21111 — see the fleet-bridge mapping checklist,
+  // and the journal-entries page notes this explicitly).
   {
     id: "planning",
     ar: "الأصول والموازنات",
@@ -307,6 +293,15 @@ export const financeNavigation: FinanceNavigationGroup[] = [
     descriptionAr: "الأصول الثابتة والموازنات وتوزيع مراكز التكلفة.",
     descriptionEn: "Fixed assets, budgets and cost allocation.",
     items: [
+      {
+        id: "depreciation",
+        href: "/finance/depreciation",
+        ar: "الإهلاك الشهري",
+        en: "Monthly depreciation",
+        descriptionAr: "تشغيل إهلاك المركبات الشهري ومراجعة سجل الإهلاكات المرحّلة.",
+        permission: "finance.assets.view",
+        parentId: "assets",
+      },
       {
         id: "assets",
         href: "/finance/assets",

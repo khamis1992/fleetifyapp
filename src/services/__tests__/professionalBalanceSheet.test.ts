@@ -91,13 +91,16 @@ describe('saved balance sheet authenticity and commands', () => {
     expect(() => parseSavedBalanceSheet(report, BALANCE_SHEET_COMPANY)).toThrow('BALANCE_SHEET_SCOPE_MISMATCH');
   });
 
-  it('keeps a balanced saved report draft and requires real independent approval markers', () => {
+  it('keeps a balanced saved report draft and requires real approval markers', () => {
     expect(parseSavedBalanceSheet(makeSavedBalanceSheet(), BALANCE_SHEET_COMPANY).status).toBe('draft');
     expect(() => parseSavedBalanceSheet(makeSavedBalanceSheet({ status: 'approved' }), BALANCE_SHEET_COMPANY))
       .toThrow('BALANCE_SHEET_INVALID_APPROVAL');
     const approved = makeApprovedBalanceSheet();
     expect(parseSavedBalanceSheet(approved, BALANCE_SHEET_COMPANY)).toEqual(approved);
+    // Documented sole-admin self approval is representable; the markers are still required.
     approved.approved_by = BALANCE_SHEET_PREPARER;
+    expect(parseSavedBalanceSheet(approved, BALANCE_SHEET_COMPANY).approved_by).toBe(BALANCE_SHEET_PREPARER);
+    approved.approved_at = null;
     expect(() => parseSavedBalanceSheet(approved, BALANCE_SHEET_COMPANY)).toThrow('BALANCE_SHEET_INVALID_APPROVAL');
   });
 
@@ -117,6 +120,7 @@ describe('saved balance sheet authenticity and commands', () => {
     const result = await approveProfessionalBalanceSheet(BALANCE_SHEET_COMPANY, approved.id, '  Reviewed all supporting records.  ', confirmations);
     expect(rpc).toHaveBeenCalledWith('approve_professional_balance_sheet_v1', {
       p_report_id: approved.id, p_review_notes: 'Reviewed all supporting records.', p_confirmations: confirmations,
+      p_self_review_acknowledged: false,
     });
     expect(result.approved_by).toBe(approved.approved_by);
     expect(result.approved_at).toBe(approved.approved_at);

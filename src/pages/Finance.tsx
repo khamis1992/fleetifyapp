@@ -38,6 +38,22 @@ const OpeningBalancesImport = lazyWithRetry(
   () => import("./finance/OpeningBalancesImport"),
   "OpeningBalancesImport"
 );
+const FleetBridge = lazyWithRetry(
+  () => import("./finance/FleetBridge"),
+  "FleetBridge"
+);
+const BankReconciliation = lazyWithRetry(
+  () => import("./finance/BankReconciliation"),
+  "BankReconciliation"
+);
+const DepreciationPage = lazyWithRetry(
+  () => import("./finance/DepreciationPage"),
+  "DepreciationPage"
+);
+const ExpensesPage = lazyWithRetry(
+  () => import("./finance/ExpensesPage"),
+  "ExpensesPage"
+);
 const Ledger = lazyWithRetry(() => import("./finance/Ledger"), "Ledger");
 const Treasury = lazyWithRetry(() => import("./finance/Treasury"), "Treasury");
 const ReconciliationPage = lazyWithRetry(
@@ -269,6 +285,38 @@ export default function Finance() {
           element={
             <ProtectedFinanceRoute permission="finance.accounts.view">
               <OpeningBalancesImport />
+            </ProtectedFinanceRoute>
+          }
+        />
+        <Route
+          path="fleet-bridge"
+          element={
+            <ProtectedFinanceRoute permission="finance.accounts.view">
+              <FleetBridge />
+            </ProtectedFinanceRoute>
+          }
+        />
+        <Route
+          path="bank-reconciliation"
+          element={
+            <ProtectedFinanceRoute permission="finance.treasury.view">
+              <BankReconciliation />
+            </ProtectedFinanceRoute>
+          }
+        />
+        <Route
+          path="depreciation"
+          element={
+            <ProtectedFinanceRoute permission="finance.assets.view">
+              <DepreciationPage />
+            </ProtectedFinanceRoute>
+          }
+        />
+        <Route
+          path="expenses"
+          element={
+            <ProtectedFinanceRoute permission="finance.accounts.view">
+              <ExpensesPage />
             </ProtectedFinanceRoute>
           }
         />

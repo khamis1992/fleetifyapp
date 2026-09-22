@@ -827,16 +827,25 @@ const BillingCenter = ({ section = "invoices" }: { section?: "invoices" | "payme
               </div>
             )}
             
-            {paymentsError ? (<div role="alert" className="p-5">تعذر تحميل المدفوعات. <Button variant="outline" onClick={() => refetchPayments()}>إعادة المحاولة</Button></div>) : paymentsLoading ? (
-              <div className="flex items-center justify-center py-20">
+            {paymentsError ? (
+              <div role="alert" className="flex flex-col items-start gap-3 p-5">
+                <p className="font-semibold text-destructive">تعذر تحميل المدفوعات — مشكلة اتصال/صلاحيات وليست غياب بيانات.</p>
+                <p className="text-sm text-muted-foreground">{paymentsError instanceof Error ? paymentsError.message : 'خطأ غير معروف'}</p>
+                <Button variant="outline" onClick={() => refetchPayments()}>إعادة المحاولة</Button>
+              </div>
+            ) : paymentsLoading || (!paymentsData && !paymentsError) ? (
+              <div className="flex flex-col items-center justify-center gap-3 py-16">
                 <Loader2 className="w-8 h-8 animate-spin text-rose-500" />
+                <p role="status" className="text-sm text-muted-foreground">
+                  {paymentsLoading ? 'جارٍ تحميل المدفوعات…' : 'بانتظار اختيار الشركة لتحميل المدفوعات…'}
+                </p>
               </div>
             ) : filteredPayments.length === 0 ? (
               <div className="p-6">
                 <EmptyState
                   icon={CreditCard}
                   title="لا توجد مدفوعات"
-                  description="لم يتم تسجيل أي مدفوعات بعد"
+                  description="لم يتم تسجيل أي مدفوعات بعد — أو أن الفلاتر الحالية لا تطابق شيئًا"
                   onAction={() => navigate("/finance/operations/receive-payment")}
                   actionLabel="تسجيل دفعة"
                 />

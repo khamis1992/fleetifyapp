@@ -27,6 +27,7 @@ const getCashFlowCategory = (
   accountType: string | null | undefined,
   accountCode: string | null | undefined,
   accountSubtype?: string | null,
+  isFinancingRole = false,
 ): 'operating' | 'investing' | 'financing' => {
   const normalizedType = normalizeAccountType(accountType);
   const code = String(accountCode || '');
@@ -39,9 +40,12 @@ const getCashFlowCategory = (
     return 'investing';
   }
 
+  // Financing installments (vehicle installment payable / long-term financing
+  // role accounts) always classify as financing, mirroring the server reader.
   if (
     normalizedType === 'equity'
-    || (normalizedType === 'liability' && /loan|borrow|debt|lease|long.?term|non.?current/.test(subtype))
+    || (normalizedType === 'liability'
+      && (isFinancingRole || /loan|borrow|debt|lease|long.?term|non.?current|installment/.test(subtype)))
   ) {
     return 'financing';
   }
@@ -692,11 +696,24 @@ export const useEnhancedFinancialReports = (
           `)
           .eq('company_id', companyId)
           .eq('is_active', true)
-          .in('default_account_types.type_code', ['CASH', 'BANK', 'PETTY_CASH']);
+          .in('default_account_types.type_code', [
+            'CASH', 'BANK', 'PETTY_CASH',
+            'VEHICLE_INSTALLMENT_PAYABLE', 'VEHICLE_FINANCE_LONG_TERM',
+          ]);
 
         if (cashMappingsError) throw cashMappingsError;
 
-        const cashAccountIds = new Set((cashMappingRows || []).map(mapping => mapping.chart_of_accounts_id));
+        const cashAccountIds = new Set<string>();
+        const financingAccountIds = new Set<string>();
+        for (const mapping of cashMappingRows || []) {
+          const related = (mapping as { default_account_types?: { type_code?: string } | { type_code?: string }[] }).default_account_types;
+          const typeCode = String(Array.isArray(related) ? related[0]?.type_code : related?.type_code) || '';
+          if (typeCode === 'VEHICLE_INSTALLMENT_PAYABLE' || typeCode === 'VEHICLE_FINANCE_LONG_TERM') {
+            financingAccountIds.add(mapping.chart_of_accounts_id);
+          } else {
+            cashAccountIds.add(mapping.chart_of_accounts_id);
+          }
+        }
         if (cashAccountIds.size === 0) {
           for (const account of accounts || []) {
             const subtype = String(account.account_subtype || '').toLowerCase();
@@ -774,7 +791,12 @@ export const useEnhancedFinancialReports = (
           for (const line of counterpartLines) {
             const account = line.chart_of_accounts!;
             const accountType = normalizeAccountType(account.account_type);
-            const category = getCashFlowCategory(accountType, account.account_code, account.account_subtype);
+            const category = getCashFlowCategory(
+              accountType,
+              account.account_code,
+              account.account_subtype,
+              financingAccountIds.has(line.account_id),
+            );
             const weight = Math.abs(Number(line.debit_amount || 0) - Number(line.credit_amount || 0));
             const amount = cashMovement * (weight / totalCounterpartWeight);
             const key = `${category}:${account.account_code}`;

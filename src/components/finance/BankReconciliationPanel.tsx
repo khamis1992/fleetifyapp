@@ -171,6 +171,8 @@ export function BankReconciliationPanel() {
       { label: "الأسطر", value: importPreview.totals.rows, tone: "bg-[#F6F8FB] text-[#020617]" },
       { label: "صالحة", value: importPreview.totals.validRows, tone: "bg-[#E8FBF6] text-[#22C7A1]" },
       { label: "أخطاء", value: importPreview.errors.length, tone: "bg-[#FFF0F2] text-[#FB6B7A]" },
+      { label: "فترة الكشف", value: importPreview.lines.length ? `${importPreview.lines[0]?.statementDate} → ${importPreview.lines[importPreview.lines.length - 1]?.statementDate}` : "—", tone: "bg-[#F6F8FB] text-[#020617]" },
+      { label: "صافي الحركة", value: importPreview.lines.reduce((sum, line) => sum + (Number(line.amount) || 0), 0), tone: "bg-[#F0F6FF] text-[#2563EB]", isCurrency: true },
     ];
   }, [importPreview]);
 
@@ -239,6 +241,19 @@ export function BankReconciliationPanel() {
       if (!importPreview || importPreview.lines.length === 0) throw new Error("لا توجد أسطر صالحة للحفظ");
 
       const fileHash = createBankStatementImportFingerprint(importPreview.lines);
+
+      // Duplicate guard: refuse to import the exact same statement file twice.
+      const { data: existingImport, error: dupError } = await (supabase as any)
+        .from("bank_statement_imports")
+        .select("id, file_name, imported_at")
+        .eq("bank_id", selectedBankId)
+        .eq("file_hash", fileHash)
+        .limit(1);
+      if (dupError) throw dupError;
+      if (existingImport && existingImport.length > 0) {
+        throw new Error("هذا الكشف مستورد مسبقاً بنفس المحتوى — لن يُكرر الحفظ");
+      }
+
       const { data: importRow, error: importError } = await (supabase as any)
         .from("bank_statement_imports")
         .insert({
@@ -443,7 +458,9 @@ export function BankReconciliationPanel() {
               {importSummary.map((item) => (
                 <div key={item.label} className={`rounded-xl px-3 py-2 ${item.tone}`}>
                   <p className="text-xs font-bold opacity-70">{item.label}</p>
-                  <p className="text-lg font-black">{item.value}</p>
+                  <p className="text-lg font-black" dir="auto">
+                    {item.isCurrency ? formatCurrency(Number(item.value)) : item.value}
+                  </p>
                 </div>
               ))}
             </div>

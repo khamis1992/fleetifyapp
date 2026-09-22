@@ -180,3 +180,32 @@
 @media (max-width: 700px) {
   .bs-actions, .bs-alerts, .bs-workflow, .bs-checklist { padding-inline: 18px; }
 }
+
+/* Actionable readiness checks: per-check buttons and entity references. */
+.bs-checklist li { flex-wrap: wrap; }
+.bs-check-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  flex-basis: 100%;
+  padding-inline-start: 22px;
+}
+.bs-check-actions .dw-button { min-height: 30px; padding: 0 10px; font-size: 11; display: inline-flex; align-items: center; gap: 5px; }
+.bs-check-ref { font-size: 10px; color: #8b977f; }
+
+/* Documented explanations for negative asset balances. */
+.bs-explain { display: grid; gap: 8px; }
+.bs-explain-body {
+  border: 1px solid #e3d9c4;
+  background: #fdfaf1;
+  border-radius: 9px;
+  padding: 10px 12px;
+  display: grid;
+  gap: 10px;
+}
+.bs-explain-note { font-size: 10px; color: #8b642b; margin: 0; }
+.bs-explain-body ul { display: grid; gap: 12px; list-style: none; margin: 0; padding: 0; }
+.bs-explain-body li { display: grid; gap: 7px; }
+.bs-explain-head { display: flex; align-items: center; gap: 10px; font-size: 11px; color: #5b6b52; }
+.bs-explain-head .wk-badge { font-size: 10px; }

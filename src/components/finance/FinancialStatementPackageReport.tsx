@@ -67,6 +67,7 @@ function FinancialStatementPackageWorkspace({ companyId, actorId, locale }: { co
   const [selected, setSelected] = useState<SavedFinancialStatementPackage | null>(null);
   const [review, setReview] = useState<FinancialStatementReview>({ ...emptyReview });
   const [reviewNotes, setReviewNotes] = useState(''), [voidReason, setVoidReason] = useState('');
+  const [selfAckChecked, setSelfAckChecked] = useState(false);
   const [lockReason, setLockReason] = useState(''), [lockCutoff, setLockCutoff] = useState(configuration.periodEnd);
   const [exporting, setExporting] = useState(false);
   const live = useFinancialStatementPackage(requested), history = useFinancialStatementPackageHistory(), locks = useFinancialReportingPeriodLocks();
@@ -87,17 +88,28 @@ function FinancialStatementPackageWorkspace({ companyId, actorId, locale }: { co
   const blocking = report?.findings.filter(item => item.severity === 'error' && item.count > 0) || [];
   const canIssue = scoped && !dirty && valid && !busy && !readBusy && !readFailed && snapshot?.status !== 'voided';
   const canApprove = Boolean(snapshot?.status === 'draft' && snapshot.created_by !== actorId && live.data?.permissions.canApprove && !stale && !blocking.length && canIssue);
-  const reviewComplete = reviewNotes.trim().length >= 20 && Object.values(review).every(Boolean);
+  // Sole-admin path: the preparer may approve their own draft only with an
+  // explicit documented self-review acknowledgment.
+  const selfReviewEligible = Boolean(snapshot?.status === 'draft' && snapshot.created_by === actorId && live.data?.permissions.canApprove && !stale && !blocking.length && canIssue);
+  const reviewComplete = reviewNotes.trim().length >= 20 && Object.values(review).every(Boolean) && (canApprove || selfAckChecked);
   const status = snapshot?.status === 'approved' ? tr('معتمد داخليًا', 'Internally approved') : snapshot?.status === 'voided' ? tr('ملغى', 'Voided') : tr('مسودة للإعداد والمراجعة', 'Draft for preparation and review');
   const editingDisabled = busy || Boolean(snapshot);
 
-  const resetReview = () => { setReview({ ...emptyReview }); setReviewNotes(''); setVoidReason(''); };
+  const resetReview = () => { setReview({ ...emptyReview }); setReviewNotes(''); setVoidReason(''); setSelfAckChecked(false); };
   const applyConfiguration = () => {
     try {
       const clean = validateFinancialStatementConfiguration(configuration, financeToday());
       setConfiguration(clean); setRequested(clean); setSelected(null); resetReview();
       const next = new URLSearchParams(params); next.set('asOf', clean.periodEnd); setParams(next, { replace: true });
       if (canonicalFinancialStatementContent(clean) === canonicalFinancialStatementContent(requested)) void live.refetch();
+      // Auto-save a version on generation so calculated packages are always
+      // retained for review (zero saved versions otherwise).
+      if (live.data?.permissions.canSave) {
+        void actions.save.mutateAsync(clean).then(saved => {
+          choose(saved);
+          toast.success(tr('حُسبت الحزمة وحُفظت نسخة ثابتة للمراجعة تلقائياً.', 'Package calculated and a review version saved automatically.'));
+        }).catch(() => { /* save errors surface through perform() paths */ });
+      }
     } catch { toast.error(tr('راجع تواريخ الفترات وحقول المعالجات. لا بد من سبب لكل معالجة خاصة.', 'Check reporting dates and treatment fields. Each specific treatment needs a reason.')); }
   };
   const choose = (saved: SavedFinancialStatementPackage) => {
@@ -106,7 +118,7 @@ function FinancialStatementPackageWorkspace({ companyId, actorId, locale }: { co
   };
   const perform = async (operation: () => Promise<void>) => { try { await operation(); } catch (error) { toast.error(financialStatementPackageError(error, locale)); } };
   const save = () => perform(async () => { const saved = await actions.save.mutateAsync(requested); choose(saved); toast.success(tr('حُفظت نسخة ثابتة من الحزمة.', 'A fixed package version was saved.')); });
-  const approve = () => perform(async () => { if (!snapshot || !canApprove || !reviewComplete) return; choose(await actions.approve.mutateAsync({ id: snapshot.id, notes: reviewNotes, confirmations: review })); toast.success(tr('سُجل الاعتماد الداخلي للحزمة.', 'Internal package approval was recorded.')); });
+  const approve = () => perform(async () => { if (!snapshot || !(canApprove || selfReviewEligible) || !reviewComplete) return; choose(await actions.approve.mutateAsync({ id: snapshot.id, notes: reviewNotes, confirmations: review, selfReviewAcknowledged: snapshot.created_by === actorId })); toast.success(tr('سُجل الاعتماد الداخلي للحزمة.', 'Internal package approval was recorded.')); });
   const voidReport = () => perform(async () => { if (!snapshot) return; choose(await actions.voidReport.mutateAsync({ id: snapshot.id, reason: voidReason })); toast.success(tr('أُلغيت صلاحية إصدار النسخة مع الاحتفاظ بها.', 'The version was voided and retained for the audit trail.')); });
   const exportReport = async (format: 'pdf' | 'excel' | 'print') => {
     if (!canIssue) return;
@@ -160,7 +172,48 @@ function FinancialStatementPackageWorkspace({ companyId, actorId, locale }: { co
       <TabsContent value="statements" className="space-y-5">
         {scoped && report && !readFailed && !readBusy && !dirty && <>
           <Card><CardHeader><CardTitle>{tr('نتائج الفحص', 'Readiness findings')}</CardTitle><CardDescription>{tr('هذه الفحوص تكشف النواقص الفنية والمحاسبية القابلة للفحص؛ توازن الأرقام وحده لا يثبت اكتمال البيانات.', 'These checks identify detectable technical and accounting gaps. Arithmetic balance alone does not establish data completeness.')}</CardDescription></CardHeader><CardContent>
-            {report.findings.length ? <ul className="space-y-2">{report.findings.map((finding, index) => <li key={`${finding.code}-${index}`} className={`rounded-md border p-3 text-sm ${finding.severity === 'error' ? 'border-destructive/40' : ''}`}><Badge variant={finding.severity === 'error' ? 'destructive' : 'secondary'} className="me-2">{finding.severity === 'error' ? tr('يمنع الاعتماد', 'Blocks approval') : tr('للمراجعة', 'Review')}</Badge>{ar ? finding.messageAr : finding.messageEn} ({finding.count})</li>)}</ul> : <p>{tr('لا توجد ملاحظات آلية مانعة. تظل المراجعة المحاسبية مطلوبة.', 'No automated blocking findings. Accounting review remains necessary.')}</p>}
+            {report.findings.length ? <ul className="space-y-2">{report.findings.map((finding, index) => {
+              const ledgerDetail = report.position.checks.find(check => check.code === finding.code && check.count > 0)?.detail ?? [];
+              const accountIds = finding.accountIds.length ? finding.accountIds : ledgerDetail.filter(entry => !entry.number).map(entry => entry.id);
+              const accountCode = (id: string) => report.position.accounts.find(account => account.id === id)?.code ?? id.slice(0, 8);
+              const classifyCode = ['unclassified_accounts', 'missing_account_subtype', 'position_mapping_missing'].includes(finding.code);
+              return <li key={`${finding.code}-${index}`} className={`rounded-md border p-3 text-sm ${finding.severity === 'error' ? 'border-destructive/40' : ''}`}>
+                <div className="flex flex-wrap items-center gap-2">
+                  <Badge variant={finding.severity === 'error' ? 'destructive' : 'secondary'} className="me-2">{finding.severity === 'error' ? tr('يمنع الاعتماد', 'Blocks approval') : tr('للمراجعة', 'Review')}</Badge>
+                  {ar ? finding.messageAr : finding.messageEn} ({finding.count})
+                </div>
+                {(classifyCode || finding.code === 'draft_entries' || finding.code.startsWith('current_vehicles') || finding.code === 'no_fixed_asset_movements' || finding.code === 'negative_asset_balances') && (
+                  <div className="mt-2 flex flex-wrap items-center gap-2">
+                    {classifyCode && accountIds.slice(0, 4).map(id => (
+                      <Button key={id} variant="outline" size="sm" asChild>
+                        <Link to={`/finance/chart-of-accounts?focus=${id}`}>{tr('صنّف الحساب', 'Classify account')} <bdi>{accountCode(id)}</bdi></Link>
+                      </Button>
+                    ))}
+                    {classifyCode && accountIds.length > 4 && (
+                      <Button variant="outline" size="sm" asChild><Link to="/finance/chart-of-accounts">{tr(`و${accountIds.length - 4} حسابات أخرى`, `+${accountIds.length - 4} more accounts`)}</Link></Button>
+                    )}
+                    {finding.code === 'draft_entries' && (
+                      <Button variant="outline" size="sm" asChild><Link to="/finance/journal-entries?status=draft">{tr('أعرض القيود المسودة', 'Show draft entries')}</Link></Button>
+                    )}
+                    {(finding.code.startsWith('current_vehicles') || finding.code === 'no_fixed_asset_movements') && (
+                      <>
+                        <Button variant="outline" size="sm" asChild><Link to={`/finance/fleet-bridge?asOf=${configuration.periodEnd}`}>{tr('رحّل مركبة', 'Bridge a vehicle')}</Link></Button>
+                        <Button variant="outline" size="sm" asChild><Link to="/fleet">{tr('استكمل بيانات الأسطول', 'Complete fleet data')}</Link></Button>
+                      </>
+                    )}
+                    {finding.code === 'negative_asset_balances' && (
+                      <Button variant="outline" size="sm" asChild><Link to={`/finance/reports/balance-sheet?asOf=${configuration.periodEnd}`}>{tr('فسّر الرصيد السالب من الميزانية', 'Explain negative balances in the balance sheet')}</Link></Button>
+                    )}
+                  </div>
+                )}
+              </li>;
+            })}</ul> : <p>{tr('لا توجد ملاحظات آلية مانعة. تظل المراجعة المحاسبية مطلوبة.', 'No automated blocking findings. Accounting review remains necessary.')}</p>}
+            <div className="mt-3 flex flex-wrap items-center gap-2 border-t pt-3">
+              <Button variant="outline" size="sm" asChild><Link to="/finance/chart-of-accounts">{tr('صنّف الحسابات', 'Classify accounts')}</Link></Button>
+              <Button variant="outline" size="sm" asChild><Link to={`/finance/fleet-bridge?asOf=${configuration.periodEnd}`}>{tr('رحّل مركبة', 'Bridge a vehicle')}</Link></Button>
+              <Button variant="outline" size="sm" asChild><Link to={`/finance/fleet-bridge?asOf=${configuration.periodEnd}`}>{tr('رحّل تمويل', 'Bridge financing')}</Link></Button>
+              <Button variant="outline" size="sm" asChild><Link to="/finance/journal-entries?status=draft">{tr('أعرض القيود المسودة', 'Show draft entries')}</Link></Button>
+            </div>
           </CardContent></Card>
           <Card><CardHeader><CardTitle>{ar ? report.company.nameAr || report.company.name : report.company.name}</CardTitle><CardDescription>{tr('السجل التجاري', 'Commercial register')}: {report.company.commercialRegister || '—'} · {report.configuration.periodStart} — {report.configuration.periodEnd}</CardDescription></CardHeader><CardContent className="space-y-8">{report.statements.map(statement => <StatementTable key={statement.key} statement={statement} locale={locale} currency={report.company.currency} />)}</CardContent></Card>
         </>}
@@ -178,10 +231,16 @@ function FinancialStatementPackageWorkspace({ companyId, actorId, locale }: { co
           <p className="break-all text-xs" dir="ltr">{snapshot.id}<br />{snapshot.source_fingerprint}</p>
           {snapshot.status === 'approved' && <p>{tr('المراجع', 'Reviewer')}: {snapshot.approved_by_name} · <bdi>{snapshot.approved_at}</bdi><br />{snapshot.review_notes}</p>}
           {snapshot.status === 'draft' && <>
-            {snapshot.created_by === actorId && <p role="status">{tr('أنت مُعدّ النسخة؛ يلزم أن يراجعها مستخدم مخول آخر.', 'You prepared this version; a different authorized user must review it.')}</p>}
-            {(Object.keys(reviewLabels) as (keyof FinancialStatementReview)[]).map(key => <label key={key} className="flex items-start gap-2 text-sm"><input className="mt-1" type="checkbox" checked={review[key]} disabled={!canApprove || busy} onChange={event => setReview({ ...review, [key]: event.target.checked })} />{tr(...reviewLabels[key])}</label>)}
-            <Label htmlFor="package-review-notes">{tr('خلاصة المراجعة — 20 حرفًا على الأقل', 'Review conclusion — at least 20 characters')}</Label><Textarea id="package-review-notes" value={reviewNotes} disabled={!canApprove || busy} onChange={event => setReviewNotes(event.target.value)} />
-            <Button disabled={!canApprove || !reviewComplete || busy} onClick={approve}><ShieldCheck className="me-2 h-4 w-4" />{tr('اعتماد الحزمة داخليًا', 'Approve package internally')}</Button>
+            {snapshot.created_by === actorId && !selfReviewEligible && <p role="status">{tr('أنت مُعدّ النسخة؛ يلزم أن يراجعها مستخدم مخول آخر.', 'You prepared this version; a different authorized user must review it.')}</p>}
+            {selfReviewEligible && (
+              <label className="flex items-start gap-2 rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-950">
+                <input className="mt-1" type="checkbox" checked={selfAckChecked} onChange={event => setSelfAckChecked(event.target.checked)} />
+                {tr('إقرار ذاتي موثق: أنا مُعدّ هذه النسخة وأعتمدها بعد مراجعتي الشخصية، مع تسجيل سبب الاستثناء من قاعدة فصل المهام في سجل الاعتماد (مع خلاصة مراجعة من ٢٠ حرفاً على الأقل).', 'Documented self-review: I prepared this version and approve it after my own review; the segregation-of-duties exception is recorded in the approval audit trail (with a review conclusion of at least 20 characters).')}
+              </label>
+            )}
+            {(Object.keys(reviewLabels) as (keyof FinancialStatementReview)[]).map(key => <label key={key} className="flex items-start gap-2 text-sm"><input className="mt-1" type="checkbox" checked={review[key]} disabled={!(canApprove || selfReviewEligible) || busy} onChange={event => setReview({ ...review, [key]: event.target.checked })} />{tr(...reviewLabels[key])}</label>)}
+            <Label htmlFor="package-review-notes">{tr('خلاصة المراجعة — 20 حرفًا على الأقل', 'Review conclusion — at least 20 characters')}</Label><Textarea id="package-review-notes" value={reviewNotes} disabled={!(canApprove || selfReviewEligible) || busy} onChange={event => setReviewNotes(event.target.value)} />
+            <Button disabled={!(canApprove || selfReviewEligible) || !reviewComplete || busy} onClick={approve}><ShieldCheck className="me-2 h-4 w-4" />{tr('اعتماد الحزمة داخليًا', 'Approve package internally')}</Button>
           </>}
           {snapshot.status !== 'voided' && (live.data?.permissions.canApprove || (snapshot.created_by === actorId && live.data?.permissions.canSave)) && <div className="space-y-2 border-t pt-4"><Label htmlFor="package-void-reason">{tr('سبب إلغاء النسخة — 10 أحرف على الأقل', 'Reason to void — at least 10 characters')}</Label><Textarea id="package-void-reason" value={voidReason} disabled={busy} onChange={event => setVoidReason(event.target.value)} /><Button variant="destructive" disabled={busy || voidReason.trim().length < 10 || readBusy || readFailed} onClick={voidReport}>{tr('إلغاء صلاحية إصدار النسخة', 'Void this version')}</Button></div>}
           {snapshot.status === 'voided' && <p>{snapshot.void_reason}</p>}

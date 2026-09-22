@@ -10,7 +10,13 @@ export default function ReportsLibrary() {
   const reports = searchGroups
     .flatMap((group) => group.items)
     .filter((item) => item.parentId === "reports");
-  const visible = reports.filter((item) =>
+  // Ledger-adjacent readers surfaced directly in the library (routes exist).
+  const extraReports = [
+    { id: 'lib-general-ledger', href: '/finance/general-ledger', ar: 'دفتر الأستاذ العام', en: 'General ledger' },
+    { id: 'lib-journal-register', href: '/finance/journal-entries', ar: 'سجل القيود اليومية', en: 'Journal register' },
+    { id: 'lib-depreciation', href: '/finance/depreciation', ar: 'الإهلاك وجدولته', en: 'Depreciation schedule' },
+  ];
+  const visible = [...reports, ...extraReports].filter((item) =>
     `${item.ar} ${item.en}`.toLowerCase().includes(search.trim().toLowerCase())
   );
   return (

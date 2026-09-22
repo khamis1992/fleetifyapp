@@ -38,6 +38,10 @@ vi.mock('@/hooks/finance/useProfessionalBalanceSheet', () => ({
     voidReport: { mutateAsync: voidReport, isPending: false },
   }),
 }));
+vi.mock('@/hooks/finance/useFleetBridge', () => ({
+  useNegativeExplanations: () => ({ data: [], error: null, isFetching: false, isLoading: false }),
+  useUpsertNegativeExplanation: () => ({ mutateAsync: vi.fn(), isPending: false }),
+}));
 vi.mock('@/utils/balanceSheetExport', () => ({
   exportBalanceSheetPDF: exportPDF, exportBalanceSheetExcel: exportExcel, printBalanceSheet: printReport,
 }));
@@ -176,15 +180,29 @@ describe('balance sheet report workflow', () => {
     expect(exportPDF).not.toHaveBeenCalled();
   });
 
-  it('disallows self approval even when the preparer has approval permission', () => {
-    state.history.data = [makeSavedBalanceSheet({ created_by: BALANCE_SHEET_REVIEWER })];
+  it('requires the documented self-review acknowledgment before preparer self approval', async () => {
+    const saved = makeSavedBalanceSheet({ created_by: BALANCE_SHEET_REVIEWER });
+    state.history.data = [saved];
+    const approved = makeApprovedBalanceSheet();
+    approve.mockImplementation(async () => { state.history.data = [approved]; return approved; });
     mount();
     selectVersion();
     expect(approvalButton()).toBeDisabled();
-    expect(screen.getByText('A different authorized user must review and approve this version.')).toBeVisible();
-    expect(screen.queryByRole('group', { name: 'Reviewer confirmations' })).not.toBeInTheDocument();
+    // The strict note is replaced by the documented sole-admin acknowledgment path.
+    expect(screen.queryByText('A different authorized user must review and approve this version.')).not.toBeInTheDocument();
+    const confirmations = within(screen.getByRole('group', { name: 'Reviewer confirmations' })).getAllByRole('checkbox');
+    confirmations.forEach(checkbox => fireEvent.click(checkbox));
+    const notes = screen.getByLabelText('Review conclusion and resolution of findings');
+    fireEvent.change(notes, { target: { value: 'Reviewed bank reconciliations and supporting records.' } });
+    expect(approvalButton()).toBeDisabled();
+    fireEvent.click(screen.getByLabelText(/Documented self-review: I prepared this version/));
+    expect(approvalButton()).toBeEnabled();
     fireEvent.click(approvalButton());
-    expect(approve).not.toHaveBeenCalled();
+    await waitFor(() => expect(approve).toHaveBeenCalledWith({
+      id: saved.id, notes: 'Reviewed bank reconciliations and supporting records.',
+      confirmations: { assets: true, liabilities: true, equity: true, reconciliation: true, completeness: true },
+      selfReviewAcknowledged: true,
+    }));
   });
 
   it('disallows approval of a stale snapshot and explains why a new version is needed', () => {
@@ -249,6 +267,7 @@ describe('balance sheet report workflow', () => {
     await waitFor(() => expect(approve).toHaveBeenCalledWith({
       id: saved.id, notes: 'Reviewed bank reconciliations and supporting records.',
       confirmations: { assets: true, liabilities: true, equity: true, reconciliation: true, completeness: true },
+      selfReviewAcknowledged: false,
     }));
     await waitFor(() => expect(screen.getByText(/Test Reviewer/)).toBeVisible());
     expect(screen.queryByRole('button', { name: 'Record internal approval' })).not.toBeInTheDocument();

@@ -46,11 +46,20 @@ export interface BalanceSheetTotals {
   draftEntries: number;
 }
 
+export interface BalanceSheetCheckDetailEntry {
+  id: string;
+  code: string;
+  number?: string;
+  balance?: number;
+}
+
 export interface BalanceSheetCheck {
   code: string;
   severity: "error" | "warning";
   count: number;
   asOfDate: string;
+  /** Entity payload (account ids/codes, draft journal ids/numbers) powering check actions. */
+  detail?: BalanceSheetCheckDetailEntry[];
 }
 
 export interface ProfessionalBalanceSheet {

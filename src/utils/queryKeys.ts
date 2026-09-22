@@ -174,6 +174,13 @@ export const queryKeys = {
     detail: (id: string) => [...queryKeys.journalEntries.details(), id] as const,
   },
 
+  // FLEET-TO-LEDGER BRIDGE
+  fleetBridge: {
+    all: ['fleet-bridge'] as const,
+    candidates: (companyId?: string, asOf?: string) => [...queryKeys.fleetBridge.all, 'candidates', companyId, asOf] as const,
+    negativeExplanations: (companyId?: string, asOf?: string) => [...queryKeys.fleetBridge.all, 'negative-explanations', companyId, asOf] as const,
+  },
+
   // VENDORS
   vendors: {
     all: ['vendors'] as const,

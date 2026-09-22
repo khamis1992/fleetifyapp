@@ -144,6 +144,22 @@ export const EnhancedChartOfAccountsManagement: React.FC = () => {
     }
   }, [searchParams]);
 
+  // Deep link: ?focus=<accountId> opens the edit dialog directly for that account
+  // (balance-sheet readiness actions link here to fix classification quickly).
+  const focusedAccountId = searchParams.get('focus');
+  React.useEffect(() => {
+    if (!focusedAccountId || !allAccounts?.length) return;
+    const account = (allAccounts as any[]).find(row => row.id === focusedAccountId);
+    if (!account) return;
+    setEditingAccount(account);
+    setSearchTerm(account.account_code || '');
+    setShowEditDialog(true);
+    const next = new URLSearchParams(searchParams);
+    next.delete('focus');
+    setSearchParams(next, { replace: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [focusedAccountId, allAccounts]);
+
   // دالة لتوليد رقم الحساب الفرعي التالي
   const generateNextChildAccountCode = (parentAccount: any, allAccounts: any[]): string => {
     const parentCode = parentAccount.account_code || parentAccount.accountCode;

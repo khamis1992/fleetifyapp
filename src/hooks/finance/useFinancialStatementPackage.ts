@@ -30,7 +30,7 @@ export function useFinancialStatementPackageActions() {
   const refresh = () => Promise.all(['financial-statement-package', 'financial-statement-packages', 'financial-reporting-period-locks'].map(key => client.invalidateQueries({ queryKey: [key, companyId] })));
   const save = useMutation({ mutationFn: (configuration: FinancialStatementConfiguration) => saveFinancialStatementPackage(companyId!, configuration), onSuccess: refresh,
     retry: false, onError: error => console.error('Financial statement package save failed', JSON.stringify(summarizeFinancialReportError(error))) });
-  const approve = useMutation({ mutationFn: (input: { id: string; notes: string; confirmations: FinancialStatementReview }) => approveFinancialStatementPackage(companyId!, input.id, input.notes, input.confirmations), onSuccess: refresh,
+  const approve = useMutation({ mutationFn: (input: { id: string; notes: string; confirmations: FinancialStatementReview; selfReviewAcknowledged?: boolean }) => approveFinancialStatementPackage(companyId!, input.id, input.notes, input.confirmations, Boolean(input.selfReviewAcknowledged)), onSuccess: refresh,
     retry: false, onError: error => console.error('Financial statement package approval failed', JSON.stringify(summarizeFinancialReportError(error))) });
   const voidReport = useMutation({ mutationFn: (input: { id: string; reason: string }) => voidFinancialStatementPackage(companyId!, input.id, input.reason), onSuccess: refresh,
     retry: false, onError: error => console.error('Financial statement package void failed', JSON.stringify(summarizeFinancialReportError(error))) });

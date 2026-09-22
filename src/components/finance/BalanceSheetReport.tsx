@@ -3,7 +3,9 @@ import "./BalanceSheetReport.css";
 import { Link, useSearchParams } from "react-router-dom";
 import {
   AlertCircle,
+  Car,
   CheckCircle2,
+  Coins,
   Download,
   FileSpreadsheet,
   Landmark,
@@ -38,6 +40,10 @@ import {
   useProfessionalBalanceSheet,
   useSavedBalanceSheets,
 } from "@/hooks/finance/useProfessionalBalanceSheet";
+import {
+  useNegativeExplanations,
+  useUpsertNegativeExplanation,
+} from "@/hooks/finance/useFleetBridge";
 import { financeToday } from "@/services/financialReporting";
 import {
   balanceSheetErrorMessage,
@@ -55,10 +61,12 @@ import {
   printBalanceSheet,
 } from "@/utils/balanceSheetExport";
 import type {
+  BalanceSheetCheck,
   BalanceSheetLocale,
   BalanceSheetReviewConfirmations,
   SavedBalanceSheet,
 } from "@/types/balanceSheet";
+import type { NegativeBalanceExplanation } from "@/services/fleetBridge";
 
 const emptyConfirmations: BalanceSheetReviewConfirmations = {
   assets: false,
@@ -104,17 +112,22 @@ function BalanceSheetWorkspace({
   const tr = (arabic: string, english: string) => (ar ? arabic : english);
   const [params, setParams] = useSearchParams();
   const [asOf, setAsOf] = useState(params.get("asOf") || financeToday());
-  const [comparison, setComparison] = useState(params.get("compare") || "");
+  const [comparison, setComparison] = useState(
+    params.get("compare") || params.get("comparison") || ""
+  );
   const [selected, setSelected] = useState<SavedBalanceSheet | null>(null);
   const [notes, setNotes] = useState("");
   const [reviewNotes, setReviewNotes] = useState("");
   const [voidReason, setVoidReason] = useState("");
   const [confirmations, setConfirmations] =
     useState<BalanceSheetReviewConfirmations>({ ...emptyConfirmations });
+  const [selfAckChecked, setSelfAckChecked] = useState(false);
   const [exporting, setExporting] = useState(false);
   const live = useProfessionalBalanceSheet(asOf, comparison || null);
   const history = useSavedBalanceSheets();
   const actions = useBalanceSheetActions();
+  const explanations = useNegativeExplanations(asOf);
+  const upsertExplanation = useUpsertNegativeExplanation(asOf);
   const savedVersions =
     history.data?.filter((row) => row.company_id === companyId) || [];
   const snapshot = selected
@@ -174,10 +187,24 @@ function BalanceSheetWorkspace({
       !readFailed &&
       !readBusy
   );
+  // Sole-admin path: the generator may approve their own draft only with an
+  // explicit documented self-review acknowledgment.
+  const selfReviewEligible = Boolean(
+    snapshot?.status === "draft" &&
+      live.data?.permissions.canApprove &&
+      snapshot.created_by === actorId &&
+      !stale &&
+      blocking.length === 0 &&
+      report &&
+      report.current.postedEntries > 0 &&
+      !readFailed &&
+      !readBusy
+  );
   const approvalReady =
-    canApprove &&
+    (canApprove || selfReviewEligible) &&
     reviewNotes.trim().length >= 20 &&
-    Object.values(confirmations).every(Boolean);
+    Object.values(confirmations).every(Boolean) &&
+    (canApprove || selfAckChecked);
   const rows = report ? getBalanceSheetRows(report, locale) : [];
   const indicators = report ? deriveBalanceSheetIndicators(report) : null;
   const money = (value: number) =>
@@ -215,6 +242,7 @@ function BalanceSheetWorkspace({
     setNotes("");
     setReviewNotes("");
     setConfirmations({ ...emptyConfirmations });
+    setSelfAckChecked(false);
     setVoidReason("");
     const next = new URLSearchParams(params);
     if (nextAsOf) next.set("asOf", nextAsOf);
@@ -307,8 +335,10 @@ function BalanceSheetWorkspace({
           id: snapshot.id,
           notes: reviewNotes,
           confirmations,
+          selfReviewAcknowledged: snapshot.created_by === actorId,
         })
       );
+      setSelfAckChecked(false);
       toast.success(
         tr(
           "سُجل الاعتماد الداخلي باسم المراجع.",
@@ -823,13 +853,25 @@ function BalanceSheetWorkspace({
                   <ul>
                     {report.checks
                       .filter((check) => check.count > 0)
-                      .map((check, index) => (
-                        <li
-                          key={`${check.code}:${check.asOfDate}:${index}`}
-                          className={
-                            check.severity === "error" ? "is-error" : "is-warn"
-                          }
-                        >
+                      .map((check, index) => {
+                        const detail = check.detail ?? [];
+                        const accountEntries = detail.filter(
+                          (entry) => !entry.number
+                        );
+                        const journalEntries = detail.filter(
+                          (entry) => entry.number
+                        );
+                        const classifyCodes = new Set([
+                          "unclassified_accounts",
+                          "missing_account_subtype",
+                        ]);
+                        return (
+                          <li
+                            key={`${check.code}:${check.asOfDate}:${index}`}
+                            className={
+                              check.severity === "error" ? "is-error" : "is-warn"
+                            }
+                          >
                           <AlertCircle
                             className="h-4 w-4"
                             style={{
@@ -847,16 +889,114 @@ function BalanceSheetWorkspace({
                             </strong>{" "}
                             — {getBalanceSheetCheckMessage(check, locale)}
                           </span>
+                          <span className="bs-check-actions">
+                            {classifyCodes.has(check.code) &&
+                              accountEntries.slice(0, 4).map((entry) => (
+                                <Link
+                                  key={entry.id}
+                                  className="dw-button"
+                                  style={{ minHeight: 30, padding: "0 10px", fontSize: 11 }}
+                                  to={`/finance/chart-of-accounts?focus=${entry.id}`}
+                                >
+                                  {tr("صنّف الحساب", "Classify account")}{" "}
+                                  <bdi>{entry.code}</bdi>
+                                </Link>
+                              ))}
+                            {classifyCodes.has(check.code) &&
+                              accountEntries.length > 4 && (
+                                <Link
+                                  className="dw-button"
+                                  style={{ minHeight: 30, padding: "0 10px", fontSize: 11 }}
+                                  to="/finance/chart-of-accounts"
+                                >
+                                  {tr(
+                                    `و${accountEntries.length - 4} حسابات أخرى`,
+                                    `+${accountEntries.length - 4} more accounts`
+                                  )}
+                                </Link>
+                              )}
+                            {check.code === "negative_asset_balances" && (
+                              <NegativeExplanationEditor
+                                check={check}
+                                asOf={asOf}
+                                locale={locale}
+                                money={money}
+                                explanations={explanations.data ?? []}
+                                pending={upsertExplanation.isPending}
+                                onSave={(accountId, text) =>
+                                  upsertExplanation.mutateAsync({
+                                    accountId,
+                                    explanation: text,
+                                  })
+                                }
+                              />
+                            )}
+                            {check.code === "draft_entries" && (
+                              <Link
+                                className="dw-button"
+                                style={{ minHeight: 30, padding: "0 10px", fontSize: 11 }}
+                                to="/finance/journal-entries?status=draft"
+                              >
+                                {tr(
+                                  "أعرض القيود المسودة",
+                                  "Show draft entries"
+                                )}
+                              </Link>
+                            )}
+                            {(check.code.startsWith("current_vehicles") ||
+                              check.code === "no_fixed_asset_movements") && (
+                              <>
+                                <Link
+                                  className="dw-button"
+                                  style={{ minHeight: 30, padding: "0 10px", fontSize: 11 }}
+                                  to={`/finance/fleet-bridge?asOf=${asOf}`}
+                                >
+                                  <Car className="h-3.5 w-3.5" />
+                                  {tr("رحّل مركبة", "Bridge a vehicle")}
+                                </Link>
+                                <Link
+                                  className="dw-button"
+                                  style={{ minHeight: 30, padding: "0 10px", fontSize: 11 }}
+                                  to="/fleet"
+                                >
+                                  {tr(
+                                    "استكمل بيانات الأسطول",
+                                    "Complete fleet data"
+                                  )}
+                                </Link>
+                              </>
+                            )}
+                            {journalEntries.length > 0 && (
+                              <span className="bs-check-ref">
+                                <bdi>
+                                  {journalEntries
+                                    .slice(0, 3)
+                                    .map((entry) => entry.number)
+                                    .join("، ")}
+                                </bdi>
+                                {journalEntries.length > 3
+                                  ? ` ${tr(
+                                      `و${journalEntries.length - 3} أخرى`,
+                                      `+${journalEntries.length - 3} more`
+                                    )}`
+                                  : ""}
+                              </span>
+                            )}
+                          </span>
                         </li>
-                      ))}
+                        );
+                      })}
                   </ul>
                 )}
                 <div className="bs-status-links">
                   <Link className="underline" to="/finance/chart-of-accounts">
                     {tr("تصنيف الحسابات", "Account classification")}
                   </Link>
-                  <Link className="underline" to="/finance/journal-entries">
-                    {tr("مراجعة القيود", "Review ledger")}
+                  <Link className="underline" to={`/finance/fleet-bridge?asOf=${asOf}`}>
+                    {tr("ترحيل الأسطول والتمويل", "Fleet & financing bridge")}
+                  </Link>
+                  <Link className="underline" to="/finance/journal-entries?status=draft">
+                    {tr("القيود المسودة", "Draft entries")}
                   </Link>
                   <Link className="underline" to="/finance/assets">
                     {tr("الأصول والإهلاك", "Assets and depreciation")}
@@ -945,7 +1085,7 @@ function BalanceSheetWorkspace({
                   </p>
                   {snapshot.status === "draft" && (
                     <>
-                      {snapshot.created_by === actorId && (
+                      {snapshot.created_by === actorId && !selfReviewEligible && (
                         <p className="text-sm">
                           {tr(
                             "يجب أن يراجع النسخة ويعتمدها مستخدم مخول آخر غير مُعدّها.",
@@ -953,7 +1093,39 @@ function BalanceSheetWorkspace({
                           )}
                         </p>
                       )}
-                      {canApprove && (
+                      {selfReviewEligible && (
+                        <div
+                          className="bs-self-ack"
+                          style={{
+                            display: "flex",
+                            gap: 10,
+                            alignItems: "flex-start",
+                            border: "1px solid #e3d9c4",
+                            background: "#fdfaf1",
+                            borderRadius: 9,
+                            padding: "10px 12px",
+                          }}
+                        >
+                          <Checkbox
+                            id="bs-self-ack"
+                            checked={selfAckChecked}
+                            onCheckedChange={(value) =>
+                              setSelfAckChecked(value === true)
+                            }
+                          />
+                          <Label
+                            className="text-sm leading-relaxed"
+                            htmlFor="bs-self-ack"
+                            style={{ color: "#6d5c34" }}
+                          >
+                            {tr(
+                              "إقرار ذاتي موثق: أنا مُعدّ هذه النسخة، وأعتمدها بعد مراجعتي الشخصية، مع تسجيل سبب الاستثناء من قاعدة فصل المهام في سجل الاعتماد (يلزم أيضاً نتيجة مراجعة من ٢٠ حرفاً على الأقل).",
+                              "Documented self-review: I prepared this version and approve it after my own review; the segregation-of-duties exception is recorded in the approval audit trail (a review conclusion of at least 20 characters is also required)."
+                            )}
+                          </Label>
+                        </div>
+                      )}
+                      {(canApprove || selfReviewEligible) && (
                         <>
                           <fieldset>
                             <legend>
@@ -1113,7 +1285,15 @@ function BalanceSheetWorkspace({
 
         <PagePanel
           number={hasStatement ? "06" : "02"}
-          title={tr("النسخ المحفوظة", "Saved versions")}
+          title={`${tr("النسخ المحفوظة", "Saved versions")}${
+            savedVersions.length
+              ? ` (${savedVersions.length}${
+                  savedVersions.filter((row) => row.status === "approved").length
+                    ? ` — ${savedVersions.filter((row) => row.status === "approved").length} ${tr("معتمدة", "approved")}`
+                    : ""
+                })`
+              : ""
+          }`}
           subtitle={tr(
             "آخر 50 نسخة؛ يحتفظ النظام بالنسخ الملغاة وسجل مراجعتها.",
             "Latest 50 versions; voided versions and their review history are retained."
@@ -1206,6 +1386,124 @@ function BalanceSheetWorkspace({
           </span>
         </footer>
       </div>
+    </div>
+  );
+}
+
+/**
+ * Inline editor for documented explanations of negative asset balances.
+ * Approval is blocked server-side while any credit-balance asset lacks a
+ * saved explanation at the reporting date.
+ */
+function NegativeExplanationEditor({
+  check,
+  asOf,
+  locale,
+  money,
+  explanations,
+  pending,
+  onSave,
+}: {
+  check: BalanceSheetCheck;
+  asOf: string;
+  locale: BalanceSheetLocale;
+  money: (value: number) => string;
+  explanations: NegativeBalanceExplanation[];
+  pending: boolean;
+  onSave: (accountId: string, explanation: string) => Promise<unknown>;
+}) {
+  const tr = (arabic: string, english: string) => (locale === "ar" ? arabic : english);
+  const [drafts, setDrafts] = useState<Record<string, string>>({});
+  const [open, setOpen] = useState(false);
+  const entries = (check.detail ?? []).filter((entry) => !entry.number);
+
+  const save = async (accountId: string) => {
+    const text = (drafts[accountId] ?? "").trim();
+    if (text.length < 10) return;
+    await onSave(accountId, text);
+  };
+
+  return (
+    <div className="bs-explain">
+      <button
+        type="button"
+        className="dw-button"
+        style={{ minHeight: 30, padding: "0 10px", fontSize: 11 }}
+        onClick={() => setOpen((value) => !value)}
+      >
+        {tr("تفسير الرصيد السالب", "Explain negative balance")}
+      </button>
+      {open && (
+        <div className="bs-explain-body">
+          <p className="bs-explain-note">
+            {tr(
+              `الاعتماد يُرفض ما دام أصلٌ ذو رصيد دائن بلا تفسير محفوظ بتاريخ التقرير (${asOf}).`,
+              `Approval is blocked while any credit-balance asset lacks a saved explanation at the reporting date (${asOf}).`
+            )}
+          </p>
+          <ul>
+            {entries.map((entry) => {
+              const existing = explanations.find(
+                (row) => row.account_id === entry.id
+              );
+              const value =
+                drafts[entry.id] ?? existing?.explanation ?? "";
+              return (
+                <li key={entry.id}>
+                  <div className="bs-explain-head">
+                    <strong>
+                      <bdi>{entry.code}</bdi>
+                    </strong>
+                    {entry.balance != null && (
+                      <span>
+                        <bdi>{money(entry.balance)}</bdi>
+                      </span>
+                    )}
+                    {existing ? (
+                      <span className="wk-badge is-ok">
+                        {tr("مفسَّر", "Explained")}
+                      </span>
+                    ) : (
+                      <span className="wk-badge is-warn">
+                        {tr("بلا تفسير", "Unexplained")}
+                      </span>
+                    )}
+                  </div>
+                  <Textarea
+                    aria-label={tr(
+                      `تفسير رصيد الحساب ${entry.code}`,
+                      `Explanation for account ${entry.code}`
+                    )}
+                    value={value}
+                    maxLength={2000}
+                    onChange={(event) =>
+                      setDrafts((current) => ({
+                        ...current,
+                        [entry.id]: event.target.value,
+                      }))
+                    }
+                    placeholder={tr(
+                      "سبب الرصيد الدائن (دفعة مقدمة، إعادة تصنيف، تصحيح…) — ١٠ أحرف على الأقل.",
+                      "Reason for the credit balance (advance, reclass, correction…) — at least 10 characters."
+                    )}
+                  />
+                  <button
+                    type="button"
+                    className="dw-button"
+                    style={{ minHeight: 30, padding: "0 10px", fontSize: 11 }}
+                    disabled={pending || value.trim().length < 10}
+                    onClick={() => void save(entry.id)}
+                  >
+                    {pending
+                      ? tr("جارٍ الحفظ…", "Saving…")
+                      : tr("حفظ التفسير", "Save explanation")}
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      )}
     </div>
   );
 }

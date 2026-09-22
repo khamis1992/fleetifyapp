@@ -350,7 +350,9 @@ export const usePostJournalEntry = () => {
       toast.success('تم ترحيل القيد بنجاح');
     },
     onError: (error) => {
-      toast.error('خطأ في ترحيل القيد: ' + error.message);
+      toast.error(/future entry date|cannot be posted with a future/i.test(error?.message || '')
+        ? 'لا يُرحَّل قيد بتاريخ مستقبلي — أبقِه مسودة مجدولة حتى تاريخه، أو استخدم الاستثناء الصريح app.allow_future_posting.'
+        : 'خطأ في ترحيل القيد: ' + error.message);
     },
   });
 };

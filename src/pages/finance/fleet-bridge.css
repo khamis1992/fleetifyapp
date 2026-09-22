@@ -1,0 +1,136 @@
+/* Fleet bridge — page-specific pieces over the dw- and wk- kit. */
+
+.fb-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  padding: 4px 24px 18px;
+}
+
+.fb-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 0 24px 14px;
+}
+.fb-summary .wk-badge { gap: 5px; }
+
+.fb-note {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 0 24px 18px;
+  font-size: 11px;
+  color: #7e8c72;
+  line-height: 1.8;
+  flex-wrap: wrap;
+}
+.fb-inline-link { color: #577549; font-weight: 700; margin-inline: 4px; }
+
+.fb-date-field { display: flex; align-items: center; gap: 10px; }
+.fb-date-field label { font-size: 11px; color: #6f7c68; }
+.fb-date-field input {
+  min-height: 38px;
+  border: 1px solid #dfe5d9;
+  border-radius: 8px;
+  background: #fff;
+  color: #2c4136;
+  font-size: 12px;
+  padding-inline: 10px;
+}
+.fb-note-inline { display: flex; align-items: center; gap: 6px; font-size: 11px; color: #7e8c72; flex-wrap: wrap; }
+
+.fb-roles-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 12px 18px;
+  padding: 4px 24px 16px;
+}
+.fb-role-field { display: flex; flex-direction: column; gap: 6px; }
+.fb-role-field label { font-size: 11px; color: #5b6b52; font-weight: 700; }
+.fb-role-field .fb-role-hint { font-size: 10px; color: #93a189; }
+.fb-role-field select {
+  min-height: 34px;
+  border: 1px solid #dfe5d9;
+  border-radius: 7px;
+  background: #fff;
+  color: #2c4136;
+  font-size: 11px;
+  padding-inline: 8px;
+}
+.fb-role-field select:focus-visible { outline: none; border-color: #9db88a; box-shadow: 0 0 0 3px rgba(47, 121, 102, 0.08); }
+.fb-role-field.is-missing select { border-color: #d9b08c; background: #fdf9f2; }
+
+.fb-check-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  color: #5b6b52;
+}
+.fb-check-row input { width: 15px; height: 15px; accent-color: #4f7a43; }
+
+.fb-table-wrap { padding: 0; }
+.fb-table td { vertical-align: middle; font-size: 11px; }
+.fb-table .fb-num { text-align: end; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.fb-table .fb-sub { font-size: 10px; color: #8b977f; }
+.fb-table tbody tr.is-done td { color: #87957c; background: #f4f7ef; }
+.fb-table input[type='checkbox'] { width: 15px; height: 15px; accent-color: #4f7a43; }
+
+.fb-post-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  padding: 14px 24px 4px;
+}
+
+.fb-generated-list {
+  margin: 6px 24px 12px;
+  padding: 10px 14px;
+  border: 1px solid #dfe5d9;
+  border-radius: 9px;
+  background: #fbfcf9;
+  font-size: 11px;
+  color: #4c5a45;
+  max-height: 190px;
+  overflow: auto;
+}
+.fb-generated-list li { margin-inline-start: 16px; line-height: 1.9; }
+
+.fb-ack-box {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 4px 24px 14px;
+  padding: 12px 14px;
+  border: 1px solid #e3d9c4;
+  border-radius: 9px;
+  background: #fdfaf1;
+  font-size: 11px;
+  color: #6d5c34;
+}
+.fb-ack-box textarea {
+  min-height: 64px;
+  border: 1px solid #ddd0b4;
+  border-radius: 7px;
+  background: #fff;
+  font-size: 11px;
+  color: #2c4136;
+  padding: 8px 10px;
+  resize: vertical;
+}
+
+.fb-alert {
+  padding: 0 24px 16px;
+  font-size: 11px;
+  line-height: 1.8;
+}
+.fb-alert.is-error { color: #b3694c; }
+.fb-alert.is-warn { color: #8b642b; }
+
+@media (max-width: 700px) {
+  .fb-toolbar, .fb-summary, .fb-note, .fb-alert, .fb-post-row, .fb-roles-grid { padding-inline: 18px; }
+  .fb-role-field select { width: 100%; }
+}

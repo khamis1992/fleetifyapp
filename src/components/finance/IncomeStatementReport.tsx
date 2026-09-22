@@ -35,7 +35,7 @@ import { useFleetifyTranslation } from "@/hooks/useTranslation";
 export function IncomeStatementReport() {
   const { t } = useFleetifyTranslation("ui");
   const [viewMode, setViewMode] = useState<'single' | 'comparative'>('single');
-  const [startDate, setStartDate] = useState<string>('');
+  const [startDate, setStartDate] = useState<string>(`${new Date().getFullYear()}-01-01`);
   const [endDate, setEndDate] = useState<string>(new Date().toISOString().split('T')[0]);
   const { formatCurrency } = useCurrencyFormatter();
 
@@ -334,6 +334,7 @@ export function IncomeStatementReport() {
                 variant="outline"
                 size="sm"
                 disabled={isLoading || !reportData}
+                title={isLoading ? 'جارٍ تحميل بيانات الفترة…' : reportData ? '' : 'حدد فترة التقرير أولاً لتتمكن من التصدير'}
               >
                 <Download className="h-4 w-4 mr-2" />{t("pdf")}</Button>
               <Button
@@ -341,6 +342,7 @@ export function IncomeStatementReport() {
                 variant="outline"
                 size="sm"
                 disabled={isLoading || !reportData}
+                title={isLoading ? 'جارٍ تحميل بيانات الفترة…' : reportData ? '' : 'حدد فترة التقرير أولاً لتتمكن من التصدير'}
               >
                 <FileSpreadsheet className="h-4 w-4 mr-2" />{t("excel")}</Button>
               <Button
@@ -348,6 +350,7 @@ export function IncomeStatementReport() {
                 variant="outline"
                 size="sm"
                 disabled={isLoading || !reportData}
+                title={isLoading ? 'جارٍ تحميل بيانات الفترة…' : reportData ? '' : 'حدد فترة التقرير أولاً لتتمكن من التصدير'}
               >
                 <FileText className="h-4 w-4 mr-2" />{t("csv")}</Button>
             </div>

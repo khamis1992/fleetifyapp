@@ -206,7 +206,9 @@ export function parseSavedFinancialStatementPackage(raw: unknown, companyId: str
   const saved = savedSchema.parse(raw);
   const payload = parseFinancialStatementPackage(saved.payload, companyId);
   if (saved.company_id !== companyId || saved.source_fingerprint !== payload.fingerprint) throw new Error('FINANCIAL_STATEMENT_SCOPE_MISMATCH');
-  if (saved.status === 'approved' && (!saved.approved_by || saved.approved_by === saved.created_by || !saved.approved_by_name || !saved.approved_at
+  // Self-approval is a documented sole-admin exception recorded server-side;
+  // independent approval remains the default path.
+  if (saved.status === 'approved' && (!saved.approved_by || !saved.approved_by_name || !saved.approved_at
     || !saved.review_notes || saved.review_notes.trim().length < 20 || Date.parse(saved.approved_at) < Date.parse(saved.created_at)
     || payload.findings.some(finding => finding.severity === 'error' && finding.count > 0))) throw new Error('FINANCIAL_STATEMENT_INVALID_APPROVAL');
   if (saved.status === 'voided' && (!saved.void_reason || saved.void_reason.trim().length < 10)) throw new Error('FINANCIAL_STATEMENT_INVALID_VOID');

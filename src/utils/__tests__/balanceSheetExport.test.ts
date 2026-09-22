@@ -56,7 +56,6 @@ describe('professional balance sheet export identity and approval', () => {
     ['fingerprint', (options: BalanceSheetExportOptions) => { options.snapshot!.source_fingerprint = 'different'; }],
     ['payload', (options: BalanceSheetExportOptions) => { options.snapshot!.payload.accounts[0].balance += 1; }],
     ['identity', (options: BalanceSheetExportOptions) => { options.snapshot!.payload.company.name = 'Other company'; }],
-    ['same actor', (options: BalanceSheetExportOptions) => { options.snapshot!.approved_by = options.snapshot!.created_by; }],
     ['missing approval time', (options: BalanceSheetExportOptions) => { options.snapshot!.approved_at = null; }],
     ['invalid approval time', (options: BalanceSheetExportOptions) => { options.snapshot!.approved_at = 'bad-date'; }],
     ['backdated approval', (options: BalanceSheetExportOptions) => { options.snapshot!.approved_at = '2026-09-17T10:00:00Z'; }],

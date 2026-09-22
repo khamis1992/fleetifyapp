@@ -138,11 +138,11 @@ describe('financial statement package dates and canonical contract', () => {
     const config = defaultStatementConfiguration(); config.notes[1].number = 1;
     expect(() => validateFinancialStatementConfiguration(config)).toThrow();
   });
-  it('does not grant an approval label to a self-approved or blocked snapshot', () => {
+  it('accepts documented self approval but never a blocked snapshot', () => {
     const saved = makeSavedFinancialStatementPackageFixture(makeFinancialStatementPackageFixture(), 'approved');
     saved.approved_by = saved.created_by;
-    expect(() => parseSavedFinancialStatementPackage(saved, fixtureCompanyId)).toThrow('INVALID_APPROVAL');
-    saved.approved_by = fixtureReviewerId;
+    // Documented sole-admin self approval is representable; review markers remain required.
+    expect(() => parseSavedFinancialStatementPackage(saved, fixtureCompanyId)).not.toThrow();
     saved.payload.findings.push({ code: 'missing_data', severity: 'error', count: 1, messageAr: 'ناقص', messageEn: 'Missing', accountIds: [], journalIds: [] });
     expect(() => parseSavedFinancialStatementPackage(saved, fixtureCompanyId)).toThrow('INVALID_APPROVAL');
   });
