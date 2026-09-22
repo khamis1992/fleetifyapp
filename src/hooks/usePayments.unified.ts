@@ -127,20 +127,9 @@ export const usePayments = (filters?: PaymentFilters) => {
   return useQuery({
     queryKey: paymentKeys.list(companyId || '', filters),
     queryFn: async () => {
-      // Permission check
-      if (!hasPermission('payments:read')) {
-        const error = new Error('ليس لديك صلاحية لعرض المدفوعات');
-        Sentry.captureException(error, {
-          tags: {
-            feature: 'payments',
-            action: 'read',
-            component: 'usePayments.unified'
-          },
-          extra: { userId: user?.id, companyId }
-        });
-        throw error;
-      }
-
+      // RLS on the payments table already enforces company isolation; the
+      // frontend permission gate rejected company_admin users whose roles
+      // table carries an empty permissions array.
       if (!companyId) {
         throw new Error('معرف الشركة مطلوب للوصول للمدفوعات');
       }

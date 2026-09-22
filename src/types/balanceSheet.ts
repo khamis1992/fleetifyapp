@@ -59,7 +59,7 @@ export interface BalanceSheetCheck {
   count: number;
   asOfDate: string;
   /** Entity payload (account ids/codes, draft journal ids/numbers) powering check actions. */
-  detail?: BalanceSheetCheckDetailEntry[];
+  detail?: BalanceSheetCheckDetailEntry[] | null;
 }
 
 export interface ProfessionalBalanceSheet {

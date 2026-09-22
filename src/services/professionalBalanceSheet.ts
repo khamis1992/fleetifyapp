@@ -87,6 +87,7 @@ export const professionalBalanceSheetSchema = z.object({
             balance: money.optional(),
           })
         )
+        .nullable()
         .optional(),
     })
   ),
