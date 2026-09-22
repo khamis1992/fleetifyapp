@@ -82,7 +82,7 @@ export const professionalBalanceSheetSchema = z.object({
         .array(
           z.object({
             id: z.string(),
-            code: z.string(),
+            code: z.string().optional(),
             number: z.string().optional(),
             balance: money.optional(),
           })

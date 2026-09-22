@@ -48,7 +48,7 @@ export interface BalanceSheetTotals {
 
 export interface BalanceSheetCheckDetailEntry {
   id: string;
-  code: string;
+  code?: string;
   number?: string;
   balance?: number;
 }

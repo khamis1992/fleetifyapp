@@ -31,8 +31,7 @@ export default function ExpensesPage() {
     enabled: Boolean(companyId),
     queryFn: async () => {
       if (!companyId) throw new Error('No company access');
-      // Two-step fetch avoids embedded chart filters (a known PostgREST
-      // fragility): resolve expense account ids first, then their lines.
+      // Step 1: expense account ids.
       const { data: accountRows, error: accountsError } = await supabase
         .from('chart_of_accounts')
         .select('id, account_code, account_name, account_name_ar')
@@ -42,33 +41,43 @@ export default function ExpensesPage() {
       if (accountsError) throw accountsError;
       const ids = (accountRows || []).map(row => row.id);
       if (!ids.length) return [] as ExpenseRow[];
-      const { data, error } = await supabase
+      // Step 2: recent lines on those accounts (plain column filters only —
+      // no embedded join that PostgREST rejects with HTTP 400).
+      const { data: lines, error: linesError } = await supabase
         .from('journal_entry_lines')
-        .select(
-          'id, debit_amount, account_id, journal_entries!inner(id, entry_date, entry_number, description, company_id, status)'
-        )
-        .eq('journal_entries.company_id', companyId)
-        .eq('journal_entries.status', 'posted')
+        .select('id, debit_amount, account_id, journal_entry_id')
         .in('account_id', ids)
         .gt('debit_amount', 0)
-        .order('journal_entries.entry_date', { ascending: false, referencedTable: 'journal_entries' })
+        .order('created_at', { ascending: false })
         .limit(30);
-      if (error) throw error;
+      if (linesError) throw linesError;
+      if (!lines || lines.length === 0) return [] as ExpenseRow[];
+      // Step 3: fetch the parent entries (plain filter on journal_entries).
+      const jeIds = [...new Set(lines.map(row => String(row.journal_entry_id)))];
+      const { data: jeRows, error: jeError } = await supabase
+        .from('journal_entries')
+        .select('id, entry_date, entry_number, description')
+        .eq('company_id', companyId)
+        .eq('status', 'posted')
+        .in('id', jeIds);
+      if (jeError) throw jeError;
+      const jeMap = new Map((jeRows || []).map(row => [row.id, row]));
       const byId = new Map((accountRows || []).map(row => [row.id, row]));
-      return (data || []).map((row: Record<string, unknown>) => {
-        const entry = row.journal_entries as Record<string, string>;
+      return lines.map(row => {
+        const entry = jeMap.get(String(row.journal_entry_id));
+        if (!entry) return null;
         const account = byId.get(String(row.account_id));
         return {
-          id: row.id as string,
-          entry_date: entry.entry_date,
-          entry_number: entry.entry_number,
-          description: entry.description,
+          id: String(row.id),
+          entry_date: (entry as Record<string, string>).entry_date,
+          entry_number: (entry as Record<string, string>).entry_number,
+          description: (entry as Record<string, string>).description,
           amount: Number(row.debit_amount || 0),
           account_code: account?.account_code ?? '',
           account_name: account?.account_name ?? null,
           account_name_ar: account?.account_name_ar ?? null,
         };
-      }) as ExpenseRow[];
+      }).filter(Boolean) as ExpenseRow[];
     },
   });
 
