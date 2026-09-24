@@ -14,7 +14,7 @@ export function FinanceContextActions({ ids }: { ids: string[] }) {
   return (
     <nav className="mb-5 flex flex-wrap gap-2" aria-label="أدوات الصفحة">
       {actions.map((item) => (
-        <Button key={item.id} variant="outline" size="sm" asChild>
+        <Button key={item.id} variant="outline" className="h-10" asChild>
           <Link to={item.href}>
             {item[language]}
             <ArrowUpLeft className="ms-2 h-4 w-4" aria-hidden="true" />

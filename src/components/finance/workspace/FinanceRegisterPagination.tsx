@@ -23,6 +23,7 @@ export function FinanceRegisterPagination({
           type="button"
           variant="outline"
           size="sm"
+          className="min-w-20"
           disabled={page <= 1}
           onClick={() => setPage(page - 1)}
         >
@@ -32,6 +33,7 @@ export function FinanceRegisterPagination({
           type="button"
           variant="outline"
           size="sm"
+          className="min-w-20"
           disabled={page >= pages}
           onClick={() => setPage(page + 1)}
         >
