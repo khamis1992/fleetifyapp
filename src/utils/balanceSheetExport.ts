@@ -1,6 +1,13 @@
 import type { BalanceSheetExportOptions, BalanceSheetLocale, SavedBalanceSheet } from '@/types/balanceSheet';
 import { sanitizeDocumentHtmlToFragment } from '@/utils/htmlSanitizer';
-import { formatBalanceSheetMoney, getBalanceSheetCheckMessage, getBalanceSheetRows } from './balanceSheetPresentation';
+import { exportArabicReportPdf, formatPdfMoney } from './arabicReportPdf';
+import {
+  formatBalanceSheetMoney,
+  formatPublishedMoney,
+  getBalanceSheetCheckMessage,
+  getBalanceSheetRows,
+  getPublishedBalanceSheetRows,
+} from './balanceSheetPresentation';
 
 const copy = {
   ar: {
@@ -77,11 +84,16 @@ export function getBalanceSheetExportStatus(options: BalanceSheetExportOptions):
 }
 
 function exportContext(options: BalanceSheetExportOptions) {
-  const { report, locale } = options;
+  const { report, locale, face = 'working' } = options;
   if (!report.company.id?.trim() || !(report.company.nameAr || report.company.name)?.trim()
     || !report.fingerprint?.trim() || !/^\d{4}-\d{2}-\d{2}$/.test(report.asOfDate)) throw new Error('Incomplete balance sheet identity or date');
   if (Boolean(report.comparisonDate) !== Boolean(report.comparison)) throw new Error('Incomplete balance sheet comparison');
-  const rows = getBalanceSheetRows(report, locale);
+  const rows = face === 'published'
+    ? getPublishedBalanceSheetRows(report, locale).map(row => ({
+        key: row.key, label: row.label, note: row.note, kind: row.kind as 'group' | 'subtotal' | 'total',
+        amount: row.amount, comparisonAmount: row.comparisonAmount,
+      }))
+    : getBalanceSheetRows(report, locale);
   if (rows.some(row => [row.amount, row.comparisonAmount].some(value => value !== null && !Number.isFinite(value)))) {
     throw new Error('Invalid balance sheet amount');
   }
@@ -102,7 +114,7 @@ function exportContext(options: BalanceSheetExportOptions) {
     [text.approvedAt, status === 'approved' ? snapshot?.approved_at || '—' : '—'],
     [text.internal, text.approvalBasis],
   ];
-  return { report, locale, rows, snapshot, status, text, name, metadata };
+  return { report, locale, face, rows, snapshot, status, text, name, metadata };
 }
 
 const styles = `
@@ -145,14 +157,21 @@ const styles = `
 .balance-sheet-document .bs-footer{flex:none;border-top:1px solid #9caeba;padding-top:7px;font-size:9px;line-height:1.5;overflow-wrap:anywhere}
 .balance-sheet-document .bs-footer-top{display:flex;justify-content:space-between;gap:12px;font-weight:700}
 .balance-sheet-document .bs-fingerprint{direction:ltr;unicode-bidi:embed;font-family:monospace;font-size:9px}
+.balance-sheet-document .bs-table-published{font-size:12px}
+.balance-sheet-document .bs-table-published td{padding:7px 8px}
+.balance-sheet-document .bs-row-published .bs-label{font-weight:400}
+.balance-sheet-document .bs-row-total{background:#eef4e7;font-weight:700;border-top:2px double #203d50}
 @media print{html,body{margin:0!important;padding:0!important;background:#fff!important}.balance-sheet-document{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
 `;
 
 /** Safe standalone HTML for preview and inspection; actual export measures it into A4 pages. */
 export function buildBalanceSheetDocument(options: BalanceSheetExportOptions): string {
-  const { report, rows, snapshot, status, text, name, metadata } = exportContext(options);
+  const { report, face, rows, snapshot, status, text, name, metadata } = exportContext(options);
   const comparison = report.comparisonDate !== null;
-  const money = (amount: number | null) => amount === null ? '' : escape(formatBalanceSheetMoney(amount, report.company.currency, options.locale));
+  const published = face === 'published';
+  const money = (amount: number | null) => amount === null ? '' : escape(published
+    ? formatPublishedMoney(amount, options.locale)
+    : formatBalanceSheetMoney(amount, report.company.currency, options.locale));
   const header = `<header class="bs-header">
     <div class="bs-company">${escape(name)}</div>
     <div class="bs-identity">${escape(text.register)}: ${escape(report.company.commercialRegister || '—')}${report.company.address ? `<br>${escape(report.company.address)}` : ''}</div>
@@ -160,9 +179,17 @@ export function buildBalanceSheetDocument(options: BalanceSheetExportOptions): s
     <div class="bs-dates"><span>${escape(text.asOf)} <b dir="ltr">${escape(report.asOfDate)}</b></span>${comparison ? `<span>${escape(text.comparison)} <b dir="ltr">${escape(report.comparisonDate)}</b></span>` : ''}</div>
     <div class="bs-status bs-status-${status}">${escape(text[status])}</div>
   </header>`;
-  const table = `<table class="bs-table"><colgroup><col style="width:13%"><col style="width:${comparison ? 43 : 61}%"><col style="width:${comparison ? 22 : 26}%">${comparison ? '<col style="width:22%">' : ''}</colgroup>
-    <thead><tr><th>${escape(text.code)}</th><th>${escape(text.account)}</th><th>${escape(text.asOf)}<br>${escape(report.asOfDate)}</th>${comparison ? `<th>${escape(text.comparison)}<br>${escape(report.comparisonDate)}</th>` : ''}</tr></thead>
-    <tbody>${rows.map(row => `<tr class="bs-row-${row.kind}"><td class="bs-code">${escape(row.code || '')}</td><td class="bs-label">${escape(row.label)}</td><td class="bs-money">${money(row.amount)}</td>${comparison ? `<td class="bs-money">${money(row.comparisonAmount)}</td>` : ''}</tr>`).join('')}</tbody></table>`;
+  const publishedRow = (row: { note?: number; label: string; kind: string; amount: number | null; comparisonAmount: number | null }) =>
+    `<tr class="bs-row-${row.kind === 'total' ? 'total' : 'group'} bs-row-published"><td class="bs-label">${escape(row.label)}</td><td class="bs-code">${row.note != null ? escape(options.locale === 'ar' ? `إيضاح ${row.note}` : `Note ${row.note}`) : ''}</td><td class="bs-money">${money(row.amount)}</td>${comparison ? `<td class="bs-money">${money(row.comparisonAmount)}</td>` : ''}</tr>`;
+  const workingRow = (row: { code?: string; label: string; kind: string; amount: number | null; comparisonAmount: number | null }) =>
+    `<tr class="bs-row-${row.kind}"><td class="bs-code">${escape(row.code || '')}</td><td class="bs-label">${escape(row.label)}</td><td class="bs-money">${money(row.amount)}</td>${comparison ? `<td class="bs-money">${money(row.comparisonAmount)}</td>` : ''}</tr>`;
+  const table = published
+    ? `<table class="bs-table bs-table-published"><colgroup><col style="width:${comparison ? 56 : 74}%"><col style="width:12%"><col style="width:${comparison ? 16 : 14}%">${comparison ? '<col style="width:16%">' : ''}</colgroup>
+      <thead><tr><th>${escape(text.account)}</th><th>${escape(options.locale === 'ar' ? 'الإيضاح' : 'Note')}</th><th>${escape(text.asOf)}<br>${escape(report.asOfDate)}</th>${comparison ? `<th>${escape(text.comparison)}<br>${escape(report.comparisonDate)}</th>` : ''}</tr></thead>
+      <tbody>${rows.map(row => publishedRow(row as never)).join('')}</tbody></table>`
+    : `<table class="bs-table"><colgroup><col style="width:13%"><col style="width:${comparison ? 43 : 61}%"><col style="width:${comparison ? 22 : 26}%">${comparison ? '<col style="width:22%">' : ''}</colgroup>
+      <thead><tr><th>${escape(text.code)}</th><th>${escape(text.account)}</th><th>${escape(text.asOf)}<br>${escape(report.asOfDate)}</th>${comparison ? `<th>${escape(text.comparison)}<br>${escape(report.comparisonDate)}</th>` : ''}</tr></thead>
+      <tbody>${rows.map(row => workingRow(row as never)).join('')}</tbody></table>`;
   const note = (value: string, className = '') => `<p class="bs-note ${className}">${escape(value)}</p>`;
   const notes = `<section class="bs-notes"><h2 class="bs-note">${escape(text.basis)}</h2>
     ${note(text.basisText)}${note(text.resultText)}${note(text.reviewText)}${note(text.approvalBasis)}
@@ -374,10 +401,11 @@ export function safeBalanceSheetSpreadsheetText(value: unknown): string {
 
 export async function buildBalanceSheetWorkbook(options: BalanceSheetExportOptions) {
   const { default: ExcelJS } = await import('exceljs');
-  const { report, rows, metadata, snapshot, status, text, name } = exportContext(options);
+  const { report, face, rows, metadata, snapshot, status, text, name } = exportContext(options);
   const workbook = new ExcelJS.Workbook();
   workbook.creator = name || ''; workbook.created = new Date(report.generatedAt);
   const comparison = report.comparisonDate !== null;
+  const published = face === 'published';
   const numberFormat = '#,##0.00;[Red](#,##0.00);0.00';
   const setText = (value: string) => safeBalanceSheetSpreadsheetText(value);
   const sheet = workbook.addWorksheet(text.statementSheet, {
@@ -391,10 +419,17 @@ export async function buildBalanceSheetWorkbook(options: BalanceSheetExportOptio
     sheet.getRow(index + 1).alignment = { wrapText: true, vertical: 'middle' };
     sheet.getRow(index + 1).height = index === 4 ? 30 : 25;
   });
-  sheet.addRow([text.code, text.account, `${text.asOf} ${report.asOfDate}`, ...(comparison ? [`${text.comparison} ${report.comparisonDate}`] : [])]);
-  sheet.columns = [{ width: 19 }, { width: 65 }, { width: 26 }, ...(comparison ? [{ width: 26 }] : [])];
+  sheet.addRow([
+    ...(published ? [text.account, options.locale === 'ar' ? 'الإيضاح' : 'Note'] : [text.code, text.account]),
+    `${text.asOf} ${report.asOfDate}`, ...(comparison ? [`${text.comparison} ${report.comparisonDate}`] : []),
+  ]);
+  sheet.columns = [{ width: published ? 60 : 19 }, { width: published ? 12 : 65 }, { width: 26 }, ...(comparison ? [{ width: 26 }] : [])];
   rows.forEach(item => {
-    const row = sheet.addRow([setText(item.code || ''), setText(item.label), item.amount, ...(comparison ? [item.comparisonAmount] : [])]);
+    const publishedItem = item as { note?: number };
+    const first = published ? setText(item.label) : setText((item as { code?: string }).code || '');
+    const row = published
+      ? sheet.addRow([setText(item.label), publishedItem.note != null ? setText(options.locale === 'ar' ? `إيضاح ${publishedItem.note}` : `Note ${publishedItem.note}`) : '', item.amount, ...(comparison ? [item.comparisonAmount] : [])])
+      : sheet.addRow([first, setText(item.label), item.amount, ...(comparison ? [item.comparisonAmount] : [])]);
     row.alignment = { wrapText: true, vertical: 'top' };
     row.getCell(3).numFmt = numberFormat; if (comparison) row.getCell(4).numFmt = numberFormat;
     if (item.kind !== 'account') {
@@ -442,4 +477,95 @@ export async function exportBalanceSheetExcel(options: BalanceSheetExportOptions
   const link = document.createElement('a'); link.href = url; link.download = fileName(options, 'xlsx');
   document.body.appendChild(link);
   try { link.click(); } finally { link.remove(); URL.revokeObjectURL(url); }
+}
+
+/**
+ * Text-based Arabic PDF for the balance sheet: vector, selectable Amiri text
+ * with the same rows and status the raster/Excel exports produce.
+ */
+export async function exportBalanceSheetArabicPdf(options: BalanceSheetExportOptions): Promise<void> {
+  const { report, face = 'working', locale } = options;
+  const { snapshot, status, text } = exportContext(options);
+  const comparison = report.comparisonDate !== null;
+  const published = face === 'published';
+  const name = locale === 'ar' ? report.company.nameAr || report.company.name : report.company.name || report.company.nameAr;
+  const ar = locale === 'ar';
+
+  const statementRow = (
+    label: string, noteOrCode: string, amount: number | null, comparisonAmount: number | null,
+    kind: 'group' | 'total' | 'account' | 'section' | 'subtotal' | 'result',
+  ) => ({
+    cells: [label, noteOrCode, amount == null ? '' : formatPdfMoney(amount), comparison && comparisonAmount != null ? formatPdfMoney(comparisonAmount) : ''],
+    widths: [42, 10, 24, 24],
+    aligns: ['right', 'center', 'left', 'left'] as ('right' | 'center' | 'left')[],
+    bold: kind === 'total',
+    shading: kind === 'total' ? '#eef2f6' : kind === 'section' ? '#e8eef4' : undefined,
+  });
+
+  const rows = published
+    ? getPublishedBalanceSheetRows(report, locale).map(row =>
+        statementRow(row.label, row.note != null ? (ar ? `????? ${row.note}` : `Note ${row.note}`) : '', row.amount, row.comparisonAmount, row.kind === 'total' ? 'total' : 'group'))
+    : getBalanceSheetRows(report, locale).map(row =>
+        statementRow(row.label, row.code || '', row.amount, row.comparisonAmount, row.kind));
+
+  await exportArabicReportPdf({
+    metadata: {
+      reportTitle: text.title,
+      companyAr: report.company.nameAr || report.company.name,
+      companyEn: report.company.name || report.company.nameAr || '',
+      commercialRegister: report.company.commercialRegister || '�',
+      addressAr: report.company.address || '',
+      currency: report.company.currency || text.unknownCurrency,
+      asOfDate: report.asOfDate,
+      periodStart: report.comparisonDate,
+      status: text[status],
+      sourceFingerprint: report.fingerprint,
+      preparedBy: snapshot ? snapshot.created_by_name || snapshot.created_by : null,
+      approvedBy: status === 'approved' ? snapshot?.approved_by_name || snapshot?.approved_by : null,
+      exportedAt: report.generatedAt,
+    },
+    sections: [
+      {
+        title: ar ? '?????: ????? ?????? ??????' : 'I. Statement of financial position',
+        table: {
+          header: {
+            cells: [text.account, ar ? '???????' : 'Note', `${text.asOf} ${report.asOfDate}`, comparison ? `${text.comparison} ${report.comparisonDate}` : ''],
+            widths: [42, 10, 24, 24],
+            aligns: ['right', 'center', 'left', 'left'],
+          },
+          rows,
+        },
+      },
+      {
+        title: ar ? '??????: ???? ???????' : 'II. Basis of preparation',
+        paragraphs: [
+          text.basisText,
+          text.resultText,
+          text.reviewText,
+          text.approvalBasis,
+          ...(report.checks.length > 0
+            ? [`${ar ? '??????? ??? ????????' : 'Data checks'}:`,
+               ...report.checks.map(check => getBalanceSheetCheckMessage(check, locale))]
+            : [text.noChecks]),
+          ...(snapshot?.notes ? [`${text.notes}: ${snapshot.notes}`] : []),
+          ...(snapshot?.review_notes ? [`${text.reviewNotes}: ${snapshot.review_notes}`] : []),
+        ],
+      },
+      {
+        title: ar ? '??????: ?????? ???????' : 'III. Issue metadata',
+        table: {
+          header: { cells: [text.account, text.message], widths: [35, 65], aligns: ['right', 'right'] },
+          rows: [
+            { cells: [text.id, snapshot?.id || text.preview], widths: [35, 65], aligns: ['right', 'right'] },
+            { cells: [text.fingerprint, report.fingerprint], widths: [35, 65], aligns: ['right', 'left'] },
+            { cells: [text.company, name || ''], widths: [35, 65], aligns: ['right', 'right'] },
+            { cells: [text.register, report.company.commercialRegister || '�'], widths: [35, 65], aligns: ['right', 'right'] },
+            { cells: [text.prepared, snapshot ? snapshot.created_by_name || snapshot.created_by : '�'], widths: [35, 65], aligns: ['right', 'right'] },
+            { cells: [text.reviewed, status === 'approved' ? snapshot?.approved_by_name || snapshot?.approved_by || '�' : '�'], widths: [35, 65], aligns: ['right', 'right'] },
+          ],
+        },
+      },
+    ],
+    footerNote: text.approvalBasis,
+  }, fileName(options, 'pdf'));
 }

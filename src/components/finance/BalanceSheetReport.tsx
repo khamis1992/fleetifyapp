@@ -18,8 +18,8 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { DateField } from "@/components/ui/date-field";
 import { Textarea } from "@/components/ui/textarea";
 import {
   Table,
@@ -52,10 +52,13 @@ import {
 import {
   deriveBalanceSheetIndicators,
   formatBalanceSheetMoney,
+  formatPublishedMoney,
   getBalanceSheetCheckMessage,
   getBalanceSheetRows,
+  getPublishedBalanceSheetRows,
 } from "@/utils/balanceSheetPresentation";
 import {
+  exportBalanceSheetArabicPdf,
   exportBalanceSheetExcel,
   exportBalanceSheetPDF,
   printBalanceSheet,
@@ -123,6 +126,7 @@ function BalanceSheetWorkspace({
     useState<BalanceSheetReviewConfirmations>({ ...emptyConfirmations });
   const [selfAckChecked, setSelfAckChecked] = useState(false);
   const [exporting, setExporting] = useState(false);
+  const [viewMode, setViewMode] = useState<"published" | "working">("published");
   const live = useProfessionalBalanceSheet(asOf, comparison || null);
   const history = useSavedBalanceSheets();
   const actions = useBalanceSheetActions();
@@ -206,9 +210,11 @@ function BalanceSheetWorkspace({
     Object.values(confirmations).every(Boolean) &&
     (canApprove || selfAckChecked);
   const rows = report ? getBalanceSheetRows(report, locale) : [];
+  const publishedRows = report ? getPublishedBalanceSheetRows(report, locale) : [];
   const indicators = report ? deriveBalanceSheetIndicators(report) : null;
   const money = (value: number) =>
     formatBalanceSheetMoney(value, report?.company.currency || "", locale);
+  const publishedMoney = (value: number) => formatPublishedMoney(value, locale);
   // Variance is a reading aid: signed delta versus the comparison column, with the
   // percentage relative to the comparison base when that base is non-zero.
   const varianceText = (amount: number | null, comparison: number | null) => {
@@ -281,12 +287,23 @@ function BalanceSheetWorkspace({
         }
         issuingSnapshot = latest;
       }
+      const exportReport = issuingSnapshot?.payload || report;
       const options = {
-        report: issuingSnapshot?.payload || report,
+        report: exportReport,
         snapshot: issuingSnapshot,
         locale,
+        face: viewMode,
       };
-      if (type === "pdf") await exportBalanceSheetPDF(options);
+      if (type === "pdf") {
+        // Text-based PDF with embedded Amiri: selectable, searchable Arabic —
+        // the accounting-firm output standard. Falls back to the raster path
+        // only if the font cannot be fetched (e.g. fully offline).
+        try {
+          await exportBalanceSheetArabicPdf(options);
+        } catch {
+          await exportBalanceSheetPDF(options);
+        }
+      }
       if (type === "excel") await exportBalanceSheetExcel(options);
       if (type === "print") await printBalanceSheet(options);
     } catch {
@@ -385,8 +402,8 @@ function BalanceSheetWorkspace({
           number="01"
           title={tr("نطاق التقرير والإصدار", "Report scope and issuing")}
           subtitle={tr(
-            "الأصول والالتزامات وحقوق الملكية في تاريخ محدد، مع المقارنة والمراجعة والاعتماد.",
-            "Assets, liabilities and equity at a specified date, with comparison and recorded review."
+            "حدّد بداية النطاق ونهايته: تُعرض أرصدة نهاية النطاق مقابل أرصدة بدايته للمقارنة، مع المراجعة والاعتماد.",
+            "Pick the start and end of the range: end-of-range balances are shown against start-of-range balances, with review and approval."
           )}
           className="wk-panel-full"
           action={<span className={`wk-badge ${statusTone}`}>{status}</span>}
@@ -396,28 +413,26 @@ function BalanceSheetWorkspace({
               <div className="bs-fields">
                 <div className="space-y-2">
                   <Label htmlFor="bs-as-of">
-                    {tr("كما في تاريخ", "As of date")}
+                    {tr("من تاريخ (بداية النطاق)", "From date (range start)")}
                   </Label>
-                  <Input
-                    id="bs-as-of"
-                    type="date"
-                    value={asOf}
-                    max={financeToday()}
-                    onChange={(event) =>
-                      changeDates(event.target.value, comparison)
-                    }
+                  <DateField
+                    value={comparison || undefined}
+                    onChange={(value) => changeDates(asOf, value || "")}
+                    placeholder={tr("اختر بداية النطاق", "Pick range start")}
+                    maxDate={asOf ? new Date(`${asOf}T00:00:00Z`) : new Date()}
+                    className="bs-date-field"
                   />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="bs-comparison">
-                    {tr("تاريخ المقارنة الاختياري", "Comparison date (optional)")}
+                    {tr("إلى تاريخ (نهاية النطاق)", "To date (range end)")}
                   </Label>
-                  <Input
-                    id="bs-comparison"
-                    type="date"
-                    value={comparison}
-                    max={asOf}
-                    onChange={(event) => changeDates(asOf, event.target.value)}
+                  <DateField
+                    value={asOf || undefined}
+                    onChange={(value) => changeDates(value || financeToday(), comparison)}
+                    placeholder={tr("اختر نهاية النطاق", "Pick range end")}
+                    maxDate={new Date()}
+                    className="bs-date-field"
                   />
                 </div>
               </div>
@@ -429,12 +444,26 @@ function BalanceSheetWorkspace({
             >
               <button
                 type="button"
+                aria-pressed={viewMode === "published"}
+                onClick={() => setViewMode("published")}
+              >
+                {tr("وجه النشر", "Published face")}
+              </button>
+              <button
+                type="button"
+                aria-pressed={viewMode === "working"}
+                onClick={() => setViewMode("working")}
+              >
+                {tr("ورقة العمل التفصيلية", "Detailed working paper")}
+              </button>
+              <button
+                type="button"
                 onClick={() => {
                   const year = Number(financeToday().slice(0, 4)) - 1;
                   changeDates(`${year}-12-31`, `${year - 1}-12-31`);
                 }}
               >
-                {tr("نهاية السنة السابقة", "Previous year end")}
+                {tr("السنة السابقة كاملة", "Previous full year")}
               </button>
               <button
                 type="button"
@@ -447,11 +476,11 @@ function BalanceSheetWorkspace({
                   changeDates(cutoff, `${Number(cutoff.slice(0, 4)) - 1}-12-31`);
                 }}
               >
-                {tr("نهاية الشهر السابق", "Previous month end")}
+                {tr("من بداية السنة حتى نهاية الشهر السابق", "Year start to previous month end")}
               </button>
               {comparison && (
                 <button type="button" onClick={() => changeDates(asOf, "")}>
-                  {tr("إلغاء المقارنة", "Remove comparison")}
+                  {tr("بدون بداية (نقطة زمنية فقط)", "No range start (point in time)")}
                 </button>
               )}
             </div>
@@ -519,8 +548,8 @@ function BalanceSheetWorkspace({
             {!datesValid && (
               <p role="alert" className="is-error">
                 {tr(
-                  "حدد تاريخًا صحيحًا حتى اليوم، ومقارنة بتاريخ أسبق.",
-                  "Choose a valid date up to today, with an earlier comparison date."
+                  "بداية النطاق يجب أن تكون أسبق من نهايته، والنهاية حتى تاريخ اليوم.",
+                  "The range start must be earlier than its end, and the end cannot be after today."
                 )}
               </p>
             )}
@@ -580,7 +609,7 @@ function BalanceSheetWorkspace({
                   </strong>
                   <div className="dw-metric-bottom">
                     <small>
-                      {tr("كما في", "As of")} <bdi>{report.asOfDate}</bdi>
+                      {tr("نهاية النطاق", "End of range")} <bdi>{report.asOfDate}</bdi>
                     </small>
                   </div>
                 </div>
@@ -752,6 +781,63 @@ function BalanceSheetWorkspace({
               className="wk-panel-full"
             >
               <div className="wk-table-wrap bs-statement">
+                {viewMode === "published" ? (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="text-start">
+                        {tr("البند", "Item")}
+                      </TableHead>
+                      <TableHead className="text-start">
+                        {tr("الإيضاح", "Note")}
+                      </TableHead>
+                      <TableHead className="bs-num">
+                        {tr("الرصيد في نهاية النطاق", "End of range")}{" "}
+                        <bdi>{report.asOfDate}</bdi>
+                      </TableHead>
+                      {report.comparisonDate && (
+                        <TableHead className="bs-num">
+                          {tr("الرصيد في بداية النطاق", "Start of range")}{" "}
+                          <bdi>{report.comparisonDate}</bdi>
+                        </TableHead>
+                      )}
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {publishedRows.map((row) => (
+                      <TableRow
+                        key={row.key}
+                        className={row.kind === "total" ? "bs-total bs-total-published" : "bs-published-row"}
+                      >
+                        <TableCell className="min-w-40">
+                          {row.label}
+                        </TableCell>
+                        <TableCell>
+                          {row.note != null ? (
+                            <bdi>{tr(`إيضاح ${row.note}`, `Note ${row.note}`)}</bdi>
+                          ) : (
+                            ""
+                          )}
+                        </TableCell>
+                        <TableCell className="bs-num">
+                          <bdi>
+                            {row.amount == null ? "" : publishedMoney(row.amount)}
+                          </bdi>
+                        </TableCell>
+                        {report.comparisonDate && (
+                          <TableCell className="bs-num">
+                            <bdi>
+                              {row.comparisonAmount == null
+                                ? ""
+                                : publishedMoney(row.comparisonAmount)}
+                            </bdi>
+                          </TableCell>
+                        )}
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+                ) : (
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -762,10 +848,12 @@ function BalanceSheetWorkspace({
                         {tr("الحساب", "Account")}
                       </TableHead>
                       <TableHead className="bs-num">
+                        {tr("الرصيد في نهاية النطاق", "End of range")}{" "}
                         <bdi>{report.asOfDate}</bdi>
                       </TableHead>
                       {report.comparisonDate && (
                         <TableHead className="bs-num">
+                          {tr("الرصيد في بداية النطاق", "Start of range")}{" "}
                           <bdi>{report.comparisonDate}</bdi>
                         </TableHead>
                       )}
@@ -823,12 +911,22 @@ function BalanceSheetWorkspace({
                     ))}
                   </TableBody>
                 </Table>
+                )}
               </div>
               <p className="wk-more-note">
-                {tr(
-                  "النتيجة غير المقفلة هي صافي أرصدة الإيرادات والمصروفات المتبقية حتى تاريخ القائمة، وقد تشمل سنوات سابقة. قيود الإقفال والعكس المرحلة مشمولة بحسب تاريخها.",
-                  "Unclosed results are the remaining cumulative revenue and expense balances, which may include prior years. Posted closing and reversal entries are included by their accounting dates."
-                )}
+                {viewMode === "published"
+                  ? tr(
+                      "وجه النشر يعرض بنودًا مجمعة بدون رموز حسابات، والأرقام السالبة بين قوسين. رمز العملة يذكر مرة واحدة: العملة " +
+                        (report.company.currency || "غير محددة") +
+                        ". التفاصيل الحسابية في «ورقة العمل التفصيلية».",
+                      "The published face shows aggregated captions without account codes; negatives appear in parentheses. The currency is stated once: " +
+                        (report.company.currency || "unspecified") +
+                        ". Full account detail is in the detailed working paper."
+                    )
+                  : tr(
+                      "النتيجة غير المقفلة هي صافي أرصدة الإيرادات والمصروفات المتبقية حتى تاريخ القائمة، وقد تشمل سنوات سابقة. قيود الإقفال والعكس المرحلة مشمولة بحسب تاريخها.",
+                      "Unclosed results are the remaining cumulative revenue and expense balances, which may include prior years. Posted closing and reversal entries are included by their accounting dates."
+                    )}
               </p>
             </PagePanel>
 
@@ -865,6 +963,27 @@ function BalanceSheetWorkspace({
                           "unclassified_accounts",
                           "missing_account_subtype",
                         ]);
+                        const journalActionCodes = new Set([
+                          "malformed_journal_lines",
+                          "insufficient_journal_lines",
+                          "unbalanced_journals",
+                          "journal_header_mismatch",
+                          "invalid_reversal_link",
+                        ]);
+                        const scopeLabel =
+                          check.scope === "comparison_only"
+                            ? tr(
+                                "(ملاحظة خاصة بعمود بداية النطاق)",
+                                "(range-start column finding)"
+                              )
+                            : check.scope === "current_register"
+                            ? tr(
+                                "(فحص بيانات حالية — ليس رصيد تاريخي)",
+                                "(current-register data check, not a historical balance)"
+                              )
+                            : "";
+                        // The server stamps each check row with its scope;
+                        // comparison-only rows are labeled in the UI below.
                         return (
                           <li
                             key={`${check.code}:${check.asOfDate}:${index}`}
@@ -888,6 +1007,9 @@ function BalanceSheetWorkspace({
                                 : tr("يتطلب مراجعة", "Review required")}
                             </strong>{" "}
                             — {getBalanceSheetCheckMessage(check, locale)}
+                            {scopeLabel && (
+                              <em className="bs-check-scope"> {scopeLabel}</em>
+                            )}
                           </span>
                           <span className="bs-check-actions">
                             {classifyCodes.has(check.code) &&
@@ -915,6 +1037,18 @@ function BalanceSheetWorkspace({
                                   )}
                                 </Link>
                               )}
+                            {check.code === "legacy_posting_accounts" &&
+                              accountEntries.slice(0, 4).map((entry) => (
+                                <Link
+                                  key={entry.id}
+                                  className="dw-button"
+                                  style={{ minHeight: 30, padding: "0 10px", fontSize: 11 }}
+                                  to={`/finance/chart-of-accounts?focus=${entry.id}`}
+                                >
+                                  {tr("راجع الحساب", "Review account")}{" "}
+                                  <bdi>{entry.code}</bdi>
+                                </Link>
+                              ))}
                             {check.code === "negative_asset_balances" && (
                               <NegativeExplanationEditor
                                 check={check}
@@ -943,6 +1077,18 @@ function BalanceSheetWorkspace({
                                 )}
                               </Link>
                             )}
+                            {journalActionCodes.has(check.code) && (
+                              <Link
+                                className="dw-button"
+                                style={{ minHeight: 30, padding: "0 10px", fontSize: 11 }}
+                                to="/finance/journal-entries?status=posted"
+                              >
+                                {tr(
+                                  "أعرض القيود المرحلة",
+                                  "Show posted entries"
+                                )}
+                              </Link>
+                            )}
                             {(check.code.startsWith("current_vehicles") ||
                               check.code === "no_fixed_asset_movements") && (
                               <>
@@ -966,6 +1112,19 @@ function BalanceSheetWorkspace({
                                 </Link>
                               </>
                             )}
+                            {(check.code === "missing_company_identity" ||
+                              check.code === "missing_company_currency") && (
+                              <Link
+                                className="dw-button"
+                                style={{ minHeight: 30, padding: "0 10px", fontSize: 11 }}
+                                to="/finance/settings"
+                              >
+                                {tr(
+                                  "استكمل بيانات الشركة",
+                                  "Complete company data"
+                                )}
+                              </Link>
+                            )}
                             {journalEntries.length > 0 && (
                               <span className="bs-check-ref">
                                 <bdi>
@@ -974,12 +1133,15 @@ function BalanceSheetWorkspace({
                                     .map((entry) => entry.number)
                                     .join("، ")}
                                 </bdi>
-                                {journalEntries.length > 3
-                                  ? ` ${tr(
-                                      `و${journalEntries.length - 3} أخرى`,
-                                      `+${journalEntries.length - 3} more`
-                                    )}`
-                                  : ""}
+                                {journalEntries.length > 3 &&
+                                  ` ${tr(
+                                    `و${journalEntries.length.toLocaleString(
+                                      "ar-QA"
+                                    )} قيد إجمالاً`,
+                                    `— ${journalEntries.length.toLocaleString(
+                                      "en-QA"
+                                    )} entries in total`
+                                  )}`}
                               </span>
                             )}
                           </span>

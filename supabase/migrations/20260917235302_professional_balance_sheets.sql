@@ -211,39 +211,71 @@ WITH entries AS MATERIALIZED (
     COALESCE(sum(balance) FILTER (WHERE type='revenue'),0) AS revenue,
     COALESCE(sum(balance) FILTER (WHERE type='expense'),0) AS expenses
   FROM accounts
-), diagnostics AS (
-  SELECT 'malformed_journal_lines' AS code, 'error' AS severity, count(*) AS n FROM source_lines
-    WHERE status='posted' AND (debit_amount::text IN ('NaN','Infinity','-Infinity')
-      OR credit_amount::text IN ('NaN','Infinity','-Infinity') OR debit<0 OR credit<0
-      OR (debit>0 AND credit>0) OR (debit=0 AND credit=0))
-  UNION ALL SELECT 'insufficient_journal_lines','error',count(*) FROM entry_totals WHERE n<2
-  UNION ALL SELECT 'unbalanced_journals','error',count(*) FROM entry_totals WHERE debit<>credit
-  UNION ALL SELECT 'journal_header_mismatch','error',count(*) FROM entry_totals
-    WHERE total_debit IS NULL OR total_credit IS NULL
-      OR total_debit::text IN ('NaN','Infinity','-Infinity') OR total_credit::text IN ('NaN','Infinity','-Infinity')
-      OR total_debit<>debit OR total_credit<>credit
-  UNION ALL SELECT 'invalid_ledger_accounts','error',count(*) FROM source_lines WHERE status='posted' AND owned_account_id IS NULL
-  UNION ALL SELECT 'unknown_account_types','error',count(*) FROM accounts WHERE type='unknown' AND movements>0
-  UNION ALL SELECT 'unclassified_accounts','error',count(*) FROM accounts
-    WHERE type IN ('asset','liability') AND classification='unclassified' AND balance<>0
-  UNION ALL SELECT 'balance_sheet_imbalance','error',count(*) FROM totals
-    WHERE assets-liabilities-equity_accounts-revenue+expenses<>0
-  UNION ALL SELECT 'legacy_posting_accounts','warning',count(*) FROM accounts
-    WHERE movements>0 AND (is_header OR level IS NULL OR level<3)
-  UNION ALL SELECT 'negative_asset_balances','warning',count(*) FROM accounts
-    WHERE type='asset' AND balance<0 AND COALESCE(lower(btrim(subtype)),'') NOT IN
-      ('contra_current_asset','contra_non_current_asset','accumulated_depreciation','accumulated_amortization','allowance_for_doubtful_accounts')
-  UNION ALL SELECT 'draft_entries','warning',count(*) FROM entries WHERE status IN ('draft','under_review','approved')
-  UNION ALL SELECT 'reversals_after_date','warning',count(*) FROM entries
-    WHERE status IN ('posted','reversed') AND (reversal_date>p_as_of OR reversed_at::date>p_as_of)
-  UNION ALL SELECT 'legacy_reversed_entries','error',count(*) FROM entries WHERE status='reversed'
-  UNION ALL SELECT 'invalid_reversal_link','error',count(*) FROM entries WHERE reversal_entry_id IS NOT NULL AND reversal_id IS NULL
-  UNION ALL SELECT 'no_posted_entries','error',CASE WHEN EXISTS(SELECT 1 FROM entries WHERE status='posted') THEN 0 ELSE 1 END
-  UNION ALL SELECT 'no_expense_movements','warning',CASE WHEN EXISTS(SELECT 1 FROM accounts WHERE type='expense' AND movements>0) THEN 0 ELSE 1 END
-  UNION ALL SELECT 'no_equity_movements','warning',CASE WHEN EXISTS(SELECT 1 FROM accounts WHERE type='equity' AND movements>0) THEN 0 ELSE 1 END
-  UNION ALL SELECT 'no_fixed_asset_movements','warning',CASE WHEN EXISTS(SELECT 1 FROM accounts
+), check_rows AS (
+  SELECT 'malformed_journal_lines' AS code, 'error' AS severity, count(DISTINCT e.id)::bigint AS n,
+    COALESCE(jsonb_agg(DISTINCT jsonb_build_object('id', e.id, 'number', e.entry_number)),'[]'::jsonb) AS detail
+  FROM source_lines sl JOIN entries e ON e.id = sl.journal_entry_id
+  WHERE sl.status='posted' AND (sl.debit_amount::text IN ('NaN','Infinity','-Infinity')
+    OR sl.credit_amount::text IN ('NaN','Infinity','-Infinity') OR sl.debit<0 OR sl.credit<0
+    OR (sl.debit>0 AND sl.credit>0) OR (sl.debit=0 AND sl.credit=0))
+  UNION ALL
+  SELECT 'insufficient_journal_lines','error',count(*), COALESCE(jsonb_agg(jsonb_build_object('id',id,'number',entry_number) ORDER BY entry_number),'[]'::jsonb)
+  FROM entry_totals WHERE n<2
+  UNION ALL
+  SELECT 'unbalanced_journals','error',count(*), COALESCE(jsonb_agg(jsonb_build_object('id',id,'number',entry_number) ORDER BY entry_number),'[]'::jsonb)
+  FROM entry_totals WHERE debit<>credit
+  UNION ALL
+  SELECT 'journal_header_mismatch','error',count(*), COALESCE(jsonb_agg(jsonb_build_object('id',id,'number',entry_number) ORDER BY entry_number),'[]'::jsonb)
+  FROM entry_totals
+  WHERE total_debit IS NULL OR total_credit IS NULL
+    OR total_debit::text IN ('NaN','Infinity','-Infinity') OR total_credit::text IN ('NaN','Infinity','-Infinity')
+    OR total_debit<>debit OR total_credit<>credit
+  UNION ALL
+  SELECT 'invalid_ledger_accounts','error',count(*), '[]'::jsonb
+  FROM source_lines WHERE status='posted' AND owned_account_id IS NULL
+  UNION ALL
+  SELECT 'unknown_account_types','error',count(*), COALESCE(jsonb_agg(jsonb_build_object('id',id,'code',code) ORDER BY code),'[]'::jsonb)
+  FROM accounts WHERE type='unknown' AND movements>0
+  UNION ALL
+  SELECT 'unclassified_accounts','error',count(*), COALESCE(jsonb_agg(jsonb_build_object('id',id,'code',code) ORDER BY code),'[]'::jsonb)
+  FROM accounts WHERE type IN ('asset','liability') AND classification='unclassified' AND balance<>0
+  UNION ALL
+  SELECT 'balance_sheet_imbalance','error',
+    CASE WHEN EXISTS(SELECT 1 FROM totals WHERE assets-liabilities-equity_accounts-revenue+expenses<>0) THEN 1 ELSE 0 END,
+    '[]'::jsonb
+  UNION ALL
+  SELECT 'legacy_posting_accounts','warning',count(*), COALESCE(jsonb_agg(jsonb_build_object('id',id,'code',code) ORDER BY code),'[]'::jsonb)
+  FROM accounts WHERE movements>0 AND (is_header OR level IS NULL OR level<3)
+  UNION ALL
+  SELECT 'negative_asset_balances','warning',count(*),
+    COALESCE(jsonb_agg(jsonb_build_object('id',id,'code',code,'balance',balance_sheet_private.finite_amount(balance)) ORDER BY code),'[]'::jsonb)
+  FROM accounts
+  WHERE type='asset' AND balance<0 AND COALESCE(lower(btrim(subtype)),'') NOT IN
+    ('contra_current_asset','contra_non_current_asset','accumulated_depreciation','accumulated_amortization','allowance_for_doubtful_accounts')
+  UNION ALL
+  SELECT 'draft_entries','warning',count(*), COALESCE(jsonb_agg(jsonb_build_object('id',id,'number',entry_number) ORDER BY entry_number),'[]'::jsonb)
+  FROM entries WHERE status IN ('draft','under_review','approved')
+  UNION ALL
+  SELECT 'reversals_after_date','warning',count(*), COALESCE(jsonb_agg(jsonb_build_object('id',id,'number',entry_number) ORDER BY entry_number),'[]'::jsonb)
+  FROM entries WHERE status IN ('posted','reversed') AND (reversal_date>p_as_of OR reversed_at::date>p_as_of)
+  UNION ALL
+  SELECT 'legacy_reversed_entries','error',count(*), '[]'::jsonb
+  FROM entries WHERE status='reversed'
+  UNION ALL
+  SELECT 'invalid_reversal_link','error',count(*), COALESCE(jsonb_agg(jsonb_build_object('id',id,'number',entry_number) ORDER BY entry_number),'[]'::jsonb)
+  FROM entries WHERE reversal_entry_id IS NOT NULL AND reversal_id IS NULL
+  UNION ALL
+  SELECT 'no_posted_entries','error',CASE WHEN EXISTS(SELECT 1 FROM entries WHERE status='posted') THEN 0 ELSE 1 END, '[]'::jsonb
+  UNION ALL
+  SELECT 'no_expense_movements','warning',CASE WHEN EXISTS(SELECT 1 FROM accounts WHERE type='expense' AND movements>0) THEN 0 ELSE 1 END, '[]'::jsonb
+  UNION ALL
+  SELECT 'no_equity_movements','warning',CASE WHEN EXISTS(SELECT 1 FROM accounts WHERE type='equity' AND movements>0) THEN 0 ELSE 1 END, '[]'::jsonb
+  UNION ALL
+  SELECT 'no_fixed_asset_movements','warning',CASE WHEN EXISTS(SELECT 1 FROM accounts
     WHERE type='asset' AND movements>0 AND lower(btrim(subtype)) IN
-      ('fixed_asset','fixed_assets','property_plant_equipment','accumulated_depreciation','contra_non_current_asset')) THEN 0 ELSE 1 END
+      ('fixed_asset','fixed_assets','property_plant_equipment','accumulated_depreciation','contra_non_current_asset')) THEN 0 ELSE 1 END, '[]'::jsonb
+), diagnostics AS (
+  SELECT code, severity, n, detail FROM check_rows WHERE n>0
 )
 SELECT jsonb_build_object(
   'accounts',COALESCE((SELECT jsonb_agg(jsonb_build_object('id',id,'code',code,'name',name,'nameAr',name_ar,
@@ -256,7 +288,7 @@ SELECT jsonb_build_object(
     'postedEntries',(SELECT count(*) FROM entries WHERE status='posted'),
     'postedLines',(SELECT count(*) FROM source_lines WHERE status='posted'),
     'draftEntries',(SELECT count(*) FROM entries WHERE status IN ('draft','under_review','approved'))) FROM totals),
-  'checks',COALESCE((SELECT jsonb_agg(jsonb_build_object('code',code,'severity',severity,'count',n,'asOfDate',p_as_of) ORDER BY code)
+  'checks',COALESCE((SELECT jsonb_agg(jsonb_build_object('code',code,'severity',severity,'count',n,'asOfDate',p_as_of,'detail',detail) ORDER BY code)
     FROM diagnostics WHERE n>0),'[]'::jsonb),
   'source',jsonb_build_object(
     'accounts',COALESCE((SELECT jsonb_agg(to_jsonb(a) ORDER BY a.id) FROM account_seed a),'[]'::jsonb),
@@ -268,7 +300,7 @@ $fn$;
 CREATE FUNCTION balance_sheet_private.calculate(p_company uuid,p_as_of date,p_comparison date)
 RETURNS jsonb LANGUAGE plpgsql STABLE SET search_path = '' SET timezone = 'UTC' AS $fn$
 DECLARE v_current jsonb; v_comparison jsonb; v_company jsonb; v_accounts jsonb;
-  v_checks jsonb; v_vehicles jsonb; v_payload jsonb; v_fingerprint text;
+  v_checks jsonb; v_merged jsonb; v_vehicles jsonb; v_payload jsonb; v_fingerprint text;
 BEGIN
   IF p_as_of IS NULL OR NOT isfinite(p_as_of) OR p_as_of < DATE '0001-01-01' OR p_as_of > (CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Qatar')::date
     OR (p_comparison IS NOT NULL AND (NOT isfinite(p_comparison) OR p_comparison < DATE '0001-01-01' OR p_comparison >= p_as_of)) THEN
@@ -280,13 +312,36 @@ BEGIN
   IF v_company IS NULL THEN RAISE EXCEPTION 'Company not found' USING ERRCODE='22023'; END IF;
   v_current:=balance_sheet_private.period(p_company,p_as_of);
   IF p_comparison IS NOT NULL THEN v_comparison:=balance_sheet_private.period(p_company,p_comparison); END IF;
-  v_checks:=(v_current->'checks') || COALESCE(v_comparison->'checks','[]'::jsonb);
+  -- Merge: one row per check code. The current period wins; a comparison row is
+  -- kept only when its finding differs from the current period, so the reviewer
+  -- sees "this finding also/only exists at the range start" instead of a
+  -- duplicated list. scope lets the UI label each row's origin.
+  WITH current_rows AS (
+    SELECT c->>'code' AS code, c FROM jsonb_array_elements(v_current->'checks') c
+  ), comparison_rows AS (
+    SELECT c->>'code' AS code, c FROM jsonb_array_elements(COALESCE(v_comparison->'checks','[]'::jsonb)) c
+  )
+  SELECT COALESCE(jsonb_agg(row_to_merge ORDER BY code),'[]'::jsonb) INTO v_merged
+  FROM (
+    SELECT cr.code,
+      jsonb_build_object('code',cr.code,'severity',cr.c->>'severity','count',(cr.c->>'count')::numeric,
+        'asOfDate',cr.c->>'asOfDate','detail',cr.c->'detail','scope','as_of') AS row_to_merge
+    FROM current_rows cr
+    UNION ALL
+    SELECT cp.code,
+      CASE WHEN EXISTS (SELECT 1 FROM current_rows cr WHERE cr.code=cp.code AND cr.c->>'count'=cp.c->>'count') THEN NULL
+        ELSE jsonb_build_object('code',cp.code,'severity',cp.c->>'severity','count',(cp.c->>'count')::numeric,
+          'asOfDate',cp.c->>'asOfDate','detail',cp.c->'detail','scope','comparison_only') END AS row_to_merge
+    FROM comparison_rows cp
+  ) merged
+  WHERE row_to_merge IS NOT NULL;
+  v_checks:=v_merged;
   IF COALESCE(NULLIF(btrim(v_company->>'name'),''),NULLIF(btrim(v_company->>'nameAr'),'')) IS NULL
     OR NULLIF(btrim(v_company->>'commercialRegister'),'') IS NULL THEN
-    v_checks:=v_checks||jsonb_build_array(jsonb_build_object('code','missing_company_identity','severity','error','count',1,'asOfDate',p_as_of));
+    v_checks:=v_checks||jsonb_build_array(jsonb_build_object('code','missing_company_identity','severity','error','count',1,'asOfDate',p_as_of,'detail','[]'::jsonb,'scope','as_of'));
   END IF;
   IF COALESCE(v_company->>'currency','') !~ '^[A-Z]{3}$' THEN
-    v_checks:=v_checks||jsonb_build_array(jsonb_build_object('code','missing_company_currency','severity','error','count',1,'asOfDate',p_as_of));
+    v_checks:=v_checks||jsonb_build_array(jsonb_build_object('code','missing_company_currency','severity','error','count',1,'asOfDate',p_as_of,'detail','[]'::jsonb,'scope','as_of'));
   END IF;
   -- These are explicitly CURRENT operational-data warnings, never historical asset valuations.
   SELECT jsonb_build_object('missingCost',count(*) FILTER (WHERE purchase_cost IS NULL OR purchase_cost<=0
@@ -296,11 +351,13 @@ BEGIN
   WHERE company_id=p_company AND COALESCE(is_active,true);
   IF (v_vehicles->>'missingCost')::bigint>0 THEN
     v_checks:=v_checks||jsonb_build_array(jsonb_build_object('code','current_vehicles_missing_cost','severity','warning',
-      'count',(v_vehicles->>'missingCost')::bigint,'asOfDate',(CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Qatar')::date));
+      'count',(v_vehicles->>'missingCost')::bigint,'asOfDate',(CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Qatar')::date,
+      'detail','[]'::jsonb,'scope','current_register'));
   END IF;
   IF (v_vehicles->>'missingPurchaseDate')::bigint>0 THEN
     v_checks:=v_checks||jsonb_build_array(jsonb_build_object('code','current_vehicles_missing_purchase_date','severity','warning',
-      'count',(v_vehicles->>'missingPurchaseDate')::bigint,'asOfDate',(CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Qatar')::date));
+      'count',(v_vehicles->>'missingPurchaseDate')::bigint,'asOfDate',(CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Qatar')::date,
+      'detail','[]'::jsonb,'scope','current_register'));
   END IF;
   SELECT COALESCE(jsonb_agg(c.value||jsonb_build_object('comparisonBalance',
     COALESCE((p.value->>'balance')::numeric,0))

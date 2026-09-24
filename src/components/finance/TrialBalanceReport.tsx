@@ -1,6 +1,5 @@
 import { useMemo, useState } from "react";
 import { AlertCircle, Calendar, CheckCircle2, Download, FileSpreadsheet, FileText, Scale } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -8,20 +7,24 @@ import { Label } from "@/components/ui/label";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useCurrencyFormatter } from "@/hooks/useCurrencyFormatter";
+import { useCurrentCompany } from "@/hooks/useCurrentCompany";
+import { useAuth } from "@/contexts/AuthContext";
 import { TrialBalanceItem, useTrialBalance } from "@/hooks/useGeneralLedger";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { buildTrialBalanceReport } from "@/utils/standardFinancialReportRules";
 import {
   exportOfficialFinancialReportToExcel,
-  exportOfficialFinancialReportToPDF,
   type OfficialFinancialReportExportPayload,
 } from "@/utils/officialFinancialReportExport";
+import { exportArabicReportPdf, formatPdfMoney } from "@/utils/arabicReportPdf";
 
 export function TrialBalanceReport() {
   const [asOfDate, setAsOfDate] = useState<string>(new Date().toISOString().split("T")[0]);
   const { data: trialBalanceData, isLoading, error } = useTrialBalance(asOfDate);
   const { formatCurrency } = useCurrencyFormatter();
+  const { user } = useAuth();
+  const { data: company } = useCurrentCompany();
 
   const rows = trialBalanceData || [];
   const totalDebits = rows.reduce((sum, item) => sum + Number(item.debit_balance || 0), 0);
@@ -57,9 +60,15 @@ export function TrialBalanceReport() {
     metadata: {
       reportTitle: "\u0645\u064a\u0632\u0627\u0646 \u0627\u0644\u0645\u0631\u0627\u062c\u0639\u0629",
       reportType: "trial_balance",
-      companyName: "Fleetify",
+      companyName: company?.name || "Fleetify",
+      companyNameAr: company?.name_ar || company?.name || undefined,
+      companyNameEn: company?.name || undefined,
+      commercialRegister: company?.commercial_register || undefined,
+      companyAddressAr: company?.address_ar || company?.address || undefined,
+      companyAddressEn: company?.address || undefined,
+      preparedByName: user?.email || undefined,
       asOfDate,
-      currency: "QAR",
+      currency: company?.currency || "QAR",
       exportedAt: new Date().toISOString(),
       status: isBalanced ? "published" : "draft",
       sourceFingerprint: auditReport.sourceFingerprint,
@@ -161,19 +170,82 @@ export function TrialBalanceReport() {
     }
 
     try {
-      await exportOfficialFinancialReportToPDF(buildOfficialPayload());
-      toast.success("\u062a\u0645 \u062a\u0635\u062f\u064a\u0631 \u0645\u064a\u0632\u0627\u0646 \u0627\u0644\u0645\u0631\u0627\u062c\u0639\u0629 \u0628\u0635\u064a\u063a\u0629 PDF \u0631\u0633\u0645\u064a\u0629");
+      await exportArabicReportPdf(
+        {
+          metadata: {
+            reportTitle: "ميزان المراجعة",
+            companyAr: company?.name_ar || company?.name || "شركة العراف لتأجير السيارات ذ.م.م",
+            companyEn: company?.name || "Alaraf Car Rental LLC",
+            commercialRegister: company?.commercial_register || "146832",
+            addressAr: company?.address_ar || company?.address || "الدوحة - دولة قطر",
+            currency: company?.currency || "QAR",
+            asOfDate,
+            status: isBalanced ? "نشر" : "مسودة",
+            sourceFingerprint: auditReport.sourceFingerprint,
+            preparedBy: user?.email,
+            approvedBy: null,
+            exportedAt: new Date().toISOString(),
+          },
+          sections: [
+            {
+              title: "أولاً: ميزان المراجعة",
+              table: {
+                header: {
+                  cells: ["رمز الحساب", "اسم الحساب", "النوع", "المستوى", "مدين", "دائن"],
+                  widths: [12, 38, 16, 10, 12, 12],
+                  aligns: ["right", "right", "right", "center", "left", "left"],
+                },
+                rows: rows.map((item) => ({
+                  cells: [
+                    item.account_code,
+                    displayName(item),
+                    accountTypeLabel(item.account_type),
+                    String(item.account_level || ""),
+                    formatPdfMoney(Number(item.debit_balance || 0)),
+                    formatPdfMoney(Number(item.credit_balance || 0)),
+                  ],
+                  widths: [12, 38, 16, 10, 12, 12],
+                  aligns: ["right", "right", "right", "center", "left", "left"],
+                })),
+                summaryRows: [
+                  {
+                    cells: ["", "الإجمالي", "", "", formatPdfMoney(totalDebits), formatPdfMoney(totalCredits)],
+                    widths: [12, 38, 16, 10, 12, 12],
+                    aligns: ["right", "right", "right", "center", "left", "left"],
+                  },
+                  {
+                    cells: ["", "الفرق", isBalanced ? "متوازن" : "غير متوازن", "", formatPdfMoney(difference), ""],
+                    widths: [12, 38, 16, 10, 12, 12],
+                    aligns: ["right", "right", "right", "center", "left", "left"],
+                  },
+                ],
+              },
+            },
+            {
+              title: "ثانياً: سجل التدقيق والمطابقة",
+              paragraphs: [
+                `الفحص الآلي: ${isBalanced ? "الميزان متوازن (مدين = دائن)" : "الميزان غير متوازن — يلزم المراجعة قبل الاعتماد"}.`,
+                `عدد الحسابات المعروضة: ${rows.length.toLocaleString("ar-QA")}.`,
+                "الاعتماد داخل الشركة لا يمثل رأي تدقيق أو تصديقاً من محاسب قانوني خارجي.",
+              ],
+            },
+          ],
+          footerNote: `أُعد بواسطة: ${user?.email || "—"} — وقت الإصدار: ${new Date().toLocaleString("ar-QA")}`,
+        },
+        `trial_balance_${asOfDate}_${auditReport.sourceFingerprint.slice(0, 8)}.pdf`,
+      );
+      toast.success("تم تصدير ميزان المراجعة بصيغة PDF نصية رسمية");
     } catch (err) {
       console.error("PDF export error:", err);
-      toast.error("\u062a\u0639\u0630\u0631 \u062a\u0635\u062f\u064a\u0631 \u0645\u0644\u0641 PDF");
+      toast.error("تعذر تصدير ملف PDF");
     }
   };
 
   if (error) {
     return (
-      <Card className="trial-balance-shell border-[#E5EAF1]">
+      <Card className="border-[#dfe5d9]">
         <CardContent className="p-6">
-          <div className="flex items-center gap-2 text-[#FB6B7A]">
+          <div className="flex items-center gap-2 text-[#b3694c]">
             <AlertCircle className="h-5 w-5" />
             <p className="font-bold">حدث خطأ في تحميل بيانات ميزان المراجعة</p>
           </div>
@@ -191,9 +263,9 @@ export function TrialBalanceReport() {
               <Scale className="h-6 w-6" />
             </span>
             <div>
-              <p className="text-xs font-black uppercase tracking-[0.18em] text-[#94A3B8]">ميزان المراجعة</p>
-              <h3 className="mt-1 text-xl font-black text-[#020617]">ميزان المراجعة</h3>
-              <p className="mt-1 text-sm leading-7 text-[#94A3B8]">
+              <p className="text-xs font-bold uppercase tracking-[0.14em] text-[#829074]">ميزان المراجعة</p>
+              <h3 className="mt-1 text-xl font-bold text-[#2c4136]">ميزان المراجعة</h3>
+              <p className="mt-1 text-sm leading-7 text-[#6f7c68]">
                 عرض أرصدة الحسابات المدينة والدائنة كما في تاريخ محدد مع حالة التوازن والفارق.
               </p>
             </div>
@@ -201,29 +273,29 @@ export function TrialBalanceReport() {
 
           <div className="flex flex-wrap items-end gap-2">
             <div className="min-w-[190px] space-y-2">
-              <Label htmlFor="asOfDate" className="text-xs font-black text-[#94A3B8]">
+              <Label htmlFor="asOfDate" className="text-xs font-bold text-[#829074]">
                 كما في تاريخ
               </Label>
               <div className="relative">
-                <Calendar className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#94A3B8]" />
+                <Calendar className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#9aa791]" />
                 <Input
                   id="asOfDate"
                   type="date"
                   value={asOfDate}
                   onChange={(event) => setAsOfDate(event.target.value)}
-                  className="h-10 border-[#E5EAF1] bg-white pr-10"
+                  className="h-10 border-[#dfe5d9] bg-white pr-10"
                 />
               </div>
             </div>
-            <Button onClick={handleExportPDF} variant="outline" size="sm" disabled={isLoading || !rows.length} className="gap-2 border-[#E5EAF1] bg-white">
+            <Button onClick={handleExportPDF} variant="outline" size="sm" disabled={isLoading || !rows.length} className="gap-2 border-[#dfe5d9] bg-white">
               <Download className="h-4 w-4" />
               PDF
             </Button>
-            <Button onClick={handleExportExcel} variant="outline" size="sm" disabled={isLoading || !rows.length} className="gap-2 border-[#E5EAF1] bg-white">
+            <Button onClick={handleExportExcel} variant="outline" size="sm" disabled={isLoading || !rows.length} className="gap-2 border-[#dfe5d9] bg-white">
               <FileSpreadsheet className="h-4 w-4" />
               إكسل
             </Button>
-            <Button onClick={handleExportCSV} variant="outline" size="sm" disabled={isLoading || !rows.length} className="gap-2 border-[#E5EAF1] bg-white">
+            <Button onClick={handleExportCSV} variant="outline" size="sm" disabled={isLoading || !rows.length} className="gap-2 border-[#dfe5d9] bg-white">
               <FileText className="h-4 w-4" />
               CSV
             </Button>
@@ -256,60 +328,60 @@ export function TrialBalanceReport() {
           <div className="overflow-x-auto">
             <Table className="min-w-[820px]">
               <TableHeader>
-                <TableRow className="border-[#E5EAF1] bg-[#F6F8FB]">
-                  <TableHead className="text-right text-xs font-black text-[#94A3B8]">رمز الحساب</TableHead>
-                  <TableHead className="text-right text-xs font-black text-[#94A3B8]">اسم الحساب</TableHead>
-                  <TableHead className="text-center text-xs font-black text-[#94A3B8]">النوع</TableHead>
-                  <TableHead className="text-center text-xs font-black text-[#94A3B8]">المستوى</TableHead>
-                  <TableHead className="text-right text-xs font-black text-[#94A3B8]">مدين</TableHead>
-                  <TableHead className="text-right text-xs font-black text-[#94A3B8]">دائن</TableHead>
+                <TableRow className="border-[#dfe5d9] bg-[#f7f9f2]">
+                  <TableHead className="text-right text-xs font-bold text-[#829174]">رمز الحساب</TableHead>
+                  <TableHead className="text-right text-xs font-bold text-[#829174]">اسم الحساب</TableHead>
+                  <TableHead className="text-center text-xs font-bold text-[#829174]">النوع</TableHead>
+                  <TableHead className="text-center text-xs font-bold text-[#829174]">المستوى</TableHead>
+                  <TableHead className="text-right text-xs font-bold text-[#829174]">مدين</TableHead>
+                  <TableHead className="text-right text-xs font-bold text-[#829174]">دائن</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {rows.map((item, index) => {
                   const isParent = Number(item.account_level || 0) <= 2;
                   return (
-                    <TableRow key={`${item.account_id}-${index}`} className={cn("border-[#E5EAF1]/70", isParent && "bg-[#F6F8FB] font-bold")}>
-                      <TableCell className="font-mono text-sm text-[#020617]">{item.account_code}</TableCell>
+                    <TableRow key={`${item.account_id}-${index}`} className={cn("border-[#dfe5d9]/70", isParent && "bg-[#f7f9f2] font-bold")}>
+                      <TableCell className="font-mono text-sm text-[#2c4136]">{item.account_code}</TableCell>
                       <TableCell className="min-w-[280px]">
-                        <div className="font-bold text-[#020617]">{displayName(item)}</div>
+                        <div className="font-bold text-[#405a33]">{displayName(item)}</div>
                         {item.account_name_ar && item.account_name_ar !== item.account_name && (
-                          <div className="text-xs text-[#94A3B8]">{item.account_name}</div>
+                          <div className="text-xs text-[#829074]">{item.account_name}</div>
                         )}
                       </TableCell>
                       <TableCell className="text-center">
-                        <Badge variant="outline" className="border-[#E5EAF1] bg-white text-[#64748B]">
+                        <span className="trial-level">
                           {accountTypeLabel(item.account_type)}
-                        </Badge>
+                        </span>
                       </TableCell>
                       <TableCell className="text-center">
                         <span className="trial-level">{item.account_level || "-"}</span>
                       </TableCell>
-                      <TableCell className="text-right font-black text-[#38BDF8]">
-                        {Number(item.debit_balance || 0) > 0 ? formatCurrency(Number(item.debit_balance)) : <span className="text-[#CBD5E1]">-</span>}
+                      <TableCell className="text-right font-semibold text-[#3f6136]">
+                        {Number(item.debit_balance || 0) > 0 ? formatCurrency(Number(item.debit_balance)) : <span className="text-[#c3ccb9]">-</span>}
                       </TableCell>
-                      <TableCell className="text-right font-black text-[#22C7A1]">
-                        {Number(item.credit_balance || 0) > 0 ? formatCurrency(Number(item.credit_balance)) : <span className="text-[#CBD5E1]">-</span>}
+                      <TableCell className="text-right font-semibold text-[#487038]">
+                        {Number(item.credit_balance || 0) > 0 ? formatCurrency(Number(item.credit_balance)) : <span className="text-[#c3ccb9]">-</span>}
                       </TableCell>
                     </TableRow>
                   );
                 })}
 
-                <TableRow className="border-t-2 border-[#020617] bg-[#020617] text-white hover:bg-[#020617]">
-                  <TableCell colSpan={4} className="text-center text-base font-black text-white">
+                <TableRow className="trial-total-row border-t-2 border-[#2f7966] bg-[#2f7966] text-white hover:bg-[#2f7966]">
+                  <TableCell colSpan={4} className="text-center text-base font-bold text-white">
                     الإجمالي
                   </TableCell>
-                  <TableCell className="text-right text-base font-black text-white">{formatCurrency(totalDebits)}</TableCell>
-                  <TableCell className="text-right text-base font-black text-white">{formatCurrency(totalCredits)}</TableCell>
+                  <TableCell className="text-right text-base font-bold text-white">{formatCurrency(totalDebits)}</TableCell>
+                  <TableCell className="text-right text-base font-bold text-white">{formatCurrency(totalCredits)}</TableCell>
                 </TableRow>
               </TableBody>
             </Table>
           </div>
         ) : (
           <div className="flex min-h-[280px] flex-col items-center justify-center p-8 text-center">
-            <FileText className="mb-4 h-14 w-14 text-[#CBD5E1]" />
-            <p className="text-lg font-black text-[#020617]">لا توجد بيانات لعرضها</p>
-            <p className="mt-1 text-sm text-[#94A3B8]">قم بإنشاء وترحيل قيود محاسبية لظهور ميزان المراجعة.</p>
+            <FileText className="mb-4 h-14 w-14 text-[#c3ccb9]" />
+            <p className="text-lg font-bold text-[#2c4136]">لا توجد بيانات لعرضها</p>
+            <p className="mt-1 text-sm text-[#6f7c68]">قم بإنشاء وترحيل قيود محاسبية لظهور ميزان المراجعة.</p>
           </div>
         )}
       </section>
@@ -318,7 +390,7 @@ export function TrialBalanceReport() {
         <section className={cn("trial-balance-note", isBalanced ? "is-balanced" : "is-unbalanced")}>
           {isBalanced ? <CheckCircle2 className="h-5 w-5" /> : <AlertCircle className="h-5 w-5" />}
           <div>
-            <p className="font-black">{isBalanced ? "ميزان المراجعة متوازن" : "يوجد فرق في ميزان المراجعة"}</p>
+            <p className="font-bold">{isBalanced ? "ميزان المراجعة متوازن" : "يوجد فرق في ميزان المراجعة"}</p>
             <p className="text-sm">
               المدين {formatCurrency(totalDebits)}، الدائن {formatCurrency(totalCredits)}
               {!isBalanced && `، الفارق ${formatCurrency(difference)}`}
@@ -331,16 +403,16 @@ export function TrialBalanceReport() {
         .trial-balance-redesign .trial-command,
         .trial-balance-redesign .trial-table-shell,
         .trial-balance-redesign .trial-balance-note {
-          border: 1px solid #E5EAF1;
+          border: 1px solid #dfe5d9;
           background: #FFFFFF;
-          border-radius: 8px;
-          box-shadow: 0 14px 34px rgba(2, 6, 23, 0.06);
+          border-radius: 13px;
+          box-shadow: none;
         }
 
         .trial-balance-redesign .trial-command {
           position: relative;
           overflow: hidden;
-          padding: 18px;
+          padding: 20px;
         }
 
         .trial-balance-redesign .trial-command::before {
@@ -349,8 +421,8 @@ export function TrialBalanceReport() {
           inset-inline-start: 0;
           top: 0;
           bottom: 0;
-          width: 5px;
-          background: linear-gradient(180deg, #38BDF8, #22C7A1, #7C83F6, #FB6B7A);
+          width: 4px;
+          background: var(--dw-green, #2f7966);
         }
 
         .trial-balance-redesign .trial-command-icon {
@@ -360,17 +432,17 @@ export function TrialBalanceReport() {
           align-items: center;
           justify-content: center;
           flex-shrink: 0;
-          border-radius: 8px;
-          color: #38BDF8;
-          background: rgba(56, 189, 248, 0.12);
-          border: 1px solid rgba(56, 189, 248, 0.24);
+          border-radius: 9px;
+          color: #2f7966;
+          background: #eaf1e3;
+          border: 1px solid #d7e4cb;
         }
 
         .trial-balance-redesign .trial-summary,
         .trial-balance-redesign .trial-mini-stat {
-          border: 1px solid #E5EAF1;
-          background: #F6F8FB;
-          border-radius: 8px;
+          border: 1px solid #dfe5d9;
+          background: #f7f8f4;
+          border-radius: 9px;
           padding: 14px;
         }
 
@@ -378,17 +450,19 @@ export function TrialBalanceReport() {
         .trial-balance-redesign .trial-mini-stat span {
           display: block;
           font-size: 12px;
-          font-weight: 900;
-          color: #94A3B8;
+          font-weight: 700;
+          color: #7e8b73;
         }
 
         .trial-balance-redesign .trial-summary strong,
         .trial-balance-redesign .trial-mini-stat strong {
           display: block;
           margin-top: 8px;
-          color: #020617;
+          color: #3f6136;
           font-size: 20px;
-          font-weight: 950;
+          font-weight: 700;
+          font-variant-numeric: tabular-nums;
+          overflow-wrap: anywhere;
         }
 
         .trial-balance-redesign .trial-status,
@@ -396,23 +470,23 @@ export function TrialBalanceReport() {
           display: flex;
           align-items: center;
           gap: 10px;
-          border-radius: 8px;
+          border-radius: 9px;
           padding: 14px;
-          font-weight: 950;
+          font-weight: 700;
         }
 
         .trial-balance-redesign .trial-status.is-balanced,
         .trial-balance-redesign .trial-balance-note.is-balanced {
-          color: #22C7A1;
-          background: rgba(34, 199, 161, 0.1);
-          border-color: rgba(34, 199, 161, 0.22);
+          color: #487038;
+          background: #edf4e6;
+          border-color: #d7e4cb;
         }
 
         .trial-balance-redesign .trial-status.is-unbalanced,
         .trial-balance-redesign .trial-balance-note.is-unbalanced {
-          color: #FB6B7A;
-          background: rgba(251, 107, 122, 0.1);
-          border-color: rgba(251, 107, 122, 0.22);
+          color: #b3694c;
+          background: #fdf1eb;
+          border-color: #f1d9ca;
         }
 
         .trial-balance-redesign .trial-table-shell {
@@ -425,12 +499,17 @@ export function TrialBalanceReport() {
           height: 28px;
           align-items: center;
           justify-content: center;
-          border-radius: 8px;
-          border: 1px solid #E5EAF1;
+          border-radius: 6px;
+          border: 1px solid #dfe5d9;
           background: #FFFFFF;
-          color: #64748B;
+          color: #5b6b52;
           font-size: 12px;
-          font-weight: 900;
+          font-weight: 700;
+          padding-inline: 6px;
+        }
+
+        .trial-balance-redesign .trial-total-row td {
+          border-bottom: 0;
         }
 
         .trial-balance-redesign input,
@@ -467,7 +546,7 @@ function accountTypeLabel(type?: string) {
 }
 
 function TrialSummary({ title, value, tone }: { title: string; value: string; tone: "info" | "success" | "alert" }) {
-  const color = tone === "info" ? "#38BDF8" : tone === "success" ? "#22C7A1" : "#FB6B7A";
+  const color = tone === "info" ? "#4a707c" : tone === "success" ? "#487038" : "#b3694c";
   return (
     <div className="trial-summary">
       <span style={{ color }}>{title}</span>

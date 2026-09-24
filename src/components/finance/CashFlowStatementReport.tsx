@@ -27,12 +27,12 @@ import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, L
 import { format, subMonths, startOfMonth, endOfMonth } from 'date-fns';
 import { ar } from 'date-fns/locale';
 import { buildCashFlowReport } from "@/utils/ledgerCashFlowReportRules";
-import {
-  exportOfficialFinancialReportToPDF,
-  type OfficialFinancialReportExportPayload,
-} from "@/utils/officialFinancialReportExport";
+import { type OfficialFinancialReportExportPayload } from "@/utils/officialFinancialReportExport";
+import { exportArabicReportPdf, formatPdfMoney, type PdfAlign } from "@/utils/arabicReportPdf";
 
 import { useFleetifyTranslation } from "@/hooks/useTranslation";
+import { useCurrentCompany } from "@/hooks/useCurrentCompany";
+import { useAuth } from "@/contexts/AuthContext";
 
 const COLORS = {
   operating: '#22c55e',
@@ -62,6 +62,8 @@ interface CashFlowData {
 
 export function CashFlowStatementReport() {
   const { t } = useFleetifyTranslation("ui");
+  const { user } = useAuth();
+  const { data: company } = useCurrentCompany();
   const [startDate, setStartDate] = useState<string>(
     format(startOfMonth(subMonths(new Date(), 1)), 'yyyy-MM-dd')
   );
@@ -295,10 +297,16 @@ export function CashFlowStatementReport() {
       metadata: {
         reportTitle: "\u0642\u0627\u0626\u0645\u0629 \u0627\u0644\u062a\u062f\u0641\u0642\u0627\u062a \u0627\u0644\u0646\u0642\u062f\u064a\u0629",
         reportType: "cash_flow_statement",
-        companyName: "Fleetify",
+        companyName: company?.name || "Fleetify",
+        companyNameAr: company?.name_ar || company?.name || undefined,
+        companyNameEn: company?.name || undefined,
+        commercialRegister: company?.commercial_register || undefined,
+        companyAddressAr: company?.address_ar || company?.address || undefined,
+        companyAddressEn: company?.address || undefined,
+        preparedByName: user?.email || undefined,
         periodStart: startDate,
         periodEnd: endDate,
-        currency: "QAR",
+        currency: company?.currency || "QAR",
         exportedAt: new Date().toISOString(),
         status: "published",
         sourceFingerprint: sourceReport.sourceFingerprint,
@@ -325,11 +333,72 @@ export function CashFlowStatementReport() {
     };
 
     try {
-      await exportOfficialFinancialReportToPDF(payload);
-      toast.success("\u062a\u0645 \u062a\u0635\u062f\u064a\u0631 \u0627\u0644\u062a\u062f\u0641\u0642\u0627\u062a \u0627\u0644\u0646\u0642\u062f\u064a\u0629 \u0628\u0635\u064a\u063a\u0629 \u0643\u062a\u0627\u0628 \u0631\u0633\u0645\u064a");
+      const cashRow = (section: string, description: string, amount: number) => ({
+        cells: [section, description, formatPdfMoney(amount)],
+        widths: [22, 58, 20],
+        aligns: ["right", "right", "left"] as PdfAlign[],
+      });
+      await exportArabicReportPdf(
+        {
+          metadata: {
+            reportTitle: "قائمة التدفقات النقدية",
+            companyAr: company?.name_ar || company?.name || "شركة العراف لتأجير السيارات ذ.م.م",
+            companyEn: company?.name || "Alaraf Car Rental LLC",
+            commercialRegister: company?.commercial_register || "146832",
+            addressAr: company?.address_ar || company?.address || "الدوحة - دولة قطر",
+            currency: company?.currency || "QAR",
+            periodStart: startDate,
+            periodEnd: endDate,
+            status: "نشر",
+            sourceFingerprint: sourceReport.sourceFingerprint,
+            preparedBy: user?.email,
+            exportedAt: new Date().toISOString(),
+          },
+          sections: [
+            {
+              title: "أولاً: الأنشطة التشغيلية",
+              table: {
+                header: { cells: ["النشاط", "البيان", "المبلغ"], widths: [22, 58, 20], aligns: ["right", "right", "left"] },
+                rows: cashFlowData.operating.map((item) => cashRow("تشغيلي", item.nameAr || item.name, item.amount)),
+                summaryRows: [cashRow("", "صافي التدفق التشغيلي", cashFlowData.netOperating)],
+              },
+            },
+            {
+              title: "ثانياً: الأنشطة الاستثمارية",
+              table: {
+                header: { cells: ["النشاط", "البيان", "المبلغ"], widths: [22, 58, 20], aligns: ["right", "right", "left"] },
+                rows: cashFlowData.investing.map((item) => cashRow("استثماري", item.nameAr || item.name, item.amount)),
+                summaryRows: [cashRow("", "صافي التدفق الاستثماري", cashFlowData.netInvesting)],
+              },
+            },
+            {
+              title: "ثالثاً: الأنشطة التمويلية",
+              table: {
+                header: { cells: ["النشاط", "البيان", "المبلغ"], widths: [22, 58, 20], aligns: ["right", "right", "left"] },
+                rows: cashFlowData.financing.map((item) => cashRow("تمويلي", item.nameAr || item.name, item.amount)),
+                summaryRows: [cashRow("", "صافي التدفق التمويلي", cashFlowData.netFinancing)],
+              },
+            },
+            {
+              title: "رابعاً: الملخص",
+              table: {
+                header: { cells: ["", "البيان", "المبلغ"], widths: [22, 58, 20], aligns: ["right", "right", "left"] },
+                rows: [
+                  cashRow("", "صافي التغير في النقد", cashFlowData.netCashFlow),
+                  cashRow("", "رصيد النقد أول المدة", cashFlowData.beginningCash),
+                ],
+                summaryRows: [cashRow("", "رصيد النقد آخر المدة", cashFlowData.endingCash)],
+              },
+            },
+          ],
+          footerNote: `الطريقة: ${method === "direct" ? "مباشرة" : "غير مباشرة"} — أُعد بواسطة: ${user?.email || "—"}`,
+        },
+        `cash_flow_${endDate}_${sourceReport.sourceFingerprint.slice(0, 8)}.pdf`,
+      );
+      toast.success("تم تصدير التدفقات النقدية بصيغة PDF نصية رسمية");
     } catch (error) {
       console.error("PDF export error:", error);
-      toast.error("\u062a\u0639\u0630\u0631 \u062a\u0635\u062f\u064a\u0631 \u0645\u0644\u0641 PDF");
+      toast.error("تعذر تصدير ملف PDF");
     }
   };
 

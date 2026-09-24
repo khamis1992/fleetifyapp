@@ -89,6 +89,10 @@ export const professionalBalanceSheetSchema = z.object({
         )
         .nullable()
         .optional(),
+      scope: z
+        .enum(["as_of", "comparison_only", "current_register"])
+        .nullable()
+        .optional(),
     })
   ),
   fingerprint: z.string().regex(/^[a-f0-9]{64}$/),

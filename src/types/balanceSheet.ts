@@ -60,6 +60,8 @@ export interface BalanceSheetCheck {
   asOfDate: string;
   /** Entity payload (account ids/codes, draft journal ids/numbers) powering check actions. */
   detail?: BalanceSheetCheckDetailEntry[] | null;
+  /** Server attribution: as_of | comparison_only | current_register. */
+  scope?: "as_of" | "comparison_only" | "current_register" | null;
 }
 
 export interface ProfessionalBalanceSheet {
@@ -116,4 +118,6 @@ export interface BalanceSheetExportOptions {
   report: ProfessionalBalanceSheet;
   snapshot?: SavedBalanceSheet | null;
   locale: BalanceSheetLocale;
+  /** Which face to render: aggregated published statement or account-level working paper. */
+  face?: 'published' | 'working';
 }

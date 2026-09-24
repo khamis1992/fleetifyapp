@@ -24,6 +24,19 @@ vi.mock('@/hooks/useTranslation', () => ({
   useFleetifyTranslation: () => ({ currentLanguage: 'en', t: (key: string) => key }),
 }));
 vi.mock('@/services/financialReporting', () => ({ financeToday: () => '2026-09-18' }));
+vi.mock('@/components/ui/date-field', () => ({
+  DateField: ({ value, onChange, placeholder, className }: {
+    value?: string; onChange: (value: string | undefined) => void; placeholder?: string; className?: string;
+  }) => (
+    <input
+      type="date"
+      aria-label={placeholder}
+      className={className}
+      value={value || ''}
+      onChange={event => onChange(event.target.value || undefined)}
+    />
+  ),
+}));
 vi.mock('@/integrations/supabase/client', () => ({ supabase: { rpc: vi.fn() } }));
 vi.mock('@/hooks/finance/useProfessionalBalanceSheet', () => ({
   useProfessionalBalanceSheet: (asOf: string, comparison: string | null) => ({
@@ -51,6 +64,11 @@ const workspace = () => <MemoryRouter initialEntries={['/finance/balance-sheet?a
   <BalanceSheetReport />
 </MemoryRouter>;
 const mount = () => render(workspace());
+const mountWorkingPaper = () => {
+  const view = render(workspace());
+  fireEvent.click(screen.getByRole('button', { name: 'Detailed working paper' }));
+  return view;
+};
 const selectVersion = () => fireEvent.click(screen.getByRole('button', { name: 'View version' }));
 const approvalButton = () => screen.getByRole('button', { name: 'Record internal approval' });
 const expectExportDisabled = () => {
@@ -83,12 +101,12 @@ describe('balance sheet report workflow', () => {
     await waitFor(() => expect(exportPDF).toHaveBeenCalledWith(expect.objectContaining({ locale: 'ar' })));
     fireEvent.change(screen.getByRole('combobox', { name: 'لغة التقرير / Report language' }), { target: { value: 'en' } });
     expect(screen.getByTestId('balance-sheet-report')).toHaveAttribute('dir', 'ltr');
-    expect(screen.getByLabelText('As of date')).toHaveValue('2026-08-31');
+    expect(screen.getByLabelText('Pick range end')).toHaveValue('2026-08-31');
     fireEvent.click(screen.getByRole('button', { name: 'Excel' }));
     await waitFor(() => expect(exportExcel).toHaveBeenCalledWith(expect.objectContaining({ locale: 'en' })));
   });
   it('keeps a balanced preview draft and displays the contra asset with its negative sign', async () => {
-    mount();
+    mountWorkingPaper();
     expect(screen.getByText('Unapproved draft')).toBeVisible();
     expect(screen.queryByText('Internally approved')).not.toBeInTheDocument();
     expect(screen.getByText('Arithmetic balance does not establish completeness or approval.')).toBeVisible();
@@ -96,17 +114,44 @@ describe('balance sheet report workflow', () => {
     expect(within(row).getAllByRole('cell')[2]).toHaveTextContent(/[-−].*100\.00/);
     expect(within(row).getAllByRole('cell')[3]).toHaveTextContent(/[-−].*50\.00/);
     fireEvent.click(screen.getByRole('button', { name: 'PDF' }));
-    await waitFor(() => expect(exportPDF).toHaveBeenCalledWith({ report: state.live.data, snapshot: null, locale: 'en' }));
+    await waitFor(() => expect(exportPDF).toHaveBeenCalledWith(expect.objectContaining({ report: state.live.data, snapshot: null, locale: 'en' })));
   });
 
   it('shows the variance column with signed delta and percentage against the comparison base', () => {
-    mount();
+    mountWorkingPaper();
     const cashRow = screen.getByRole('row', { name: /Cash/ });
     const cells = within(cashRow).getAllByRole('cell');
     expect(cells[4]).toHaveTextContent(/300\.00/);
     expect(cells[4]).toHaveTextContent(/42\.9%/);
     const equityTotalRow = screen.getByRole('row', { name: /Total equity/ });
     expect(within(equityTotalRow).getAllByRole('cell')[4]).toHaveTextContent(/150\.00/);
+  });
+
+  it('renders the published face with aggregated captions, note references and no account codes', () => {
+    mount();
+    // Fixture: Cash (named account under a generic current subtype),
+    // Accumulated depreciation (contra), Customer advances, equity capital.
+    const cashRow = screen.getByRole('row', { name: /Cash and cash equivalents/ });
+    expect(within(cashRow).getAllByRole('cell')[1]).toHaveTextContent(/Note 2/);
+    expect(within(cashRow).getByRole('cell', { name: /1,000\.00/ })).toBeInTheDocument();
+    // Contra depreciation collapses into the vehicles net caption, keeping its negative sign.
+    const vehiclesRow = screen.getByRole('row', { name: /Vehicles, net/ });
+    expect(within(vehiclesRow).getByRole('cell', { name: /\(100\.00\)/ })).toBeInTheDocument();
+    expect(screen.getByRole('row', { name: /Trade payables/ })).toBeVisible();
+    expect(screen.getByRole('row', { name: /Total assets/ })).toBeVisible();
+    expect(screen.getByRole('row', { name: /Total equity/ })).toBeVisible();
+    expect(screen.getByRole('row', { name: /Total liabilities and equity/ })).toBeVisible();
+    // Published face never shows individual account codes or working-paper sections.
+    expect(screen.queryByRole('cell', { name: '1000' })).not.toBeInTheDocument();
+    expect(screen.queryByText('Current assets')).not.toBeInTheDocument();
+    expect(screen.queryByText('Assets awaiting classification')).not.toBeInTheDocument();
+  });
+
+  it('formats published negatives in parentheses without a currency symbol', () => {
+    state.live.data = makeBalanceSheet({ accounts: [makeBalanceSheet().accounts[1]] });
+    mount();
+    const vehiclesRow = screen.getByRole('row', { name: /Vehicles, net/ });
+    expect(within(vehiclesRow).getByRole('cell', { name: /\(100\.00\)/ })).toBeInTheDocument();
   });
 
   it('derives liquidity indicators from the displayed balances', () => {
@@ -146,8 +191,8 @@ describe('balance sheet report workflow', () => {
     state.loadingChangedDate = true;
     mount();
     expect(screen.getByRole('button', { name: 'PDF' })).toBeEnabled();
-    fireEvent.change(screen.getByLabelText('As of date'), { target: { value: '2026-07-31' } });
-    expect(screen.getByLabelText('As of date')).toHaveValue('2026-07-31');
+    fireEvent.change(screen.getByLabelText('Pick range end'), { target: { value: '2026-07-31' } });
+    expect(screen.getByLabelText('Pick range end')).toHaveValue('2026-07-31');
     expectExportDisabled();
     fireEvent.click(screen.getByRole('button', { name: 'PDF' }));
     expect(exportPDF).not.toHaveBeenCalled();
@@ -156,7 +201,7 @@ describe('balance sheet report workflow', () => {
 
   it('does not export or save cached data for a different cutoff even if no fetch is reported', () => {
     mount();
-    fireEvent.change(screen.getByLabelText('As of date'), { target: { value: '2026-07-31' } });
+    fireEvent.change(screen.getByLabelText('Pick range end'), { target: { value: '2026-07-31' } });
     expectExportDisabled();
     expect(screen.queryByRole('row', { name: /Accumulated depreciation/ })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Save for review' })).not.toBeInTheDocument();
@@ -301,7 +346,7 @@ describe('balance sheet report workflow', () => {
     expect(screen.getByText('Internally approved by')).toBeVisible();
     expect(screen.getByText(/Test Reviewer/)).toBeVisible();
     fireEvent.click(screen.getByRole('button', { name: 'Excel' }));
-    await waitFor(() => expect(exportExcel).toHaveBeenCalledWith({ report: approved.payload, snapshot: approved, locale: 'en' }));
+    await waitFor(() => expect(exportExcel).toHaveBeenCalledWith(expect.objectContaining({ report: approved.payload, snapshot: approved, locale: 'en' })));
   });
 
   it('rechecks saved status before export and refuses a version voided since it was viewed', async () => {
@@ -346,7 +391,7 @@ describe('balance sheet report workflow', () => {
       return { data: [approved], error: null };
     });
     fireEvent.click(screen.getByRole('button', { name: 'Excel' }));
-    await waitFor(() => expect(exportExcel).toHaveBeenCalledWith({ report: approved.payload, snapshot: approved, locale: 'en' }));
+    await waitFor(() => expect(exportExcel).toHaveBeenCalledWith(expect.objectContaining({ report: approved.payload, snapshot: approved, locale: 'en' })));
     expect(state.history.refetch).toHaveBeenCalled();
     expect(screen.getByText(/Test Reviewer/)).toBeVisible();
   });

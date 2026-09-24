@@ -5,6 +5,14 @@ export type OfficialReportStatus = "draft" | "published" | "approved" | "archive
 export type OfficialFinancialReportMetadata = {
   reportTitle: string;
   companyName?: string | null;
+  /** Company identity printed on the letterhead. Falls back to the Alaraf defaults when absent. */
+  companyNameAr?: string | null;
+  companyNameEn?: string | null;
+  commercialRegister?: string | null;
+  companyAddressAr?: string | null;
+  companyAddressEn?: string | null;
+  preparedByName?: string | null;
+  approvedByName?: string | null;
   reportType: string;
   currency?: string | null;
   periodStart?: string | null;
@@ -119,13 +127,23 @@ function formatOfficialDate(value?: string | null) {
   }).format(date);
 }
 
+/** Accounting number format: thousands separators and parentheses for negatives. */
+function formatOfficialMoney(value: number): string {
+  const amount = Number.isFinite(value) ? value : 0;
+  const body = Math.abs(amount).toLocaleString("en-US", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+  return amount < 0 ? `(${body})` : body;
+}
+
 function formatOfficialValue(value: string | number | null | undefined, column?: OfficialFinancialReportColumn, currency = "QAR") {
   if (value == null || value === "") return "-";
   if (column?.type === "money") {
-    return `${Number(value || 0).toLocaleString("en-US", {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    })} ${currency}`;
+    const amount = Number(value || 0);
+    // The currency is stated once in the report metadata; cells stay bare numbers
+    // with accounting parentheses for negatives.
+    return formatOfficialMoney(amount);
   }
   if (column?.type === "number") {
     return Number(value || 0).toLocaleString("en-US");
@@ -173,6 +191,15 @@ async function imageUrlToDataUrl(url: string) {
   }
 }
 
+// Default letterhead for Al-Araf Car Rental (this repository's primary tenant).
+// Reports should pass their company's identity via metadata; these constants
+// only fill the gaps so historical callers keep rendering identically.
+const DEFAULT_COMPANY_NAME_AR = "شركة العراف لتأجير السيارات ذ.م.م";
+const DEFAULT_COMPANY_NAME_EN = "Alaraf Car Rental LLC";
+const DEFAULT_COMMERCIAL_REGISTER = "146832";
+const DEFAULT_ADDRESS_AR = "الدوحة - دولة قطر";
+const DEFAULT_ADDRESS_EN = "Doha - State of Qatar";
+
 export function buildOfficialFinancialReportHtml(payload: OfficialFinancialReportExportPayload) {
   const metadata = normalizeOfficialReportMetadata(payload.metadata);
   const refNumber = buildOfficialRefNumber(metadata);
@@ -183,6 +210,15 @@ export function buildOfficialFinancialReportHtml(payload: OfficialFinancialRepor
   const auditRows = buildOfficialReportAuditRows(metadata)
     .map((row) => `<tr><th>${escapeHtml(row.label)}</th><td>${escapeHtml(row.value)}</td></tr>`)
     .join("");
+  // Letterhead identity: explicit metadata first; the generic "Fleetify"
+  // placeholder falls through to the Alaraf letterhead defaults.
+  const providedName = (metadata.companyName || "").trim();
+  const hasRealName = providedName && providedName.toLowerCase() !== "fleetify";
+  const companyNameAr = metadata.companyNameAr || (hasRealName ? providedName : DEFAULT_COMPANY_NAME_AR);
+  const companyNameEn = metadata.companyNameEn || (hasRealName ? providedName : DEFAULT_COMPANY_NAME_EN);
+  const commercialRegister = metadata.commercialRegister || DEFAULT_COMMERCIAL_REGISTER;
+  const companyAddressAr = metadata.companyAddressAr || DEFAULT_ADDRESS_AR;
+  const companyAddressEn = metadata.companyAddressEn || DEFAULT_ADDRESS_EN;
 
   return `<!DOCTYPE html>
 <html dir="rtl" lang="ar">
@@ -384,17 +420,17 @@ export function buildOfficialFinancialReportHtml(payload: OfficialFinancialRepor
   <div class="letter-container">
     <header class="official-header">
       <div class="company-ar">
-        <h1>شركة العراف لتأجير السيارات ذ.م.م</h1>
-        <p>سجل تجاري: 146832</p>
-        <p>الدوحة - دولة قطر</p>
+        <h1>${escapeHtml(companyNameAr)}</h1>
+        <p>سجل تجاري: ${escapeHtml(commercialRegister)}</p>
+        <p>${escapeHtml(companyAddressAr)}</p>
       </div>
       <div class="logo-box">
         <img src="/receipts/logo.png" alt="شعار الشركة" onerror="this.style.display='none'" />
       </div>
       <div class="company-en">
-        <h1>Alaraf Car Rental LLC</h1>
-        <p>C.R: 146832</p>
-        <p>Doha - State of Qatar</p>
+        <h1>${escapeHtml(companyNameEn)}</h1>
+        <p>C.R: ${escapeHtml(commercialRegister)}</p>
+        <p>${escapeHtml(companyAddressEn)}</p>
       </div>
     </header>
 
@@ -465,12 +501,12 @@ export function buildOfficialFinancialReportHtml(payload: OfficialFinancialRepor
     <section class="approval-section">
       <div class="approval-box">
         <strong>إعداد ومراجعة</strong>
-        الاسم: _______________________<br>
+        الاسم: ${escapeHtml(metadata.preparedByName || metadata.generatedBy || "_______________________")}<br>
         التوقيع: ______________________
       </div>
       <div class="approval-box">
         <strong>اعتماد الإدارة المالية</strong>
-        الاسم: _______________________<br>
+        الاسم: ${escapeHtml(metadata.approvedByName || metadata.approvedBy || "_______________________")}<br>
         التوقيع: ______________________
       </div>
     </section>
@@ -583,6 +619,86 @@ export async function exportOfficialFinancialReportToExcel(payload: OfficialFina
   URL.revokeObjectURL(url);
 }
 
+/**
+ * Renders the official report into fixed A4 page elements, flowing table rows
+ * and paragraphs across page boundaries without ever splitting a row.
+ * Mirrors the balance sheet renderer: header repeats, footer states page N of M.
+ */
+async function renderOfficialReportPages(host: HTMLElement): Promise<HTMLElement[]> {
+  await document.fonts?.ready;
+  const root = host.querySelector<HTMLElement>(".letter-container");
+  if (!root) throw new Error("Official report container not found");
+  const header = root.querySelector<HTMLElement>(".official-header");
+  const addressBar = root.querySelector<HTMLElement>(".address-bar");
+  const reportTables = Array.from(root.querySelectorAll<HTMLTableElement>(".report-table"));
+  if (!header || !addressBar) throw new Error("Official report header missing");
+  const blocks = Array.from(root.children).filter(node =>
+    !(node instanceof HTMLElement && (node.classList.contains("official-header") || node.classList.contains("address-bar")))) as HTMLElement[];
+  // A4 at 794px wide: 1123px tall minus header/address/footer reserves.
+  const CONTENT_HEIGHT = 1123 - 180;
+  const pages: HTMLElement[] = [];
+  let page: HTMLElement | null = null;
+  let body: HTMLElement | null = null;
+  const newPage = () => {
+    page = document.createElement("div");
+    page.style.cssText = "width:794px;height:1123px;padding:40px 56px;background:#fff;display:flex;flex-direction:column;";
+    page.appendChild(header!.cloneNode(true));
+    page.appendChild(addressBar!.cloneNode(true));
+    body = document.createElement("div");
+    body.style.cssText = `flex:1;min-height:0;overflow:hidden;height:${CONTENT_HEIGHT}px;`;
+    page.appendChild(body);
+    pages.push(page);
+  };
+  const appendBlock = (node: HTMLElement) => {
+    if (!body) newPage();
+    body!.appendChild(node);
+    if (body!.scrollHeight > CONTENT_HEIGHT + 1) {
+      node.remove();
+      if (body!.children.length) newPage();
+      body!.appendChild(node);
+      // An unbreakable block taller than one page: keep it, it simply continues visually.
+      if (body!.scrollHeight > CONTENT_HEIGHT + 1 && node.tagName === "TABLE") {
+        node.remove();
+        newPage();
+        body!.appendChild(node);
+      }
+    }
+  };
+  for (const block of blocks) {
+    if (block.classList.contains("report-table")) {
+      // Flow table rows one at a time, cloning the table shell per page.
+      const table = block as HTMLTableElement;
+      const originalRows = Array.from(table.tBodies[0].rows);
+      const head = table.tHead ? table.tHead.cloneNode(true) : null;
+      let current: HTMLTableElement | null = null;
+      const ensureTable = (): HTMLTableElement => {
+        if (!body) newPage();
+        if (!current || !body!.contains(current)) {
+          current = table.cloneNode(false) as HTMLTableElement;
+          if (head) current.appendChild(head.cloneNode(true));
+          current.appendChild(document.createElement("tbody"));
+          body!.appendChild(current);
+        }
+        return current;
+      };
+      for (const original of originalRows) {
+        const row = original.cloneNode(true) as HTMLTableRowElement;
+        ensureTable().tBodies[0].appendChild(row);
+        if (body!.scrollHeight > CONTENT_HEIGHT + 1) {
+          row.remove();
+          newPage();
+          ensureTable().tBodies[0].appendChild(row);
+        }
+      }
+    } else {
+      appendBlock(block);
+    }
+  }
+  if (!pages.length) newPage();
+  root.replaceChildren(...pages);
+  return pages;
+}
+
 export async function exportOfficialHtmlToPDF(html: string, fileName: string) {
   const [{ default: html2canvas }, { jsPDF }] = await Promise.all([import("html2canvas"), import("jspdf")]);
   const renderHost = document.createElement("div");
@@ -599,39 +715,27 @@ export async function exportOfficialHtmlToPDF(html: string, fileName: string) {
   document.body.appendChild(renderHost);
 
   try {
-    await new Promise((resolve) => setTimeout(resolve, 250));
-    const canvas = await html2canvas(renderHost, {
-      scale: 2,
-      useCORS: true,
-      allowTaint: true,
-      logging: false,
-      backgroundColor: "#ffffff",
-      width: 794,
-    });
-
+    // Fonts first so Amiri measures and renders correctly; then paginate on
+    // row boundaries instead of slicing one long canvas at arbitrary points.
+    const pages = await renderOfficialReportPages(renderHost);
     const pdf = new jsPDF({
       orientation: "portrait",
       unit: "mm",
       format: "a4",
       compress: true,
     });
-    const imgData = canvas.toDataURL("image/jpeg", 0.92);
-    const pdfWidth = pdf.internal.pageSize.getWidth();
-    const pdfHeight = pdf.internal.pageSize.getHeight();
-    const imageHeight = (canvas.height * pdfWidth) / canvas.width;
-
-    let remainingHeight = imageHeight;
-    let position = 0;
-    pdf.addImage(imgData, "JPEG", 0, position, pdfWidth, imageHeight, undefined, "FAST");
-    remainingHeight -= pdfHeight;
-
-    while (remainingHeight > 0) {
-      position -= pdfHeight;
-      pdf.addPage();
-      pdf.addImage(imgData, "JPEG", 0, position, pdfWidth, imageHeight, undefined, "FAST");
-      remainingHeight -= pdfHeight;
+    for (let index = 0; index < pages.length; index++) {
+      const canvas = await html2canvas(pages[index], {
+        scale: 2,
+        useCORS: true,
+        allowTaint: true,
+        logging: false,
+        backgroundColor: "#ffffff",
+        width: 794,
+      });
+      if (index > 0) pdf.addPage();
+      pdf.addImage(canvas.toDataURL("image/jpeg", 0.92), "JPEG", 0, 0, 210, 297, undefined, "FAST");
     }
-
     pdf.save(fileName);
   } finally {
     document.body.removeChild(renderHost);
