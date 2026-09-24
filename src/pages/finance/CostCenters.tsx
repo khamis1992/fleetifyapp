@@ -38,12 +38,12 @@ const qarFormatter = new Intl.NumberFormat("ar-QA", {
 const formatQar = (value?: number | null) => qarFormatter.format(value || 0);
 
 const fieldClassName =
-  "h-11 rounded-xl border-slate-200 bg-[#F6F8FB] text-[#020617] shadow-none focus-visible:ring-[#22C7A1]";
+  "h-11 rounded-xl border-slate-200 bg-[#f7f8f4] text-[#2c4136] shadow-none focus-visible:ring-[#2f7966]";
 
 const utilizationTone = (value: number) => {
-  if (value > 100) return { text: "#FB6B7A", bg: "#FFF0F2", label: "تجاوز" };
+  if (value > 100) return { text: "#b3694c", bg: "#fdf1eb", label: "تجاوز" };
   if (value >= 80) return { text: "#F59E0B", bg: "#FFF7E6", label: "مرتفع" };
-  return { text: "#22C7A1", bg: "#E8FBF6", label: "ضمن الخطة" };
+  return { text: "#2f7966", bg: "#edf4e6", label: "ضمن الخطة" };
 };
 
 const CostCenterForm = ({
@@ -68,17 +68,17 @@ const CostCenterForm = ({
   return (
     <div className="space-y-5">
       <div className="grid gap-3 md:grid-cols-3">
-        <div className="rounded-2xl border border-slate-200 bg-[#F6F8FB] p-4">
-          <p className="text-xs font-bold text-[#94A3B8]">المخصص</p>
-          <p className="mt-1 font-black text-[#020617]">{formatQar(budgetAmount)}</p>
+        <div className="rounded-2xl border border-slate-200 bg-[#f7f8f4] p-4">
+          <p className="text-xs font-bold text-[#829074]">المخصص</p>
+          <p className="mt-1 font-black text-[#2c4136]">{formatQar(budgetAmount)}</p>
         </div>
-        <div className="rounded-2xl border border-slate-200 bg-[#F6F8FB] p-4">
-          <p className="text-xs font-bold text-[#94A3B8]">الفعلي</p>
-          <p className="mt-1 font-black text-[#7C83F6]">{formatQar(actualAmount)}</p>
+        <div className="rounded-2xl border border-slate-200 bg-[#f7f8f4] p-4">
+          <p className="text-xs font-bold text-[#829074]">الفعلي</p>
+          <p className="mt-1 font-black text-[#5b6b52]">{formatQar(actualAmount)}</p>
         </div>
-        <div className="rounded-2xl border border-slate-200 bg-[#F6F8FB] p-4">
-          <p className="text-xs font-bold text-[#94A3B8]">المتبقي</p>
-          <p className={remaining >= 0 ? "mt-1 font-black text-[#22C7A1]" : "mt-1 font-black text-[#FB6B7A]"}>
+        <div className="rounded-2xl border border-slate-200 bg-[#f7f8f4] p-4">
+          <p className="text-xs font-bold text-[#829074]">المتبقي</p>
+          <p className={remaining >= 0 ? "mt-1 font-black text-[#2f7966]" : "mt-1 font-black text-[#b3694c]"}>
             {formatQar(remaining)}
           </p>
         </div>
@@ -86,7 +86,7 @@ const CostCenterForm = ({
 
       <div className="rounded-2xl p-4" style={{ backgroundColor: tone.bg }}>
         <div className="mb-2 flex items-center justify-between text-sm">
-          <span className="font-bold text-[#020617]">نسبة الاستغلال</span>
+          <span className="font-bold text-[#2c4136]">نسبة الاستغلال</span>
           <span className="font-black" style={{ color: tone.text }}>{utilization.toFixed(1)}%</span>
         </div>
         <Progress value={Math.min(utilization, 100)} className="h-2" />
@@ -150,14 +150,14 @@ const CostCenterForm = ({
             value={value.description || ""}
             onChange={(event) => onChange({ ...value, description: event.target.value })}
             placeholder="وصف مختصر لطبيعة المصروفات التي تسجل على هذا المركز"
-            className="min-h-24 rounded-xl border-slate-200 bg-[#F6F8FB] text-[#020617] focus-visible:ring-[#22C7A1]"
+            className="min-h-24 rounded-xl border-slate-200 bg-[#f7f8f4] text-[#2c4136] focus-visible:ring-[#2f7966]"
           />
         </div>
       </div>
 
       <Button
         onClick={onSubmit}
-        className="h-11 w-full rounded-xl bg-[#22C7A1] font-black text-white hover:bg-[#1DAE8D]"
+        className="h-11 w-full rounded-xl bg-[#2f7966] font-black text-white hover:bg-[#1DAE8D]"
         disabled={isPending}
       >
         {isPending ? "جاري الحفظ..." : submitLabel}
@@ -277,7 +277,7 @@ export default function CostCenters() {
   }
 
   if (error) {
-    return <div className="rounded-2xl border border-[#FB6B7A]/20 bg-[#FFF0F2] p-5 text-center font-bold text-[#FB6B7A]">حدث خطأ في تحميل البيانات</div>;
+    return <div className="rounded-2xl border border-[#b3694c]/20 bg-[#fdf1eb] p-5 text-center font-bold text-[#b3694c]">حدث خطأ في تحميل البيانات</div>;
   }
 
   return (
@@ -289,11 +289,11 @@ export default function CostCenters() {
             <CardContent className="p-4">
               <div className="flex items-start justify-between">
                 <div>
-                  <p className="text-xs font-bold text-[#94A3B8]">إجمالي المراكز</p>
-                  <p className="mt-2 text-xl font-black text-[#020617]">{totals.count}</p>
-                  <p className="mt-1 text-xs font-bold text-[#22C7A1]">{totals.activeCenters} نشط</p>
+                  <p className="text-xs font-bold text-[#829074]">إجمالي المراكز</p>
+                  <p className="mt-2 text-xl font-black text-[#2c4136]">{totals.count}</p>
+                  <p className="mt-1 text-xs font-bold text-[#2f7966]">{totals.activeCenters} نشط</p>
                 </div>
-                <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-[#EAF8FE] text-[#38BDF8]">
+                <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-[#e9f1f3] text-[#4a707c]">
                   <Building className="h-5 w-5" />
                 </div>
               </div>
@@ -303,10 +303,10 @@ export default function CostCenters() {
             <CardContent className="p-4">
               <div className="flex items-start justify-between">
                 <div>
-                  <p className="text-xs font-bold text-[#94A3B8]">إجمالي الموازنة</p>
-                  <p className="mt-2 text-xl font-black text-[#020617]">{formatQar(totals.totalBudget)}</p>
+                  <p className="text-xs font-bold text-[#829074]">إجمالي الموازنة</p>
+                  <p className="mt-2 text-xl font-black text-[#2c4136]">{formatQar(totals.totalBudget)}</p>
                 </div>
-                <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-[#ECEEFE] text-[#7C83F6]">
+                <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-[#f1f4ec] text-[#5b6b52]">
                   <Target className="h-5 w-5" />
                 </div>
               </div>
@@ -316,10 +316,10 @@ export default function CostCenters() {
             <CardContent className="p-4">
               <div className="flex items-start justify-between">
                 <div>
-                  <p className="text-xs font-bold text-[#94A3B8]">المصروف الفعلي</p>
-                  <p className="mt-2 text-xl font-black text-[#020617]">{formatQar(totals.totalActual)}</p>
+                  <p className="text-xs font-bold text-[#829074]">المصروف الفعلي</p>
+                  <p className="mt-2 text-xl font-black text-[#2c4136]">{formatQar(totals.totalActual)}</p>
                 </div>
-                <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-[#E8FBF6] text-[#22C7A1]">
+                <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-[#edf4e6] text-[#2f7966]">
                   <WalletCards className="h-5 w-5" />
                 </div>
               </div>
@@ -329,10 +329,10 @@ export default function CostCenters() {
             <CardContent className="p-4">
               <div className="flex items-start justify-between">
                 <div>
-                  <p className="text-xs font-bold text-[#94A3B8]">نسبة الاستغلال</p>
-                  <p className="mt-2 text-xl font-black text-[#020617]">{totals.utilization.toFixed(1)}%</p>
+                  <p className="text-xs font-bold text-[#829074]">نسبة الاستغلال</p>
+                  <p className="mt-2 text-xl font-black text-[#2c4136]">{totals.utilization.toFixed(1)}%</p>
                 </div>
-                <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-[#FFF0F2] text-[#FB6B7A]">
+                <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-[#fdf1eb] text-[#b3694c]">
                   <TrendingUp className="h-5 w-5" />
                 </div>
               </div>
@@ -343,26 +343,26 @@ export default function CostCenters() {
         <div className="grid gap-5 xl:grid-cols-[minmax(0,0.75fr)_minmax(0,1.25fr)]">
           <Card className="rounded-2xl border-slate-200 bg-white shadow-sm">
             <CardHeader className="pb-3">
-              <CardTitle className="flex items-center gap-2 text-lg font-black text-[#020617]">
-                <Layers3 className="h-5 w-5 text-[#7C83F6]" />
+              <CardTitle className="flex items-center gap-2 text-lg font-black text-[#2c4136]">
+                <Layers3 className="h-5 w-5 text-[#5b6b52]" />
                 قراءة سريعة
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="rounded-2xl bg-[#F6F8FB] p-4">
+              <div className="rounded-2xl bg-[#f7f8f4] p-4">
                 <div className="mb-2 flex items-center justify-between text-sm">
-                  <span className="font-bold text-[#020617]">استهلاك الموازنة</span>
-                  <span className="font-black text-[#22C7A1]">{totals.utilization.toFixed(1)}%</span>
+                  <span className="font-bold text-[#2c4136]">استهلاك الموازنة</span>
+                  <span className="font-black text-[#2f7966]">{totals.utilization.toFixed(1)}%</span>
                 </div>
                 <Progress value={Math.min(totals.utilization, 100)} className="h-2" />
-                <div className="mt-3 flex justify-between text-xs font-bold text-[#94A3B8]">
+                <div className="mt-3 flex justify-between text-xs font-bold text-[#829074]">
                   <span>الفعلي {formatQar(totals.totalActual)}</span>
                   <span>المخصص {formatQar(totals.totalBudget)}</span>
                 </div>
               </div>
               <div className="rounded-2xl border border-slate-200 p-4">
-                <p className="text-xs font-bold text-[#94A3B8]">المتبقي على مستوى كل المراكز</p>
-                <p className={totals.remaining >= 0 ? "mt-1 text-2xl font-black text-[#22C7A1]" : "mt-1 text-2xl font-black text-[#FB6B7A]"}>
+                <p className="text-xs font-bold text-[#829074]">المتبقي على مستوى كل المراكز</p>
+                <p className={totals.remaining >= 0 ? "mt-1 text-2xl font-black text-[#2f7966]" : "mt-1 text-2xl font-black text-[#b3694c]"}>
                   {formatQar(totals.remaining)}
                 </p>
               </div>
@@ -373,12 +373,12 @@ export default function CostCenters() {
             <CardHeader className="pb-3">
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
-                  <CardTitle className="text-lg font-black text-[#020617]">مراكز التكلفة</CardTitle>
-                  <p className="mt-1 text-sm text-[#94A3B8]">بحث بالرمز أو الاسم العربي/الإنجليزي مع متابعة الاستغلال</p>
+                  <CardTitle className="text-lg font-black text-[#2c4136]">مراكز التكلفة</CardTitle>
+                  <p className="mt-1 text-sm text-[#829074]">بحث بالرمز أو الاسم العربي/الإنجليزي مع متابعة الاستغلال</p>
                 </div>
                 <div className="flex flex-col gap-2 sm:flex-row">
                   <div className="relative">
-                    <Search className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#94A3B8]" />
+                    <Search className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#829074]" />
                     <Input
                       placeholder="ابحث عن مركز تكلفة..."
                       value={searchTerm}
@@ -388,14 +388,14 @@ export default function CostCenters() {
                   </div>
                   <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
                     <DialogTrigger asChild>
-                      <Button className="h-11 rounded-xl bg-[#22C7A1] font-black text-white hover:bg-[#1DAE8D]">
+                      <Button className="h-11 rounded-xl bg-[#2f7966] font-black text-white hover:bg-[#1DAE8D]">
                         <Plus className="ml-2 h-4 w-4" />
                         مركز جديد
                       </Button>
                     </DialogTrigger>
                     <DialogContent className="max-w-2xl rounded-2xl" dir="rtl">
                       <DialogHeader>
-                        <DialogTitle className="text-2xl font-black text-[#020617]">إنشاء مركز تكلفة</DialogTitle>
+                        <DialogTitle className="text-2xl font-black text-[#2c4136]">إنشاء مركز تكلفة</DialogTitle>
                         <DialogDescription>عرّف المركز وحدد المخصص المالي ليظهر أثره في المتابعة.</DialogDescription>
                       </DialogHeader>
                       <CostCenterForm
@@ -413,15 +413,15 @@ export default function CostCenters() {
             <CardContent>
               <div className="overflow-x-auto rounded-2xl border border-slate-200">
                 <Table className="min-w-[900px]" aria-label="جدول مراكز التكلفة">
-                  <TableHeader className="bg-[#F6F8FB]">
+                  <TableHeader className="bg-[#f7f8f4]">
                     <TableRow>
-                      <TableHead className="text-[#64748B]">المركز</TableHead>
-                      <TableHead className="text-[#64748B]">المخصص</TableHead>
-                      <TableHead className="text-[#64748B]">الفعلي</TableHead>
-                      <TableHead className="text-[#64748B]">المتبقي</TableHead>
-                      <TableHead className="text-[#64748B]">الاستغلال</TableHead>
-                      <TableHead className="text-[#64748B]">الحالة</TableHead>
-                      <TableHead className="text-[#64748B]">الإجراءات</TableHead>
+                      <TableHead className="text-[#5b6b52]">المركز</TableHead>
+                      <TableHead className="text-[#5b6b52]">المخصص</TableHead>
+                      <TableHead className="text-[#5b6b52]">الفعلي</TableHead>
+                      <TableHead className="text-[#5b6b52]">المتبقي</TableHead>
+                      <TableHead className="text-[#5b6b52]">الاستغلال</TableHead>
+                      <TableHead className="text-[#5b6b52]">الحالة</TableHead>
+                      <TableHead className="text-[#5b6b52]">الإجراءات</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -433,21 +433,21 @@ export default function CostCenters() {
                       const tone = utilizationTone(utilization);
 
                       return (
-                        <TableRow key={center.id} className="hover:bg-[#F6F8FB]/70">
+                        <TableRow key={center.id} className="hover:bg-[#f7f8f4]/70">
                           <TableCell>
                             <div>
-                              <p className="font-black text-[#020617]">{center.center_name}</p>
+                              <p className="font-black text-[#2c4136]">{center.center_name}</p>
                               <div className="mt-1 flex flex-wrap items-center gap-2">
-                                <span className="rounded-full bg-[#F6F8FB] px-2 py-0.5 text-xs font-bold text-[#64748B]">
+                                <span className="rounded-full bg-[#f7f8f4] px-2 py-0.5 text-xs font-bold text-[#5b6b52]">
                                   {center.center_code}
                                 </span>
-                                {center.center_name_ar && <span className="text-xs text-[#94A3B8]">{center.center_name_ar}</span>}
+                                {center.center_name_ar && <span className="text-xs text-[#829074]">{center.center_name_ar}</span>}
                               </div>
                             </div>
                           </TableCell>
-                          <TableCell className="font-bold text-[#020617]">{formatQar(budgetAmount)}</TableCell>
-                          <TableCell className="font-bold text-[#7C83F6]">{formatQar(actualAmount)}</TableCell>
-                          <TableCell className={remaining >= 0 ? "font-black text-[#22C7A1]" : "font-black text-[#FB6B7A]"}>
+                          <TableCell className="font-bold text-[#2c4136]">{formatQar(budgetAmount)}</TableCell>
+                          <TableCell className="font-bold text-[#5b6b52]">{formatQar(actualAmount)}</TableCell>
+                          <TableCell className={remaining >= 0 ? "font-black text-[#2f7966]" : "font-black text-[#b3694c]"}>
                             {formatQar(remaining)}
                           </TableCell>
                           <TableCell>
@@ -464,8 +464,8 @@ export default function CostCenters() {
                               variant="outline"
                               className={
                                 center.is_active !== false
-                                  ? "rounded-full border-[#22C7A1]/25 bg-[#E8FBF6] px-3 py-1 font-black text-[#0F9F82]"
-                                  : "rounded-full border-[#94A3B8]/25 bg-[#F6F8FB] px-3 py-1 font-black text-[#64748B]"
+                                  ? "rounded-full border-[#2f7966]/25 bg-[#edf4e6] px-3 py-1 font-black text-[#0F9F82]"
+                                  : "rounded-full border-[#829074]/25 bg-[#f7f8f4] px-3 py-1 font-black text-[#5b6b52]"
                               }
                             >
                               {center.is_active !== false ? "نشط" : "غير نشط"}
@@ -479,7 +479,7 @@ export default function CostCenters() {
                                     variant="ghost"
                                     size="icon"
                                     onClick={() => handleViewCostCenter(center as CostCenter)}
-                                    className="h-9 w-9 rounded-xl text-[#38BDF8] hover:bg-[#EAF8FE]"
+                                    className="h-9 w-9 rounded-xl text-[#4a707c] hover:bg-[#e9f1f3]"
                                     aria-label="عرض التفاصيل"
                                   >
                                     <Eye className="h-4 w-4" />
@@ -494,7 +494,7 @@ export default function CostCenters() {
                                     variant="ghost"
                                     size="icon"
                                     onClick={() => handleEditCostCenter(center as CostCenter)}
-                                    className="h-9 w-9 rounded-xl text-[#7C83F6] hover:bg-[#ECEEFE]"
+                                    className="h-9 w-9 rounded-xl text-[#5b6b52] hover:bg-[#f1f4ec]"
                                     aria-label="تعديل"
                                   >
                                     <Edit className="h-4 w-4" />
@@ -510,7 +510,7 @@ export default function CostCenters() {
                                       <Button
                                         variant="ghost"
                                         size="icon"
-                                        className="h-9 w-9 rounded-xl text-[#FB6B7A] hover:bg-[#FFF0F2]"
+                                        className="h-9 w-9 rounded-xl text-[#b3694c] hover:bg-[#fdf1eb]"
                                         aria-label="حذف"
                                       >
                                         <Trash2 className="h-4 w-4" />
@@ -521,7 +521,7 @@ export default function CostCenters() {
                                 </Tooltip>
                                 <AlertDialogContent dir="rtl" className="rounded-2xl">
                                   <AlertDialogHeader>
-                                    <AlertDialogTitle className="text-[#020617]">تأكيد حذف مركز التكلفة</AlertDialogTitle>
+                                    <AlertDialogTitle className="text-[#2c4136]">تأكيد حذف مركز التكلفة</AlertDialogTitle>
                                     <AlertDialogDescription>
                                       سيتم حذف "{center.center_name}". هذا الإجراء لا يمكن التراجع عنه.
                                     </AlertDialogDescription>
@@ -530,7 +530,7 @@ export default function CostCenters() {
                                     <AlertDialogCancel>إلغاء</AlertDialogCancel>
                                     <AlertDialogAction
                                       onClick={() => handleDeleteCostCenter(center.id)}
-                                      className="bg-[#FB6B7A] text-white hover:bg-[#E75B69]"
+                                      className="bg-[#b3694c] text-white hover:bg-[#E75B69]"
                                     >
                                       حذف
                                     </AlertDialogAction>
@@ -563,36 +563,36 @@ export default function CostCenters() {
         <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
           <DialogContent className="max-w-2xl rounded-2xl" dir="rtl">
             <DialogHeader>
-              <DialogTitle className="text-2xl font-black text-[#020617]">تفاصيل مركز التكلفة</DialogTitle>
+              <DialogTitle className="text-2xl font-black text-[#2c4136]">تفاصيل مركز التكلفة</DialogTitle>
               <DialogDescription>عرض المخصص والفعلي والمتبقي لهذا المركز.</DialogDescription>
             </DialogHeader>
             {selectedCostCenter && (
               <div className="space-y-4">
-                <div className="rounded-2xl bg-[#F6F8FB] p-4">
-                  <p className="text-xs font-bold text-[#94A3B8]">المركز</p>
-                  <p className="mt-1 text-xl font-black text-[#020617]">{selectedCostCenter.center_name}</p>
-                  <p className="mt-1 text-sm font-bold text-[#94A3B8]">{selectedCostCenter.center_code}</p>
+                <div className="rounded-2xl bg-[#f7f8f4] p-4">
+                  <p className="text-xs font-bold text-[#829074]">المركز</p>
+                  <p className="mt-1 text-xl font-black text-[#2c4136]">{selectedCostCenter.center_name}</p>
+                  <p className="mt-1 text-sm font-bold text-[#829074]">{selectedCostCenter.center_code}</p>
                 </div>
                 <div className="grid gap-3 md:grid-cols-3">
                   <div className="rounded-2xl border border-slate-200 p-4">
-                    <p className="text-xs font-bold text-[#94A3B8]">المخصص</p>
-                    <p className="mt-1 font-black text-[#020617]">{formatQar(selectedCostCenter.budget_amount)}</p>
+                    <p className="text-xs font-bold text-[#829074]">المخصص</p>
+                    <p className="mt-1 font-black text-[#2c4136]">{formatQar(selectedCostCenter.budget_amount)}</p>
                   </div>
                   <div className="rounded-2xl border border-slate-200 p-4">
-                    <p className="text-xs font-bold text-[#94A3B8]">الفعلي</p>
-                    <p className="mt-1 font-black text-[#7C83F6]">{formatQar(selectedCostCenter.actual_amount)}</p>
+                    <p className="text-xs font-bold text-[#829074]">الفعلي</p>
+                    <p className="mt-1 font-black text-[#5b6b52]">{formatQar(selectedCostCenter.actual_amount)}</p>
                   </div>
                   <div className="rounded-2xl border border-slate-200 p-4">
-                    <p className="text-xs font-bold text-[#94A3B8]">المتبقي</p>
-                    <p className="mt-1 font-black text-[#22C7A1]">
+                    <p className="text-xs font-bold text-[#829074]">المتبقي</p>
+                    <p className="mt-1 font-black text-[#2f7966]">
                       {formatQar((selectedCostCenter.budget_amount || 0) - (selectedCostCenter.actual_amount || 0))}
                     </p>
                   </div>
                 </div>
                 {selectedCostCenter.description && (
                   <div className="rounded-2xl border border-slate-200 p-4">
-                    <p className="text-xs font-bold text-[#94A3B8]">الوصف</p>
-                    <p className="mt-2 text-sm leading-6 text-[#020617]">{selectedCostCenter.description}</p>
+                    <p className="text-xs font-bold text-[#829074]">الوصف</p>
+                    <p className="mt-2 text-sm leading-6 text-[#2c4136]">{selectedCostCenter.description}</p>
                   </div>
                 )}
               </div>
@@ -603,7 +603,7 @@ export default function CostCenters() {
         <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
           <DialogContent className="max-w-2xl rounded-2xl" dir="rtl">
             <DialogHeader>
-              <DialogTitle className="text-2xl font-black text-[#020617]">تعديل مركز التكلفة</DialogTitle>
+              <DialogTitle className="text-2xl font-black text-[#2c4136]">تعديل مركز التكلفة</DialogTitle>
               <DialogDescription>حدّث بيانات المركز وراجع نسبة الاستغلال قبل الحفظ.</DialogDescription>
             </DialogHeader>
             {selectedCostCenter && (

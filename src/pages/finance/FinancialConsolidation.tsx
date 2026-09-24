@@ -81,11 +81,11 @@ const STATUS_LABELS: Record<string, string> = {
 };
 
 const STATUS_TONES: Record<string, string> = {
-  draft: "border-0 bg-[#F6F8FB] text-[#94A3B8]",
+  draft: "border-0 bg-[#f7f8f4] text-[#829074]",
   calculated: "border-0 bg-[#FEF3C7] text-[#D97706]",
-  approved: "border-0 bg-[#E8FBF6] text-[#22C7A1]",
-  locked: "border-0 bg-[#ECEEFE] text-[#7C83F6]",
-  cancelled: "border-0 bg-[#FFF0F2] text-[#FB6B7A]",
+  approved: "border-0 bg-[#edf4e6] text-[#2f7966]",
+  locked: "border-0 bg-[#f1f4ec] text-[#5b6b52]",
+  cancelled: "border-0 bg-[#fdf1eb] text-[#b3694c]",
 };
 
 export default function FinancialConsolidation() {
@@ -358,23 +358,23 @@ export default function FinancialConsolidation() {
             </DialogHeader>
             <div className="space-y-4 py-2">
               <div className="space-y-2">
-                <Label className="text-sm font-bold text-[#020617]">رقم العملية</Label>
-                <Input value={runNumber} onChange={(e) => setRunNumber(e.target.value)} placeholder="CON-2026-01" className="h-11 rounded-lg bg-[#F6F8FB]" />
+                <Label className="text-sm font-bold text-[#2c4136]">رقم العملية</Label>
+                <Input value={runNumber} onChange={(e) => setRunNumber(e.target.value)} placeholder="CON-2026-01" className="h-11 rounded-lg bg-[#f7f8f4]" />
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-2">
-                  <Label className="text-sm font-bold text-[#020617]">من تاريخ</Label>
-                  <Input type="date" value={periodStart} onChange={(e) => setPeriodStart(e.target.value)} className="h-11 rounded-lg bg-[#F6F8FB]" />
+                  <Label className="text-sm font-bold text-[#2c4136]">من تاريخ</Label>
+                  <Input type="date" value={periodStart} onChange={(e) => setPeriodStart(e.target.value)} className="h-11 rounded-lg bg-[#f7f8f4]" />
                 </div>
                 <div className="space-y-2">
-                  <Label className="text-sm font-bold text-[#020617]">إلى تاريخ</Label>
-                  <Input type="date" value={periodEnd} onChange={(e) => setPeriodEnd(e.target.value)} className="h-11 rounded-lg bg-[#F6F8FB]" />
+                  <Label className="text-sm font-bold text-[#2c4136]">إلى تاريخ</Label>
+                  <Input type="date" value={periodEnd} onChange={(e) => setPeriodEnd(e.target.value)} className="h-11 rounded-lg bg-[#f7f8f4]" />
                 </div>
               </div>
               <div className="space-y-2">
-                <Label className="text-sm font-bold text-[#020617]">العملة المستهدفة</Label>
+                <Label className="text-sm font-bold text-[#2c4136]">العملة المستهدفة</Label>
                 <Select value={targetCurrency} onValueChange={setTargetCurrency}>
-                  <SelectTrigger className="h-11 rounded-lg bg-[#F6F8FB]">
+                  <SelectTrigger className="h-11 rounded-lg bg-[#f7f8f4]">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -386,13 +386,13 @@ export default function FinancialConsolidation() {
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label className="text-sm font-bold text-[#020617]">ملاحظات (اختياري)</Label>
-                <Input value={consolidationNotes} onChange={(e) => setConsolidationNotes(e.target.value)} placeholder="ملاحظات حول عملية التوحيد..." className="h-11 rounded-lg bg-[#F6F8FB]" />
+                <Label className="text-sm font-bold text-[#2c4136]">ملاحظات (اختياري)</Label>
+                <Input value={consolidationNotes} onChange={(e) => setConsolidationNotes(e.target.value)} placeholder="ملاحظات حول عملية التوحيد..." className="h-11 rounded-lg bg-[#f7f8f4]" />
               </div>
               <Button
                 onClick={() => createRunMutation.mutate()}
                 disabled={createRunMutation.isPending || !companyId}
-                className="h-11 w-full gap-2 rounded-lg bg-[#020617] text-white hover:bg-[#020617]/90"
+                className="h-11 w-full gap-2 rounded-lg bg-[#2c4136] text-white hover:bg-[#2c4136]/90"
               >
                 {createRunMutation.isPending ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
                 إنشاء العملية
@@ -406,42 +406,42 @@ export default function FinancialConsolidation() {
 
       <Card className="rounded-2xl border-slate-200 bg-white shadow-sm">
         <CardHeader className="border-b border-slate-100 pb-4">
-          <CardTitle className="text-base font-black text-[#020617]">عمليات التوحيد</CardTitle>
+          <CardTitle className="text-base font-black text-[#2c4136]">عمليات التوحيد</CardTitle>
         </CardHeader>
         <CardContent className="p-4">
           <div className="overflow-hidden rounded-lg border border-slate-200">
             <Table>
               <TableHeader>
-                <TableRow className="bg-[#F6F8FB]">
-                  <TableHead className="text-right text-xs font-black text-[#94A3B8]">رقم</TableHead>
-                  <TableHead className="text-right text-xs font-black text-[#94A3B8]">النطاق</TableHead>
-                  <TableHead className="text-right text-xs font-black text-[#94A3B8]">العملة</TableHead>
-                  <TableHead className="text-right text-xs font-black text-[#94A3B8]">الشركات</TableHead>
-                  <TableHead className="text-right text-xs font-black text-[#94A3B8]">الإزالات</TableHead>
-                  <TableHead className="text-right text-xs font-black text-[#94A3B8]">عدم التوازن</TableHead>
-                  <TableHead className="text-right text-xs font-black text-[#94A3B8]">الحالة</TableHead>
-                  <TableHead className="text-right text-xs font-black text-[#94A3B8]">إجراءات</TableHead>
+                <TableRow className="bg-[#f7f8f4]">
+                  <TableHead className="text-right text-xs font-black text-[#829074]">رقم</TableHead>
+                  <TableHead className="text-right text-xs font-black text-[#829074]">النطاق</TableHead>
+                  <TableHead className="text-right text-xs font-black text-[#829074]">العملة</TableHead>
+                  <TableHead className="text-right text-xs font-black text-[#829074]">الشركات</TableHead>
+                  <TableHead className="text-right text-xs font-black text-[#829074]">الإزالات</TableHead>
+                  <TableHead className="text-right text-xs font-black text-[#829074]">عدم التوازن</TableHead>
+                  <TableHead className="text-right text-xs font-black text-[#829074]">الحالة</TableHead>
+                  <TableHead className="text-right text-xs font-black text-[#829074]">إجراءات</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {runsQuery.isLoading ? (
                   <TableRow>
-                    <TableCell colSpan={8} className="py-8 text-center text-sm font-bold text-[#94A3B8]">جاري التحميل...</TableCell>
+                    <TableCell colSpan={8} className="py-8 text-center text-sm font-bold text-[#829074]">جاري التحميل...</TableCell>
                   </TableRow>
                 ) : runsQuery.data?.length ? (
                   runsQuery.data.map((run) => (
                     <TableRow
                       key={run.id}
-                      className={selectedRunId === run.id ? "bg-[#F6F8FB]" : ""}
+                      className={selectedRunId === run.id ? "bg-[#f7f8f4]" : ""}
                       onClick={() => setSelectedRunId(run.id)}
                       style={{ cursor: "pointer" }}
                     >
-                      <TableCell className="font-mono text-sm font-black text-[#020617]">{run.run_number}</TableCell>
-                      <TableCell className="text-sm text-[#64748B]">{run.period_start} - {run.period_end}</TableCell>
-                      <TableCell className="text-sm text-[#64748B]">{run.target_currency}</TableCell>
-                      <TableCell className="text-sm text-[#020617]">{run.company_count}</TableCell>
-                      <TableCell className="text-sm text-[#020617]">{run.elimination_count}</TableCell>
-                      <TableCell className={`text-sm font-bold ${Math.abs(run.imbalance) > 0.01 ? "text-[#FB6B7A]" : "text-[#22C7A1]"}`}>
+                      <TableCell className="font-mono text-sm font-black text-[#2c4136]">{run.run_number}</TableCell>
+                      <TableCell className="text-sm text-[#5b6b52]">{run.period_start} - {run.period_end}</TableCell>
+                      <TableCell className="text-sm text-[#5b6b52]">{run.target_currency}</TableCell>
+                      <TableCell className="text-sm text-[#2c4136]">{run.company_count}</TableCell>
+                      <TableCell className="text-sm text-[#2c4136]">{run.elimination_count}</TableCell>
+                      <TableCell className={`text-sm font-bold ${Math.abs(run.imbalance) > 0.01 ? "text-[#b3694c]" : "text-[#2f7966]"}`}>
                         {fmt(run.imbalance)}
                       </TableCell>
                       <TableCell>
@@ -465,7 +465,7 @@ export default function FinancialConsolidation() {
                             size="sm"
                             onClick={() => approveMutation.mutate(run.id)}
                             disabled={approveMutation.isPending || run.status !== "calculated"}
-                            className="gap-1 bg-[#22C7A1] text-xs text-white hover:bg-[#1BAF8D]"
+                            className="gap-1 bg-[#2f7966] text-xs text-white hover:bg-[#256450]"
                           >
                             <CheckCircle2 className="h-3 w-3" />
                             اعتماد
@@ -487,7 +487,7 @@ export default function FinancialConsolidation() {
                 ) : (
                   <TableRow>
                     <TableCell colSpan={8} className="py-8 text-center">
-                      <div className="flex flex-col items-center gap-2 text-[#94A3B8]">
+                      <div className="flex flex-col items-center gap-2 text-[#829074]">
                         <Globe2 className="h-6 w-6" />
                         <p className="text-sm font-bold">لا توجد عمليات توحيد بعد</p>
                       </div>
@@ -505,8 +505,8 @@ export default function FinancialConsolidation() {
           <Card className="rounded-2xl border-slate-200 bg-white shadow-sm">
             <CardHeader className="border-b border-slate-100 pb-4">
               <div className="flex items-center gap-2">
-                <Building2 className="h-5 w-5 text-[#7C83F6]" />
-                <CardTitle className="text-base font-black text-[#020617]">
+                <Building2 className="h-5 w-5 text-[#5b6b52]" />
+                <CardTitle className="text-base font-black text-[#2c4136]">
                   الشركات المضمّنة — {selectedRun.run_number}
                 </CardTitle>
               </div>
@@ -517,30 +517,30 @@ export default function FinancialConsolidation() {
                   {runCompaniesQuery.data.map((rc) => {
                     const company = companiesQuery.data?.find((c) => c.id === rc.company_id);
                     return (
-                      <div key={rc.id} className="flex items-center justify-between rounded-lg bg-[#F6F8FB] p-3">
+                      <div key={rc.id} className="flex items-center justify-between rounded-lg bg-[#f7f8f4] p-3">
                         <div>
-                          <p className="text-sm font-bold text-[#020617]">{company?.name_ar || company?.name || rc.company_id.slice(0, 8)}</p>
-                          <p className="text-xs text-[#94A3B8]">{rc.source_currency} × {rc.exchange_rate}</p>
+                          <p className="text-sm font-bold text-[#2c4136]">{company?.name_ar || company?.name || rc.company_id.slice(0, 8)}</p>
+                          <p className="text-xs text-[#829074]">{rc.source_currency} × {rc.exchange_rate}</p>
                         </div>
-                        <Badge className="border-0 bg-white text-[#64748B]">{rc.source_currency}</Badge>
+                        <Badge className="border-0 bg-white text-[#5b6b52]">{rc.source_currency}</Badge>
                       </div>
                     );
                   })}
                 </div>
               ) : (
-                <p className="text-center text-sm text-[#94A3B8]">لا توجد شركات مضمّنة بعد</p>
+                <p className="text-center text-sm text-[#829074]">لا توجد شركات مضمّنة بعد</p>
               )}
 
               {companiesQuery.data && companiesQuery.data.length > 1 && selectedRun.status === "draft" && (
                 <div className="border-t border-slate-100 pt-3">
-                  <p className="mb-2 text-xs font-black text-[#94A3B8]">إضافة شركة</p>
+                  <p className="mb-2 text-xs font-black text-[#829074]">إضافة شركة</p>
                   <Select onValueChange={(val) => {
                     const company = companiesQuery.data.find((c) => c.id === val);
                     if (company && company.id !== companyId) {
                       addCompanyMutation.mutate({ runId: selectedRunId!, companyToAddId: company.id, exchangeRate: 1 });
                     }
                   }}>
-                    <SelectTrigger className="h-10 rounded-lg bg-[#F6F8FB]">
+                    <SelectTrigger className="h-10 rounded-lg bg-[#f7f8f4]">
                       <SelectValue placeholder="اختر شركة للإضافة" />
                     </SelectTrigger>
                     <SelectContent>
@@ -560,7 +560,7 @@ export default function FinancialConsolidation() {
             <CardHeader className="border-b border-slate-100 pb-4">
               <div className="flex items-center gap-2">
                 <Calculator className="h-5 w-5 text-[#D97706]" />
-                <CardTitle className="text-base font-black text-[#020617]">قيود الإزالة البينية</CardTitle>
+                <CardTitle className="text-base font-black text-[#2c4136]">قيود الإزالة البينية</CardTitle>
               </div>
             </CardHeader>
             <CardContent className="space-y-3 p-4">
@@ -568,45 +568,45 @@ export default function FinancialConsolidation() {
                 <div className="overflow-hidden rounded-lg border border-slate-200">
                   <Table>
                     <TableHeader>
-                      <TableRow className="bg-[#F6F8FB]">
-                        <TableHead className="text-right text-xs text-[#94A3B8]">الحساب</TableHead>
-                        <TableHead className="text-right text-xs text-[#94A3B8]">مدين</TableHead>
-                        <TableHead className="text-right text-xs text-[#94A3B8]">دائن</TableHead>
-                        <TableHead className="text-right text-xs text-[#94A3B8]">السبب</TableHead>
+                      <TableRow className="bg-[#f7f8f4]">
+                        <TableHead className="text-right text-xs text-[#829074]">الحساب</TableHead>
+                        <TableHead className="text-right text-xs text-[#829074]">مدين</TableHead>
+                        <TableHead className="text-right text-xs text-[#829074]">دائن</TableHead>
+                        <TableHead className="text-right text-xs text-[#829074]">السبب</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {eliminationsQuery.data.map((elim) => (
                         <TableRow key={elim.id}>
-                          <TableCell className="font-mono text-sm text-[#020617]">{elim.account_code}</TableCell>
+                          <TableCell className="font-mono text-sm text-[#2c4136]">{elim.account_code}</TableCell>
                           <TableCell className="text-sm text-[#0F766E]">{fmt(elim.debit_amount)}</TableCell>
                           <TableCell className="text-sm text-[#991B1B]">{fmt(elim.credit_amount)}</TableCell>
-                          <TableCell className="text-xs text-[#64748B]">{elim.reason}</TableCell>
+                          <TableCell className="text-xs text-[#5b6b52]">{elim.reason}</TableCell>
                         </TableRow>
                       ))}
                     </TableBody>
                   </Table>
                 </div>
               ) : (
-                <p className="text-center text-sm text-[#94A3B8]">لا توجد قيود إزالة بينية</p>
+                <p className="text-center text-sm text-[#829074]">لا توجد قيود إزالة بينية</p>
               )}
 
               {selectedRun.status === "draft" && (
                 <div className="space-y-2 border-t border-slate-100 pt-3">
-                  <p className="text-xs font-black text-[#94A3B8]">إضافة قيد إزالة</p>
+                  <p className="text-xs font-black text-[#829074]">إضافة قيد إزالة</p>
                   <div className="grid grid-cols-2 gap-2">
-                    <Input value={eliminationAccountCode} onChange={(e) => setEliminationAccountCode(e.target.value)} placeholder="كود الحساب" className="h-10 rounded-lg bg-[#F6F8FB]" />
-                    <Input value={eliminationReason} onChange={(e) => setEliminationReason(e.target.value)} placeholder="السبب" className="h-10 rounded-lg bg-[#F6F8FB]" />
+                    <Input value={eliminationAccountCode} onChange={(e) => setEliminationAccountCode(e.target.value)} placeholder="كود الحساب" className="h-10 rounded-lg bg-[#f7f8f4]" />
+                    <Input value={eliminationReason} onChange={(e) => setEliminationReason(e.target.value)} placeholder="السبب" className="h-10 rounded-lg bg-[#f7f8f4]" />
                   </div>
                   <div className="grid grid-cols-2 gap-2">
-                    <Input type="number" value={eliminationDebit} onChange={(e) => setEliminationDebit(e.target.value)} placeholder="مدين" className="h-10 rounded-lg bg-[#F6F8FB]" min={0} />
-                    <Input type="number" value={eliminationCredit} onChange={(e) => setEliminationCredit(e.target.value)} placeholder="دائن" className="h-10 rounded-lg bg-[#F6F8FB]" min={0} />
+                    <Input type="number" value={eliminationDebit} onChange={(e) => setEliminationDebit(e.target.value)} placeholder="مدين" className="h-10 rounded-lg bg-[#f7f8f4]" min={0} />
+                    <Input type="number" value={eliminationCredit} onChange={(e) => setEliminationCredit(e.target.value)} placeholder="دائن" className="h-10 rounded-lg bg-[#f7f8f4]" min={0} />
                   </div>
                   <Button
                     size="sm"
                     onClick={() => addEliminationMutation.mutate()}
                     disabled={addEliminationMutation.isPending}
-                    className="w-full gap-1 rounded-lg bg-[#020617] text-white hover:bg-[#020617]/90"
+                    className="w-full gap-1 rounded-lg bg-[#2c4136] text-white hover:bg-[#2c4136]/90"
                   >
                     {addEliminationMutation.isPending ? <RefreshCw className="h-3.5 w-3.5 animate-spin" /> : <Plus className="h-3.5 w-3.5" />}
                     إضافة
@@ -621,7 +621,7 @@ export default function FinancialConsolidation() {
       {selectedRun && linesQuery.data && linesQuery.data.length > 0 && (
         <Card className="rounded-2xl border-slate-200 bg-white shadow-sm">
           <CardHeader className="border-b border-slate-100 pb-4">
-            <CardTitle className="text-base font-black text-[#020617]">
+            <CardTitle className="text-base font-black text-[#2c4136]">
               بنود التوحيد — {selectedRun.run_number}
             </CardTitle>
           </CardHeader>
@@ -629,29 +629,29 @@ export default function FinancialConsolidation() {
             <div className="overflow-hidden rounded-lg border border-slate-200">
               <Table>
                 <TableHeader>
-                  <TableRow className="bg-[#F6F8FB]">
-                    <TableHead className="text-right text-xs font-black text-[#94A3B8]">الكود</TableHead>
-                    <TableHead className="text-right text-xs font-black text-[#94A3B8]">الحساب</TableHead>
-                    <TableHead className="text-right text-xs font-black text-[#94A3B8]">مدين (مصدر)</TableHead>
-                    <TableHead className="text-right text-xs font-black text-[#94A3B8]">دائن (مصدر)</TableHead>
-                    <TableHead className="text-right text-xs font-black text-[#94A3B8]">إزالة مدين</TableHead>
-                    <TableHead className="text-right text-xs font-black text-[#94A3B8]">إزالة دائن</TableHead>
-                    <TableHead className="text-right text-xs font-black text-[#94A3B8]">مدين (موحد)</TableHead>
-                    <TableHead className="text-right text-xs font-black text-[#94A3B8]">دائن (موحد)</TableHead>
-                    <TableHead className="text-right text-xs font-black text-[#94A3B8]">الرصيد</TableHead>
+                  <TableRow className="bg-[#f7f8f4]">
+                    <TableHead className="text-right text-xs font-black text-[#829074]">الكود</TableHead>
+                    <TableHead className="text-right text-xs font-black text-[#829074]">الحساب</TableHead>
+                    <TableHead className="text-right text-xs font-black text-[#829074]">مدين (مصدر)</TableHead>
+                    <TableHead className="text-right text-xs font-black text-[#829074]">دائن (مصدر)</TableHead>
+                    <TableHead className="text-right text-xs font-black text-[#829074]">إزالة مدين</TableHead>
+                    <TableHead className="text-right text-xs font-black text-[#829074]">إزالة دائن</TableHead>
+                    <TableHead className="text-right text-xs font-black text-[#829074]">مدين (موحد)</TableHead>
+                    <TableHead className="text-right text-xs font-black text-[#829074]">دائن (موحد)</TableHead>
+                    <TableHead className="text-right text-xs font-black text-[#829074]">الرصيد</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {linesQuery.data.map((line) => (
                     <TableRow key={line.id}>
-                      <TableCell className="font-mono text-sm font-black text-[#020617]">{line.account_code}</TableCell>
-                      <TableCell className="text-sm text-[#020617]">{line.account_name_ar || line.account_name || "—"}</TableCell>
+                      <TableCell className="font-mono text-sm font-black text-[#2c4136]">{line.account_code}</TableCell>
+                      <TableCell className="text-sm text-[#2c4136]">{line.account_name_ar || line.account_name || "—"}</TableCell>
                       <TableCell className="text-sm text-[#0F766E]">{fmt(line.source_debit)}</TableCell>
                       <TableCell className="text-sm text-[#991B1B]">{fmt(line.source_credit)}</TableCell>
                       <TableCell className="text-sm text-[#D97706]">{fmt(line.elimination_debit)}</TableCell>
                       <TableCell className="text-sm text-[#D97706]">{fmt(line.elimination_credit)}</TableCell>
-                      <TableCell className="text-sm font-bold text-[#020617]">{fmt(line.consolidated_debit)}</TableCell>
-                      <TableCell className="text-sm font-bold text-[#020617]">{fmt(line.consolidated_credit)}</TableCell>
+                      <TableCell className="text-sm font-bold text-[#2c4136]">{fmt(line.consolidated_debit)}</TableCell>
+                      <TableCell className="text-sm font-bold text-[#2c4136]">{fmt(line.consolidated_credit)}</TableCell>
                       <TableCell className={`text-sm font-bold ${line.consolidated_balance >= 0 ? "text-[#0F766E]" : "text-[#991B1B]"}`}>
                         {fmt(line.consolidated_balance)}
                       </TableCell>
@@ -664,7 +664,7 @@ export default function FinancialConsolidation() {
         </Card>
       )}
 
-      <div className="flex items-start gap-3 rounded-lg bg-[#ECEEFE] p-3 text-sm font-bold text-[#4F46E5]">
+      <div className="flex items-start gap-3 rounded-lg bg-[#f1f4ec] p-3 text-sm font-bold text-[#4F46E5]">
         <Globe2 className="mt-0.5 h-4 w-4 shrink-0" />
         <span>نظام التوحيد المالي يدعم: شركات متعددة بعملات مختلفة، إزالة المعاملات البينية، فصل المهام (المنشئ ≠ المعتمد)، قفل نهائي بعد الاعتماد.</span>
       </div>

@@ -21,16 +21,16 @@ export interface StatCardProps {
 }
 
 const variantStyles: Record<string, { icon: string; bg: string; textDark: string; textLight: string }> = {
-  default: { icon: 'bg-[#64748B]', bg: 'bg-[#F1F5F9]', textDark: 'text-[#334155]', textLight: 'text-[#64748B]' },
-  success: { icon: 'bg-[#22C7A1]', bg: 'bg-[#E8FBF6]', textDark: 'text-[#16836D]', textLight: 'text-[#22C7A1]' },
-  warning: { icon: 'bg-[#F59E0B]', bg: 'bg-[#FFFBEB]', textDark: 'text-[#B45309]', textLight: 'text-[#F59E0B]' },
-  danger: { icon: 'bg-[#FB6B7A]', bg: 'bg-[#FFF0F2]', textDark: 'text-[#C53F51]', textLight: 'text-[#FB6B7A]' },
-  coral: { icon: 'bg-[#FB6B7A]', bg: 'bg-[#FFF0F2]', textDark: 'text-[#C53F51]', textLight: 'text-[#FB6B7A]' },
-  emerald: { icon: 'bg-[#22C7A1]', bg: 'bg-[#E8FBF6]', textDark: 'text-[#16836D]', textLight: 'text-[#22C7A1]' },
-  violet: { icon: 'bg-[#7C83F6]', bg: 'bg-[#ECEEFE]', textDark: 'text-[#555CCB]', textLight: 'text-[#7C83F6]' },
-  amber: { icon: 'bg-[#F59E0B]', bg: 'bg-[#FFFBEB]', textDark: 'text-[#B45309]', textLight: 'text-[#F59E0B]' },
-  sky: { icon: 'bg-[#38BDF8]', bg: 'bg-[#EAF8FE]', textDark: 'text-[#087EA4]', textLight: 'text-[#38BDF8]' },
-  slate: { icon: 'bg-[#64748B]', bg: 'bg-[#F1F5F9]', textDark: 'text-[#334155]', textLight: 'text-[#64748B]' },
+  default: { icon: 'bg-[#5b6b52]', bg: 'bg-[#f1f4ec]', textDark: 'text-[#405a33]', textLight: 'text-[#5b6b52]' },
+  success: { icon: 'bg-[#2f7966]', bg: 'bg-[#edf4e6]', textDark: 'text-[#487038]', textLight: 'text-[#2f7966]' },
+  warning: { icon: 'bg-[#9b7c36]', bg: 'bg-[#faf5e7]', textDark: 'text-[#9b7c36]', textLight: 'text-[#9b7c36]' },
+  danger: { icon: 'bg-[#b3694c]', bg: 'bg-[#fdf1eb]', textDark: 'text-[#b3694c]', textLight: 'text-[#b3694c]' },
+  coral: { icon: 'bg-[#b3694c]', bg: 'bg-[#fdf1eb]', textDark: 'text-[#b3694c]', textLight: 'text-[#b3694c]' },
+  emerald: { icon: 'bg-[#2f7966]', bg: 'bg-[#edf4e6]', textDark: 'text-[#487038]', textLight: 'text-[#2f7966]' },
+  violet: { icon: 'bg-[#5b6b52]', bg: 'bg-[#f1f4ec]', textDark: 'text-[#5b6b52]', textLight: 'text-[#5b6b52]' },
+  amber: { icon: 'bg-[#9b7c36]', bg: 'bg-[#faf5e7]', textDark: 'text-[#9b7c36]', textLight: 'text-[#9b7c36]' },
+  sky: { icon: 'bg-[#4a707c]', bg: 'bg-[#e9f1f3]', textDark: 'text-[#4a707c]', textLight: 'text-[#4a707c]' },
+  slate: { icon: 'bg-[#5b6b52]', bg: 'bg-[#f1f4ec]', textDark: 'text-[#405a33]', textLight: 'text-[#5b6b52]' },
 };
 
 export const StatCard: React.FC<StatCardProps> = ({
@@ -52,16 +52,16 @@ export const StatCard: React.FC<StatCardProps> = ({
   const iconBgClass = iconBg || style.icon;
 
   const trendStyles = {
-    up: 'bg-green-100 text-green-600',
-    down: 'bg-red-100 text-red-600',
-    neutral: 'bg-slate-100 text-slate-600',
+    up: 'bg-[#edf4e6] text-[#487038]',
+    down: 'bg-[#fdf1eb] text-[#b3694c]',
+    neutral: 'bg-[#f1f4ec] text-[#5b6b52]',
   };
 
   if (loading) {
     return (
       <motion.div
         className={cn(
-          'min-h-[148px] bg-white rounded-lg p-5 shadow-sm border border-slate-200',
+          'min-h-[148px] bg-white rounded-lg p-5 shadow-sm border border-[#dfe5d9]',
           'animate-pulse',
           className
         )}
@@ -82,8 +82,8 @@ export const StatCard: React.FC<StatCardProps> = ({
   return (
     <motion.div
       className={cn(
-        'min-h-[148px] bg-white rounded-lg p-5 shadow-sm hover:shadow-md transition-all border border-slate-200',
-        onClick && 'cursor-pointer hover:border-primary/30',
+        'min-h-[148px] bg-white rounded-lg p-5 shadow-sm hover:shadow-md transition-all border border-[#dfe5d9]',
+        onClick && 'cursor-pointer hover:border-[#9db88a]',
         className
       )}
       initial={{ opacity: 0, y: 20 }}
@@ -115,9 +115,9 @@ export const StatCard: React.FC<StatCardProps> = ({
           </div>
         )}
       </div>
-      <p className="text-sm text-neutral-500 mb-1">{title}</p>
-      <p className="text-2xl font-bold text-neutral-900">{value}</p>
-      {subtitle && <p className="text-xs text-neutral-400 mt-1">{subtitle}</p>}
+      <p className="text-sm text-[#6f7c68] mb-1">{title}</p>
+      <p className="text-2xl font-bold text-[#2c4136]">{value}</p>
+      {subtitle && <p className="text-xs text-[#829074] mt-1">{subtitle}</p>}
     </motion.div>
   );
 };

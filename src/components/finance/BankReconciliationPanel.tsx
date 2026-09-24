@@ -168,10 +168,10 @@ export function BankReconciliationPanel() {
   const importSummary = useMemo(() => {
     if (!importPreview) return null;
     return [
-      { label: "الأسطر", value: importPreview.totals.rows, tone: "bg-[#F6F8FB] text-[#020617]" },
-      { label: "صالحة", value: importPreview.totals.validRows, tone: "bg-[#E8FBF6] text-[#22C7A1]" },
-      { label: "أخطاء", value: importPreview.errors.length, tone: "bg-[#FFF0F2] text-[#FB6B7A]" },
-      { label: "فترة الكشف", value: importPreview.lines.length ? `${importPreview.lines[0]?.statementDate} → ${importPreview.lines[importPreview.lines.length - 1]?.statementDate}` : "—", tone: "bg-[#F6F8FB] text-[#020617]" },
+      { label: "الأسطر", value: importPreview.totals.rows, tone: "bg-[#f7f8f4] text-[#2c4136]" },
+      { label: "صالحة", value: importPreview.totals.validRows, tone: "bg-[#edf4e6] text-[#2f7966]" },
+      { label: "أخطاء", value: importPreview.errors.length, tone: "bg-[#fdf1eb] text-[#b3694c]" },
+      { label: "فترة الكشف", value: importPreview.lines.length ? `${importPreview.lines[0]?.statementDate} → ${importPreview.lines[importPreview.lines.length - 1]?.statementDate}` : "—", tone: "bg-[#f7f8f4] text-[#2c4136]" },
       { label: "صافي الحركة", value: importPreview.lines.reduce((sum, line) => sum + (Number(line.amount) || 0), 0), tone: "bg-[#F0F6FF] text-[#2563EB]", isCurrency: true },
     ];
   }, [importPreview]);
@@ -379,35 +379,35 @@ export function BankReconciliationPanel() {
       <CardHeader className="border-b border-slate-100 pb-4">
         <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
           <div className="flex items-start gap-3">
-            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#E8FBF6] text-[#22C7A1]">
+            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#edf4e6] text-[#2f7966]">
               <ShieldCheck className="h-5 w-5" />
             </div>
             <div>
-              <CardTitle className="text-lg font-black text-[#020617]">التسوية البنكية الرسمية</CardTitle>
-              <p className="mt-1 text-sm font-medium text-[#94A3B8]">
+              <CardTitle className="text-lg font-black text-[#2c4136]">التسوية البنكية الرسمية</CardTitle>
+              <p className="mt-1 text-sm font-medium text-[#829074]">
                 طابق الحركات البنكية المكتملة مع الدفعات، واجعلها جزءًا من فحص صحة النظام المالي.
               </p>
             </div>
           </div>
           <div className="flex flex-wrap items-center gap-2">
-            <Badge className="border-0 bg-[#F6F8FB] px-3 py-1 text-[#94A3B8] hover:bg-[#F6F8FB]">
+            <Badge className="border-0 bg-[#f7f8f4] px-3 py-1 text-[#829074] hover:bg-[#f7f8f4]">
               {filteredTransactions.length} حركة معلقة
             </Badge>
-            <Badge className="border-0 bg-[#EAF8FE] px-3 py-1 text-[#38BDF8] hover:bg-[#EAF8FE]">
+            <Badge className="border-0 bg-[#e9f1f3] px-3 py-1 text-[#4a707c] hover:bg-[#e9f1f3]">
               المحدد: {formatCurrency(selectedTotal)}
             </Badge>
           </div>
         </div>
       </CardHeader>
       <CardContent className="space-y-4 p-4">
-        <div className="rounded-2xl border border-slate-200 bg-[#F6F8FB] p-4">
+        <div className="rounded-2xl border border-slate-200 bg-[#f7f8f4] p-4">
           <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
             <div className="space-y-2">
               <div className="flex items-center gap-2">
-                <FileSpreadsheet className="h-5 w-5 text-[#22C7A1]" />
-                <h3 className="text-sm font-black text-[#020617]">استيراد كشف بنكي</h3>
+                <FileSpreadsheet className="h-5 w-5 text-[#2f7966]" />
+                <h3 className="text-sm font-black text-[#2c4136]">استيراد كشف بنكي</h3>
               </div>
-              <p className="text-xs font-medium text-[#94A3B8]">
+              <p className="text-xs font-medium text-[#829074]">
                 ارفع CSV أو إكسل، راجع الأسطر الصالحة، ثم احفظها كدفعة تسوية رسمية قابلة للتدقيق.
               </p>
             </div>
@@ -416,7 +416,7 @@ export function BankReconciliationPanel() {
               <select
                 value={selectedBankId}
                 onChange={(event) => setSelectedBankId(event.target.value)}
-                className="h-11 rounded-xl border border-slate-200 bg-white px-3 text-sm font-bold text-[#020617] outline-none focus:border-[#22C7A1]"
+                className="h-11 rounded-xl border border-slate-200 bg-white px-3 text-sm font-bold text-[#2c4136] outline-none focus:border-[#2f7966]"
                 disabled={banksQuery.isLoading}
               >
                 <option value="">اختر البنك</option>
@@ -427,9 +427,9 @@ export function BankReconciliationPanel() {
                 ))}
               </select>
 
-              <label className="flex h-11 cursor-pointer items-center justify-between gap-3 rounded-xl border border-dashed border-slate-300 bg-white px-3 text-sm font-bold text-[#64748B] hover:border-[#22C7A1]">
+              <label className="flex h-11 cursor-pointer items-center justify-between gap-3 rounded-xl border border-dashed border-slate-300 bg-white px-3 text-sm font-bold text-[#5b6b52] hover:border-[#2f7966]">
                 <span className="truncate">{importFileName || "ملف إكسل أو CSV"}</span>
-                <Upload className="h-4 w-4 text-[#22C7A1]" />
+                <Upload className="h-4 w-4 text-[#2f7966]" />
                 <input
                   type="file"
                   accept=".csv,.xlsx,.xls"
@@ -445,7 +445,7 @@ export function BankReconciliationPanel() {
               <Button
                 onClick={() => importStatementMutation.mutate()}
                 disabled={!importPreview?.lines.length || !selectedBankId || importStatementMutation.isPending}
-                className="h-11 gap-2 rounded-xl bg-[#22C7A1] px-5 text-white hover:bg-[#1BAF8D]"
+                className="h-11 gap-2 rounded-xl bg-[#2f7966] px-5 text-white hover:bg-[#256450]"
               >
                 {importStatementMutation.isPending ? <RefreshCw className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
                 حفظ الكشف
@@ -467,7 +467,7 @@ export function BankReconciliationPanel() {
           )}
 
           {importPreview?.errors.length ? (
-            <div className="mt-3 rounded-xl border border-[#FB6B7A]/20 bg-[#FFF0F2] p-3 text-xs font-bold text-[#FB6B7A]">
+            <div className="mt-3 rounded-xl border border-[#b3694c]/20 bg-[#fdf1eb] p-3 text-xs font-bold text-[#b3694c]">
               <div className="mb-1 flex items-center gap-2">
                 <AlertCircle className="h-4 w-4" />
                 <span>ملاحظات الاستيراد</span>
@@ -483,12 +483,12 @@ export function BankReconciliationPanel() {
 
         <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
           <div className="relative w-full lg:max-w-md">
-            <Search className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#94A3B8]" />
+            <Search className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#829074]" />
             <Input
               value={searchTerm}
               onChange={(event) => setSearchTerm(event.target.value)}
               placeholder="بحث برقم الحركة أو المرجع..."
-              className="h-11 rounded-xl bg-[#F6F8FB] pr-10"
+              className="h-11 rounded-xl bg-[#f7f8f4] pr-10"
             />
           </div>
           <div className="flex flex-wrap gap-2">
@@ -498,7 +498,7 @@ export function BankReconciliationPanel() {
             <Button
               onClick={() => reconcileMutation.mutate()}
               disabled={selectedIds.length === 0 || reconcileMutation.isPending}
-              className="h-11 gap-2 rounded-xl bg-[#22C7A1] text-white hover:bg-[#1BAF8D]"
+              className="h-11 gap-2 rounded-xl bg-[#2f7966] text-white hover:bg-[#256450]"
             >
               {reconcileMutation.isPending ? <RefreshCw className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
               تسوية المحدد
@@ -507,17 +507,17 @@ export function BankReconciliationPanel() {
         </div>
 
         <div className="overflow-hidden rounded-2xl border border-slate-200">
-          <div className="flex flex-col gap-3 border-b border-slate-100 bg-[#F6F8FB] p-4 lg:flex-row lg:items-center lg:justify-between">
+          <div className="flex flex-col gap-3 border-b border-slate-100 bg-[#f7f8f4] p-4 lg:flex-row lg:items-center lg:justify-between">
             <div>
-              <h3 className="text-sm font-black text-[#020617]">دفعات التسوية الرسمية</h3>
-              <p className="mt-1 text-xs font-medium text-[#94A3B8]">
+              <h3 className="text-sm font-black text-[#2c4136]">دفعات التسوية الرسمية</h3>
+              <p className="mt-1 text-xs font-medium text-[#829074]">
                 شغل المطابقة التلقائية على أسطر الكشف غير المطابقة، ثم راجع ما تبقى يدويًا.
               </p>
             </div>
             <Button
               onClick={() => autoMatchBatchMutation.mutate()}
               disabled={!selectedBankId || autoMatchBatchMutation.isPending}
-              className="h-10 gap-2 rounded-xl bg-[#22C7A1] text-white hover:bg-[#1BAF8D]"
+              className="h-10 gap-2 rounded-xl bg-[#2f7966] text-white hover:bg-[#256450]"
             >
               {autoMatchBatchMutation.isPending ? <RefreshCw className="h-4 w-4 animate-spin" /> : <ShieldCheck className="h-4 w-4" />}
               تشغيل المطابقة التلقائية
@@ -525,22 +525,22 @@ export function BankReconciliationPanel() {
           </div>
           <div className="grid gap-2 p-4 md:grid-cols-2 xl:grid-cols-5">
             {batchesQuery.isLoading ? (
-              <div className="rounded-xl bg-[#F6F8FB] p-3 text-sm font-bold text-[#94A3B8]">جاري تحميل الدفعات...</div>
+              <div className="rounded-xl bg-[#f7f8f4] p-3 text-sm font-bold text-[#829074]">جاري تحميل الدفعات...</div>
             ) : batchesQuery.data?.length ? (
               batchesQuery.data.map((batch) => (
                 <div key={batch.id} className="rounded-xl border border-slate-200 bg-white p-3">
                   <div className="mb-2 flex items-center justify-between gap-2">
-                    <Badge className={batch.status === "approved" ? "border-0 bg-[#E8FBF6] text-[#22C7A1]" : "border-0 bg-[#EEF2FF] text-[#7C83F6]"}>
+                    <Badge className={batch.status === "approved" ? "border-0 bg-[#edf4e6] text-[#2f7966]" : "border-0 bg-[#f1f4ec] text-[#5b6b52]"}>
                       {batch.status === "approved" ? "معتمدة" : "مكتملة"}
                     </Badge>
-                    <span className="font-mono text-[10px] text-[#94A3B8]">{batch.started_at?.slice(0, 10)}</span>
+                    <span className="font-mono text-[10px] text-[#829074]">{batch.started_at?.slice(0, 10)}</span>
                   </div>
-                  <p className="text-lg font-black text-[#020617]">{batch.auto_matched_count}/{batch.statement_line_count}</p>
-                  <p className="text-xs font-bold text-[#94A3B8]">{batch.needs_review_count} للمراجعة</p>
+                  <p className="text-lg font-black text-[#2c4136]">{batch.auto_matched_count}/{batch.statement_line_count}</p>
+                  <p className="text-xs font-bold text-[#829074]">{batch.needs_review_count} للمراجعة</p>
                 </div>
               ))
             ) : (
-              <div className="rounded-xl bg-[#F6F8FB] p-3 text-sm font-bold text-[#94A3B8]">لا توجد دفعات تسوية محفوظة.</div>
+              <div className="rounded-xl bg-[#f7f8f4] p-3 text-sm font-bold text-[#829074]">لا توجد دفعات تسوية محفوظة.</div>
             )}
           </div>
         </div>
@@ -548,19 +548,19 @@ export function BankReconciliationPanel() {
         <div className="overflow-hidden rounded-2xl border border-slate-200">
           <Table>
             <TableHeader>
-              <TableRow className="bg-[#F6F8FB]">
+              <TableRow className="bg-[#f7f8f4]">
                 <TableHead className="w-12 text-right" />
-                <TableHead className="text-right text-xs font-black text-[#94A3B8]">الحركة</TableHead>
-                <TableHead className="text-right text-xs font-black text-[#94A3B8]">التاريخ</TableHead>
-                <TableHead className="text-right text-xs font-black text-[#94A3B8]">النوع</TableHead>
-                <TableHead className="text-right text-xs font-black text-[#94A3B8]">المبلغ</TableHead>
-                <TableHead className="text-right text-xs font-black text-[#94A3B8]">المرجع</TableHead>
+                <TableHead className="text-right text-xs font-black text-[#829074]">الحركة</TableHead>
+                <TableHead className="text-right text-xs font-black text-[#829074]">التاريخ</TableHead>
+                <TableHead className="text-right text-xs font-black text-[#829074]">النوع</TableHead>
+                <TableHead className="text-right text-xs font-black text-[#829074]">المبلغ</TableHead>
+                <TableHead className="text-right text-xs font-black text-[#829074]">المرجع</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {transactionsQuery.isLoading ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="py-8 text-center text-sm font-bold text-[#94A3B8]">
+                  <TableCell colSpan={6} className="py-8 text-center text-sm font-bold text-[#829074]">
                     جاري تحميل الحركات البنكية...
                   </TableCell>
                 </TableRow>
@@ -572,23 +572,23 @@ export function BankReconciliationPanel() {
                     </TableCell>
                     <TableCell>
                       <div>
-                        <p className="font-mono text-sm font-black text-[#020617]">{transaction.transaction_number}</p>
-                        <p className="mt-1 max-w-[260px] truncate text-xs text-[#94A3B8]">{transaction.description}</p>
+                        <p className="font-mono text-sm font-black text-[#2c4136]">{transaction.transaction_number}</p>
+                        <p className="mt-1 max-w-[260px] truncate text-xs text-[#829074]">{transaction.description}</p>
                       </div>
                     </TableCell>
-                    <TableCell className="text-sm text-[#64748B]">{transaction.transaction_date}</TableCell>
+                    <TableCell className="text-sm text-[#5b6b52]">{transaction.transaction_date}</TableCell>
                     <TableCell>
-                      <Badge className={transaction.transaction_type === "deposit" ? "border-0 bg-[#E8FBF6] text-[#22C7A1]" : "border-0 bg-[#FFF0F2] text-[#FB6B7A]"}>
+                      <Badge className={transaction.transaction_type === "deposit" ? "border-0 bg-[#edf4e6] text-[#2f7966]" : "border-0 bg-[#fdf1eb] text-[#b3694c]"}>
                         {transaction.transaction_type === "deposit" ? "إيداع" : "سحب"}
                       </Badge>
                     </TableCell>
-                    <TableCell className="font-black text-[#020617]">{formatCurrency(transaction.amount)}</TableCell>
-                    <TableCell className="font-mono text-xs text-[#64748B]">{transaction.reference_number || "-"}</TableCell>
+                    <TableCell className="font-black text-[#2c4136]">{formatCurrency(transaction.amount)}</TableCell>
+                    <TableCell className="font-mono text-xs text-[#5b6b52]">{transaction.reference_number || "-"}</TableCell>
                   </TableRow>
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={6} className="py-8 text-center text-sm font-bold text-[#22C7A1]">
+                  <TableCell colSpan={6} className="py-8 text-center text-sm font-bold text-[#2f7966]">
                     لا توجد حركات بنكية بانتظار التسوية.
                   </TableCell>
                 </TableRow>
@@ -598,17 +598,17 @@ export function BankReconciliationPanel() {
         </div>
 
         <div className="overflow-hidden rounded-2xl border border-slate-200">
-          <div className="flex flex-col gap-3 border-b border-slate-100 bg-[#F6F8FB] p-4 lg:flex-row lg:items-center lg:justify-between">
+          <div className="flex flex-col gap-3 border-b border-slate-100 bg-[#f7f8f4] p-4 lg:flex-row lg:items-center lg:justify-between">
             <div>
-              <h3 className="text-sm font-black text-[#020617]">مراجعة أسطر الكشف غير المطابقة</h3>
-              <p className="mt-1 text-xs font-medium text-[#94A3B8]">
+              <h3 className="text-sm font-black text-[#2c4136]">مراجعة أسطر الكشف غير المطابقة</h3>
+              <p className="mt-1 text-xs font-medium text-[#829074]">
                 اختر سطر كشف واحد وحركة بنك واحدة، ثم نفذ المطابقة الرسمية.
               </p>
             </div>
             <Button
               onClick={() => matchStatementLineMutation.mutate()}
               disabled={!selectedStatementLineId || selectedIds.length !== 1 || matchStatementLineMutation.isPending}
-              className="h-10 gap-2 rounded-xl bg-[#7C83F6] text-white hover:bg-[#6970E6]"
+              className="h-10 gap-2 rounded-xl bg-[#5b6b52] text-white hover:bg-[#6970E6]"
             >
               {matchStatementLineMutation.isPending ? <RefreshCw className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
               مطابقة مع الحركة المحددة
@@ -618,34 +618,34 @@ export function BankReconciliationPanel() {
             <TableHeader>
               <TableRow className="bg-white">
                 <TableHead className="w-12 text-right" />
-                <TableHead className="text-right text-xs font-black text-[#94A3B8]">التاريخ</TableHead>
-                <TableHead className="text-right text-xs font-black text-[#94A3B8]">البيان</TableHead>
-                <TableHead className="text-right text-xs font-black text-[#94A3B8]">المبلغ</TableHead>
-                <TableHead className="text-right text-xs font-black text-[#94A3B8]">الحالة</TableHead>
+                <TableHead className="text-right text-xs font-black text-[#829074]">التاريخ</TableHead>
+                <TableHead className="text-right text-xs font-black text-[#829074]">البيان</TableHead>
+                <TableHead className="text-right text-xs font-black text-[#829074]">المبلغ</TableHead>
+                <TableHead className="text-right text-xs font-black text-[#829074]">الحالة</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {statementLinesQuery.isLoading ? (
                 <TableRow>
-                  <TableCell colSpan={5} className="py-8 text-center text-sm font-bold text-[#94A3B8]">
+                  <TableCell colSpan={5} className="py-8 text-center text-sm font-bold text-[#829074]">
                     جاري تحميل أسطر الكشف...
                   </TableCell>
                 </TableRow>
               ) : statementLinesQuery.data?.length ? (
                 statementLinesQuery.data.map((line) => (
-                  <TableRow key={line.id} className={selectedStatementLineId === line.id ? "bg-[#EEF2FF]" : undefined}>
+                  <TableRow key={line.id} className={selectedStatementLineId === line.id ? "bg-[#f1f4ec]" : undefined}>
                     <TableCell>
                       <Checkbox
                         checked={selectedStatementLineId === line.id}
                         onCheckedChange={() => setSelectedStatementLineId((current) => (current === line.id ? "" : line.id))}
                       />
                     </TableCell>
-                    <TableCell className="text-sm font-bold text-[#020617]">{line.statement_date}</TableCell>
+                    <TableCell className="text-sm font-bold text-[#2c4136]">{line.statement_date}</TableCell>
                     <TableCell>
-                      <p className="max-w-[360px] truncate text-sm font-bold text-[#020617]">{line.description}</p>
-                      <p className="mt-1 font-mono text-xs text-[#94A3B8]">{line.reference_number || "-"}</p>
+                      <p className="max-w-[360px] truncate text-sm font-bold text-[#2c4136]">{line.description}</p>
+                      <p className="mt-1 font-mono text-xs text-[#829074]">{line.reference_number || "-"}</p>
                     </TableCell>
-                    <TableCell className="font-black text-[#020617]">{formatCurrency(line.amount)}</TableCell>
+                    <TableCell className="font-black text-[#2c4136]">{formatCurrency(line.amount)}</TableCell>
                     <TableCell>
                       <Badge className="border-0 bg-[#FFF8E8] text-[#B7791F] hover:bg-[#FFF8E8]">
                         {line.match_status === "needs_review" ? "يحتاج مراجعة" : "غير مطابق"}
@@ -655,7 +655,7 @@ export function BankReconciliationPanel() {
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={5} className="py-8 text-center text-sm font-bold text-[#22C7A1]">
+                  <TableCell colSpan={5} className="py-8 text-center text-sm font-bold text-[#2f7966]">
                     لا توجد أسطر كشف بانتظار المراجعة.
                   </TableCell>
                 </TableRow>

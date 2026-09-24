@@ -89,7 +89,7 @@ const VendorCategories = () => {
       {/* Header */}
       <div data-finance-heading="" className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <div className="p-3 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl text-white">
+          <div className="p-3 rounded-xl bg-[#2f7966] text-white">
             <FolderTree className="h-6 w-6" />
           </div>
           <div>
@@ -161,7 +161,7 @@ const VendorCategories = () => {
         </CardHeader>
         <CardContent>
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 h-4 w-4" />
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[#9aa791] h-4 w-4" />
             <Input
               placeholder="البحث بالاسم..."
               value={searchTerm}

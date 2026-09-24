@@ -447,7 +447,7 @@ const ContractOperationsRow = ({
               <span>{Math.round(progress)}%</span>
             </div>
             <div className="h-1.5 overflow-hidden rounded-full bg-[#E2E8F0]">
-              <div className="h-full rounded-full bg-[#38BDF8]" style={{ width: `${progress}%` }} />
+              <div className="h-full rounded-full bg-[#2f7966]" style={{ width: `${progress}%` }} />
             </div>
           </div>
         </div>

@@ -50,10 +50,10 @@ export function DepositDialog({ open, onOpenChange, deposit }: DepositDialogProp
               <ShieldCheck className="h-5 w-5" />
             </span>
             <div className="min-w-0">
-              <DialogTitle className="text-xl font-black text-[#020617]">
+              <DialogTitle className="text-xl font-black text-[#2c4136]">
                 {deposit ? "تعديل الوديعة" : "إضافة وديعة جديدة"}
               </DialogTitle>
-              <p className="mt-1 text-sm font-bold text-[#94A3B8]">
+              <p className="mt-1 text-sm font-bold text-[#829074]">
                 {deposit ? "تحديث بيانات الوديعة ومراجعة العميل المرتبط بها" : "ابحث عن العميل ثم سجل نوع الوديعة والمبلغ"}
               </p>
             </div>

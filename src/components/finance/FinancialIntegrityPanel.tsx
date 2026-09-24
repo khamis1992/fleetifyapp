@@ -23,17 +23,17 @@ export const FinancialIntegrityPanel = () => {
       <CardContent className="p-4 sm:p-5">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div className="flex items-start gap-3">
-            <div className={`flex h-12 w-12 items-center justify-center rounded-2xl ${isHealthy ? 'bg-[#E8FBF6] text-[#22C7A1]' : 'bg-[#FFF0F2] text-[#FB6B7A]'}`}>
+            <div className={`flex h-12 w-12 items-center justify-center rounded-2xl ${isHealthy ? 'bg-[#edf4e6] text-[#2f7966]' : 'bg-[#fdf1eb] text-[#b3694c]'}`}>
               {isHealthy ? <ShieldCheck className="h-6 w-6" /> : <AlertTriangle className="h-6 w-6" />}
             </div>
             <div>
               <div className="flex flex-wrap items-center gap-2">
-                <h2 className="text-lg font-black text-[#020617]">صحة النظام المالي</h2>
-                <span className={`rounded-full px-3 py-1 text-xs font-black ${isHealthy ? 'bg-[#E8FBF6] text-[#22C7A1]' : 'bg-[#FFF0F2] text-[#FB6B7A]'}`}>
+                <h2 className="text-lg font-black text-[#2c4136]">صحة النظام المالي</h2>
+                <span className={`rounded-full px-3 py-1 text-xs font-black ${isHealthy ? 'bg-[#edf4e6] text-[#2f7966]' : 'bg-[#fdf1eb] text-[#b3694c]'}`}>
                   {isLoading ? 'جاري الفحص' : isHealthy ? 'سليم' : 'يحتاج مراجعة'}
                 </span>
               </div>
-              <p className="mt-1 text-sm font-medium text-[#94A3B8]">
+              <p className="mt-1 text-sm font-medium text-[#829074]">
                 فحص مركزي للمدفوعات، القيود، الفواتير، وحالات الدفع الزائد.
               </p>
             </div>
@@ -44,7 +44,7 @@ export const FinancialIntegrityPanel = () => {
             variant="outline"
             onClick={() => refetch()}
             disabled={isFetching}
-            className="h-10 gap-2 rounded-xl border-slate-200 text-[#020617]"
+            className="h-10 gap-2 rounded-xl border-slate-200 text-[#2c4136]"
           >
             <RefreshCw className={`h-4 w-4 ${isFetching ? 'animate-spin' : ''}`} />
             إعادة الفحص
@@ -59,17 +59,17 @@ export const FinancialIntegrityPanel = () => {
         </div>}
 
         {data?.issues && data.issues.length > 0 && (
-          <div className="mt-4 rounded-2xl border border-[#FB6B7A]/20 bg-[#FFF0F2] p-3">
-            <div className="flex items-center gap-2 text-sm font-black text-[#020617]">
-              <AlertTriangle className="h-4 w-4 text-[#FB6B7A]" />
+          <div className="mt-4 rounded-2xl border border-[#b3694c]/20 bg-[#fdf1eb] p-3">
+            <div className="flex items-center gap-2 text-sm font-black text-[#2c4136]">
+              <AlertTriangle className="h-4 w-4 text-[#b3694c]" />
               عناصر تحتاج مراجعة
             </div>
             <div className="mt-3 grid gap-2 md:grid-cols-2">
               {data.issues.map((issue) => (
                 <div key={issue.code} className="rounded-xl bg-white px-3 py-2 text-sm">
                   <div className="flex items-center justify-between gap-3">
-                    <span className="font-bold text-[#020617]">{issueLabels[issue.code] || issue.code}</span>
-                    <span className="rounded-full bg-[#FFF0F2] px-2 py-1 text-xs font-black text-[#FB6B7A]">{issue.count}</span>
+                    <span className="font-bold text-[#2c4136]">{issueLabels[issue.code] || issue.code}</span>
+                    <span className="rounded-full bg-[#fdf1eb] px-2 py-1 text-xs font-black text-[#b3694c]">{issue.count}</span>
                   </div>
                 </div>
               ))}
@@ -78,7 +78,7 @@ export const FinancialIntegrityPanel = () => {
         )}
 
         {isHealthy && !isLoading && (
-          <div className="mt-4 flex items-center gap-2 rounded-2xl border border-[#22C7A1]/20 bg-[#E8FBF6] px-3 py-2 text-sm font-bold text-[#047A63]">
+          <div className="mt-4 flex items-center gap-2 rounded-2xl border border-[#2f7966]/20 bg-[#edf4e6] px-3 py-2 text-sm font-bold text-[#487038]">
             <CheckCircle2 className="h-4 w-4" />
             لا توجد فروقات حرجة في آخر فحص.
           </div>
@@ -91,14 +91,14 @@ export const FinancialIntegrityPanel = () => {
 const Metric = ({ label, value, tone }: { label: string; value: number; tone: 'neutral' | 'success' | 'danger' }) => {
   const className =
     tone === 'success'
-      ? 'bg-[#E8FBF6] text-[#22C7A1]'
+      ? 'bg-[#edf4e6] text-[#2f7966]'
       : tone === 'danger'
-        ? 'bg-[#FFF0F2] text-[#FB6B7A]'
-        : 'bg-[#F6F8FB] text-[#020617]';
+        ? 'bg-[#fdf1eb] text-[#b3694c]'
+        : 'bg-[#f7f8f4] text-[#2c4136]';
 
   return (
-    <div className="rounded-2xl border border-slate-200 bg-[#F6F8FB] p-3">
-      <p className="text-xs font-bold text-[#94A3B8]">{label}</p>
+    <div className="rounded-2xl border border-slate-200 bg-[#f7f8f4] p-3">
+      <p className="text-xs font-bold text-[#829074]">{label}</p>
       <p className={`mt-2 inline-flex rounded-xl px-3 py-1 text-lg font-black ${className}`}>{value}</p>
     </div>
   );

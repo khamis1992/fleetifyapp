@@ -1,19 +1,17 @@
 import { useState } from "react";
 import type { ReactNode } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Badge } from "@/components/ui/badge";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useInventoryCategories, useCreateInventoryCategory, useUpdateInventoryCategory, useDeleteInventoryCategory, buildCategoryTree, type InventoryCategory } from "@/hooks/useInventoryCategories";
-import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { FolderTree, Plus, Search, Edit, Trash2, ChevronRight, ChevronDown, Package } from "lucide-react";
-import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from "@/components/ui/breadcrumb";
+import { PageEmpty, PageLoading, PagePanel } from "@/components/dashboard/workspace/PageKit";
+import '@/components/dashboard/workspace/dashboard-workspace.css';
+import '@/components/dashboard/workspace/page-kit.css';
 
 const InventoryCategories = () => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -127,13 +125,15 @@ const InventoryCategories = () => {
 
     return (
       <>
-        <TableRow key={category.id}>
-          <TableCell>
-            <div className="flex items-center gap-2" style={{ paddingRight: `${level * 24}px` }}>
+        <tr key={category.id}>
+          <td>
+            <div className="flex items-center gap-2" style={{ paddingInlineStart: `${level * 24}px` }}>
               {hasChildren ? (
                 <button
                   onClick={() => toggleCategory(category.id)}
-                  className="p-1 hover:bg-muted rounded"
+                  className="wk-action"
+                  style={{ minWidth: 26, minHeight: 26 }}
+                  aria-label={isExpanded ? `طوي ${category.category_name}` : `توسيع ${category.category_name}`}
                 >
                   {isExpanded ? (
                     <ChevronDown className="h-4 w-4" />
@@ -142,43 +142,35 @@ const InventoryCategories = () => {
                   )}
                 </button>
               ) : (
-                <div className="w-6" />
+                <div style={{ width: 26 }} />
               )}
-              <FolderTree className="h-4 w-4 text-muted-foreground" />
-              <span className="font-medium">{category.category_name}</span>
+              <FolderTree className="h-4 w-4" style={{ color: '#829174' }} />
+              <strong><bdi>{category.category_name}</bdi></strong>
             </div>
-          </TableCell>
-          <TableCell>{category.category_name_ar || "-"}</TableCell>
-          <TableCell>{category.description || "-"}</TableCell>
-          <TableCell>
-            <Badge variant="outline">
-              {category.item_count || 0} صنف
-            </Badge>
-          </TableCell>
-          <TableCell>
-            <Badge variant="outline">
-              {category.subcategory_count || 0} تصنيف فرعي
-            </Badge>
-          </TableCell>
-          <TableCell>
-            <Badge variant={category.is_active ? "default" : "secondary"}>
+          </td>
+          <td>{category.category_name_ar || "-"}</td>
+          <td>{category.description || "-"}</td>
+          <td>
+            <span className="wk-badge is-neutral">{category.item_count || 0} صنف</span>
+          </td>
+          <td>
+            <span className="wk-badge is-info">{category.subcategory_count || 0} تصنيف فرعي</span>
+          </td>
+          <td>
+            <span className={`wk-badge ${category.is_active ? 'is-ok' : 'is-neutral'}`}>
               {category.is_active ? "نشط" : "غير نشط"}
-            </Badge>
-          </TableCell>
-          <TableCell>
-            <div className="flex gap-2">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => handleEditCategory(category)}
-              >
-                <Edit className="h-4 w-4" />
-              </Button>
+            </span>
+          </td>
+          <td>
+            <div className="wk-actions">
+              <button type="button" className="wk-action" title="تعديل" aria-label={`تعديل ${category.category_name}`} onClick={() => handleEditCategory(category)}>
+                <Edit size={15} />
+              </button>
               <AlertDialog>
                 <AlertDialogTrigger asChild>
-                  <Button variant="ghost" size="sm">
-                    <Trash2 className="h-4 w-4 text-destructive" />
-                  </Button>
+                  <button type="button" className="wk-action" title="حذف" aria-label={`حذف ${category.category_name}`}>
+                    <Trash2 size={15} />
+                  </button>
                 </AlertDialogTrigger>
                 <AlertDialogContent>
                   <AlertDialogHeader>
@@ -199,8 +191,8 @@ const InventoryCategories = () => {
                 </AlertDialogContent>
               </AlertDialog>
             </div>
-          </TableCell>
-        </TableRow>
+          </td>
+        </tr>
         {hasChildren && isExpanded && category.children!.map((child) => renderCategoryRow(child, level + 1))}
       </>
     );
@@ -264,155 +256,123 @@ const InventoryCategories = () => {
   );
 
   return (
-    <div className="space-y-6">
-      {/* Breadcrumb */}
-      <Breadcrumb>
-        <BreadcrumbList>
-          <BreadcrumbItem>
-            <BreadcrumbLink href="/">الرئيسية</BreadcrumbLink>
-          </BreadcrumbItem>
-          <BreadcrumbSeparator />
-          <BreadcrumbItem>
-            <BreadcrumbLink href="/inventory">إدارة المخزون</BreadcrumbLink>
-          </BreadcrumbItem>
-          <BreadcrumbSeparator />
-          <BreadcrumbItem>
-            <BreadcrumbPage>تصنيفات المخزون</BreadcrumbPage>
-          </BreadcrumbItem>
-        </BreadcrumbList>
-      </Breadcrumb>
-
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <div className="p-3 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl text-white">
-            <FolderTree className="h-6 w-6" />
-          </div>
+    <div className="dashboard-workspace" dir="rtl">
+      <div className="dw-container">
+        <header className="dw-header">
           <div>
-            <h1 className="text-2xl font-bold">تصنيفات المخزون</h1>
-            <p className="text-muted-foreground">إدارة التصنيفات والتصنيفات الفرعية للأصناف المخزنية</p>
+            <div className="dw-eyebrow">
+              <span className="dw-mark" />
+              العراف لتأجير السيارات <span>/</span> المخزون <span>/</span> التصنيفات
+            </div>
+            <h1>تصنيفات المخزون</h1>
+            <p>إدارة التصنيفات والتصنيفات الفرعية للأصناف المخزنية.</p>
           </div>
-        </div>
-        <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-          <DialogTrigger asChild>
-            <Button onClick={resetForm}>
-              <Plus className="h-4 w-4 mr-2" />
+          <div className="dw-header-tools">
+            <button type="button" className="dw-button dw-button-primary" onClick={() => { resetForm(); setIsCreateDialogOpen(true); }}>
+              <Plus size={17} />
               تصنيف جديد
+            </button>
+          </div>
+        </header>
+
+        <section className="dw-metrics" aria-label="مؤشرات التصنيفات">
+          <div className="dw-metric dw-metric-accent">
+            <div className="dw-metric-top"><span>إجمالي التصنيفات</span><FolderTree size={19} /></div>
+            <strong>{categories?.length || 0}</strong>
+            <div className="dw-metric-bottom"><small>تصنيف نشط</small></div>
+          </div>
+          <div className="dw-metric">
+            <div className="dw-metric-top"><span>التصنيفات الرئيسية</span><FolderTree size={19} /></div>
+            <strong>{categories?.filter(c => !c.parent_category_id).length || 0}</strong>
+            <div className="dw-metric-bottom"><small>بدون تصنيف أب</small></div>
+          </div>
+          <div className="dw-metric">
+            <div className="dw-metric-top"><span>إجمالي الأصناف</span><Package size={19} /></div>
+            <strong>{categories?.reduce((sum, cat) => sum + (cat.item_count || 0), 0) || 0}</strong>
+            <div className="dw-metric-bottom"><small>صنف في جميع التصنيفات</small></div>
+          </div>
+        </section>
+
+        <div className="dw-main-grid">
+          <PagePanel
+            number="01"
+            title="شجرة التصنيفات"
+            subtitle="عرض وإدارة التصنيفات بشكل هرمي"
+            className="wk-panel-full"
+            action={
+              <div className="wk-toolbar-group">
+                <div className="relative">
+                  <Search className="absolute right-3 top-1/2 -translate-y-1/2 text-[#9aa791]" size={14} />
+                  <input
+                    className="wk-field"
+                    style={{ paddingRight: 32, minWidth: 220 }}
+                    placeholder="ابحث عن تصنيف…"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    aria-label="بحث في التصنيفات"
+                  />
+                </div>
+              </div>
+            }
+          >
+            {isLoading ? (
+              <PageLoading label="جاري تحميل التصنيفات…" />
+            ) : categoryTree.length === 0 ? (
+              <PageEmpty icon={FolderTree} message="لا توجد تصنيفات">
+                <button type="button" className="dw-button" onClick={() => { resetForm(); setIsCreateDialogOpen(true); }}>
+                  <Plus size={16} />
+                  إضافة تصنيف
+                </button>
+              </PageEmpty>
+            ) : (
+              <div className="wk-table-wrap">
+                <table>
+                  <caption className="sr-only">شجرة التصنيفات</caption>
+                  <thead>
+                    <tr>
+                      <th scope="col">التصنيف</th>
+                      <th scope="col">الاسم بالعربية</th>
+                      <th scope="col">الوصف</th>
+                      <th scope="col">عدد الأصناف</th>
+                      <th scope="col">التصنيفات الفرعية</th>
+                      <th scope="col">الحالة</th>
+                      <th scope="col"><span className="sr-only">إجراءات</span></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {categoryTree.map((category) => renderCategoryRow(category))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+            <div className="dw-panel-foot">
+              <FolderTree size={14} />
+              <span>وسّع التصنيفات الرئيسية لعرض التصنيفات الفرعية.</span>
+            </div>
+          </PagePanel>
+        </div>
+      </div>
+
+      {/* Create Dialog */}
+      <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>إضافة تصنيف جديد</DialogTitle>
+            <DialogDescription>
+              أدخل بيانات التصنيف الجديد
+            </DialogDescription>
+          </DialogHeader>
+          <CategoryFormFields />
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" onClick={() => setIsCreateDialogOpen(false)}>
+              إلغاء
             </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>إضافة تصنيف جديد</DialogTitle>
-              <DialogDescription>
-                أدخل بيانات التصنيف الجديد
-              </DialogDescription>
-            </DialogHeader>
-            <CategoryFormFields />
-            <div className="flex justify-end gap-2">
-              <Button variant="outline" onClick={() => setIsCreateDialogOpen(false)}>
-                إلغاء
-              </Button>
-              <Button onClick={handleCreateCategory} disabled={!formData.category_name}>
-                حفظ
-              </Button>
-            </div>
-          </DialogContent>
-        </Dialog>
-      </div>
-
-      {/* Stats Cards */}
-      <div className="grid gap-4 md:grid-cols-3">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">إجمالي التصنيفات</CardTitle>
-            <FolderTree className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{categories?.length || 0}</div>
-            <p className="text-xs text-muted-foreground">تصنيف نشط</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">التصنيفات الرئيسية</CardTitle>
-            <FolderTree className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {categories?.filter(c => !c.parent_category_id).length || 0}
-            </div>
-            <p className="text-xs text-muted-foreground">بدون تصنيف أب</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">إجمالي الأصناف</CardTitle>
-            <Package className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {categories?.reduce((sum, cat) => sum + (cat.item_count || 0), 0) || 0}
-            </div>
-            <p className="text-xs text-muted-foreground">صنف في جميع التصنيفات</p>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Main Content */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle>شجرة التصنيفات</CardTitle>
-              <CardDescription>عرض وإدارة التصنيفات بشكل هرمي</CardDescription>
-            </div>
+            <Button onClick={handleCreateCategory} disabled={!formData.category_name}>
+              حفظ
+            </Button>
           </div>
-        </CardHeader>
-        <CardContent>
-          {/* Search */}
-          <div className="mb-4">
-            <div className="relative">
-              <Search className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                placeholder="البحث عن تصنيف..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pr-10"
-              />
-            </div>
-          </div>
-
-          {/* Category Tree Table */}
-          {isLoading ? (
-            <div className="flex justify-center py-8">
-              <LoadingSpinner />
-            </div>
-          ) : categoryTree.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
-              لا توجد تصنيفات
-            </div>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>التصنيف</TableHead>
-                  <TableHead>الاسم بالعربية</TableHead>
-                  <TableHead>الوصف</TableHead>
-                  <TableHead>عدد الأصناف</TableHead>
-                  <TableHead>التصنيفات الفرعية</TableHead>
-                  <TableHead>الحالة</TableHead>
-                  <TableHead>الإجراءات</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {categoryTree.map((category) => renderCategoryRow(category))}
-              </TableBody>
-            </Table>
-          )}
-        </CardContent>
-      </Card>
+        </DialogContent>
+      </Dialog>
 
       {/* Edit Dialog */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>

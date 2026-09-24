@@ -1,18 +1,10 @@
 import React, { useState, useCallback } from 'react';
-import { motion } from 'framer-motion';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Progress } from '@/components/ui/progress';
-import { Alert, AlertDescription } from '@/components/ui/alert';
 import {
   Upload,
   FileText,
   Users,
   Car,
   DollarSign,
-  CheckCircle,
   AlertTriangle,
   Download,
   Eye,
@@ -29,6 +21,9 @@ import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { calculateCanonicalBillingMonths } from '@/utils/contractCalculations';
 import type { Database } from '@/integrations/supabase/types';
 import { getCustomerDataIssues } from '@/utils/formatCustomerName';
+import { PagePanel } from '@/components/dashboard/workspace/PageKit';
+import '@/components/dashboard/workspace/dashboard-workspace.css';
+import '@/components/dashboard/workspace/page-kit.css';
 
 type CustomerImportRow = Database['public']['Tables']['customers']['Insert'];
 type VehicleImportRow = Database['public']['Tables']['vehicles']['Insert'];
@@ -413,281 +408,243 @@ const ImportInner: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6">
-      {/* رأس الصفحة */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6 }}
-      >
-        <Card className="bg-gradient-to-r from-indigo-50 to-purple-50 border-indigo-200">
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <motion.div 
-                  className="p-3 rounded-lg bg-indigo-100 text-indigo-700"
-                  whileHover={{ scale: 1.05, rotate: 5 }}
-                  transition={{ type: "spring", stiffness: 400, damping: 17 }}
-                >
-                  <Upload size={24} />
-                </motion.div>
-                <div>
-                  <CardTitle className="text-2xl">استيراد البيانات</CardTitle>
-                  <p className="text-muted-foreground">استيراد بيانات من ملفات CSV</p>
-                </div>
-              </div>
-              {!hasCompanyAdminAccess && (
-                <Badge variant="destructive">
-                  <AlertTriangle size={14} className="ml-1" />
-                  صلاحية محدودة
-                </Badge>
-              )}
+    <div className="dashboard-workspace" dir="rtl">
+      <div className="dw-container">
+        <header className="dw-header">
+          <div>
+            <div className="dw-eyebrow">
+              <span className="dw-mark" />
+              العراف لتأجير السيارات <span>/</span> مساحة العمل <span>/</span> استيراد البيانات
             </div>
-          </CardHeader>
-        </Card>
-      </motion.div>
+            <h1>استيراد البيانات</h1>
+            <p>استيراد العملاء والمركبات والعقود والمدفوعات من ملفات CSV.</p>
+          </div>
+          <div className="dw-header-tools">
+            {!hasCompanyAdminAccess && (
+              <span className="wk-badge is-risk">
+                <AlertTriangle size={11} style={{ marginInlineEnd: 4, verticalAlign: 'middle' }} />
+                صلاحية محدودة
+              </span>
+            )}
+            <button type="button" className="dw-button" onClick={downloadTemplate}>
+              <Download size={17} />
+              تنزيل القالب
+            </button>
+          </div>
+        </header>
 
-      {/* تحذير الصلاحيات */}
-      {!hasCompanyAdminAccess && (
-        <Alert variant="destructive">
-          <AlertTriangle className="h-4 w-4" />
-          <AlertDescription>
+        {/* تحذير الصلاحيات */}
+        {!hasCompanyAdminAccess && (
+          <div className="dw-data-notice" role="alert">
+            <AlertTriangle size={16} style={{ marginInlineEnd: 8, verticalAlign: 'middle' }} />
             تحتاج إلى صلاحيات إدارية لاستيراد البيانات. يرجى التواصل مع المدير.
-          </AlertDescription>
-        </Alert>
-      )}
+          </div>
+        )}
 
-      {/* أنواع الاستيراد */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6, delay: 0.2 }}
-      >
-        <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-4">
-            {importTemplates.map(template => {
-              const Icon = template.icon;
-              return (
-                <TabsTrigger key={template.id} value={template.id} className="flex items-center gap-2">
-                  <Icon size={16} />
-                  {template.name}
-                </TabsTrigger>
-              );
-            })}
-          </TabsList>
+        <div className="dw-main-grid">
+          <PagePanel
+            number="01"
+            title={currentTemplate ? currentTemplate.name : 'استيراد البيانات'}
+            subtitle={currentTemplate ? currentTemplate.description : 'اختر نوع البيانات للاستيراد'}
+            className="wk-panel-full"
+            action={
+              <div className="dw-filters" role="group" aria-label="أنواع الاستيراد">
+                {importTemplates.map(template => (
+                  <button
+                    key={template.id}
+                    type="button"
+                    aria-pressed={activeTab === template.id}
+                    onClick={() => setActiveTab(template.id)}
+                  >
+                    <template.icon size={15} />
+                    {template.name}
+                  </button>
+                ))}
+              </div>
+            }
+          >
+            {/* معلومات القالب */}
+            {currentTemplate && (
+              <div className="wk-badges" style={{ padding: '20px 24px 0' }}>
+                {currentTemplate.fields.map(field => (
+                  <span
+                    key={field}
+                    className={`wk-badge ${currentTemplate.validation.required?.includes(field) ? 'is-ok' : 'is-neutral'}`}
+                  >
+                    {field}
+                    {currentTemplate.validation.required?.includes(field) && ' *'}
+                  </span>
+                ))}
+              </div>
+            )}
 
-          {importTemplates.map(template => (
-            <TabsContent key={template.id} value={template.id} className="space-y-6">
-              {/* معلومات القالب */}
-              <Card>
-                <CardHeader>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className={`p-3 rounded-lg bg-gradient-to-br ${template.color} text-white`}>
-                        <template.icon size={24} />
-                      </div>
-                      <div>
-                        <CardTitle>{template.name}</CardTitle>
-                        <p className="text-muted-foreground">{template.description}</p>
-                      </div>
-                    </div>
-                    <Button variant="outline" onClick={downloadTemplate}>
-                      <Download size={16} className="ml-2" />
-                      تنزيل القالب
-                    </Button>
+            {/* منطقة رفع الملفات */}
+            <div className="wk-panel-content" style={{ padding: 20 }}>
+              <div
+                {...getRootProps()}
+                className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${
+                  isDragActive
+                    ? 'border-[#2f7966] bg-[#eaf1e3]'
+                    : 'border-[#dfe5d9] hover:border-[#9db88a]'
+                }`}
+              >
+                <input {...getInputProps()} disabled={!hasCompanyAdminAccess} />
+                <Upload size={40} className="mx-auto mb-3" style={{ color: '#8ba674' }} />
+                {isDragActive ? (
+                  <p style={{ color: '#2f7966' }}>اسحب الملفات هنا...</p>
+                ) : (
+                  <div>
+                    <p style={{ fontSize: 14, fontWeight: 700, color: '#405a33', marginBottom: 6 }}>
+                      اسحب ملفات CSV هنا أو انقر للاختيار
+                    </p>
+                    <p style={{ fontSize: 11, color: '#829074' }}>
+                      يدعم ملفات CSV فقط، حد أقصى 5 ملفات
+                    </p>
                   </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    <div>
-                      <h4 className="font-semibold mb-2">الحقول المطلوبة:</h4>
-                      <div className="flex flex-wrap gap-2">
-                        {template.fields.map(field => (
-                          <Badge 
-                            key={field} 
-                            variant={template.validation.required?.includes(field) ? "default" : "outline"}
-                          >
-                            {field}
-                            {template.validation.required?.includes(field) && ' *'}
-                          </Badge>
+                )}
+              </div>
+
+              {/* الملفات المرفوعة */}
+              {uploadedFiles.length > 0 && (
+                <div className="mt-4 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <h4 style={{ fontSize: 12, fontWeight: 700, color: '#405a33' }}>الملفات المرفوعة:</h4>
+                    <button type="button" className="dw-button" onClick={clearFiles}>
+                      <Trash2 size={14} />
+                      مسح
+                    </button>
+                  </div>
+                  {uploadedFiles.map((file, index) => (
+                    <div key={index} className="flex items-center gap-2 p-2 bg-[#f6f8f4] rounded" style={{ fontSize: 11 }}>
+                      <FileText size={15} style={{ color: '#829074' }} />
+                      <span className="flex-1"><bdi>{file.name}</bdi></span>
+                      <span className="wk-badge is-neutral">{(file.size / 1024).toFixed(1)} KB</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* معاينة البيانات */}
+              {previewData.length > 0 && (
+                <div className="mt-6">
+                  <h4 style={{ fontSize: 12, fontWeight: 700, color: '#405a33', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <Eye size={15} />
+                    معاينة البيانات (أول 5 صفوف):
+                  </h4>
+                  <div className="wk-table-wrap" style={{ paddingBottom: 0 }}>
+                    <table>
+                      <caption className="sr-only">معاينة البيانات</caption>
+                      <thead>
+                        <tr>
+                          {Object.keys(previewData[0] || {}).map(key => (
+                            <th key={key} scope="col">{key}</th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {previewData.map((row, index) => (
+                          <tr key={index}>
+                            {Object.values(row).map((value: unknown, cellIndex) => (
+                              <td key={cellIndex}>{String(value ?? '')}</td>
+                            ))}
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+
+              {/* أزرار العمل */}
+              {uploadedFiles.length > 0 && hasCompanyAdminAccess && (
+                <div className="mt-6">
+                  <button
+                    type="button"
+                    className="dw-button dw-button-primary"
+                    onClick={processImport}
+                    disabled={isProcessing}
+                    style={{ width: '100%' }}
+                  >
+                    {isProcessing ? (
+                      <>
+                        <RefreshCw size={16} className="animate-spin" />
+                        جاري الاستيراد...
+                      </>
+                    ) : (
+                      <>
+                        <Upload size={16} />
+                        بدء الاستيراد
+                      </>
+                    )}
+                  </button>
+                </div>
+              )}
+
+              {/* شريط التقدم */}
+              {isProcessing && (
+                <div className="mt-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <span style={{ fontSize: 12, fontWeight: 600, color: '#405a33' }}>تقدم الاستيراد</span>
+                    <span style={{ fontSize: 11, color: '#829074' }}>{progress}%</span>
+                  </div>
+                  <div className="dw-forecast-track">
+                    <i style={{ display: 'block', height: '100%', borderRadius: 5, background: 'var(--dw-green)', width: `${progress}%` }} />
+                  </div>
+                </div>
+              )}
+
+              {/* النتائج */}
+              {results && (
+                <div className="mt-6">
+                  <h4 style={{ fontSize: 12, fontWeight: 700, color: '#405a33', marginBottom: 12 }}>نتائج الاستيراد:</h4>
+                  <div className="wk-summary-grid" style={{ paddingTop: 0 }}>
+                    <div className="wk-summary-tile is-ok">
+                      <small>نجح</small>
+                      <strong>{results.success}</strong>
+                    </div>
+                    <div className="wk-summary-tile is-risk">
+                      <small>فشل</small>
+                      <strong>{results.failed}</strong>
+                    </div>
+                  </div>
+
+                  {/* الأخطاء */}
+                  {results.errors.length > 0 && (
+                    <div className="mt-4">
+                      <h5 style={{ fontSize: 11, fontWeight: 700, color: '#b3694c', marginBottom: 6 }}>الأخطاء:</h5>
+                      <div className="space-y-1 max-h-40 overflow-y-auto">
+                        {results.errors.map((error, index) => (
+                          <div key={index} className="text-sm p-2 bg-[#fdf1eb] rounded" style={{ color: '#b3694c', fontSize: 11 }}>
+                            {error}
+                          </div>
                         ))}
                       </div>
                     </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* منطقة رفع الملفات */}
-              <Card>
-                <CardHeader>
-                  <CardTitle>رفع الملفات</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div
-                    {...getRootProps()}
-                    className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${
-                      isDragActive 
-                        ? 'border-primary bg-primary/5' 
-                        : 'border-muted-foreground/25 hover:border-primary/50'
-                    }`}
-                  >
-                    <input {...getInputProps()} disabled={!hasCompanyAdminAccess} />
-                    <Upload size={48} className="mx-auto mb-4 text-muted-foreground" />
-                    {isDragActive ? (
-                      <p className="text-primary">اسحب الملفات هنا...</p>
-                    ) : (
-                      <div>
-                        <p className="text-lg font-semibold mb-2">
-                          اسحب ملفات CSV هنا أو انقر للاختيار
-                        </p>
-                        <p className="text-muted-foreground">
-                          يدعم ملفات CSV فقط، حد أقصى 5 ملفات
-                        </p>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* الملفات المرفوعة */}
-                  {uploadedFiles.length > 0 && (
-                    <div className="mt-4 space-y-2">
-                      <div className="flex items-center justify-between">
-                        <h4 className="font-semibold">الملفات المرفوعة:</h4>
-                        <Button variant="outline" size="sm" onClick={clearFiles}>
-                          <Trash2 size={14} className="ml-1" />
-                          مسح
-                        </Button>
-                      </div>
-                      {uploadedFiles.map((file, index) => (
-                        <div key={index} className="flex items-center gap-2 p-2 bg-muted/50 rounded">
-                          <FileText size={16} />
-                          <span className="flex-1">{file.name}</span>
-                          <Badge variant="outline">{(file.size / 1024).toFixed(1)} KB</Badge>
-                        </div>
-                      ))}
-                    </div>
                   )}
 
-                  {/* معاينة البيانات */}
-                  {previewData.length > 0 && (
-                    <div className="mt-6">
-                      <h4 className="font-semibold mb-3 flex items-center gap-2">
-                        <Eye size={16} />
-                        معاينة البيانات (أول 5 صفوف):
-                      </h4>
-                      <div className="overflow-x-auto">
-                        <table className="w-full border border-border rounded-lg">
-                          <thead>
-                            <tr className="bg-muted/50">
-                              {Object.keys(previewData[0] || {}).map(key => (
-                                <th key={key} className="p-2 text-right border-b border-border">
-                                  {key}
-                                </th>
-                              ))}
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {previewData.map((row, index) => (
-                              <tr key={index} className="border-b border-border">
-                                {Object.values(row).map((value: unknown, cellIndex) => (
-                                  <td key={cellIndex} className="p-2 text-right">
-                                    {String(value ?? '')}
-                                  </td>
-                                ))}
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* أزرار العمل */}
-                  {uploadedFiles.length > 0 && hasCompanyAdminAccess && (
-                    <div className="mt-6 flex gap-3">
-                      <Button 
-                        onClick={processImport} 
-                        disabled={isProcessing}
-                        className="flex-1"
-                      >
-                        {isProcessing ? (
-                          <>
-                            <RefreshCw size={16} className="ml-2 animate-spin" />
-                            جاري الاستيراد...
-                          </>
-                        ) : (
-                          <>
-                            <Upload size={16} className="ml-2" />
-                            بدء الاستيراد
-                          </>
-                        )}
-                      </Button>
-                    </div>
-                  )}
-
-                  {/* شريط التقدم */}
-                  {isProcessing && (
+                  {/* التحذيرات */}
+                  {results.warnings.length > 0 && (
                     <div className="mt-4">
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-sm font-medium">تقدم الاستيراد</span>
-                        <span className="text-sm text-muted-foreground">{progress}%</span>
+                      <h5 style={{ fontSize: 11, fontWeight: 700, color: '#9b7c36', marginBottom: 6 }}>التحذيرات:</h5>
+                      <div className="space-y-1">
+                        {results.warnings.map((warning, index) => (
+                          <div key={index} className="text-sm p-2 bg-[#faf5e7] rounded" style={{ color: '#9b7c36', fontSize: 11 }}>
+                            {warning}
+                          </div>
+                        ))}
                       </div>
-                      <Progress value={progress} className="h-2" />
                     </div>
                   )}
-
-                  {/* النتائج */}
-                  {results && (
-                    <div className="mt-6 space-y-4">
-                      <h4 className="font-semibold">نتائج الاستيراد:</h4>
-                      
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="text-center p-4 bg-green-50 rounded-lg">
-                          <CheckCircle size={24} className="mx-auto mb-2 text-green-600" />
-                          <p className="text-lg font-bold text-green-700">{results.success}</p>
-                          <p className="text-sm text-green-600">نجح</p>
-                        </div>
-                        <div className="text-center p-4 bg-red-50 rounded-lg">
-                          <AlertTriangle size={24} className="mx-auto mb-2 text-red-600" />
-                          <p className="text-lg font-bold text-red-700">{results.failed}</p>
-                          <p className="text-sm text-red-600">فشل</p>
-                        </div>
-                      </div>
-
-                      {/* الأخطاء */}
-                      {results.errors.length > 0 && (
-                        <div>
-                          <h5 className="font-semibold text-red-700 mb-2">الأخطاء:</h5>
-                          <div className="space-y-1 max-h-40 overflow-y-auto">
-                            {results.errors.map((error, index) => (
-                              <div key={index} className="text-sm text-red-600 p-2 bg-red-50 rounded">
-                                {error}
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-
-                      {/* التحذيرات */}
-                      {results.warnings.length > 0 && (
-                        <div>
-                          <h5 className="font-semibold text-yellow-700 mb-2">التحذيرات:</h5>
-                          <div className="space-y-1">
-                            {results.warnings.map((warning, index) => (
-                              <div key={index} className="text-sm text-yellow-600 p-2 bg-yellow-50 rounded">
-                                {warning}
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            </TabsContent>
-          ))}
-        </Tabs>
-      </motion.div>
+                </div>
+              )}
+            </div>
+            <div className="dw-panel-foot">
+              <Upload size={14} />
+              <span>راجع معاينة البيانات قبل بدء الاستيراد لضمان تطابق الحقول مع القالب.</span>
+            </div>
+          </PagePanel>
+        </div>
+      </div>
     </div>
   );
 };

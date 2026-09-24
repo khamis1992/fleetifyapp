@@ -257,9 +257,9 @@ const FixedAssets = () => {
       case 'good':
         return <Badge className="bg-sky-100 text-sky-700 hover:bg-sky-100">جيدة</Badge>;
       case 'fair':
-        return <Badge className="bg-amber-100 text-amber-700 hover:bg-amber-100 gap-1"><AlertTriangle className="w-3 h-3" />متوسطة</Badge>;
+        return <Badge className="bg-[#faf5e7] text-[#9b7c36] hover:bg-amber-100 gap-1"><AlertTriangle className="w-3 h-3" />متوسطة</Badge>;
       case 'poor':
-        return <Badge className="bg-red-100 text-red-700 hover:bg-red-100 gap-1"><XCircle className="w-3 h-3" />ضعيفة</Badge>;
+        return <Badge className="bg-[#fdf1eb] text-[#b3694c] hover:bg-red-100 gap-1"><XCircle className="w-3 h-3" />ضعيفة</Badge>;
       default:
         return <Badge variant="outline">{status}</Badge>;
     }
@@ -281,8 +281,8 @@ const FixedAssets = () => {
     return (
       <div className="min-h-screen bg-[#F6F8FB] flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">
-          <RefreshCw className="w-10 h-10 animate-spin text-slate-500" />
-          <p className="text-slate-500">جاري تحميل الأصول الثابتة...</p>
+          <RefreshCw className="w-10 h-10 animate-spin text-[#6f7c68]" />
+          <p className="text-[#6f7c68]">جاري تحميل الأصول الثابتة...</p>
         </div>
       </div>
     );
@@ -309,13 +309,13 @@ const FixedAssets = () => {
       <div className="max-w-7xl mx-auto space-y-6">
         <div data-finance-heading="" className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-slate-900">الأصول الثابتة</h1>
-            <p className="text-sm text-slate-500 mt-1">إدارة الأصول والإهلاك والصيانة</p>
+            <h1 className="text-2xl font-bold text-[#2c4136]">الأصول الثابتة</h1>
+            <p className="text-sm text-[#6f7c68] mt-1">إدارة الأصول والإهلاك والصيانة</p>
           </div>
           <div className="flex gap-2">
             <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
               <DialogTrigger asChild>
-                <Button className="bg-slate-900 hover:bg-slate-800">
+                <Button className="bg-[#2f7966] hover:bg-[#256450]">
                   <Plus className="h-4 w-4 ml-2" />
                   أصل جديد
                 </Button>
@@ -323,7 +323,7 @@ const FixedAssets = () => {
               <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
                 <DialogHeader>
                   <DialogTitle className="flex items-center gap-2">
-                    <Briefcase className="w-5 h-5 text-slate-700" />
+                    <Briefcase className="w-5 h-5 text-[#405a33]" />
                     إنشاء أصل ثابت جديد
                   </DialogTitle>
                   <DialogDescription>
@@ -421,7 +421,7 @@ const FixedAssets = () => {
                     <Textarea id="notes" value={newAsset.notes} onChange={(e) => setNewAsset({ ...newAsset, notes: e.target.value })} placeholder="ملاحظات إضافية" />
                   </div>
                   <div className="col-span-2">
-                    <Button onClick={handleCreateAsset} className="w-full bg-slate-900 hover:bg-slate-800" disabled={createFixedAsset.isPending}>
+                    <Button onClick={handleCreateAsset} className="w-full bg-[#2f7966] hover:bg-[#256450]" disabled={createFixedAsset.isPending}>
                       {createFixedAsset.isPending ? "جاري الإنشاء..." : "إنشاء الأصل"}
                     </Button>
                   </div>
@@ -446,18 +446,18 @@ const FixedAssets = () => {
           <StatCard title="القيمة الدفترية" value={formatCurrency(stats.totalBookValue)} subtitle="بعد خصم الإهلاك" icon={Calculator} variant="emerald" delay={0.25} />
         </div>
 
-        <motion.div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
+        <motion.div className="bg-white rounded-xl border border-[#dfe5d9] shadow-sm p-6" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
           <div className="flex items-center gap-2 mb-4">
-            <Filter className="h-5 w-5 text-slate-500" />
-            <h3 className="font-semibold text-slate-900">البحث والتصفية</h3>
+            <Filter className="h-5 w-5 text-[#6f7c68]" />
+            <h3 className="font-semibold text-[#2c4136]">البحث والتصفية</h3>
           </div>
           <div className="flex flex-wrap gap-4">
             <div className="flex-1 min-w-[250px] relative">
-              <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400 h-4 w-4" />
-              <Input placeholder="البحث في الأصول..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pr-10 bg-slate-50 border-slate-200" />
+              <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 text-[#9aa791] h-4 w-4" />
+              <Input placeholder="البحث في الأصول..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pr-10 bg-[#F6F8FB] border-[#dfe5d9]" />
             </div>
             <Select value={filterCategory} onValueChange={setFilterCategory}>
-              <SelectTrigger className="w-[200px] bg-slate-50 border-slate-200">
+              <SelectTrigger className="w-[200px] bg-[#F6F8FB] border-[#dfe5d9]">
                 <SelectValue placeholder="جميع الفئات" />
               </SelectTrigger>
               <SelectContent>
@@ -470,20 +470,20 @@ const FixedAssets = () => {
           </div>
         </motion.div>
 
-        <motion.div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
-          <div className="p-6 border-b border-slate-100">
+        <motion.div className="bg-white rounded-xl border border-[#dfe5d9] shadow-sm overflow-hidden" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
+          <div className="p-6 border-b border-[#eef1e5]">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center">
-                  <Briefcase className="w-5 h-5 text-slate-700" />
+                <div className="w-10 h-10 rounded-xl bg-[#f1f4ec] flex items-center justify-center">
+                  <Briefcase className="w-5 h-5 text-[#405a33]" />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-slate-900">قائمة الأصول الثابتة</h3>
-                  <p className="text-sm text-slate-500">إجمالي {filteredAssets.length} أصل</p>
+                  <h3 className="font-semibold text-[#2c4136]">قائمة الأصول الثابتة</h3>
+                  <p className="text-sm text-[#6f7c68]">إجمالي {filteredAssets.length} أصل</p>
                 </div>
               </div>
               {filteredAssets.length !== stats.totalAssets && (
-                <Badge variant="secondary" className="bg-amber-100 text-amber-700">
+                <Badge variant="secondary" className="bg-[#faf5e7] text-[#9b7c36]">
                   تم تصفية {stats.totalAssets - filteredAssets.length} أصل
                 </Badge>
               )}
@@ -504,7 +504,7 @@ const FixedAssets = () => {
             <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
-                  <TableRow className="bg-slate-50">
+                  <TableRow className="bg-[#F6F8FB]">
                     <TableHead className="text-right">رمز الأصل</TableHead>
                     <TableHead className="text-right">اسم الأصل</TableHead>
                     <TableHead className="text-center">الفئة</TableHead>
@@ -519,16 +519,16 @@ const FixedAssets = () => {
                 <TableBody>
                   <AnimatePresence>
                     {filteredAssets.map((asset, index) => (
-                      <motion.tr key={asset.id} initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }} transition={{ delay: index * 0.02 }} className="border-b border-slate-100 hover:bg-slate-50 transition-colors">
+                      <motion.tr key={asset.id} initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }} transition={{ delay: index * 0.02 }} className="border-b border-[#eef1e5] hover:bg-[#F6F8FB] transition-colors">
                         <TableCell className="font-mono font-medium">{asset.asset_code}</TableCell>
                         <TableCell>
                           <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center">
-                              <Briefcase className="h-5 w-5 text-slate-600" />
+                            <div className="w-10 h-10 rounded-xl bg-[#f1f4ec] flex items-center justify-center">
+                              <Briefcase className="h-5 w-5 text-[#5b6b52]" />
                             </div>
                             <div>
-                              <p className="font-semibold text-slate-900">{asset.asset_name}</p>
-                              {asset.asset_name_ar && <p className="text-xs text-slate-400">{asset.asset_name_ar}</p>}
+                              <p className="font-semibold text-[#2c4136]">{asset.asset_name}</p>
+                              {asset.asset_name_ar && <p className="text-xs text-[#9aa791]">{asset.asset_name_ar}</p>}
                             </div>
                           </div>
                         </TableCell>
@@ -536,7 +536,7 @@ const FixedAssets = () => {
                           <Badge variant="outline">{getCategoryLabel(asset.category)}</Badge>
                         </TableCell>
                         <TableCell className="text-center">
-                          <div className="flex items-center justify-center gap-1 text-slate-600">
+                          <div className="flex items-center justify-center gap-1 text-[#5b6b52]">
                             <Calendar className="w-4 h-4" />
                             {new Date(asset.purchase_date).toLocaleDateString('ar-QA')}
                           </div>
@@ -547,11 +547,11 @@ const FixedAssets = () => {
                         <TableCell className="text-center">{getConditionBadge(asset.condition_status)}</TableCell>
                         <TableCell>
                           <div className="flex gap-1 justify-center">
-                            <Button variant="ghost" size="sm" className="h-8 w-8 p-0 hover:bg-slate-100" onClick={() => handleViewAsset(asset)}>
-                              <Eye className="h-4 w-4 text-slate-500" />
+                            <Button variant="ghost" size="sm" className="h-8 w-8 p-0 hover:bg-[#f1f4ec]" onClick={() => handleViewAsset(asset)}>
+                              <Eye className="h-4 w-4 text-[#6f7c68]" />
                             </Button>
-                            <Button variant="ghost" size="sm" className="h-8 w-8 p-0 hover:bg-slate-100" onClick={() => handleEditClick(asset)}>
-                              <Edit className="h-4 w-4 text-slate-500" />
+                            <Button variant="ghost" size="sm" className="h-8 w-8 p-0 hover:bg-[#f1f4ec]" onClick={() => handleEditClick(asset)}>
+                              <Edit className="h-4 w-4 text-[#6f7c68]" />
                             </Button>
                             <AlertDialog>
                               <AlertDialogTrigger asChild>
@@ -592,28 +592,28 @@ const FixedAssets = () => {
           <DialogContent className="max-w-2xl">
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
-                <Briefcase className="w-5 h-5 text-slate-700" />
+                <Briefcase className="w-5 h-5 text-[#405a33]" />
                 تفاصيل الأصل الثابت
               </DialogTitle>
               <DialogDescription>معلومات تفصيلية عن الأصل</DialogDescription>
             </DialogHeader>
             {selectedAsset && (
               <div className="grid grid-cols-2 gap-4">
-                <div className="p-3 bg-slate-50 rounded-xl"><Label className="text-xs text-slate-500">رمز الأصل</Label><p className="font-medium">{selectedAsset.asset_code}</p></div>
-                <div className="p-3 bg-slate-50 rounded-xl"><Label className="text-xs text-slate-500">اسم الأصل</Label><p className="font-medium">{selectedAsset.asset_name}</p></div>
-                {selectedAsset.asset_name_ar && <div className="p-3 bg-slate-50 rounded-xl"><Label className="text-xs text-slate-500">الاسم بالعربية</Label><p className="font-medium">{selectedAsset.asset_name_ar}</p></div>}
-                <div className="p-3 bg-slate-50 rounded-xl"><Label className="text-xs text-slate-500">الفئة</Label><p className="font-medium">{getCategoryLabel(selectedAsset.category)}</p></div>
-                {selectedAsset.serial_number && <div className="p-3 bg-slate-50 rounded-xl"><Label className="text-xs text-slate-500">الرقم التسلسلي</Label><p className="font-medium">{selectedAsset.serial_number}</p></div>}
-                {selectedAsset.location && <div className="p-3 bg-slate-50 rounded-xl"><Label className="text-xs text-slate-500">الموقع</Label><p className="font-medium flex items-center gap-1"><MapPin className="w-4 h-4" />{selectedAsset.location}</p></div>}
-                <div className="p-3 bg-slate-50 rounded-xl"><Label className="text-xs text-slate-500">تاريخ الشراء</Label><p className="font-medium">{new Date(selectedAsset.purchase_date).toLocaleDateString('ar-QA')}</p></div>
-                <div className="p-3 bg-slate-50 rounded-xl"><Label className="text-xs text-slate-500">تكلفة الشراء</Label><p className="font-medium">{formatCurrency(selectedAsset.purchase_cost)}</p></div>
-                <div className="p-3 bg-slate-50 rounded-xl"><Label className="text-xs text-slate-500">القيمة التخريدية</Label><p className="font-medium">{formatCurrency(selectedAsset.salvage_value || 0)}</p></div>
-                <div className="p-3 bg-slate-50 rounded-xl"><Label className="text-xs text-slate-500">العمر الإنتاجي</Label><p className="font-medium">{selectedAsset.useful_life_years} سنوات</p></div>
-                <div className="p-3 bg-slate-50 rounded-xl"><Label className="text-xs text-slate-500">طريقة الإهلاك</Label><p className="font-medium">{selectedAsset.depreciation_method === 'straight_line' ? 'القسط الثابت' : selectedAsset.depreciation_method === 'declining_balance' ? 'الرصيد المتناقص' : 'وحدات الإنتاج'}</p></div>
-                <div className="p-3 bg-slate-50 rounded-xl"><Label className="text-xs text-slate-500">حالة الأصل</Label><div className="mt-1">{getConditionBadge(selectedAsset.condition_status)}</div></div>
-                <div className="p-3 bg-amber-50 rounded-xl"><Label className="text-xs text-slate-500">الإهلاك المتراكم</Label><p className="font-medium text-amber-600">{formatCurrency(selectedAsset.accumulated_depreciation || 0)}</p></div>
-                <div className="p-3 bg-emerald-50 rounded-xl"><Label className="text-xs text-slate-500">القيمة الدفترية</Label><p className="font-medium text-emerald-600">{formatCurrency(selectedAsset.book_value)}</p></div>
-                {selectedAsset.notes && <div className="col-span-2 p-3 bg-slate-50 rounded-xl"><Label className="text-xs text-slate-500">ملاحظات</Label><p className="text-sm">{selectedAsset.notes}</p></div>}
+                <div className="p-3 bg-[#F6F8FB] rounded-xl"><Label className="text-xs text-[#6f7c68]">رمز الأصل</Label><p className="font-medium">{selectedAsset.asset_code}</p></div>
+                <div className="p-3 bg-[#F6F8FB] rounded-xl"><Label className="text-xs text-[#6f7c68]">اسم الأصل</Label><p className="font-medium">{selectedAsset.asset_name}</p></div>
+                {selectedAsset.asset_name_ar && <div className="p-3 bg-[#F6F8FB] rounded-xl"><Label className="text-xs text-[#6f7c68]">الاسم بالعربية</Label><p className="font-medium">{selectedAsset.asset_name_ar}</p></div>}
+                <div className="p-3 bg-[#F6F8FB] rounded-xl"><Label className="text-xs text-[#6f7c68]">الفئة</Label><p className="font-medium">{getCategoryLabel(selectedAsset.category)}</p></div>
+                {selectedAsset.serial_number && <div className="p-3 bg-[#F6F8FB] rounded-xl"><Label className="text-xs text-[#6f7c68]">الرقم التسلسلي</Label><p className="font-medium">{selectedAsset.serial_number}</p></div>}
+                {selectedAsset.location && <div className="p-3 bg-[#F6F8FB] rounded-xl"><Label className="text-xs text-[#6f7c68]">الموقع</Label><p className="font-medium flex items-center gap-1"><MapPin className="w-4 h-4" />{selectedAsset.location}</p></div>}
+                <div className="p-3 bg-[#F6F8FB] rounded-xl"><Label className="text-xs text-[#6f7c68]">تاريخ الشراء</Label><p className="font-medium">{new Date(selectedAsset.purchase_date).toLocaleDateString('ar-QA')}</p></div>
+                <div className="p-3 bg-[#F6F8FB] rounded-xl"><Label className="text-xs text-[#6f7c68]">تكلفة الشراء</Label><p className="font-medium">{formatCurrency(selectedAsset.purchase_cost)}</p></div>
+                <div className="p-3 bg-[#F6F8FB] rounded-xl"><Label className="text-xs text-[#6f7c68]">القيمة التخريدية</Label><p className="font-medium">{formatCurrency(selectedAsset.salvage_value || 0)}</p></div>
+                <div className="p-3 bg-[#F6F8FB] rounded-xl"><Label className="text-xs text-[#6f7c68]">العمر الإنتاجي</Label><p className="font-medium">{selectedAsset.useful_life_years} سنوات</p></div>
+                <div className="p-3 bg-[#F6F8FB] rounded-xl"><Label className="text-xs text-[#6f7c68]">طريقة الإهلاك</Label><p className="font-medium">{selectedAsset.depreciation_method === 'straight_line' ? 'القسط الثابت' : selectedAsset.depreciation_method === 'declining_balance' ? 'الرصيد المتناقص' : 'وحدات الإنتاج'}</p></div>
+                <div className="p-3 bg-[#F6F8FB] rounded-xl"><Label className="text-xs text-[#6f7c68]">حالة الأصل</Label><div className="mt-1">{getConditionBadge(selectedAsset.condition_status)}</div></div>
+                <div className="p-3 bg-amber-50 rounded-xl"><Label className="text-xs text-[#6f7c68]">الإهلاك المتراكم</Label><p className="font-medium text-amber-600">{formatCurrency(selectedAsset.accumulated_depreciation || 0)}</p></div>
+                <div className="p-3 bg-emerald-50 rounded-xl"><Label className="text-xs text-[#6f7c68]">القيمة الدفترية</Label><p className="font-medium text-emerald-600">{formatCurrency(selectedAsset.book_value)}</p></div>
+                {selectedAsset.notes && <div className="col-span-2 p-3 bg-[#F6F8FB] rounded-xl"><Label className="text-xs text-[#6f7c68]">ملاحظات</Label><p className="text-sm">{selectedAsset.notes}</p></div>}
               </div>
             )}
           </DialogContent>
@@ -623,7 +623,7 @@ const FixedAssets = () => {
           <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
-                <Edit className="w-5 h-5 text-slate-700" />
+                <Edit className="w-5 h-5 text-[#405a33]" />
                 تعديل الأصل الثابت
               </DialogTitle>
               <DialogDescription>تحديث معلومات الأصل الثابت</DialogDescription>
@@ -642,7 +642,7 @@ const FixedAssets = () => {
               <div><Label htmlFor="editDepreciationMethod">طريقة الإهلاك</Label><Select value={newAsset.depreciation_method} onValueChange={(value: any) => setNewAsset({ ...newAsset, depreciation_method: value })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="straight_line">القسط الثابت</SelectItem><SelectItem value="declining_balance">الرصيد المتناقص</SelectItem><SelectItem value="units_of_production">وحدات الإنتاج</SelectItem></SelectContent></Select></div>
               <div><Label htmlFor="editCondition">حالة الأصل</Label><Select value={newAsset.condition_status} onValueChange={(value: any) => setNewAsset({ ...newAsset, condition_status: value })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="excellent">ممتازة</SelectItem><SelectItem value="good">جيدة</SelectItem><SelectItem value="fair">متوسطة</SelectItem><SelectItem value="poor">ضعيفة</SelectItem></SelectContent></Select></div>
               <div className="col-span-2"><Label htmlFor="editNotes">ملاحظات</Label><Textarea id="editNotes" value={newAsset.notes} onChange={(e) => setNewAsset({ ...newAsset, notes: e.target.value })} /></div>
-              <div className="col-span-2"><Button onClick={handleEditAsset} className="w-full bg-slate-900 hover:bg-slate-800" disabled={updateFixedAsset.isPending}>{updateFixedAsset.isPending ? "جاري التحديث..." : "تحديث الأصل"}</Button></div>
+              <div className="col-span-2"><Button onClick={handleEditAsset} className="w-full bg-[#2f7966] hover:bg-[#256450]" disabled={updateFixedAsset.isPending}>{updateFixedAsset.isPending ? "جاري التحديث..." : "تحديث الأصل"}</Button></div>
             </div>
           </DialogContent>
         </Dialog>

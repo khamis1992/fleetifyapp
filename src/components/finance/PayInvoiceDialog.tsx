@@ -475,8 +475,8 @@ export function PayInvoiceDialog({ open, onOpenChange, invoice, onPaymentCreated
               <Receipt className="h-6 w-6" />
             </span>
             <div className="min-w-0">
-              <DialogTitle className="text-lg font-black tracking-normal text-[#020617]">تسجيل دفعة</DialogTitle>
-              <DialogDescription className="mt-1 truncate text-sm font-bold text-[#94A3B8]">{invoice.invoice_number}</DialogDescription>
+              <DialogTitle className="text-lg font-black tracking-normal text-[#2c4136]">تسجيل دفعة</DialogTitle>
+              <DialogDescription className="mt-1 truncate text-sm font-bold text-[#829074]">{invoice.invoice_number}</DialogDescription>
             </div>
           </div>
           <Badge className="payment-card-badge">
@@ -550,7 +550,7 @@ export function PayInvoiceDialog({ open, onOpenChange, invoice, onPaymentCreated
                         size="sm"
                         onClick={() => handleDeleteLateFee(fee.id)}
                         disabled={deletingFeeId !== null || createPayment.isPending}
-                        className="gap-1 text-[#FB6B7A] hover:bg-[#FB6B7A]/10 hover:text-[#FB6B7A]"
+                        className="gap-1 text-[#b3694c] hover:bg-[#b3694c]/10 hover:text-[#b3694c]"
                       >
                         {deletingFeeId === fee.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
                         إعفاء
@@ -709,8 +709,8 @@ export function PayInvoiceDialog({ open, onOpenChange, invoice, onPaymentCreated
                   <Wallet className="h-4 w-4" />
                 </span>
                 <div className="min-w-0">
-                  <p className="truncate text-sm font-black text-[#020617]">تأكيد الدفعة</p>
-                  <p className={cn("text-xs", isAmountOverpay ? "font-bold text-[#FB6B7A]" : "text-[#94A3B8]")}>
+                  <p className="truncate text-sm font-black text-[#2c4136]">تأكيد الدفعة</p>
+                  <p className={cn("text-xs", isAmountOverpay ? "font-bold text-[#b3694c]" : "text-[#829074]")}>
                     {!areLateFeesReady ? 'بانتظار التحقق' : isAmountOverpay ? "المبلغ أكبر من المستحق" : formatCurrency(watchedAmount || 0)}
                   </p>
                 </div>
@@ -722,7 +722,7 @@ export function PayInvoiceDialog({ open, onOpenChange, invoice, onPaymentCreated
                 <Button
                   type="submit"
                   disabled={!areLateFeesReady || deletingFeeId !== null || createPayment.isPending || isAmountOverpay || watchedAmount <= 0}
-                  className="bg-[#22C7A1] text-white hover:bg-[#1cae8d]"
+                  className="bg-[#2f7966] text-white hover:bg-[#256450]"
                   data-tour="contract-pay-invoice-submit"
                 >
                   {createPayment.isPending ? (

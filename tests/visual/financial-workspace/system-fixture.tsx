@@ -68,6 +68,7 @@ function query(table:string, rpc=false) {
 }
 export const supabase = {
   from:(table:string)=>query(table), rpc:(name:string)=>query(name,true),
+  functions:{invoke:async()=>({data:{success:false,error:'Preview OCR is disabled'},error:null})},
   channel:()=>({on(){return this;},subscribe(){return this;},unsubscribe(){}}),removeChannel:()=>{},
   auth:{getSession:async()=>({data:{session:{user}},error:null}),getUser:async()=>({data:{user},error:null}),onAuthStateChange:()=>({data:{subscription:{unsubscribe(){}}}})},
   storage:{from:()=>({getPublicUrl:()=>({data:{publicUrl:''}}),createSignedUrl:async()=>({data:{signedUrl:''},error:null}),list:async()=>({data:[],error:null})})},

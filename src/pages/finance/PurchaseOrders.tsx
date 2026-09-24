@@ -63,7 +63,7 @@ import { cn } from "@/lib/utils";
 // --- Status Badge Component ---
 const StatusBadge = ({ status }: { status: PurchaseOrder["status"] }) => {
   const styles: Record<string, string> = {
-    draft: "bg-slate-100 text-slate-700 border-slate-200",
+    draft: "bg-[#f1f4ec] text-[#405a33] border-[#dfe5d9]",
     pending_approval: "bg-amber-50 text-amber-700 border-amber-200",
     approved: "bg-blue-50 text-blue-700 border-blue-200",
     sent_to_vendor: "bg-indigo-50 text-indigo-700 border-indigo-200",
@@ -123,9 +123,9 @@ const StatsCard = ({
 }) => (
   <div className="bg-card p-5 rounded-lg shadow-sm border border-border flex items-start justify-between hover:shadow-md transition-shadow">
     <div>
-      <p className="text-slate-500 text-sm font-medium mb-1">{title}</p>
-      <h3 className="text-2xl font-bold text-slate-900">{value}</h3>
-      {subtext && <p className="text-xs text-slate-400 mt-2">{subtext}</p>}
+      <p className="text-[#6f7c68] text-sm font-medium mb-1">{title}</p>
+      <h3 className="text-2xl font-bold text-[#2c4136]">{value}</h3>
+      {subtext && <p className="text-xs text-[#9aa791] mt-2">{subtext}</p>}
     </div>
     <div className={cn("p-3 rounded-lg", colorClass)}>
       <Icon size={20} className="text-white" />
@@ -432,10 +432,10 @@ export default function PurchaseOrders() {
         {/* Header Area */}
         <div data-finance-heading="" className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
-            <h1 className="text-3xl font-bold text-slate-900 tracking-tight">
+            <h1 className="text-3xl font-bold text-[#2c4136] tracking-tight">
               أوامر الشراء
             </h1>
-            <p className="text-slate-500 mt-1">
+            <p className="text-[#6f7c68] mt-1">
               إدارة المشتريات ومتابعة الشحنات والتحكم في الإنفاق.
             </p>
           </div>
@@ -476,9 +476,9 @@ export default function PurchaseOrders() {
         {/* Main Content Card */}
         <div className="bg-card rounded-lg shadow-sm border border-border overflow-hidden">
           {/* Controls Bar */}
-          <div className="p-4 border-b border-slate-100 flex flex-col sm:flex-row gap-4 justify-between items-center bg-slate-50/50">
+          <div className="p-4 border-b border-[#eef1e5] flex flex-col sm:flex-row gap-4 justify-between items-center bg-[#F6F8FB]/50">
             {/* Tabs */}
-            <div className="flex p-1 bg-slate-200/60 rounded-lg w-full sm:w-auto">
+            <div className="flex p-1 bg-[#dfe5d9]/60 rounded-lg w-full sm:w-auto">
               {["الكل", "مسودة", "مرسل", "مستلم"].map((tab) => (
                 <button
                   key={tab}
@@ -486,8 +486,8 @@ export default function PurchaseOrders() {
                   className={cn(
                     "flex-1 sm:flex-none px-4 py-1.5 text-sm font-medium rounded-md transition-all",
                     activeTab === tab
-                      ? "bg-white text-slate-900 shadow-sm"
-                      : "text-slate-500 hover:text-slate-700"
+                      ? "bg-white text-[#2c4136] shadow-sm"
+                      : "text-[#6f7c68] hover:text-[#405a33]"
                   )}
                 >
                   {tab}
@@ -498,7 +498,7 @@ export default function PurchaseOrders() {
             {/* Search */}
             <div className="relative w-full sm:w-72">
               <Search
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-[#9aa791]"
                 size={18}
               />
               <Input
@@ -514,24 +514,24 @@ export default function PurchaseOrders() {
           {/* Table */}
           <div className="overflow-x-auto">
             <table className="w-full text-right">
-              <thead className="bg-slate-50/50 border-b border-slate-200">
+              <thead className="bg-[#F6F8FB]/50 border-b border-[#dfe5d9]">
                 <tr>
-                  <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                  <th className="px-6 py-4 text-xs font-semibold text-[#6f7c68] uppercase tracking-wider">
                     رقم الطلب
                   </th>
-                  <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                  <th className="px-6 py-4 text-xs font-semibold text-[#6f7c68] uppercase tracking-wider">
                     المورد
                   </th>
-                  <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                  <th className="px-6 py-4 text-xs font-semibold text-[#6f7c68] uppercase tracking-wider">
                     التاريخ
                   </th>
-                  <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                  <th className="px-6 py-4 text-xs font-semibold text-[#6f7c68] uppercase tracking-wider">
                     الحالة
                   </th>
-                  <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                  <th className="px-6 py-4 text-xs font-semibold text-[#6f7c68] uppercase tracking-wider">
                     الإجمالي
                   </th>
-                  <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                  <th className="px-6 py-4 text-xs font-semibold text-[#6f7c68] uppercase tracking-wider">
                     الإجراءات
                   </th>
                 </tr>
@@ -545,21 +545,21 @@ export default function PurchaseOrders() {
                   >
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
-                        <div className="bg-slate-100 p-2 rounded text-slate-500 group-hover:bg-primary/10 group-hover:text-primary transition-colors">
+                        <div className="bg-[#f1f4ec] p-2 rounded text-[#6f7c68] group-hover:bg-primary/10 group-hover:text-primary transition-colors">
                           <FileText size={16} />
                         </div>
-                        <span className="font-medium text-slate-700">
+                        <span className="font-medium text-[#405a33]">
                           {order.order_number}
                         </span>
                       </div>
                     </td>
                     <td className="px-6 py-4">
-                      <div className="font-medium text-slate-900">
+                      <div className="font-medium text-[#2c4136]">
                         {order.vendor?.vendor_name}
                       </div>
-                      <div className="text-xs text-slate-400">مورد</div>
+                      <div className="text-xs text-[#9aa791]">مورد</div>
                     </td>
-                    <td className="px-6 py-4 text-slate-500 text-sm">
+                    <td className="px-6 py-4 text-[#6f7c68] text-sm">
                       {format(new Date(order.order_date), "PPP", {
                         locale: ar,
                       })}
@@ -567,7 +567,7 @@ export default function PurchaseOrders() {
                     <td className="px-6 py-4">
                       <StatusBadge status={order.status} />
                     </td>
-                    <td className="px-6 py-4 font-medium text-slate-900">
+                    <td className="px-6 py-4 font-medium text-[#2c4136]">
                       {formatCurrency(order.total_amount)}
                     </td>
                     <td
@@ -610,7 +610,7 @@ export default function PurchaseOrders() {
                   <tr>
                     <td
                       colSpan={6}
-                      className="px-6 py-16 text-center text-slate-400 bg-slate-50/30"
+                      className="px-6 py-16 text-center text-[#9aa791] bg-[#F6F8FB]/30"
                     >
                       <div className="flex flex-col items-center gap-3">
                         <Search size={32} className="opacity-20" />
@@ -743,18 +743,18 @@ export default function PurchaseOrders() {
         dir="rtl"
       >
         {/* Top Toolbar (Hidden on Print) */}
-        <div className="bg-white border-b border-slate-200 sticky top-0 z-20 shadow-sm print:hidden">
+        <div className="bg-white border-b border-[#dfe5d9] sticky top-0 z-20 shadow-sm print:hidden">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 flex justify-between items-center">
             <div className="flex items-center gap-4">
               <button
                 onClick={() => setView("list")}
-                className="p-2 hover:bg-slate-100 rounded-lg text-slate-500 transition-colors"
+                className="p-2 hover:bg-[#f1f4ec] rounded-lg text-[#6f7c68] transition-colors"
               >
                 <ArrowRight size={20} />
               </button>
-              <div className="h-6 w-px bg-slate-200 mx-1"></div>
+              <div className="h-6 w-px bg-[#dfe5d9] mx-1"></div>
               <div>
-                <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
+                <h2 className="text-lg font-bold text-[#2c4136] flex items-center gap-2">
                   {formData.poNumber || "أمر شراء جديد"}
                   <StatusBadge status={formData.status} />
                 </h2>
@@ -764,7 +764,7 @@ export default function PurchaseOrders() {
             <div className="flex items-center gap-3">
               <button
                 onClick={handlePrint}
-                className="hidden sm:flex items-center gap-2 px-3 py-2 text-slate-600 hover:bg-slate-100 rounded-lg text-sm font-medium transition-colors"
+                className="hidden sm:flex items-center gap-2 px-3 py-2 text-[#5b6b52] hover:bg-[#f1f4ec] rounded-lg text-sm font-medium transition-colors"
               >
                 <Printer size={18} />
               </button>
@@ -809,17 +809,17 @@ export default function PurchaseOrders() {
         <div className="max-w-7xl mx-auto mt-6 px-4 sm:px-6 grid grid-cols-1 lg:grid-cols-4 gap-6 print:block print:mt-0 print:px-0">
           {/* Main Document Area */}
           <div className="lg:col-span-3">
-            <div className="bg-white rounded-xl shadow-sm border border-slate-200 min-h-[800px] p-8 md:p-12 relative print:shadow-none print:border-none print:p-0">
+            <div className="bg-white rounded-xl shadow-sm border border-[#dfe5d9] min-h-[800px] p-8 md:p-12 relative print:shadow-none print:border-none print:p-0">
               {/* Branding Header */}
               <div className="flex justify-between items-start mb-12">
                 <div>
                   <div className="flex items-center gap-2 text-primary mb-2">
                     <Package size={32} />
-                    <span className="font-bold text-2xl text-slate-900">
+                    <span className="font-bold text-2xl text-[#2c4136]">
                       نظام المشتريات
                     </span>
                   </div>
-                  <div className="text-slate-500 text-sm mt-4">
+                  <div className="text-[#6f7c68] text-sm mt-4">
                     الإدارة العامة
                     <br />
                     شارع المؤسسة
@@ -828,18 +828,18 @@ export default function PurchaseOrders() {
                   </div>
                 </div>
                 <div className="text-left">
-                  <h1 className="text-3xl font-light text-slate-900 mb-2 uppercase tracking-wide">
+                  <h1 className="text-3xl font-light text-[#2c4136] mb-2 uppercase tracking-wide">
                     أمر شراء
                   </h1>
-                  <p className="text-slate-400 text-sm">نسخة أصلية</p>
+                  <p className="text-[#9aa791] text-sm">نسخة أصلية</p>
                 </div>
               </div>
 
               {/* Vendor & Info Grid */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-12 mb-12">
                 {/* Vendor Section */}
-                <div className="bg-slate-50 p-6 rounded-lg border border-slate-100 print:bg-transparent print:border-0 print:p-0">
-                  <label className="block text-xs uppercase font-bold text-slate-400 mb-3">
+                <div className="bg-[#F6F8FB] p-6 rounded-lg border border-[#eef1e5] print:bg-transparent print:border-0 print:p-0">
+                  <label className="block text-xs uppercase font-bold text-[#9aa791] mb-3">
                     بيانات المورد
                   </label>
                   <Select
@@ -858,12 +858,12 @@ export default function PurchaseOrders() {
                     </SelectContent>
                   </Select>
                   {/* Print only view for vendor */}
-                  <div className="hidden print:block text-lg font-bold text-slate-800 mb-1">
+                  <div className="hidden print:block text-lg font-bold text-[#2c4136] mb-1">
                     {formData.vendorName}
                   </div>
 
                   {formData.vendorAddress && (
-                    <div className="text-sm text-slate-500 leading-relaxed">
+                    <div className="text-sm text-[#6f7c68] leading-relaxed">
                       {formData.vendorAddress}
                       <br />
                       {vendors?.find((v) => v.id === formData.vendorId)?.email}
@@ -873,16 +873,16 @@ export default function PurchaseOrders() {
 
                 {/* PO Details */}
                 <div className="flex flex-col gap-4">
-                  <div className="flex justify-between items-center border-b border-slate-100 pb-2">
-                    <span className="text-slate-500 text-sm font-medium">
+                  <div className="flex justify-between items-center border-b border-[#eef1e5] pb-2">
+                    <span className="text-[#6f7c68] text-sm font-medium">
                       رقم الطلب
                     </span>
-                    <span className="font-mono font-bold text-slate-800">
+                    <span className="font-mono font-bold text-[#2c4136]">
                       {formData.poNumber}
                     </span>
                   </div>
-                  <div className="flex justify-between items-center border-b border-slate-100 pb-2">
-                    <span className="text-slate-500 text-sm font-medium">
+                  <div className="flex justify-between items-center border-b border-[#eef1e5] pb-2">
+                    <span className="text-[#6f7c68] text-sm font-medium">
                       تاريخ الإصدار
                     </span>
                     <input
@@ -891,15 +891,15 @@ export default function PurchaseOrders() {
                       onChange={(e) =>
                         setFormData({ ...formData, date: e.target.value })
                       }
-                      className="text-left bg-transparent outline-none font-medium text-slate-800 print:hidden"
+                      className="text-left bg-transparent outline-none font-medium text-[#2c4136] print:hidden"
                     />
-                    <span className="hidden print:block font-medium text-slate-800">
+                    <span className="hidden print:block font-medium text-[#2c4136]">
                       {formData.date &&
                         format(new Date(formData.date), "PPP", { locale: ar })}
                     </span>
                   </div>
-                  <div className="flex justify-between items-center border-b border-slate-100 pb-2">
-                    <span className="text-slate-500 text-sm font-medium">
+                  <div className="flex justify-between items-center border-b border-[#eef1e5] pb-2">
+                    <span className="text-[#6f7c68] text-sm font-medium">
                       تاريخ التوصيل المتوقع
                     </span>
                     <input
@@ -911,7 +911,7 @@ export default function PurchaseOrders() {
                           expectedDate: e.target.value,
                         })
                       }
-                      className="text-left bg-transparent outline-none font-medium text-slate-800 print:hidden"
+                      className="text-left bg-transparent outline-none font-medium text-[#2c4136] print:hidden"
                     />
                   </div>
                 </div>
@@ -921,7 +921,7 @@ export default function PurchaseOrders() {
               <div className="mb-8">
                 <table className="w-full text-right">
                   <thead>
-                    <tr className="border-b-2 border-slate-800 text-slate-800">
+                    <tr className="border-b-2 border-slate-800 text-[#2c4136]">
                       <th className="py-3 text-xs font-bold uppercase w-16">
                         #
                       </th>
@@ -946,7 +946,7 @@ export default function PurchaseOrders() {
                   <tbody className="divide-y divide-slate-100">
                     {formData.items.map((item, index) => (
                       <tr key={item.id} className="group">
-                        <td className="py-4 text-sm text-slate-500">
+                        <td className="py-4 text-sm text-[#6f7c68]">
                           {index + 1}
                         </td>
                         <td className="py-4">
@@ -954,7 +954,7 @@ export default function PurchaseOrders() {
                             type="text"
                             list="sku-options"
                             placeholder="رمز الصنف…"
-                            className="w-full bg-transparent border-none p-0 text-sm font-mono text-slate-600 focus:ring-0 placeholder-slate-300 uppercase text-right"
+                            className="w-full bg-transparent border-none p-0 text-sm font-mono text-[#5b6b52] focus:ring-0 placeholder-slate-300 uppercase text-right"
                             value={item.sku}
                             onChange={(e) =>
                               handleItemChange(index, "sku", e.target.value)
@@ -971,7 +971,7 @@ export default function PurchaseOrders() {
                         <td className="py-4">
                           <input
                             type="text"
-                            className="w-full bg-transparent border-none p-0 text-sm font-medium text-slate-800 focus:ring-0 placeholder-slate-300"
+                            className="w-full bg-transparent border-none p-0 text-sm font-medium text-[#2c4136] focus:ring-0 placeholder-slate-300"
                             value={item.description}
                             onChange={(e) =>
                               handleItemChange(
@@ -986,7 +986,7 @@ export default function PurchaseOrders() {
                         <td className="py-4">
                           <input
                             type="number"
-                            className="w-full bg-transparent border-none p-0 text-sm text-slate-600 focus:ring-0"
+                            className="w-full bg-transparent border-none p-0 text-sm text-[#5b6b52] focus:ring-0"
                             value={item.quantity}
                             onChange={(e) =>
                               handleItemChange(
@@ -1000,7 +1000,7 @@ export default function PurchaseOrders() {
                         <td className="py-4">
                           <input
                             type="number"
-                            className="w-full bg-transparent border-none p-0 text-sm text-slate-600 focus:ring-0"
+                            className="w-full bg-transparent border-none p-0 text-sm text-[#5b6b52] focus:ring-0"
                             value={item.unitPrice}
                             onChange={(e) =>
                               handleItemChange(
@@ -1011,7 +1011,7 @@ export default function PurchaseOrders() {
                             }
                           />
                         </td>
-                        <td className="py-4 font-bold text-slate-800">
+                        <td className="py-4 font-bold text-[#2c4136]">
                           {formatCurrency(item.total)}
                         </td>
                         <td className="py-4 print:hidden">
@@ -1035,27 +1035,27 @@ export default function PurchaseOrders() {
               </div>
 
               {/* Financial Summary */}
-              <div className="flex flex-col md:flex-row justify-end border-t-2 border-slate-100 pt-8">
+              <div className="flex flex-col md:flex-row justify-end border-t-2 border-[#eef1e5] pt-8">
                 <div className="w-full md:w-80 space-y-3">
-                  <div className="flex justify-between text-sm text-slate-600">
+                  <div className="flex justify-between text-sm text-[#5b6b52]">
                     <span className="font-medium">المجموع الفرعي</span>
                     <span>{formatCurrency(formData.subtotal)}</span>
                   </div>
-                  <div className="flex justify-between text-sm text-slate-600">
+                  <div className="flex justify-between text-sm text-[#5b6b52]">
                     <span className="font-medium">
                       الضريبة ({formData.taxRate}%)
                     </span>
                     <span>{formatCurrency(formData.taxAmount)}</span>
                   </div>
-                  <div className="flex justify-between text-sm text-slate-600">
+                  <div className="flex justify-between text-sm text-[#5b6b52]">
                     <span className="font-medium">الشحن</span>
                     <span>{formatCurrency(formData.shippingCost)}</span>
                   </div>
-                  <div className="flex justify-between items-center pt-4 border-t border-slate-100">
-                    <span className="text-lg font-bold text-slate-900">
+                  <div className="flex justify-between items-center pt-4 border-t border-[#eef1e5]">
+                    <span className="text-lg font-bold text-[#2c4136]">
                       الإجمالي
                     </span>
-                    <span className="text-2xl font-bold text-slate-900">
+                    <span className="text-2xl font-bold text-[#2c4136]">
                       {formatCurrency(formData.grandTotal)}
                     </span>
                   </div>
@@ -1063,7 +1063,7 @@ export default function PurchaseOrders() {
               </div>
 
               {/* Footer Terms */}
-              <div className="mt-16 pt-8 border-t border-slate-100 text-slate-400 text-xs text-center">
+              <div className="mt-16 pt-8 border-t border-[#eef1e5] text-[#9aa791] text-xs text-center">
                 <p>١. الدفع مستحق خلال ٣٠ يوماً من تاريخ الفاتورة.</p>
                 <p>٢. يرجى ذكر رقم أمر الشراء في جميع المراسلات.</p>
                 <p className="mt-2">التوقيع المعتمد: _______________________</p>
@@ -1074,12 +1074,12 @@ export default function PurchaseOrders() {
           {/* Sidebar (Audit Log & Notes) - Hidden on Print */}
           <div className="lg:col-span-1 space-y-6 print:hidden">
             {/* Quick Notes Card */}
-            <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-200">
-              <label className="text-xs font-bold text-slate-400 uppercase flex items-center gap-2 mb-3">
+            <div className="bg-white p-4 rounded-xl shadow-sm border border-[#dfe5d9]">
+              <label className="text-xs font-bold text-[#9aa791] uppercase flex items-center gap-2 mb-3">
                 <FileText size={14} /> ملاحظات داخلية
               </label>
               <Textarea
-                className="w-full text-sm bg-slate-50 border-0 rounded-lg p-3 text-slate-700 h-32 focus:ring-2 focus:ring-primary resize-none"
+                className="w-full text-sm bg-[#F6F8FB] border-0 rounded-lg p-3 text-[#405a33] h-32 focus:ring-2 focus:ring-primary resize-none"
                 placeholder="أضف ملاحظات داخلية حول هذا الطلب..."
                 value={formData.notes}
                 onChange={(e) =>
@@ -1089,8 +1089,8 @@ export default function PurchaseOrders() {
             </div>
 
             {/* Audit Log Card */}
-            <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-200">
-              <label className="text-xs font-bold text-slate-400 uppercase flex items-center gap-2 mb-4">
+            <div className="bg-white p-4 rounded-xl shadow-sm border border-[#dfe5d9]">
+              <label className="text-xs font-bold text-[#9aa791] uppercase flex items-center gap-2 mb-4">
                 <History size={14} /> سجل النشاط
               </label>
               <div className="space-y-4">
@@ -1098,27 +1098,27 @@ export default function PurchaseOrders() {
                   <div key={i} className="flex gap-3 relative pb-4 last:pb-0">
                     {/* Timeline connector */}
                     {i !== formData.history.length - 1 && (
-                      <div className="absolute right-[9px] top-6 bottom-0 w-px bg-slate-100"></div>
+                      <div className="absolute right-[9px] top-6 bottom-0 w-px bg-[#f1f4ec]"></div>
                     )}
                     <div className="w-5 h-5 rounded-full bg-primary/10 flex items-center justify-center shrink-0 z-10">
                       <div className="w-2 h-2 rounded-full bg-primary"></div>
                     </div>
                     <div>
-                      <p className="text-sm font-medium text-slate-800">
+                      <p className="text-sm font-medium text-[#2c4136]">
                         {event.action}
                       </p>
                       <div className="flex items-center gap-2 mt-1">
-                        <span className="text-xs text-slate-400">
+                        <span className="text-xs text-[#9aa791]">
                           {format(new Date(event.date), "PPP", { locale: ar })}
                         </span>
                         <span className="w-1 h-1 rounded-full bg-slate-300"></span>
-                        <span className="text-xs text-slate-400">
+                        <span className="text-xs text-[#9aa791]">
                           {format(new Date(event.date), "HH:mm", {
                             locale: ar,
                           })}
                         </span>
                       </div>
-                      <p className="text-xs text-slate-400 mt-1">
+                      <p className="text-xs text-[#9aa791] mt-1">
                         بواسطة {event.user}
                       </p>
                     </div>
@@ -1128,12 +1128,12 @@ export default function PurchaseOrders() {
             </div>
 
             {/* Attachments Placeholder */}
-            <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex items-center justify-center border-dashed min-h-[100px] cursor-pointer hover:bg-slate-50 transition-colors">
+            <div className="bg-white p-4 rounded-xl shadow-sm border border-[#dfe5d9] flex items-center justify-center border-dashed min-h-[100px] cursor-pointer hover:bg-[#F6F8FB] transition-colors">
               <div className="text-center">
-                <div className="mx-auto w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 mb-2">
+                <div className="mx-auto w-8 h-8 rounded-full bg-[#f1f4ec] flex items-center justify-center text-[#9aa791] mb-2">
                   <Plus size={16} />
                 </div>
-                <p className="text-xs font-medium text-slate-500">
+                <p className="text-xs font-medium text-[#6f7c68]">
                   إرفاق ملفات
                 </p>
               </div>
@@ -1147,7 +1147,7 @@ export default function PurchaseOrders() {
   return (
     <>
       <div
-        className="bg-slate-50 min-h-screen text-slate-900 font-sans"
+        className="bg-[#F6F8FB] min-h-screen text-[#2c4136] font-sans"
         dir="rtl"
       >
         {view === "list" ? <ListView /> : <FormView />}

@@ -16,7 +16,6 @@ import {
   TrendingUp, 
   Clock, 
   Target, 
-  Users, 
   FileText,
   Zap,
   CheckCircle,
@@ -125,25 +124,25 @@ const InvoiceScannerAnalytics: React.FC = () => {
 
   const getMetricColor = (value: number, type: 'percentage' | 'time' | 'count') => {
     if (type === 'percentage') {
-      if (value >= 90) return 'text-green-600';
-      if (value >= 75) return 'text-yellow-600';
+      if (value >= 90) return 'text-emerald-600';
+      if (value >= 75) return 'text-amber-600';
       return 'text-red-600';
     }
     if (type === 'time') {
-      if (value <= 3) return 'text-green-600';
-      if (value <= 5) return 'text-yellow-600';
+      if (value <= 3) return 'text-emerald-600';
+      if (value <= 5) return 'text-amber-600';
       return 'text-red-600';
     }
-    return 'text-blue-600';
+    return 'text-[var(--finance-accent)]';
   };
 
   if (isLoading) {
     return (
-      <div className="max-w-7xl mx-auto p-6 space-y-6">
+      <div className="space-y-6">
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center justify-center py-12">
-              <RefreshCw className="h-8 w-8 animate-spin text-blue-500" />
+              <RefreshCw className="h-8 w-8 animate-spin text-[var(--finance-accent)]" />
               <span className="ml-2 text-lg">{t("loadingAnalyticsData")}</span>
             </div>
           </CardContent>
@@ -153,29 +152,31 @@ const InvoiceScannerAnalytics: React.FC = () => {
   }
 
   return (
-    <div className="max-w-7xl mx-auto p-6 space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
+    <div className="space-y-6">
+      {/* Toolbar */}
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-3xl font-bold">{t("invoiceScannerAnalytics")}</h1>
-          <p className="text-slate-600">{t("comprehensivePerformanceMetricsAnd")}</p>
+          <h2 className="text-lg font-bold">{t("invoiceScannerAnalytics")}</h2>
+          <p className="mt-0.5 text-sm text-[var(--finance-muted)]">{t("comprehensivePerformanceMetricsAnd")}</p>
         </div>
-        <div className="flex gap-3">
+        <div className="flex flex-wrap gap-2">
           <Select value={timeRange} onValueChange={setTimeRange}>
-            <SelectTrigger className="w-32">
+            <SelectTrigger className="w-36">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="24h">Last 24h</SelectItem>
-              <SelectItem value="7d">Last 7 days</SelectItem>
-              <SelectItem value="30d">Last 30 days</SelectItem>
-              <SelectItem value="90d">Last 90 days</SelectItem>
+              <SelectItem value="24h">آخر 24 ساعة</SelectItem>
+              <SelectItem value="7d">آخر 7 أيام</SelectItem>
+              <SelectItem value="30d">آخر 30 يوماً</SelectItem>
+              <SelectItem value="90d">آخر 90 يوماً</SelectItem>
             </SelectContent>
           </Select>
-          <Button variant="outline" onClick={refreshData} disabled={isLoading}>
-            <RefreshCw className="h-4 w-4 mr-2" />{t("refresh")}</Button>
-          <Button onClick={exportReport}>
-            <Download className="h-4 w-4 mr-2" />{t("exportReport")}</Button>
+          <Button variant="outline" onClick={refreshData} disabled={isLoading} className="gap-2">
+            <RefreshCw className="h-4 w-4" />{t("refresh")}
+          </Button>
+          <Button onClick={exportReport} className="gap-2">
+            <Download className="h-4 w-4" />{t("exportReport")}
+          </Button>
         </div>
       </div>
 
@@ -185,11 +186,11 @@ const InvoiceScannerAnalytics: React.FC = () => {
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-slate-600">{t("totalScans")}</p>
-                <p className="text-3xl font-bold text-blue-600">{analytics.processingMetrics.totalScans.toLocaleString()}</p>
-                <p className="text-xs text-slate-500">+12.5% vs last period</p>
+                <p className="text-sm font-medium text-[var(--finance-muted)]">{t("totalScans")}</p>
+                <p className="text-3xl font-bold tabular-nums text-[var(--finance-accent)]">{analytics.processingMetrics.totalScans.toLocaleString()}</p>
+                <p className="text-xs text-[var(--finance-muted)]">+12.5% مقارنة بالفترة السابقة</p>
               </div>
-              <FileText className="h-12 w-12 text-blue-500" />
+              <FileText className="h-12 w-12 text-[var(--finance-accent)] opacity-70" />
             </div>
           </CardContent>
         </Card>
@@ -198,13 +199,13 @@ const InvoiceScannerAnalytics: React.FC = () => {
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-slate-600">{t("avgProcessingTime")}</p>
-                <p className={`text-3xl font-bold ${getMetricColor(analytics.processingMetrics.avgProcessingTime, 'time')}`}>
+                <p className="text-sm font-medium text-[var(--finance-muted)]">{t("avgProcessingTime")}</p>
+                <p className={`text-3xl font-bold tabular-nums ${getMetricColor(analytics.processingMetrics.avgProcessingTime, 'time')}`}>
                   {analytics.processingMetrics.avgProcessingTime}s
                 </p>
-                <p className="text-xs text-slate-500">-0.8s improvement</p>
+                <p className="text-xs text-[var(--finance-muted)]">تحسن 0.8- ثانية</p>
               </div>
-              <Clock className="h-12 w-12 text-green-500" />
+              <Clock className="h-12 w-12 text-emerald-500 opacity-70" />
             </div>
           </CardContent>
         </Card>
@@ -213,13 +214,13 @@ const InvoiceScannerAnalytics: React.FC = () => {
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-slate-600">{t("successRate")}</p>
-                <p className={`text-3xl font-bold ${getMetricColor(analytics.processingMetrics.successRate, 'percentage')}`}>
+                <p className="text-sm font-medium text-[var(--finance-muted)]">{t("successRate")}</p>
+                <p className={`text-3xl font-bold tabular-nums ${getMetricColor(analytics.processingMetrics.successRate, 'percentage')}`}>
                   {analytics.processingMetrics.successRate}%
                 </p>
-                <p className="text-xs text-slate-500">+2.3% improvement</p>
+                <p className="text-xs text-[var(--finance-muted)]">تحسن +2.3%</p>
               </div>
-              <CheckCircle className="h-12 w-12 text-green-500" />
+              <CheckCircle className="h-12 w-12 text-emerald-500 opacity-70" />
             </div>
           </CardContent>
         </Card>
@@ -228,13 +229,13 @@ const InvoiceScannerAnalytics: React.FC = () => {
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-slate-600">{t("avgAccuracy")}</p>
-                <p className={`text-3xl font-bold ${getMetricColor(analytics.processingMetrics.avgAccuracy, 'percentage')}`}>
+                <p className="text-sm font-medium text-[var(--finance-muted)]">{t("avgAccuracy")}</p>
+                <p className={`text-3xl font-bold tabular-nums ${getMetricColor(analytics.processingMetrics.avgAccuracy, 'percentage')}`}>
                   {analytics.processingMetrics.avgAccuracy}%
                 </p>
-                <p className="text-xs text-slate-500">+5.2% vs baseline</p>
+                <p className="text-xs text-[var(--finance-muted)]">+5.2% مقارنة بالأساس</p>
               </div>
-              <Target className="h-12 w-12 text-purple-500" />
+              <Target className="h-12 w-12 text-[var(--finance-accent)] opacity-70" />
             </div>
           </CardContent>
         </Card>
@@ -258,17 +259,17 @@ const InvoiceScannerAnalytics: React.FC = () => {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {dailyStats.map((day, index) => (
+                  {dailyStats.map((day) => (
                     <div key={day.date} className="flex items-center justify-between">
                       <div>
                         <p className="font-medium">{new Date(day.date).toLocaleDateString()}</p>
-                        <p className="text-sm text-slate-500">{day.scans} scans processed</p>
+                        <p className="text-sm text-[var(--finance-muted)]">{day.scans} فاتورة معالجة</p>
                       </div>
-                      <div className="text-right">
+                      <div className="text-left">
                         <p className={`font-medium ${getMetricColor(day.accuracy, 'percentage')}`}>
                           {day.accuracy}%
                         </p>
-                        <p className="text-sm text-slate-500">{day.avgTime}s avg</p>
+                        <p className="text-sm text-[var(--finance-muted)]">متوسط {day.avgTime}s</p>
                       </div>
                     </div>
                   ))}

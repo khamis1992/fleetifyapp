@@ -153,8 +153,8 @@ const statusStyles: Record<string, string> = {
   active: "bg-emerald-50 text-emerald-700 border-emerald-200",
   paused: "bg-amber-50 text-amber-700 border-amber-200",
   completed: "bg-blue-50 text-blue-700 border-blue-200",
-  cancelled: "bg-slate-100 text-slate-600 border-slate-200",
-  pending: "bg-slate-50 text-slate-700 border-slate-200",
+  cancelled: "bg-[#f1f4ec] text-[#5b6b52] border-[#dfe5d9]",
+  pending: "bg-[#F6F8FB] text-[#405a33] border-[#dfe5d9]",
   partial: "bg-sky-50 text-sky-700 border-sky-200",
   paid: "bg-emerald-50 text-emerald-700 border-emerald-200",
   overdue: "bg-rose-50 text-rose-700 border-rose-200",
@@ -719,7 +719,7 @@ const MonthlyObligations = () => {
       <div className="space-y-5 p-4 md:p-6">
         <div data-finance-heading="" className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div>
-            <div className="flex items-center gap-2 text-sm text-slate-500">
+            <div className="flex items-center gap-2 text-sm text-[#6f7c68]">
               <Button
                 variant="ghost"
                 size="sm"
@@ -732,7 +732,7 @@ const MonthlyObligations = () => {
             <h1 className="mt-2 text-2xl font-bold text-slate-950">
               الالتزامات
             </h1>
-            <p className="mt-1 text-sm text-slate-500">
+            <p className="mt-1 text-sm text-[#6f7c68]">
               تسجيل التكاليف الثابتة والأقساط والمستحقات لمرة واحدة وربط سدادها
               بالخزينة والقيود.
             </p>
@@ -862,7 +862,7 @@ const MonthlyObligations = () => {
                       }
                       placeholder="ابحث برقم اللوحة أو نوع المركبة"
                     />
-                    <div className="max-h-44 overflow-y-auto rounded-lg border border-slate-200 bg-white">
+                    <div className="max-h-44 overflow-y-auto rounded-lg border border-[#dfe5d9] bg-white">
                       {visibleVehicles.map((vehicle: any) => {
                         const checked = selectedVehicleIds.includes(vehicle.id);
                         return (
@@ -871,15 +871,15 @@ const MonthlyObligations = () => {
                             type="button"
                             onClick={() => toggleVehicle(vehicle.id)}
                             className={cn(
-                              "flex w-full items-center justify-between gap-3 border-b border-slate-100 px-3 py-2 text-right text-sm last:border-b-0 hover:bg-slate-50",
+                              "flex w-full items-center justify-between gap-3 border-b border-[#eef1e5] px-3 py-2 text-right text-sm last:border-b-0 hover:bg-[#F6F8FB]",
                               checked && "bg-blue-50"
                             )}
                           >
                             <span>
-                              <span className="font-semibold text-slate-900">
+                              <span className="font-semibold text-[#2c4136]">
                                 {vehicle.plate_number}
                               </span>
-                              <span className="mr-2 text-slate-500">
+                              <span className="mr-2 text-[#6f7c68]">
                                 {vehicle.make || ""} {vehicle.model || ""}
                               </span>
                             </span>
@@ -892,7 +892,7 @@ const MonthlyObligations = () => {
                         );
                       })}
                       {!visibleVehicles.length && (
-                        <div className="p-4 text-center text-sm text-slate-500">
+                        <div className="p-4 text-center text-sm text-[#6f7c68]">
                           لا توجد مركبات مطابقة.
                         </div>
                       )}
@@ -939,7 +939,7 @@ const MonthlyObligations = () => {
                     />
                     {selectedVehicleIds.length > 1 &&
                       newObligation.vehicle_amount_mode === "per_vehicle" && (
-                        <p className="text-xs text-slate-500">
+                        <p className="text-xs text-[#6f7c68]">
                           الإجمالي الشهري:{" "}
                           {formatCurrency(
                             Number(newObligation.monthly_amount || 0) *
@@ -1392,7 +1392,7 @@ const MonthlyObligations = () => {
               title: "التزامات نشطة",
               value: summary?.activeCount || 0,
               icon: FileClock,
-              tone: "text-slate-700",
+              tone: "text-[#405a33]",
             },
             {
               title: "الالتزام الشهري",
@@ -1426,10 +1426,10 @@ const MonthlyObligations = () => {
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.03 }}
-                className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm"
+                className="rounded-lg border border-[#dfe5d9] bg-white p-4 shadow-sm"
               >
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-slate-500">{item.title}</span>
+                  <span className="text-sm text-[#6f7c68]">{item.title}</span>
                   <Icon className={cn("h-5 w-5", item.tone)} />
                 </div>
                 <div className="mt-3 text-xl font-bold text-slate-950">
@@ -1448,8 +1448,8 @@ const MonthlyObligations = () => {
           </div>
         )}
 
-        <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
-          <div className="mb-3 inline-flex rounded-lg border border-slate-200 bg-slate-50 p-1">
+        <div className="rounded-lg border border-[#dfe5d9] bg-white p-4 shadow-sm">
+          <div className="mb-3 inline-flex rounded-lg border border-[#dfe5d9] bg-[#F6F8FB] p-1">
             <Button
               type="button"
               size="sm"
@@ -1483,7 +1483,7 @@ const MonthlyObligations = () => {
           </div>
           <div className="grid gap-3 md:grid-cols-[1fr_180px_180px]">
             <div className="relative">
-              <Search className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+              <Search className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#9aa791]" />
               <Input
                 className="pr-9"
                 value={searchTerm}
@@ -1520,15 +1520,15 @@ const MonthlyObligations = () => {
         </div>
 
         <div className="grid gap-5 xl:grid-cols-[minmax(0,1.45fr)_minmax(360px,0.75fr)]">
-          <section className="rounded-lg border border-slate-200 bg-white shadow-sm">
-            <div className="flex items-center justify-between border-b border-slate-200 px-4 py-3">
+          <section className="rounded-lg border border-[#dfe5d9] bg-white shadow-sm">
+            <div className="flex items-center justify-between border-b border-[#dfe5d9] px-4 py-3">
               <div>
                 <h2 className="font-semibold text-slate-950">
                   {viewMode === "one_time"
                     ? "سجل الالتزامات لمرة واحدة"
                     : "سجل الالتزامات الشهرية"}
                 </h2>
-                <p className="text-xs text-slate-500">
+                <p className="text-xs text-[#6f7c68]">
                   {filteredObligations.length} التزام ظاهر
                 </p>
               </div>
@@ -1558,7 +1558,7 @@ const MonthlyObligations = () => {
                         <div className="font-semibold text-slate-950">
                           {obligation.title}
                         </div>
-                        <div className="text-xs text-slate-500">
+                        <div className="text-xs text-[#6f7c68]">
                           {obligation.obligation_number} •{" "}
                           {isOneTimeObligation(obligation)
                             ? obligation.description || "التزام لمرة واحدة"
@@ -1566,13 +1566,13 @@ const MonthlyObligations = () => {
                         </div>
                       </TableCell>
                       <TableCell>
-                        <div className="flex items-center gap-2 text-sm text-slate-700">
+                        <div className="flex items-center gap-2 text-sm text-[#405a33]">
                           {obligation.vehicle_id ? (
-                            <Car className="h-4 w-4 text-slate-400" />
+                            <Car className="h-4 w-4 text-[#9aa791]" />
                           ) : obligation.vendor_id ? (
-                            <Building2 className="h-4 w-4 text-slate-400" />
+                            <Building2 className="h-4 w-4 text-[#9aa791]" />
                           ) : (
-                            <CircleDollarSign className="h-4 w-4 text-slate-400" />
+                            <CircleDollarSign className="h-4 w-4 text-[#9aa791]" />
                           )}
                           <span>{entityLabel(obligation)}</span>
                         </div>
@@ -1626,7 +1626,7 @@ const MonthlyObligations = () => {
                   <TableRow>
                     <TableCell
                       colSpan={6}
-                      className="h-32 text-center text-sm text-slate-500"
+                      className="h-32 text-center text-sm text-[#6f7c68]"
                     >
                       لا توجد التزامات مطابقة.
                     </TableCell>
@@ -1636,17 +1636,17 @@ const MonthlyObligations = () => {
             </Table>
           </section>
 
-          <section className="rounded-lg border border-slate-200 bg-white shadow-sm">
-            <div className="flex items-center justify-between border-b border-slate-200 px-4 py-3">
+          <section className="rounded-lg border border-[#dfe5d9] bg-white shadow-sm">
+            <div className="flex items-center justify-between border-b border-[#dfe5d9] px-4 py-3">
               <div>
                 <h2 className="font-semibold text-slate-950">
                   الاستحقاقات القادمة
                 </h2>
-                <p className="text-xs text-slate-500">
+                <p className="text-xs text-[#6f7c68]">
                   الأقساط غير المسددة مرتبة حسب التاريخ
                 </p>
               </div>
-              <Landmark className="h-5 w-5 text-slate-400" />
+              <Landmark className="h-5 w-5 text-[#9aa791]" />
             </div>
             <div className="divide-y divide-slate-100">
               {upcomingInstallments.map((installment) => {
@@ -1660,7 +1660,7 @@ const MonthlyObligations = () => {
                         <div className="font-semibold text-slate-950">
                           {installment.obligation?.title || "التزام شهري"}
                         </div>
-                        <div className="mt-1 text-xs text-slate-500">
+                        <div className="mt-1 text-xs text-[#6f7c68]">
                           استحقاق {installment.due_date} • قسط{" "}
                           {installment.installment_number}
                         </div>
@@ -1676,7 +1676,7 @@ const MonthlyObligations = () => {
                     </div>
                     <div className="mt-3 flex items-center justify-between">
                       <div>
-                        <div className="text-xs text-slate-500">المتبقي</div>
+                        <div className="text-xs text-[#6f7c68]">المتبقي</div>
                         <div className="font-bold text-slate-950">
                           {formatCurrency(remaining)}
                         </div>
@@ -1693,7 +1693,7 @@ const MonthlyObligations = () => {
                 );
               })}
               {!upcomingInstallments.length && (
-                <div className="p-8 text-center text-sm text-slate-500">
+                <div className="p-8 text-center text-sm text-[#6f7c68]">
                   لا توجد استحقاقات مفتوحة.
                 </div>
               )}
@@ -1841,7 +1841,7 @@ const MonthlyObligations = () => {
                       }
                       placeholder="ابحث برقم اللوحة أو نوع المركبة"
                     />
-                    <div className="max-h-44 overflow-y-auto rounded-lg border border-slate-200 bg-white">
+                    <div className="max-h-44 overflow-y-auto rounded-lg border border-[#dfe5d9] bg-white">
                       {visibleEditVehicles.map((vehicle: any) => {
                         const checked = selectedEditVehicleIds.includes(
                           vehicle.id
@@ -1852,15 +1852,15 @@ const MonthlyObligations = () => {
                             type="button"
                             onClick={() => toggleEditVehicle(vehicle.id)}
                             className={cn(
-                              "flex w-full items-center justify-between gap-3 border-b border-slate-100 px-3 py-2 text-right text-sm last:border-b-0 hover:bg-slate-50",
+                              "flex w-full items-center justify-between gap-3 border-b border-[#eef1e5] px-3 py-2 text-right text-sm last:border-b-0 hover:bg-[#F6F8FB]",
                               checked && "bg-blue-50"
                             )}
                           >
                             <span>
-                              <span className="font-semibold text-slate-900">
+                              <span className="font-semibold text-[#2c4136]">
                                 {vehicle.plate_number}
                               </span>
-                              <span className="mr-2 text-slate-500">
+                              <span className="mr-2 text-[#6f7c68]">
                                 {[vehicle.make, vehicle.model, vehicle.year]
                                   .filter(Boolean)
                                   .join(" ")}
@@ -1939,7 +1939,7 @@ const MonthlyObligations = () => {
                     />
                     {editObligation.vehicle_amount_mode === "per_vehicle" &&
                       selectedEditVehicleIds.length > 1 && (
-                        <div className="text-xs text-slate-500">
+                        <div className="text-xs text-[#6f7c68]">
                           الإجمالي:{" "}
                           {formatCurrency(
                             Number(editObligation.monthly_amount || 0) *
@@ -2129,11 +2129,11 @@ const MonthlyObligations = () => {
               </DialogDescription>
             </DialogHeader>
             <div className="grid gap-4 md:grid-cols-2">
-              <div className="rounded-lg border border-slate-200 bg-slate-50 p-3 md:col-span-2">
+              <div className="rounded-lg border border-[#dfe5d9] bg-[#F6F8FB] p-3 md:col-span-2">
                 <div className="font-semibold text-slate-950">
                   {payingInstallment?.obligation?.title}
                 </div>
-                <div className="mt-1 text-sm text-slate-500">
+                <div className="mt-1 text-sm text-[#6f7c68]">
                   المتبقي:{" "}
                   {formatCurrency(
                     Number(payingInstallment?.amount || 0) -

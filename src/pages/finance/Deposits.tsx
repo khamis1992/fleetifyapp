@@ -65,10 +65,10 @@ const Deposits = () => {
 
   const getStatusBadge = (status: string) => {
     const statusConfig: Record<string, { label: string; className: string }> = {
-      active: { label: 'نشط', className: 'bg-emerald-100 text-emerald-700' },
-      returned: { label: 'مُسترد', className: 'bg-slate-100 text-slate-700' },
-      partial: { label: 'مُسترد جزئياً', className: 'bg-amber-100 text-amber-700' },
-      pending: { label: 'معلق', className: 'bg-red-100 text-red-700' }
+      active: { label: 'نشط', className: 'bg-[#edf4e6] text-[#487038]' },
+      returned: { label: 'مُسترد', className: 'bg-[#f1f4ec] text-[#405a33]' },
+      partial: { label: 'مُسترد جزئياً', className: 'bg-[#faf5e7] text-[#9b7c36]' },
+      pending: { label: 'معلق', className: 'bg-[#fdf1eb] text-[#b3694c]' }
     };
     
     const config = statusConfig[status] || statusConfig.active;
@@ -97,12 +97,12 @@ const Deposits = () => {
     <div className="space-y-6 p-6" dir="rtl">
       <div data-finance-heading="" className="flex justify-between items-center">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">إدارة الودائع</h1>
-          <p className="text-sm text-slate-500 mt-1">إدارة ودائع العملاء وضمانات التأجير</p>
+          <h1 className="text-2xl font-bold text-[#2c4136]">إدارة الودائع</h1>
+          <p className="text-sm text-[#6f7c68] mt-1">إدارة ودائع العملاء وضمانات التأجير</p>
         </div>
         <div className="flex flex-wrap justify-end gap-2">
           <FeatureTourButton tour={depositsTour} onStart={setActiveTour} />
-          <Button onClick={handleAddDeposit} className="bg-slate-900 hover:bg-slate-800">
+          <Button onClick={handleAddDeposit} className="bg-[#2f7966] hover:bg-[#256450]">
             <Plus className="h-4 w-4 ml-2" />
             إضافة وديعة جديدة
           </Button>
@@ -133,17 +133,17 @@ const Deposits = () => {
         />
       </div>
 
-      <Card className="bg-white rounded-xl border border-slate-200 shadow-sm">
+      <Card className="bg-white rounded-xl border border-[#dfe5d9] shadow-sm">
         <CardContent className="p-6">
           <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between mb-6">
             <div className="flex-1 max-w-md">
               <div className="relative">
-                <Search className="absolute right-3 top-3 h-4 w-4 text-slate-400" />
+                <Search className="absolute right-3 top-3 h-4 w-4 text-[#9aa791]" />
                 <Input
                   placeholder="البحث بالعميل أو رقم الوديعة..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pr-9 bg-slate-50 border-slate-200"
+                  className="pr-9 bg-[#f7f8f4] border-[#dfe5d9]"
                 />
               </div>
             </div>
@@ -183,7 +183,7 @@ const Deposits = () => {
           <div className="overflow-x-auto -mx-4 md:mx-0">
             <Table className="min-w-[600px]">
               <TableHeader>
-                <TableRow className="bg-slate-50">
+                <TableRow className="bg-[#f7f8f4]">
                   <TableHead className="text-right">رقم الوديعة</TableHead>
                   <TableHead className="text-right">العميل</TableHead>
                   <TableHead className="text-right">نوع الوديعة</TableHead>
@@ -213,7 +213,7 @@ const Deposits = () => {
                   </TableRow>
                 ) : (
                   filteredDeposits.map((deposit) => (
-                    <TableRow key={deposit.id} className="border-b border-slate-100 hover:bg-slate-50">
+                    <TableRow key={deposit.id} className="border-b border-[#eef1e5] hover:bg-[#f7f8f4]">
                       <TableCell className="font-medium">
                         {deposit.deposit_number}
                       </TableCell>

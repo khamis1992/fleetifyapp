@@ -1,25 +1,18 @@
 import { useState } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useInventoryItems, useDeleteInventoryItem, useLowStockItems, type InventoryItem } from "@/hooks/useInventoryItems";
 import { useInventoryWarehouses } from "@/hooks/useInventoryWarehouses";
 import { useInventoryStockLevels, useItemStockLevels } from "@/hooks/useInventoryStockLevels";
 import { useInventoryCategories } from "@/hooks/useInventoryCategories";
-import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { Package, Plus, Search, Eye, Edit, Trash2, AlertTriangle, Warehouse, TrendingDown, Settings } from "lucide-react";
-import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from "@/components/ui/breadcrumb";
 import { ItemDetailsDialog } from "@/components/inventory/ItemDetailsDialog";
 import { StockAdjustmentDialog } from "@/components/inventory/StockAdjustmentDialog";
 import { AddInventoryItemForm } from "@/components/inventory/AddInventoryItemForm";
-import { PageHelp } from "@/components/help";
-import { InventoryPageHelpContent } from "@/components/help/content";
+import { PageEmpty, PageLoading, PagePanel } from "@/components/dashboard/workspace/PageKit";
+import '@/components/dashboard/workspace/dashboard-workspace.css';
+import '@/components/dashboard/workspace/page-kit.css';
 
 const Inventory = () => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -27,7 +20,6 @@ const Inventory = () => {
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [activeTab, setActiveTab] = useState("items");
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
-  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDetailsDialogOpen, setIsDetailsDialogOpen] = useState(false);
   const [isAdjustmentDialogOpen, setIsAdjustmentDialogOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState<InventoryItem | null>(null);
@@ -62,7 +54,7 @@ const Inventory = () => {
 
   const handleEditItem = (item: InventoryItem) => {
     setSelectedItem(item);
-    setIsEditDialogOpen(true);
+    setIsDetailsDialogOpen(true);
   };
 
   const handleViewDetails = (item: InventoryItem) => {
@@ -75,11 +67,12 @@ const Inventory = () => {
     setIsAdjustmentDialogOpen(true);
   };
 
-  const getStockBadgeVariant = (quantity: number, minLevel: number, reorderPoint?: number) => {
-    if (quantity === 0) return "destructive";
-    if (quantity < minLevel) return "destructive";
-    if (reorderPoint && quantity <= reorderPoint) return "warning";
-    return "success";
+  const stockBadgeTone = (item: InventoryItem) => {
+    const minLevel = item.min_stock_level ?? 0;
+    const reorderPoint = item.reorder_point ?? minLevel;
+    if (minLevel === 0) return 'is-ok';
+    if (item.min_stock_level && reorderPoint && item.reorder_point === item.min_stock_level) return 'is-ok';
+    return 'is-ok';
   };
 
   const getStockIndicator = (item: InventoryItem, currentStock?: number) => {
@@ -88,382 +81,330 @@ const Inventory = () => {
     const reorderPoint = item.reorder_point ?? minLevel;
 
     if (stock === 0) {
-      return { label: "نفذ", color: "bg-red-500", textColor: "text-red-600" };
+      return { label: "نفذ", tone: "is-risk" as const };
     } else if (stock < minLevel) {
-      return { label: "منخفض جداً", color: "bg-red-500", textColor: "text-red-600" };
+      return { label: "منخفض جداً", tone: "is-risk" as const };
     } else if (stock <= reorderPoint) {
-      return { label: "منخفض", color: "bg-orange-500", textColor: "text-orange-600" };
+      return { label: "منخفض", tone: "is-warn" as const };
     } else {
-      return { label: "طبيعي", color: "bg-green-500", textColor: "text-green-600" };
+      return { label: "طبيعي", tone: "is-ok" as const };
     }
   };
 
+  const dwMetrics = [
+    { label: 'إجمالي الأصناف', value: items?.length || 0, hint: 'صنف نشط', accent: true },
+    { label: 'مخزون منخفض', value: lowStockItems?.length || 0, hint: 'صنف يحتاج إعادة طلب', accent: false },
+    { label: 'المستودعات', value: warehouses?.length || 0, hint: 'مستودع نشط', accent: false },
+    { label: 'مخزون بدون حركة', value: 0, hint: 'صنف راكد', accent: false },
+  ];
+
+  const tabs = [
+    { value: 'items', label: 'جميع الأصناف' },
+    { value: 'low-stock', label: 'مخزون منخفض' },
+    { value: 'stock-levels', label: 'مستويات المخزون' },
+  ];
+
   return (
-    <div className="space-y-6">
-      {/* Breadcrumb */}
-      <Breadcrumb>
-        <BreadcrumbList>
-          <BreadcrumbItem>
-            <BreadcrumbLink href="/">الرئيسية</BreadcrumbLink>
-          </BreadcrumbItem>
-          <BreadcrumbSeparator />
-          <BreadcrumbItem>
-            <BreadcrumbPage>إدارة المخزون</BreadcrumbPage>
-          </BreadcrumbItem>
-        </BreadcrumbList>
-      </Breadcrumb>
-
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <div className="p-3 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl text-white">
-            <Package className="h-6 w-6" />
-          </div>
+    <div className="dashboard-workspace" dir="rtl">
+      <div className="dw-container">
+        <header className="dw-header">
           <div>
-            <h1 className="text-2xl font-bold">إدارة المخزون</h1>
-            <p className="text-muted-foreground">متابعة الأصناف والمخزون في جميع المستودعات</p>
-          </div>
-        </div>
-        <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-          <DialogTrigger asChild>
-            <Button>
-              <Plus className="h-4 w-4 mr-2" />
-              صنف جديد
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>إضافة صنف جديد</DialogTitle>
-              <DialogDescription>
-                أدخل بيانات الصنف الجديد لإضافته إلى المخزون. جميع الأسعار بالريال القطري (QAR)
-              </DialogDescription>
-            </DialogHeader>
-            <AddInventoryItemForm onSuccess={() => setIsCreateDialogOpen(false)} />
-          </DialogContent>
-        </Dialog>
-      </div>
-
-      {/* Stats Cards */}
-      <div className="grid gap-4 md:grid-cols-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">إجمالي الأصناف</CardTitle>
-            <Package className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{items?.length || 0}</div>
-            <p className="text-xs text-muted-foreground">صنف نشط</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">مخزون منخفض</CardTitle>
-            <TrendingDown className="h-4 w-4 text-orange-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-orange-600">{lowStockItems?.length || 0}</div>
-            <p className="text-xs text-muted-foreground">صنف يحتاج إعادة طلب</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">المستودعات</CardTitle>
-            <Warehouse className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{warehouses?.length || 0}</div>
-            <p className="text-xs text-muted-foreground">مستودع نشط</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">مخزون بدون حركة</CardTitle>
-            <AlertTriangle className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">0</div>
-            <p className="text-xs text-muted-foreground">صنف راكد</p>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Main Content */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle>الأصناف المخزنية</CardTitle>
-              <CardDescription>عرض وإدارة جميع الأصناف المخزنية</CardDescription>
+            <div className="dw-eyebrow">
+              <span className="dw-mark" />
+              العراف لتأجير السيارات <span>/</span> المخزون <span>/</span> الأصناف
             </div>
+            <h1>إدارة المخزون</h1>
+            <p>متابعة الأصناف والمخزون في جميع المستودعات.</p>
           </div>
-        </CardHeader>
-        <CardContent>
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-            <TabsList>
-              <TabsTrigger value="items">جميع الأصناف</TabsTrigger>
-              <TabsTrigger value="low-stock">مخزون منخفض</TabsTrigger>
-              <TabsTrigger value="stock-levels">مستويات المخزون</TabsTrigger>
-            </TabsList>
+          <div className="dw-header-tools">
+            <button type="button" className="dw-button dw-button-primary" onClick={() => setIsCreateDialogOpen(true)}>
+              <Plus size={17} />
+              صنف جديد
+            </button>
+          </div>
+        </header>
 
-            {/* Filters */}
-            <div className="flex gap-4">
-              <div className="flex-1">
+        <section className="dw-metrics" aria-label="مؤشرات المخزون">
+          {dwMetrics.map((metric) => (
+            <div key={metric.label} className={`dw-metric ${metric.accent ? 'dw-metric-accent' : ''}`}>
+              <div className="dw-metric-top">
+                <span>{metric.label}</span>
+              </div>
+              <strong>{metric.value}</strong>
+              <div className="dw-metric-bottom">
+                <small>{metric.hint}</small>
+              </div>
+            </div>
+          ))}
+        </section>
+
+        <div className="dw-main-grid">
+          <PagePanel
+            number="01"
+            title="الأصناف المخزنية"
+            subtitle="عرض وإدارة جميع الأصناف ومستويات مخزونها"
+            className="wk-panel-full"
+            action={
+              <div className="wk-toolbar-group">
                 <div className="relative">
-                  <Search className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                  <Input
-                    placeholder="البحث عن صنف (الاسم، الكود، SKU، الباركود)..."
+                  <Search className="absolute right-3 top-1/2 -translate-y-1/2 text-[#9aa791]" size={14} />
+                  <input
+                    className="wk-field"
+                    style={{ paddingRight: 32, minWidth: 240 }}
+                    placeholder="ابحث بالاسم، الكود، SKU…"
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pr-10"
+                    aria-label="بحث في الأصناف"
                   />
                 </div>
+                <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+                  <SelectTrigger className="wk-field" style={{ width: 160 }}>
+                    <SelectValue placeholder="التصنيف" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">جميع التصنيفات</SelectItem>
+                    {categories?.map((category) => (
+                      <SelectItem key={category.id} value={category.id}>
+                        {category.category_name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Select value={selectedWarehouse} onValueChange={setSelectedWarehouse}>
+                  <SelectTrigger className="wk-field" style={{ width: 160 }}>
+                    <SelectValue placeholder="المستودع" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">جميع المستودعات</SelectItem>
+                    {warehouses?.map((warehouse) => (
+                      <SelectItem key={warehouse.id} value={warehouse.id}>
+                        {warehouse.warehouse_name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
-              <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-                <SelectTrigger className="w-[200px]">
-                  <SelectValue placeholder="التصنيف" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">جميع التصنيفات</SelectItem>
-                  {categories?.map((category) => (
-                    <SelectItem key={category.id} value={category.id}>
-                      {category.category_name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <Select value={selectedWarehouse} onValueChange={setSelectedWarehouse}>
-                <SelectTrigger className="w-[200px]">
-                  <SelectValue placeholder="اختر المستودع" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">جميع المستودعات</SelectItem>
-                  {warehouses?.map((warehouse) => (
-                    <SelectItem key={warehouse.id} value={warehouse.id}>
-                      {warehouse.warehouse_name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+            }
+          >
+            <div className="wk-toolbar">
+              <div className="dw-filters" role="group" aria-label="أقسام المخزون">
+                {tabs.map(tab => (
+                  <button
+                    key={tab.value}
+                    type="button"
+                    aria-pressed={activeTab === tab.value}
+                    onClick={() => setActiveTab(tab.value)}
+                  >
+                    {tab.label}
+                  </button>
+                ))}
+              </div>
             </div>
 
             {/* Items Tab */}
-            <TabsContent value="items" className="space-y-4">
-              {itemsLoading ? (
-                <div className="flex justify-center py-8">
-                  <LoadingSpinner />
-                </div>
+            {activeTab === 'items' && (
+              itemsLoading ? (
+                <PageLoading label="جاري تحميل الأصناف…" />
               ) : filteredItems.length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground">
-                  لا توجد أصناف مخزنية
-                </div>
+                <PageEmpty icon={Package} message="لا توجد أصناف مخزنية">
+                  <button type="button" className="dw-button" onClick={() => setIsCreateDialogOpen(true)}>
+                    <Plus size={16} />
+                    إضافة صنف جديد
+                  </button>
+                </PageEmpty>
               ) : (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>الصنف</TableHead>
-                      <TableHead>الكود</TableHead>
-                      <TableHead>SKU</TableHead>
-                      <TableHead>حالة المخزون</TableHead>
-                      <TableHead>الوحدة</TableHead>
-                      <TableHead>سعر البيع</TableHead>
-                      <TableHead>النوع</TableHead>
-                      <TableHead>الحالة</TableHead>
-                      <TableHead>الإجراءات</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredItems.map((item) => {
-                      const stockIndicator = getStockIndicator(item);
-                      return (
-                        <TableRow key={item.id}>
-                          <TableCell className="font-medium">
-                            <div>
-                              <div>{item.item_name}</div>
-                              {item.item_name_ar && (
-                                <div className="text-xs text-muted-foreground">{item.item_name_ar}</div>
-                              )}
-                            </div>
-                          </TableCell>
-                          <TableCell>{item.item_code || "-"}</TableCell>
-                          <TableCell>{item.sku || "-"}</TableCell>
-                          <TableCell>
-                            <div className="flex items-center gap-2">
-                              <div className={`w-2 h-2 rounded-full ${stockIndicator.color}`} />
-                              <span className={`text-sm font-medium ${stockIndicator.textColor}`}>
+                <div className="wk-table-wrap">
+                  <table>
+                    <caption className="sr-only">الأصناف المخزنية</caption>
+                    <thead>
+                      <tr>
+                        <th scope="col">الصنف</th>
+                        <th scope="col">الكود</th>
+                        <th scope="col">SKU</th>
+                        <th scope="col">حالة المخزون</th>
+                        <th scope="col">الوحدة</th>
+                        <th scope="col">سعر البيع</th>
+                        <th scope="col">النوع</th>
+                        <th scope="col">الحالة</th>
+                        <th scope="col"><span className="sr-only">إجراءات</span></th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filteredItems.map((item) => {
+                        const stockIndicator = getStockIndicator(item);
+                        return (
+                          <tr key={item.id}>
+                            <td>
+                              <strong><bdi>{item.item_name}</bdi></strong>
+                              {item.item_name_ar && <span className="wk-sub">{item.item_name_ar}</span>}
+                            </td>
+                            <td>{item.item_code || "-"}</td>
+                            <td>{item.sku || "-"}</td>
+                            <td>
+                              <span className={`wk-badge ${stockIndicator.tone}`}>
                                 {stockIndicator.label}
                               </span>
-                            </div>
-                            {item.reorder_point && (
-                              <p className="text-xs text-muted-foreground">
-                                إعادة طلب: {item.reorder_point}
-                              </p>
-                            )}
-                          </TableCell>
-                          <TableCell>{item.unit_of_measure}</TableCell>
-                          <TableCell>{(item.unit_price ?? 0).toFixed(2)} ريال</TableCell>
-                          <TableCell>
-                            <Badge variant="outline">{item.item_type}</Badge>
-                          </TableCell>
-                          <TableCell>
-                            <Badge variant={item.is_active ? "default" : "secondary"}>
-                              {item.is_active ? "نشط" : "غير نشط"}
-                            </Badge>
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex gap-1">
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => handleViewDetails(item)}
-                                title="عرض التفاصيل"
-                              >
-                                <Eye className="h-4 w-4" />
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => handleAdjustStock(item)}
-                                title="تسوية المخزون"
-                              >
-                                <Settings className="h-4 w-4 text-blue-500" />
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => handleEditItem(item)}
-                                title="تعديل"
-                              >
-                                <Edit className="h-4 w-4" />
-                              </Button>
-                              <AlertDialog>
-                                <AlertDialogTrigger asChild>
-                                  <Button variant="ghost" size="sm" title="حذف">
-                                    <Trash2 className="h-4 w-4 text-destructive" />
-                                  </Button>
-                                </AlertDialogTrigger>
-                                <AlertDialogContent>
-                                  <AlertDialogHeader>
-                                    <AlertDialogTitle>هل أنت متأكد؟</AlertDialogTitle>
-                                    <AlertDialogDescription>
-                                      سيتم حذف الصنف "{item.item_name}" من المخزون. هذا الإجراء لا يمكن التراجع عنه.
-                                    </AlertDialogDescription>
-                                  </AlertDialogHeader>
-                                  <AlertDialogFooter>
-                                    <AlertDialogCancel>إلغاء</AlertDialogCancel>
-                                    <AlertDialogAction
-                                      onClick={() => handleDeleteItem(item)}
-                                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                                    >
-                                      حذف
-                                    </AlertDialogAction>
-                                  </AlertDialogFooter>
-                                </AlertDialogContent>
-                              </AlertDialog>
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      );
-                    })}
-                  </TableBody>
-                </Table>
-              )}
-            </TabsContent>
+                              {item.reorder_point && (
+                                <span className="wk-sub">إعادة طلب: {item.reorder_point}</span>
+                              )}
+                            </td>
+                            <td>{item.unit_of_measure}</td>
+                            <td>{(item.unit_price ?? 0).toFixed(2)} ريال</td>
+                            <td>
+                              <span className="wk-badge is-neutral">{item.item_type}</span>
+                            </td>
+                            <td>
+                              <span className={`wk-badge ${item.is_active ? 'is-ok' : 'is-neutral'}`}>
+                                {item.is_active ? "نشط" : "غير نشط"}
+                              </span>
+                            </td>
+                            <td>
+                              <div className="wk-actions">
+                                <button type="button" className="wk-action" title="عرض التفاصيل" aria-label={`عرض ${item.item_name}`} onClick={() => handleViewDetails(item)}>
+                                  <Eye size={15} />
+                                </button>
+                                <button type="button" className="wk-action" title="تسوية المخزون" aria-label={`تسوية مخزون ${item.item_name}`} onClick={() => handleAdjustStock(item)}>
+                                  <Settings size={15} />
+                                </button>
+                                <button type="button" className="wk-action" title="تعديل" aria-label={`تعديل ${item.item_name}`} onClick={() => handleEditItem(item)}>
+                                  <Edit size={15} />
+                                </button>
+                                <AlertDialog>
+                                  <AlertDialogTrigger asChild>
+                                    <button type="button" className="wk-action" title="حذف" aria-label={`حذف ${item.item_name}`}>
+                                      <Trash2 size={15} />
+                                    </button>
+                                  </AlertDialogTrigger>
+                                  <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                      <AlertDialogTitle>هل أنت متأكد؟</AlertDialogTitle>
+                                      <AlertDialogDescription>
+                                        سيتم حذف الصنف "{item.item_name}" من المخزون. هذا الإجراء لا يمكن التراجع عنه.
+                                      </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                      <AlertDialogCancel>إلغاء</AlertDialogCancel>
+                                      <AlertDialogAction
+                                        onClick={() => handleDeleteItem(item)}
+                                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                      >
+                                        حذف
+                                      </AlertDialogAction>
+                                    </AlertDialogFooter>
+                                  </AlertDialogContent>
+                                </AlertDialog>
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )
+            )}
 
             {/* Low Stock Tab */}
-            <TabsContent value="low-stock" className="space-y-4">
-              {lowStockLoading ? (
-                <div className="flex justify-center py-8">
-                  <LoadingSpinner />
-                </div>
+            {activeTab === 'low-stock' && (
+              lowStockLoading ? (
+                <PageLoading label="جاري تحميل الأصناف منخفضة المخزون…" />
               ) : !lowStockItems || lowStockItems.length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground">
-                  لا توجد أصناف بمخزون منخفض
-                </div>
+                <PageEmpty icon={AlertTriangle} message="لا توجد أصناف بمخزون منخفض" />
               ) : (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>الصنف</TableHead>
-                      <TableHead>الكمية المتاحة</TableHead>
-                      <TableHead>الحد الأدنى</TableHead>
-                      <TableHead>النقص</TableHead>
-                      <TableHead>الحالة</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {lowStockItems.map((item: any) => (
-                      <TableRow key={item.id}>
-                        <TableCell className="font-medium">{item.item_name}</TableCell>
-                        <TableCell>
-                          <Badge variant="destructive">
-                            {item.quantity_available}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>{item.min_stock_level}</TableCell>
-                        <TableCell className="text-red-600 font-semibold">
-                          -{item.shortage}
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant="secondary">
-                            <AlertTriangle className="h-3 w-3 mr-1" />
-                            يحتاج إعادة طلب
-                          </Badge>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              )}
-            </TabsContent>
+                <div className="wk-table-wrap">
+                  <table>
+                    <caption className="sr-only">الأصناف منخفضة المخزون</caption>
+                    <thead>
+                      <tr>
+                        <th scope="col">الصنف</th>
+                        <th scope="col">الكمية المتاحة</th>
+                        <th scope="col">الحد الأدنى</th>
+                        <th scope="col">النقص</th>
+                        <th scope="col">الحالة</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {lowStockItems.map((item: any) => (
+                        <tr key={item.id}>
+                          <td><strong><bdi>{item.item_name}</bdi></strong></td>
+                          <td>
+                            <span className="wk-badge is-risk">{item.quantity_available}</span>
+                          </td>
+                          <td>{item.min_stock_level}</td>
+                          <td>
+                            <span className="wk-badge is-risk">-{item.shortage}</span>
+                          </td>
+                          <td>
+                            <span className="wk-badge is-warn">يحتاج إعادة طلب</span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )
+            )}
 
             {/* Stock Levels Tab */}
-            <TabsContent value="stock-levels" className="space-y-4">
-              {!stockLevels || stockLevels.length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground">
-                  لا توجد بيانات مخزون
-                </div>
+            {activeTab === 'stock-levels' && (
+              !stockLevels || stockLevels.length === 0 ? (
+                <PageEmpty icon={Warehouse} message="لا توجد بيانات مخزون" />
               ) : (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>الصنف</TableHead>
-                      <TableHead>المستودع</TableHead>
-                      <TableHead>الكمية الفعلية</TableHead>
-                      <TableHead>المحجوز</TableHead>
-                      <TableHead>المتاح</TableHead>
-                      <TableHead>آخر حركة</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {stockLevels.map((level) => (
-                      <TableRow key={level.id}>
-                        <TableCell className="font-medium">{level.item_name}</TableCell>
-                        <TableCell>{level.warehouse_name}</TableCell>
-                        <TableCell>{level.quantity_on_hand}</TableCell>
-                        <TableCell>{level.quantity_allocated}</TableCell>
-                        <TableCell>
-                          <Badge variant="outline">
-                            {level.quantity_available}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="text-xs text-muted-foreground">
-                          {level.last_movement_at
-                            ? new Date(level.last_movement_at).toLocaleDateString('en-US')
-                            : '-'
-                          }
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              )}
-            </TabsContent>
-          </Tabs>
-        </CardContent>
-      </Card>
+                <div className="wk-table-wrap">
+                  <table>
+                    <caption className="sr-only">مستويات المخزون</caption>
+                    <thead>
+                      <tr>
+                        <th scope="col">الصنف</th>
+                        <th scope="col">المستودع</th>
+                        <th scope="col">الكمية الفعلية</th>
+                        <th scope="col">المحجوز</th>
+                        <th scope="col">المتاح</th>
+                        <th scope="col">آخر حركة</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {stockLevels.map((level) => (
+                        <tr key={level.id}>
+                          <td><strong><bdi>{level.item_name}</bdi></strong></td>
+                          <td>{level.warehouse_name}</td>
+                          <td>{level.quantity_on_hand}</td>
+                          <td>{level.quantity_allocated}</td>
+                          <td>
+                            <span className="wk-badge is-info">{level.quantity_available}</span>
+                          </td>
+                          <td>
+                            {level.last_movement_at
+                              ? new Date(level.last_movement_at).toLocaleDateString('en-GB')
+                              : '-'}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )
+            )}
+            <div className="dw-panel-foot">
+              <Warehouse size={14} />
+              <span>جميع الأسعار بالريال القطري (QAR).</span>
+            </div>
+          </PagePanel>
+        </div>
+      </div>
+
+      {/* Create Dialog */}
+      <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>إضافة صنف جديد</DialogTitle>
+            <DialogDescription>
+              أدخل بيانات الصنف الجديد لإضافته إلى المخزون. جميع الأسعار بالريال القطري (QAR)
+            </DialogDescription>
+          </DialogHeader>
+          <AddInventoryItemForm onSuccess={() => setIsCreateDialogOpen(false)} />
+        </DialogContent>
+      </Dialog>
 
       {/* Dialogs */}
       <ItemDetailsDialog

@@ -131,97 +131,97 @@ All colors MUST be HSL.
   }
 
   :root {
-    /* === Fleetify New Design System — 8-Color Palette === */
+    /* === Fleetify Design System — Operational Workspace Palette === */
     
     /* Surface Hierarchy */
-    --background: 216 38% 97%;        /* #F6F8FB — Ice canvas */
-    --background-soft: 215 30% 92%;   /* #E5EAF1 — Frost surface */
-    --foreground: 222 75% 5%;         /* #020617 — Deep navy text */
+    --background: 100 20% 96%;        /* #f7f8f4 — Paper canvas */
+    --background-soft: 100 15% 86%;   /* #dfe5d9 — Frost surface */
+    --foreground: 150 19% 21%;         /* #2c4136 — Deep green text */
     
     /* Card System */
     --card: 0 0% 100%;                /* #FFFFFF — Pure white cards */
-    --card-foreground: 222 75% 5%;    /* #020617 */
-    --card-hover: 216 38% 97%;        /* #F6F8FB */
+    --card-foreground: 150 19% 21%;    /* #2c4136 */
+    --card-hover: 100 20% 96%;        /* #f7f8f4 */
     --card-glass: 0 0% 100% / 0.9;
     
-    /* Primary — Teal #22C7A1 */
-    --primary: 166 71% 46%;
+    /* Primary — Operational green #2f7966 */
+    --primary: 164 44% 33%;
     --primary-foreground: 0 0% 100%;
-    --primary-dark: 166 71% 36%;
-    --primary-light: 166 71% 56%;
-    --primary-glow: 166 71% 46% / 0.2;
+    --primary-dark: 164 44% 26%;
+    --primary-light: 164 30% 45%;
+    --primary-glow: 164 44% 33% / 0.2;
     
-    /* Secondary/Accent — Indigo #7C83F6 */
-    --accent: 236 87% 73%;
+    /* Secondary/Accent — Neutral sage #5b6b52 */
+    --accent: 100 15% 34%;
     --accent-foreground: 0 0% 100%;
-    --accent-light: 236 87% 92%;
-    --accent-muted: 236 87% 83%;
+    --accent-light: 100 20% 92%;
+    --accent-muted: 100 15% 70%;
     
     /* Neutral Secondary */
-    --secondary: 215 30% 92%;         /* #E5EAF1 */
-    --secondary-foreground: 222 75% 5%; /* #020617 */
-    --secondary-dark: 215 30% 85%;
+    --secondary: 100 20% 94%;         /* #f1f4ec */
+    --secondary-foreground: 150 19% 21%; /* #2c4136 */
+    --secondary-dark: 100 15% 85%;
     
     /* Popover / Dialogs */
     --popover: 0 0% 100%;
-    --popover-foreground: 222 75% 5%;
+    --popover-foreground: 150 19% 21%;
     
     /* Muted */
-    --muted: 216 38% 97%;             /* #F6F8FB */
-    --muted-foreground: 222 75% 40%;
+    --muted: 100 20% 96%;             /* #f7f8f4 */
+    --muted-foreground: 100 12% 49%;
     
     /* Status Colors */
-    --success: 166 71% 46%;           /* #22C7A1 */
+    --success: 164 44% 33%;           /* #2f7966 */
     --success-foreground: 0 0% 100%;
-    --warning: 27 96% 53%;            /* #F97316 */
+    --warning: 42 55% 41%;            /* #9b7c36 */
     --warning-foreground: 0 0% 100%;
-    --destructive: 354 94% 70%;       /* #FB6B7A */
+    --destructive: 20 45% 49%;       /* #b3694c */
     --destructive-foreground: 0 0% 100%;
-    --info: 198 93% 60%;              /* #38BDF8 */
+    --info: 197 27% 39%;              /* #4a707c */
     --info-foreground: 0 0% 100%;
 
     /* System color pattern */
-    --pattern-text: 222 75% 5%;              /* #020617 */
-    --pattern-inner: 216 38% 97%;            /* #F6F8FB */
-    --pattern-secondary-text: 215 20% 65%;   /* #94A3B8 */
-    --pattern-info: 198 93% 60%;             /* #38BDF8 */
-    --pattern-alert: 354 94% 70%;            /* #FB6B7A */
-    --pattern-focus: 236 87% 73%;            /* #7C83F6 */
-    --pattern-success: 166 71% 46%;          /* #22C7A1 */
+    --pattern-text: 150 19% 21%;              /* #2c4136 */
+    --pattern-inner: 100 20% 96%;            /* #f7f8f4 */
+    --pattern-secondary-text: 100 12% 49%;   /* #829074 */
+    --pattern-info: 197 27% 39%;             /* #4a707c */
+    --pattern-alert: 20 45% 49%;             /* #b3694c */
+    --pattern-focus: 100 15% 34%;            /* #5b6b52 */
+    --pattern-success: 164 44% 33%;          /* #2f7966 */
     
     /* Borders & Inputs */
-    --border: 215 30% 92%;            /* #E5EAF1 */
-    --input: 216 38% 97%;             /* #F6F8FB */
-    --input-border: 215 30% 85%;
-    --input-focus: 166 71% 46%;       /* #22C7A1 */
-    --ring: 166 71% 46%;
+    --border: 100 15% 86%;            /* #dfe5d9 */
+    --input: 100 20% 96%;            /* #f7f8f4 */
+    --input-border: 100 15% 80%;
+    --input-focus: 164 44% 33%;       /* #2f7966 */
+    --ring: 164 44% 33%;
     
     /* Gradients — Light & subtle only */
-    --gradient-primary: linear-gradient(135deg, hsl(166 71% 36%), hsl(166 71% 46%));
-    --gradient-card: linear-gradient(135deg, hsl(0 0% 100%) 0%, hsl(216 38% 97%) 100%);
-    --gradient-hero: linear-gradient(135deg, hsl(216 38% 97%) 0%, hsl(215 30% 92%) 50%, hsl(236 87% 92%) 100%);
+    --gradient-primary: linear-gradient(135deg, hsl(164 44% 26%), hsl(164 44% 33%));
+    --gradient-card: linear-gradient(135deg, hsl(0 0% 100%) 0%, hsl(100 20% 96%) 100%);
+    --gradient-hero: linear-gradient(135deg, hsl(100 20% 96%) 0%, hsl(100 15% 86%) 50%, hsl(100 20% 92%) 100%);
     --gradient-glass: linear-gradient(135deg, hsl(var(--card-glass)), hsl(var(--card) / 0.8));
-    --gradient-accent: linear-gradient(135deg, hsl(236 87% 92%), hsl(236 87% 83%));
+    --gradient-accent: linear-gradient(135deg, hsl(100 20% 92%), hsl(100 15% 83%));
     
     /* Chat Gradients */
-    --gradient-chat-user: linear-gradient(135deg, hsl(166 71% 36%) 0%, hsl(166 71% 46%) 100%);
-    --gradient-chat-ai: linear-gradient(135deg, hsl(216 38% 97%) 0%, hsl(215 30% 92%) 100%);
-    --gradient-chat-container: linear-gradient(145deg, hsl(0 0% 100%) 0%, hsl(216 38% 97%) 100%);
+    --gradient-chat-user: linear-gradient(135deg, hsl(164 44% 26%) 0%, hsl(164 44% 33%) 100%);
+    --gradient-chat-ai: linear-gradient(135deg, hsl(100 20% 96%) 0%, hsl(100 15% 92%) 100%);
+    --gradient-chat-container: linear-gradient(145deg, hsl(0 0% 100%) 0%, hsl(100 20% 96%) 100%);
     --gradient-chat-input: linear-gradient(135deg, hsl(216 38% 97%) 0%, hsl(0 0% 100%) 100%);
-    --gradient-chat-header: linear-gradient(135deg, hsl(236 87% 92%) 0%, hsl(236 87% 83%) 100%);
+    --gradient-chat-header: linear-gradient(135deg, hsl(100 20% 92%) 0%, hsl(100 15% 83%) 100%);
     
     /* Shadows — Whisper-light */
     --shadow-subtle: 0 1px 2px 0 hsl(222 75% 5% / 0.04);
     --shadow-card: 0 1px 3px 0 hsl(222 75% 5% / 0.04), 0 1px 2px -1px hsl(222 75% 5% / 0.04);
     --shadow-elevated: 0 4px 6px -1px hsl(222 75% 5% / 0.06), 0 2px 4px -2px hsl(222 75% 5% / 0.04);
-    --shadow-glow: 0 0 20px hsl(166 71% 46% / 0.15);
+    --shadow-glow: 0 0 20px hsl(164 44% 33% / 0.15);
     --shadow-glass: 0 8px 32px hsl(222 75% 5% / 0.04);
     
     /* Chat Shadows */
     --shadow-chat-bubble: 0 1px 3px hsl(222 75% 5% / 0.04), 0 1px 2px hsl(222 75% 5% / 0.03);
     --shadow-chat-container: 0 4px 12px hsl(222 75% 5% / 0.06), 0 2px 6px hsl(222 75% 5% / 0.04);
-    --shadow-chat-input: 0 1px 3px hsl(166 71% 46% / 0.08);
-    --shadow-chat-glow: 0 0 30px hsl(166 71% 46% / 0.1);
+    --shadow-chat-input: 0 1px 3px hsl(164 44% 33% / 0.08);
+    --shadow-chat-glow: 0 0 30px hsl(164 44% 33% / 0.1);
     
     /* Transitions */
     --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -305,10 +305,10 @@ All colors MUST be HSL.
     --popover: 222 75% 8%;
     --popover-foreground: 216 38% 97%;
     
-    --primary: 166 71% 46%;                 /* #22C7A1 */
+    --primary: 164 44% 40%;                 /* #2f7966 (lightened for dark) */
     --primary-foreground: 0 0% 100%;
-    --primary-light: 166 71% 56%;
-    --primary-glow: 166 71% 46% / 0.3;
+    --primary-light: 164 30% 50%;
+    --primary-glow: 164 44% 40% / 0.3;
     
     --secondary: 222 75% 12%;
     --secondary-foreground: 216 38% 97%;
@@ -317,19 +317,19 @@ All colors MUST be HSL.
     --muted: 222 75% 12%;
     --muted-foreground: 215 30% 75%;
     
-    --accent: 236 87% 73%;                  /* #7C83F6 */
+    --accent: 100 15% 60%;                  /* sage lightened */
     --accent-foreground: 0 0% 100%;
-    --accent-light: 236 87% 83%;
-    --accent-muted: 236 87% 20%;
+    --accent-light: 100 15% 75%;
+    --accent-muted: 100 15% 24%;
     
     --border: 222 75% 15%;
     --input: 222 75% 15%;
-    --ring: 166 71% 46%;
+    --ring: 164 44% 40%;
     
     /* Dark mode gradients */
-    --gradient-primary: linear-gradient(135deg, hsl(166 71% 36%), hsl(166 71% 46%));
-    --gradient-accent: linear-gradient(135deg, hsl(236 87% 63%), hsl(236 87% 73%));
-    --gradient-hero: linear-gradient(135deg, hsl(166 71% 46%) 0%, hsl(166 71% 36%) 50%, hsl(236 87% 63%) 100%);
+    --gradient-primary: linear-gradient(135deg, hsl(164 44% 33%), hsl(164 44% 40%));
+    --gradient-accent: linear-gradient(135deg, hsl(100 15% 50%), hsl(100 15% 60%));
+    --gradient-hero: linear-gradient(135deg, hsl(164 44% 40%) 0%, hsl(164 44% 33%) 50%, hsl(100 15% 50%) 100%);
     --gradient-card: linear-gradient(145deg, hsl(222 75% 8%) 0%, hsl(222 75% 5%) 100%);
     
     /* Dark mode sidebar — Glass Coral */

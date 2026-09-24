@@ -1,39 +1,39 @@
 export const systemColorPattern = {
   colors: {
-    text: '#020617',
+    text: '#2c4136',
     surface: '#FFFFFF',
-    innerSurface: '#F6F8FB',
-    secondaryText: '#94A3B8',
-    border: '#E5EAF1',
-    info: '#38BDF8',
-    alert: '#FB6B7A',
-    focus: '#7C83F6',
-    success: '#22C7A1',
+    innerSurface: '#f7f8f4',
+    secondaryText: '#829074',
+    border: '#dfe5d9',
+    info: '#4a707c',
+    alert: '#b3694c',
+    focus: '#5b6b52',
+    success: '#2f7966',
   },
   roles: {
     fleet: {
       label: 'مؤشر الأسطول',
-      accent: '#38BDF8',
+      accent: '#4a707c',
     },
     operations: {
       label: 'مؤشر التشغيل',
-      accent: '#7C83F6',
+      accent: '#5b6b52',
     },
     customers: {
       label: 'مؤشر العملاء',
-      accent: '#22C7A1',
+      accent: '#2f7966',
     },
     finance: {
       label: 'مؤشر مالي',
-      accent: '#FB6B7A',
+      accent: '#2f7966',
     },
     progress: {
       label: 'التقدم',
-      accent: '#22C7A1',
+      accent: '#2f7966',
     },
     smallCard: {
       label: 'تنبيه مختصر',
-      accent: '#FB6B7A',
+      accent: '#b3694c',
     },
   },
 } as const;

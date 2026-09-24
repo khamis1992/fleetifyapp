@@ -90,7 +90,7 @@ const RATIO_CATEGORIES = [
     name: "نسب السيولة",
     description: "قياس قدرة الشركة على الوفاء بالتزاماتها قصيرة الأجل",
     icon: Wallet,
-    gradient: "from-blue-500 to-cyan-500",
+    gradient: "bg-[#4a707c]",
     bgColor: "bg-blue-50",
     borderColor: "border-blue-200",
   },
@@ -99,7 +99,7 @@ const RATIO_CATEGORIES = [
     name: "نسب الربحية",
     description: "قياس كفاءة الشركة في تحقيق الأرباح",
     icon: TrendingUp,
-    gradient: "from-green-500 to-emerald-500",
+    gradient: "bg-[#2f7966]",
     bgColor: "bg-green-50",
     borderColor: "border-green-200",
   },
@@ -108,7 +108,7 @@ const RATIO_CATEGORIES = [
     name: "نسب المديونية",
     description: "قياس مدى اعتماد الشركة على التمويل بالديون",
     icon: Building2,
-    gradient: "from-amber-500 to-orange-500",
+    gradient: "bg-[#9b7c36]",
     bgColor: "bg-amber-50",
     borderColor: "border-amber-200",
   },
@@ -117,7 +117,7 @@ const RATIO_CATEGORIES = [
     name: "نسب الكفاءة",
     description: "قياس كفاءة استخدام الموارد والأصول",
     icon: Activity,
-    gradient: "from-purple-500 to-indigo-500",
+    gradient: "bg-[#5b6b52]",
     bgColor: "bg-purple-50",
     borderColor: "border-purple-200",
   },
@@ -179,7 +179,7 @@ export default function FinancialRatios() {
     return (
       <div className="min-h-screen bg-[#F6F8FB] flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">
-          <RefreshCw className="w-10 h-10 animate-spin text-rose-500" />
+          <RefreshCw className="w-10 h-10 animate-spin text-[#2f7966]" />
           <p className="text-neutral-500">جاري تحميل النسب المالية...</p>
         </div>
       </div>
@@ -190,7 +190,7 @@ export default function FinancialRatios() {
     <div className="min-h-screen bg-[#F6F8FB] p-6" dir="rtl">
       {/* Hero Header */}
       <motion.div
-        className="bg-gradient-to-r from-rose-500 to-orange-500 rounded-xl p-6 mb-6 text-white shadow-lg"
+        className="bg-[#2f7966] rounded-xl p-6 mb-6 text-white shadow-lg"
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
       >
@@ -295,7 +295,7 @@ export default function FinancialRatios() {
             value={keyRatios.currentRatio.toFixed(2)}
             subtitle="تغطية الالتزامات المتداولة"
             icon={Scale}
-            iconBg="bg-gradient-to-br from-blue-500 to-cyan-500"
+            iconBg="bg-[#4a707c]"
             status={getRatioStatus(keyRatios.currentRatio, 'currentRatio')}
             delay={0.1}
           />
@@ -304,7 +304,7 @@ export default function FinancialRatios() {
             value={keyRatios.quickRatio.toFixed(2)}
             subtitle="السيولة دون المخزون"
             icon={Gauge}
-            iconBg="bg-gradient-to-br from-purple-500 to-indigo-500"
+            iconBg="bg-[#5b6b52]"
             status={getRatioStatus(keyRatios.quickRatio, 'quickRatio')}
             delay={0.15}
           />
@@ -313,7 +313,7 @@ export default function FinancialRatios() {
             value={`${keyRatios.profitMargin.toFixed(1)}%`}
             subtitle="صافي الربح من الإيرادات"
             icon={TrendingUp}
-            iconBg="bg-gradient-to-br from-green-500 to-emerald-500"
+            iconBg="bg-[#2f7966]"
             status={getRatioStatus(keyRatios.profitMargin, 'profitMargin')}
             delay={0.2}
           />
@@ -322,7 +322,7 @@ export default function FinancialRatios() {
             value={`${keyRatios.debtRatio.toFixed(1)}%`}
             subtitle="الديون إلى الأصول"
             icon={Building2}
-            iconBg="bg-gradient-to-br from-amber-500 to-orange-500"
+            iconBg="bg-[#9b7c36]"
             status={getRatioStatus(keyRatios.debtRatio, 'debtRatio')}
             delay={0.25}
           />
@@ -348,7 +348,7 @@ export default function FinancialRatios() {
             <CardContent className="p-5">
               <div className="flex items-center gap-3 mb-3">
                 <div className={cn(
-                  "w-12 h-12 rounded-xl flex items-center justify-center bg-gradient-to-br",
+                  "w-12 h-12 rounded-xl flex items-center justify-center",
                   category.gradient
                 )}>
                   <category.icon className="w-6 h-6 text-white" />
@@ -372,7 +372,7 @@ export default function FinancialRatios() {
       >
         <div className="p-6 border-b border-slate-100">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-rose-500 to-orange-500 flex items-center justify-center">
+            <div className="w-10 h-10 rounded-xl bg-[#2f7966] flex items-center justify-center">
               <BarChart3 className="w-5 h-5 text-white" />
             </div>
             <div>

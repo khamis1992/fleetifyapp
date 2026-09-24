@@ -1,9 +1,5 @@
 import { useState } from 'react';
 import { Settings, CheckSquare, BarChart3, Plus } from 'lucide-react';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { WorkflowManager } from '@/components/approval/WorkflowManager';
 import { WorkflowForm } from '@/components/approval/WorkflowForm';
@@ -11,13 +7,15 @@ import { ApprovalRequestsList } from '@/components/approval/ApprovalRequestsList
 import { useApprovalRequests } from '@/hooks/useApprovalWorkflows';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { PagePanel } from '@/components/dashboard/workspace/PageKit';
+import '@/components/dashboard/workspace/dashboard-workspace.css';
+import '@/components/dashboard/workspace/page-kit.css';
 
 export default function ApprovalSystem() {
   const [activeTab, setActiveTab] = useState('requests');
   const [isWorkflowDialogOpen, setIsWorkflowDialogOpen] = useState(false);
   const [selectedWorkflow, setSelectedWorkflow] = useState<any>(null);
-  
-  // جلب إحصائيات سريعة
+
   const { data: pendingRequests } = useApprovalRequests({ status: 'pending' });
   const { data: allRequests } = useApprovalRequests();
 
@@ -38,33 +36,6 @@ export default function ApprovalSystem() {
     }
   });
 
-  const stats = [
-    {
-      title: 'الطلبات المعلقة',
-      value: pendingRequests?.length || 0,
-      description: 'طلبات تحتاج موافقة',
-      icon: CheckSquare,
-      color: 'text-yellow-600',
-      bgColor: 'bg-yellow-100',
-    },
-    {
-      title: 'إجمالي الطلبات',
-      value: allRequests?.length || 0,
-      description: 'جميع الطلبات هذا الشهر',
-      icon: BarChart3,
-      color: 'text-blue-600',
-      bgColor: 'bg-blue-100',
-    },
-    {
-      title: 'متوسط وقت الموافقة',
-      value: '2.5',
-      description: 'أيام',
-      icon: Settings,
-      color: 'text-green-600',
-      bgColor: 'bg-green-100',
-    },
-  ];
-
   const handleCreateWorkflow = () => {
     setSelectedWorkflow(null);
     setIsWorkflowDialogOpen(true);
@@ -84,113 +55,111 @@ export default function ApprovalSystem() {
     setSelectedWorkflow(null);
   };
 
+  const tabs = [
+    { value: 'requests', label: 'طلبات الموافقة', count: pendingRequests?.length || 0 },
+    { value: 'workflows', label: 'سير العمل' },
+    { value: 'analytics', label: 'التقارير والتحليلات' },
+  ];
+
+  const metrics = [
+    { label: 'الطلبات المعلقة', value: pendingRequests?.length || 0, hint: 'طلبات تحتاج موافقة', accent: true },
+    { label: 'إجمالي الطلبات', value: allRequests?.length || 0, hint: 'جميع الطلبات المسجلة', accent: false },
+    { label: 'طلبات موافق عليها', value: analyticsData?.approved || 0, hint: 'أُقرت بنجاح', accent: false },
+    { label: 'طلبات مرفوضة', value: analyticsData?.rejected || 0, hint: 'لم تُقبل', accent: false },
+  ];
+
   return (
-    <div className="container mx-auto py-6 space-y-6">
-      {/* Page Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">نظام الموافقات</h1>
-          <p className="text-muted-foreground">
-            إدارة شاملة لجميع عمليات الموافقة في المؤسسة
-          </p>
-        </div>
-        <div className="flex gap-2">
-          <Button variant="outline" size="sm">
-            <Settings className="h-4 w-4 ml-1" />
-            الإعدادات العامة
-          </Button>
-          <Button size="sm" onClick={handleCreateWorkflow}>
-            <Plus className="h-4 w-4 ml-1" />
-            إنشاء سير عمل
-          </Button>
-        </div>
-      </div>
+    <div className="dashboard-workspace" dir="rtl">
+      <div className="dw-container">
+        <header className="dw-header">
+          <div>
+            <div className="dw-eyebrow">
+              <span className="dw-mark" />
+              العراف لتأجير السيارات <span>/</span> مساحة العمل <span>/</span> نظام الموافقات
+            </div>
+            <h1>نظام الموافقات</h1>
+            <p>إدارة شاملة لعمليات الموافقة وسير العمل في المؤسسة.</p>
+          </div>
+          <div className="dw-header-tools">
+            <button type="button" className="dw-button" onClick={handleCreateWorkflow}>
+              <Settings size={17} />
+              الإعدادات
+            </button>
+            <button type="button" className="dw-button dw-button-primary" onClick={handleCreateWorkflow}>
+              <Plus size={17} />
+              إنشاء سير عمل
+            </button>
+          </div>
+        </header>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {stats.map((stat, index) => {
-          const Icon = stat.icon;
-          return (
-            <Card key={index}>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">
-                  {stat.title}
-                </CardTitle>
-                <div className={`p-2 rounded-md ${stat.bgColor}`}>
-                  <Icon className={`h-4 w-4 ${stat.color}`} />
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{stat.value}</div>
-                <p className="text-xs text-muted-foreground">
-                  {stat.description}
-                </p>
-              </CardContent>
-            </Card>
-          );
-        })}
-      </div>
+        <section className="dw-metrics" aria-label="مؤشرات الموافقات">
+          {metrics.map((metric) => (
+            <div key={metric.label} className={`dw-metric ${metric.accent ? 'dw-metric-accent' : ''}`}>
+              <div className="dw-metric-top">
+                <span>{metric.label}</span>
+              </div>
+              <strong>{metric.value}</strong>
+              <div className="dw-metric-bottom">
+                <small>{metric.hint}</small>
+              </div>
+            </div>
+          ))}
+        </section>
 
-      {/* Main Content */}
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="requests" className="gap-2">
-            <CheckSquare className="h-4 w-4" />
-            طلبات الموافقة
-            {pendingRequests && pendingRequests.length > 0 && (
-              <Badge variant="secondary" className="ml-1">
-                {pendingRequests.length}
-              </Badge>
+        <div className="dw-main-grid">
+          <PagePanel
+            number="01"
+            title="نظام الموافقات"
+            subtitle="طلبات الموافقة وسير العمل والتحليلات في مكان واحد"
+            className="wk-panel-full"
+            action={
+              <div className="dw-filters" role="group" aria-label="أقسام الموافقات">
+                {tabs.map(tab => (
+                  <button
+                    key={tab.value}
+                    type="button"
+                    aria-pressed={activeTab === tab.value}
+                    onClick={() => setActiveTab(tab.value)}
+                  >
+                    {tab.label}
+                    {tab.count !== undefined && <span>{tab.count}</span>}
+                  </button>
+                ))}
+              </div>
+            }
+          >
+            {activeTab === 'requests' && <ApprovalRequestsList onViewRequest={handleViewRequest} />}
+
+            {activeTab === 'workflows' && (
+              <WorkflowManager
+                onCreateWorkflow={handleCreateWorkflow}
+                onEditWorkflow={handleEditWorkflow}
+              />
             )}
-          </TabsTrigger>
-          <TabsTrigger value="workflows" className="gap-2">
-            <Settings className="h-4 w-4" />
-            سير العمل
-          </TabsTrigger>
-          <TabsTrigger value="analytics" className="gap-2">
-            <BarChart3 className="h-4 w-4" />
-            التقارير والتحليلات
-          </TabsTrigger>
-        </TabsList>
 
-        <TabsContent value="requests" className="space-y-6">
-          <ApprovalRequestsList onViewRequest={handleViewRequest} />
-        </TabsContent>
-
-        <TabsContent value="workflows" className="space-y-6">
-          <WorkflowManager 
-            onCreateWorkflow={handleCreateWorkflow}
-            onEditWorkflow={handleEditWorkflow}
-          />
-        </TabsContent>
-
-        <TabsContent value="analytics" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>التقارير والتحليلات</CardTitle>
-              <CardDescription>
-                تحليل أداء نظام الموافقات والإحصائيات التفصيلية
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="p-6 bg-yellow-50 rounded-lg border">
-                  <div className="text-3xl font-bold text-yellow-700">{analyticsData?.pending || 0}</div>
-                  <div className="text-sm text-yellow-600 mt-1">طلبات معلقة</div>
+            {activeTab === 'analytics' && (
+              <div className="wk-summary-grid" style={{ padding: 24 }}>
+                <div className="wk-summary-tile is-warn">
+                  <small>طلبات معلقة</small>
+                  <strong>{analyticsData?.pending || 0}</strong>
                 </div>
-                <div className="p-6 bg-green-50 rounded-lg border">
-                  <div className="text-3xl font-bold text-green-700">{analyticsData?.approved || 0}</div>
-                  <div className="text-sm text-green-600 mt-1">طلبات موافق عليها</div>
+                <div className="wk-summary-tile is-ok">
+                  <small>طلبات موافق عليها</small>
+                  <strong>{analyticsData?.approved || 0}</strong>
                 </div>
-                <div className="p-6 bg-red-50 rounded-lg border">
-                  <div className="text-3xl font-bold text-red-700">{analyticsData?.rejected || 0}</div>
-                  <div className="text-sm text-red-600 mt-1">طلبات مرفوضة</div>
+                <div className="wk-summary-tile is-risk">
+                  <small>طلبات مرفوضة</small>
+                  <strong>{analyticsData?.rejected || 0}</strong>
                 </div>
               </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+            )}
+            <div className="dw-panel-foot">
+              <CheckSquare size={14} />
+              <span>راجع الطلبات المعلقة أولاً — هي الأكثر حسماً لاستمرار العمليات.</span>
+            </div>
+          </PagePanel>
+        </div>
+      </div>
 
       {/* Workflow Form Dialog */}
       <Dialog open={isWorkflowDialogOpen} onOpenChange={setIsWorkflowDialogOpen}>

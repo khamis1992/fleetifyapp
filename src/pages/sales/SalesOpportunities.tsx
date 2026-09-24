@@ -1,19 +1,26 @@
 import { useState } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { useSalesOpportunities, useCreateSalesOpportunity, useUpdateSalesOpportunity, useDeleteSalesOpportunity, type SalesOpportunity } from "@/hooks/useSalesOpportunities";
-import { Target, Plus, Search, Edit, Trash2, TrendingUp, DollarSign, Calendar, ArrowRight } from "lucide-react";
-import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from "@/components/ui/breadcrumb";
-import { LoadingSpinner } from "@/components/ui/loading-spinner";
+import { Target, Plus, Search, Edit, Trash2, TrendingUp, DollarSign, Calendar } from "lucide-react";
+import { PageEmpty, PageLoading, PagePanel } from "@/components/dashboard/workspace/PageKit";
+import '@/components/dashboard/workspace/dashboard-workspace.css';
+import '@/components/dashboard/workspace/page-kit.css';
+
+const stageTones: Record<string, string> = {
+  lead: 'is-neutral',
+  qualified: 'is-info',
+  proposal: 'is-warn',
+  negotiation: 'is-warn',
+  won: 'is-ok',
+  lost: 'is-risk',
+};
 
 const SalesOpportunities = () => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -117,25 +124,6 @@ const SalesOpportunities = () => {
     setSelectedOpportunity(null);
   };
 
-  const getStageBadgeVariant = (stage: string) => {
-    switch (stage) {
-      case 'lead':
-        return 'default';
-      case 'qualified':
-        return 'secondary';
-      case 'proposal':
-        return 'default';
-      case 'negotiation':
-        return 'secondary';
-      case 'won':
-        return 'default';
-      case 'lost':
-        return 'destructive';
-      default:
-        return 'outline';
-    }
-  };
-
   const getStageLabel = (stage: string) => {
     const labels: Record<string, string> = {
       lead: 'عميل محتمل',
@@ -169,304 +157,160 @@ const SalesOpportunities = () => {
   const avgValue = opportunities?.length ? totalValue / opportunities.length : 0;
 
   return (
-    <div className="space-y-6">
-      {/* Breadcrumb */}
-      <Breadcrumb>
-        <BreadcrumbList>
-          <BreadcrumbItem>
-            <BreadcrumbLink href="/">الرئيسية</BreadcrumbLink>
-          </BreadcrumbItem>
-          <BreadcrumbSeparator />
-          <BreadcrumbItem>
-            <BreadcrumbLink href="/sales/pipeline">المبيعات</BreadcrumbLink>
-          </BreadcrumbItem>
-          <BreadcrumbSeparator />
-          <BreadcrumbItem>
-            <BreadcrumbPage>الفرص البيعية</BreadcrumbPage>
-          </BreadcrumbItem>
-        </BreadcrumbList>
-      </Breadcrumb>
-
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <div className="p-3 bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl text-white">
-            <Target className="h-6 w-6" />
-          </div>
+    <div className="dashboard-workspace" dir="rtl">
+      <div className="dw-container">
+        <header className="dw-header">
           <div>
-            <h1 className="text-2xl font-bold">الفرص البيعية</h1>
-            <p className="text-muted-foreground">إدارة ومتابعة الفرص البيعية</p>
+            <div className="dw-eyebrow">
+              <span className="dw-mark" />
+              العراف لتأجير السيارات <span>/</span> المبيعات <span>/</span> الفرص البيعية
+            </div>
+            <h1>الفرص البيعية</h1>
+            <p>إدارة ومتابعة الفرص البيعية وتقييم قيمتها المتوقعة.</p>
           </div>
-        </div>
-        <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-          <DialogTrigger asChild>
-            <Button>
-              <Plus className="h-4 w-4 mr-2" />
+          <div className="dw-header-tools">
+            <button type="button" className="dw-button dw-button-primary" onClick={() => setIsCreateDialogOpen(true)}>
+              <Plus size={17} />
               فرصة جديدة
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-2xl">
-            <DialogHeader>
-              <DialogTitle>إضافة فرصة بيعية جديدة</DialogTitle>
-              <DialogDescription>
-                أدخل بيانات الفرصة البيعية الجديدة
-              </DialogDescription>
-            </DialogHeader>
-            <div className="grid gap-4 py-4">
-              <div className="grid gap-2">
-                <Label htmlFor="opportunity_name">اسم الفرصة (English)</Label>
-                <Input
-                  id="opportunity_name"
-                  value={formData.opportunity_name}
-                  onChange={(e) => setFormData({ ...formData, opportunity_name: e.target.value })}
-                  placeholder="Opportunity name"
-                />
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="opportunity_name_ar">اسم الفرصة (عربي)</Label>
-                <Input
-                  id="opportunity_name_ar"
-                  value={formData.opportunity_name_ar}
-                  onChange={(e) => setFormData({ ...formData, opportunity_name_ar: e.target.value })}
-                  placeholder="اسم الفرصة"
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="grid gap-2">
-                  <Label htmlFor="stage">المرحلة</Label>
-                  <Select
-                    value={formData.stage}
-                    onValueChange={(value) => setFormData({ ...formData, stage: value })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="lead">عميل محتمل</SelectItem>
-                      <SelectItem value="qualified">مؤهل</SelectItem>
-                      <SelectItem value="proposal">عرض سعر</SelectItem>
-                      <SelectItem value="negotiation">تفاوض</SelectItem>
-                      <SelectItem value="won">مغلق - ناجح</SelectItem>
-                      <SelectItem value="lost">مغلق - فاشل</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="probability">احتمالية النجاح (%)</Label>
-                  <Input
-                    id="probability"
-                    type="number"
-                    min="0"
-                    max="100"
-                    value={formData.probability}
-                    onChange={(e) => setFormData({ ...formData, probability: parseInt(e.target.value) || 0 })}
-                  />
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="grid gap-2">
-                  <Label htmlFor="estimated_value">القيمة المتوقعة (ريال)</Label>
-                  <Input
-                    id="estimated_value"
-                    type="number"
-                    value={formData.estimated_value}
-                    onChange={(e) => setFormData({ ...formData, estimated_value: parseFloat(e.target.value) || 0 })}
-                  />
-                </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="expected_close_date">تاريخ الإغلاق المتوقع</Label>
-                  <Input
-                    id="expected_close_date"
-                    type="date"
-                    value={formData.expected_close_date}
-                    onChange={(e) => setFormData({ ...formData, expected_close_date: e.target.value })}
-                  />
-                </div>
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="notes">ملاحظات</Label>
-                <Textarea
-                  id="notes"
-                  value={formData.notes}
-                  onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                  placeholder="ملاحظات إضافية..."
-                  rows={3}
-                />
-              </div>
-            </div>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setIsCreateDialogOpen(false)}>
-                إلغاء
-              </Button>
-              <Button onClick={handleCreateOpportunity}>
-                إضافة
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-      </div>
-
-      {/* Stats Cards */}
-      <div className="grid gap-4 md:grid-cols-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">إجمالي القيمة</CardTitle>
-            <DollarSign className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{formatCurrency(totalValue)}</div>
-            <p className="text-xs text-muted-foreground">جميع الفرص النشطة</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">القيمة المرجحة</CardTitle>
-            <TrendingUp className="h-4 w-4 text-green-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-green-600">{formatCurrency(weightedValue)}</div>
-            <p className="text-xs text-muted-foreground">القيمة × الاحتمالية</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">متوسط القيمة</CardTitle>
-            <Target className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{formatCurrency(avgValue)}</div>
-            <p className="text-xs text-muted-foreground">متوسط الفرصة</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">الفرص النشطة</CardTitle>
-            <Target className="h-4 w-4 text-blue-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-blue-600">{stageCounts.all}</div>
-            <p className="text-xs text-muted-foreground">فرصة نشطة</p>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Main Content */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle>قائمة الفرص البيعية</CardTitle>
-              <CardDescription>عرض وإدارة جميع الفرص البيعية</CardDescription>
-            </div>
+            </button>
           </div>
-        </CardHeader>
-        <CardContent>
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-            <TabsList className="grid w-full grid-cols-6">
-              <TabsTrigger value="all">الكل ({stageCounts.all})</TabsTrigger>
-              <TabsTrigger value="lead">محتمل ({stageCounts.lead})</TabsTrigger>
-              <TabsTrigger value="qualified">مؤهل ({stageCounts.qualified})</TabsTrigger>
-              <TabsTrigger value="proposal">عرض ({stageCounts.proposal})</TabsTrigger>
-              <TabsTrigger value="negotiation">تفاوض ({stageCounts.negotiation})</TabsTrigger>
-              <TabsTrigger value="won">ناجح ({stageCounts.won})</TabsTrigger>
-            </TabsList>
+        </header>
 
-            {/* Filters */}
-            <div className="flex gap-4">
-              <div className="flex-1">
+        <section className="dw-metrics" aria-label="مؤشرات الفرص البيعية">
+          <div className="dw-metric dw-metric-accent">
+            <div className="dw-metric-top"><span>إجمالي القيمة</span><DollarSign size={19} /></div>
+            <strong>{formatCurrency(totalValue)}</strong>
+            <div className="dw-metric-bottom"><small>جميع الفرص النشطة</small></div>
+          </div>
+          <div className="dw-metric">
+            <div className="dw-metric-top"><span>القيمة المرجحة</span><TrendingUp size={19} /></div>
+            <strong>{formatCurrency(weightedValue)}</strong>
+            <div className="dw-metric-bottom"><small>القيمة × الاحتمالية</small></div>
+          </div>
+          <div className="dw-metric">
+            <div className="dw-metric-top"><span>متوسط القيمة</span><Target size={19} /></div>
+            <strong>{formatCurrency(avgValue)}</strong>
+            <div className="dw-metric-bottom"><small>متوسط الفرصة</small></div>
+          </div>
+          <div className="dw-metric">
+            <div className="dw-metric-top"><span>الفرص النشطة</span><Target size={19} /></div>
+            <strong>{stageCounts.all}</strong>
+            <div className="dw-metric-bottom"><small>فرصة نشطة</small></div>
+          </div>
+        </section>
+
+        <div className="dw-main-grid">
+          <PagePanel
+            number="01"
+            title="قائمة الفرص البيعية"
+            subtitle="عرض وإدارة جميع الفرص البيعية وتصفيتها بالمرحلة"
+            className="wk-panel-full"
+            action={
+              <div className="wk-toolbar-group">
                 <div className="relative">
-                  <Search className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                  <Input
-                    placeholder="البحث عن فرصة (الاسم)..."
+                  <Search className="absolute right-3 top-1/2 -translate-y-1/2 text-[#9aa791]" size={14} />
+                  <input
+                    className="wk-field"
+                    style={{ paddingRight: 32, minWidth: 220 }}
+                    placeholder="ابحث باسم الفرصة…"
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pr-10"
+                    aria-label="بحث في الفرص"
                   />
                 </div>
+                <Select value={selectedStage} onValueChange={setSelectedStage}>
+                  <SelectTrigger className="wk-field" style={{ width: 160 }}>
+                    <SelectValue placeholder="المرحلة" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">جميع المراحل</SelectItem>
+                    <SelectItem value="lead">عميل محتمل</SelectItem>
+                    <SelectItem value="qualified">مؤهل</SelectItem>
+                    <SelectItem value="proposal">عرض سعر</SelectItem>
+                    <SelectItem value="negotiation">تفاوض</SelectItem>
+                    <SelectItem value="won">مغلق - ناجح</SelectItem>
+                    <SelectItem value="lost">مغلق - فاشل</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
-              <Select value={selectedStage} onValueChange={setSelectedStage}>
-                <SelectTrigger className="w-[200px]">
-                  <SelectValue placeholder="المرحلة" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">جميع المراحل</SelectItem>
-                  <SelectItem value="lead">عميل محتمل</SelectItem>
-                  <SelectItem value="qualified">مؤهل</SelectItem>
-                  <SelectItem value="proposal">عرض سعر</SelectItem>
-                  <SelectItem value="negotiation">تفاوض</SelectItem>
-                  <SelectItem value="won">مغلق - ناجح</SelectItem>
-                  <SelectItem value="lost">مغلق - فاشل</SelectItem>
-                </SelectContent>
-              </Select>
+            }
+          >
+            <div className="wk-toolbar">
+              <div className="dw-filters" role="group" aria-label="تصفية بالمرحلة">
+                {([
+                  { value: 'all', label: 'الكل', count: stageCounts.all },
+                  { value: 'lead', label: 'محتمل', count: stageCounts.lead },
+                  { value: 'qualified', label: 'مؤهل', count: stageCounts.qualified },
+                  { value: 'proposal', label: 'عرض', count: stageCounts.proposal },
+                  { value: 'negotiation', label: 'تفاوض', count: stageCounts.negotiation },
+                  { value: 'won', label: 'ناجح', count: stageCounts.won },
+                ] as const).map(chip => (
+                  <button
+                    key={chip.value}
+                    type="button"
+                    aria-pressed={activeTab === chip.value}
+                    onClick={() => setActiveTab(chip.value)}
+                  >
+                    {chip.label}<span>{chip.count}</span>
+                  </button>
+                ))}
+              </div>
             </div>
 
-            {/* Table */}
-            <TabsContent value={activeTab} className="mt-4">
-              {isLoading ? (
-                <div className="flex justify-center py-8">
-                  <LoadingSpinner />
-                </div>
-              ) : filteredOpportunities.length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground">
-                  لا توجد فرص بيعية
-                </div>
-              ) : (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>الفرصة</TableHead>
-                      <TableHead>المرحلة</TableHead>
-                      <TableHead>القيمة المتوقعة</TableHead>
-                      <TableHead>الاحتمالية</TableHead>
-                      <TableHead>تاريخ الإغلاق</TableHead>
-                      <TableHead>الإجراءات</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
+            {isLoading ? (
+              <PageLoading label="جاري تحميل الفرص…" />
+            ) : filteredOpportunities.length === 0 ? (
+              <PageEmpty icon={Target} message="لا توجد فرص بيعية مطابقة">
+                <button type="button" className="dw-button" onClick={() => setIsCreateDialogOpen(true)}>
+                  <Plus size={16} />
+                  إضافة فرصة جديدة
+                </button>
+              </PageEmpty>
+            ) : (
+              <div className="wk-table-wrap">
+                <table>
+                  <caption className="sr-only">الفرص البيعية</caption>
+                  <thead>
+                    <tr>
+                      <th scope="col">الفرصة</th>
+                      <th scope="col">المرحلة</th>
+                      <th scope="col">القيمة المتوقعة</th>
+                      <th scope="col">الاحتمالية</th>
+                      <th scope="col">تاريخ الإغلاق</th>
+                      <th scope="col"><span className="sr-only">إجراءات</span></th>
+                    </tr>
+                  </thead>
+                  <tbody>
                     {filteredOpportunities.map((opportunity) => (
-                      <TableRow key={opportunity.id} className="cursor-pointer hover:bg-muted/50" onClick={() => handleViewDetails(opportunity)}>
-                        <TableCell className="font-medium">
-                          <div>
-                            <div>{opportunity.opportunity_name}</div>
-                            {opportunity.opportunity_name_ar && (
-                              <div className="text-xs text-muted-foreground">{opportunity.opportunity_name_ar}</div>
-                            )}
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant={getStageBadgeVariant(opportunity.stage ?? '')}>
+                      <tr key={opportunity.id} style={{ cursor: 'pointer' }} onClick={() => handleViewDetails(opportunity)}>
+                        <td>
+                          <strong><bdi>{opportunity.opportunity_name}</bdi></strong>
+                          {opportunity.opportunity_name_ar && <span className="wk-sub">{opportunity.opportunity_name_ar}</span>}
+                        </td>
+                        <td>
+                          <span className={`wk-badge ${stageTones[opportunity.stage ?? ''] ?? 'is-neutral'}`}>
                             {getStageLabel(opportunity.stage ?? '')}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="font-semibold">
-                          {formatCurrency(opportunity.estimated_value || 0)}
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant="outline">{opportunity.probability}%</Badge>
-                        </TableCell>
-                        <TableCell className="text-sm text-muted-foreground">
+                          </span>
+                        </td>
+                        <td>{formatCurrency(opportunity.estimated_value || 0)}</td>
+                        <td>
+                          <span className="wk-badge is-neutral">{opportunity.probability}%</span>
+                        </td>
+                        <td>
                           {opportunity.expected_close_date
-                            ? new Date(opportunity.expected_close_date).toLocaleDateString('en-US')
-                            : '-'
-                          }
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleEditOpportunity(opportunity)}
-                            >
-                              <Edit className="h-4 w-4" />
-                            </Button>
+                            ? new Date(opportunity.expected_close_date).toLocaleDateString('en-GB')
+                            : '-'}
+                        </td>
+                        <td>
+                          <div className="wk-actions" onClick={(e) => e.stopPropagation()}>
+                            <button type="button" className="wk-action" title="تعديل" aria-label={`تعديل ${opportunity.opportunity_name}`} onClick={() => handleEditOpportunity(opportunity)}>
+                              <Edit size={15} />
+                            </button>
                             <AlertDialog>
                               <AlertDialogTrigger asChild>
-                                <Button variant="ghost" size="sm">
-                                  <Trash2 className="h-4 w-4 text-destructive" />
-                                </Button>
+                                <button type="button" className="wk-action" title="حذف" aria-label={`حذف ${opportunity.opportunity_name}`}>
+                                  <Trash2 size={15} />
+                                </button>
                               </AlertDialogTrigger>
                               <AlertDialogContent>
                                 <AlertDialogHeader>
@@ -487,16 +331,122 @@ const SalesOpportunities = () => {
                               </AlertDialogContent>
                             </AlertDialog>
                           </div>
-                        </TableCell>
-                      </TableRow>
+                        </td>
+                      </tr>
                     ))}
-                  </TableBody>
-                </Table>
-              )}
-            </TabsContent>
-          </Tabs>
-        </CardContent>
-      </Card>
+                  </tbody>
+                </table>
+              </div>
+            )}
+            <div className="dw-panel-foot">
+              <TrendingUp size={14} />
+              <span>{filteredOpportunities.length} فرصة معروضة بعد التصفية.</span>
+            </div>
+          </PagePanel>
+        </div>
+      </div>
+
+      {/* Create Dialog */}
+      <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>إضافة فرصة بيعية جديدة</DialogTitle>
+            <DialogDescription>
+              أدخل بيانات الفرصة البيعية الجديدة
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <Label htmlFor="opportunity_name">اسم الفرصة (English)</Label>
+              <Input
+                id="opportunity_name"
+                value={formData.opportunity_name}
+                onChange={(e) => setFormData({ ...formData, opportunity_name: e.target.value })}
+                placeholder="Opportunity name"
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="opportunity_name_ar">اسم الفرصة (عربي)</Label>
+              <Input
+                id="opportunity_name_ar"
+                value={formData.opportunity_name_ar}
+                onChange={(e) => setFormData({ ...formData, opportunity_name_ar: e.target.value })}
+                placeholder="اسم الفرصة"
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="grid gap-2">
+                <Label htmlFor="stage">المرحلة</Label>
+                <Select
+                  value={formData.stage}
+                  onValueChange={(value) => setFormData({ ...formData, stage: value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="lead">عميل محتمل</SelectItem>
+                    <SelectItem value="qualified">مؤهل</SelectItem>
+                    <SelectItem value="proposal">عرض سعر</SelectItem>
+                    <SelectItem value="negotiation">تفاوض</SelectItem>
+                    <SelectItem value="won">مغلق - ناجح</SelectItem>
+                    <SelectItem value="lost">مغلق - فاشل</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="probability">احتمالية النجاح (%)</Label>
+                <Input
+                  id="probability"
+                  type="number"
+                  min="0"
+                  max="100"
+                  value={formData.probability}
+                  onChange={(e) => setFormData({ ...formData, probability: parseInt(e.target.value) || 0 })}
+                />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="grid gap-2">
+                <Label htmlFor="estimated_value">القيمة المتوقعة (ريال)</Label>
+                <Input
+                  id="estimated_value"
+                  type="number"
+                  value={formData.estimated_value}
+                  onChange={(e) => setFormData({ ...formData, estimated_value: parseFloat(e.target.value) || 0 })}
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="expected_close_date">تاريخ الإغلاق المتوقع</Label>
+                <Input
+                  id="expected_close_date"
+                  type="date"
+                  value={formData.expected_close_date}
+                  onChange={(e) => setFormData({ ...formData, expected_close_date: e.target.value })}
+                />
+              </div>
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="notes">ملاحظات</Label>
+              <Textarea
+                id="notes"
+                value={formData.notes}
+                onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                placeholder="ملاحظات إضافية..."
+                rows={3}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsCreateDialogOpen(false)}>
+              إلغاء
+            </Button>
+            <Button onClick={handleCreateOpportunity}>
+              إضافة
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Edit Dialog */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
@@ -628,9 +578,9 @@ const SalesOpportunities = () => {
                   <div>
                     <Label className="text-muted-foreground">المرحلة</Label>
                     <div className="mt-1">
-                    <Badge variant={getStageBadgeVariant(selectedOpportunity.stage ?? '')}>
-                      {getStageLabel(selectedOpportunity.stage ?? '')}
-                      </Badge>
+                      <span className={`wk-badge ${stageTones[selectedOpportunity.stage ?? ''] ?? 'is-neutral'}`}>
+                        {getStageLabel(selectedOpportunity.stage ?? '')}
+                      </span>
                     </div>
                   </div>
                   <div>
@@ -661,27 +611,23 @@ const SalesOpportunities = () => {
 
               <TabsContent value="value" className="space-y-4">
                 <div className="grid gap-4">
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="text-sm">تحليل القيمة المتوقعة</CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-3">
-                      <div className="flex justify-between items-center">
-                        <span className="text-sm text-muted-foreground">القيمة الإجمالية</span>
-                        <span className="font-semibold">{formatCurrency(selectedOpportunity.estimated_value ?? 0)}</span>
-                      </div>
-                      <div className="flex justify-between items-center">
-                        <span className="text-sm text-muted-foreground">احتمالية النجاح</span>
-                        <span className="font-semibold">{selectedOpportunity.probability}%</span>
-                      </div>
-                      <div className="border-t pt-3 flex justify-between items-center">
-                        <span className="text-sm font-medium">القيمة المرجحة</span>
-                        <span className="font-bold text-green-600">
-                          {formatCurrency((selectedOpportunity.estimated_value ?? 0) * ((selectedOpportunity.probability ?? 0) / 100))}
-                        </span>
-                      </div>
-                    </CardContent>
-                  </Card>
+                  <div className="rounded-lg border p-4 space-y-3">
+                    <p className="text-sm font-medium">تحليل القيمة المتوقعة</p>
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-muted-foreground">القيمة الإجمالية</span>
+                      <span className="font-semibold">{formatCurrency(selectedOpportunity.estimated_value ?? 0)}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-muted-foreground">احتمالية النجاح</span>
+                      <span className="font-semibold">{selectedOpportunity.probability}%</span>
+                    </div>
+                    <div className="border-t pt-3 flex justify-between items-center">
+                      <span className="text-sm font-medium">القيمة المرجحة</span>
+                      <span className="font-bold text-green-600">
+                        {formatCurrency((selectedOpportunity.estimated_value ?? 0) * ((selectedOpportunity.probability ?? 0) / 100))}
+                      </span>
+                    </div>
+                  </div>
                 </div>
               </TabsContent>
 

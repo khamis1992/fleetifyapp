@@ -263,7 +263,7 @@ export function DepositForm({ deposit, onSuccess }: DepositFormProps) {
                             </small>
                           </div>
                         </div>
-                        <ChevronsUpDown className="h-4 w-4 text-[#94A3B8]" />
+                        <ChevronsUpDown className="h-4 w-4 text-[#829074]" />
                       </Button>
                     </FormControl>
                   </PopoverTrigger>
@@ -422,7 +422,7 @@ export function DepositForm({ deposit, onSuccess }: DepositFormProps) {
             <strong>{deposit ? "تحديث الوديعة" : "إضافة الوديعة"}</strong>
             <span>{selectedCustomer ? getCustomerName(selectedCustomer) : "اختر العميل لإكمال التسجيل"}</span>
           </div>
-          <Button type="submit" disabled={isLoading} className="bg-[#22C7A1] text-white hover:bg-[#1cae8d]">
+          <Button type="submit" disabled={isLoading} className="bg-[#2f7966] text-white hover:bg-[#256450]">
             {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
             {deposit ? "تحديث الوديعة" : "إضافة الوديعة"}
           </Button>

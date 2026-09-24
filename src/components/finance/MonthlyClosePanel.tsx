@@ -264,17 +264,17 @@ export function MonthlyClosePanel() {
         <CardHeader className="border-b border-slate-100 pb-4">
           <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
             <div className="flex items-start gap-3">
-              <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#ECEEFE] text-[#7C83F6]">
+              <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#f1f4ec] text-[#5b6b52]">
                 <CalendarCheck className="h-5 w-5" />
               </div>
               <div>
-                <CardTitle className="text-lg font-black text-[#020617]">الإقفال الشهري</CardTitle>
-                <p className="mt-1 text-sm font-medium text-[#94A3B8]">
+                <CardTitle className="text-lg font-black text-[#2c4136]">الإقفال الشهري</CardTitle>
+                <p className="mt-1 text-sm font-medium text-[#829074]">
                   اقفل الفترات المالية لمنع تسجيل أو تعديل أي حركة بتاريخ داخل فترة مقفلة.
                 </p>
               </div>
             </div>
-            <Badge className="w-fit border-0 bg-[#E8FBF6] px-3 py-1 text-[#22C7A1] hover:bg-[#E8FBF6]">
+            <Badge className="w-fit border-0 bg-[#edf4e6] px-3 py-1 text-[#2f7966] hover:bg-[#edf4e6]">
               {latestClosed ? `آخر إقفال: ${latestClosed.period_name}` : "لا توجد فترات مقفلة"}
             </Badge>
           </div>
@@ -282,21 +282,21 @@ export function MonthlyClosePanel() {
         <CardContent className="space-y-5 p-4">
           <div className="grid gap-3 md:grid-cols-[1.2fr_1fr_1fr_auto] md:items-end">
             <div className="space-y-2">
-              <Label className="text-sm font-bold text-[#020617]">اسم الفترة</Label>
-              <Input value={periodName} onChange={(event) => setPeriodName(event.target.value)} className="h-11 rounded-xl bg-[#F6F8FB]" />
+              <Label className="text-sm font-bold text-[#2c4136]">اسم الفترة</Label>
+              <Input value={periodName} onChange={(event) => setPeriodName(event.target.value)} className="h-11 rounded-xl bg-[#f7f8f4]" />
             </div>
             <div className="space-y-2">
-              <Label className="text-sm font-bold text-[#020617]">من تاريخ</Label>
-              <Input type="date" value={startDate} onChange={(event) => setStartDate(event.target.value)} className="h-11 rounded-xl bg-[#F6F8FB]" />
+              <Label className="text-sm font-bold text-[#2c4136]">من تاريخ</Label>
+              <Input type="date" value={startDate} onChange={(event) => setStartDate(event.target.value)} className="h-11 rounded-xl bg-[#f7f8f4]" />
             </div>
             <div className="space-y-2">
-              <Label className="text-sm font-bold text-[#020617]">إلى تاريخ</Label>
-              <Input type="date" value={endDate} onChange={(event) => setEndDate(event.target.value)} className="h-11 rounded-xl bg-[#F6F8FB]" />
+              <Label className="text-sm font-bold text-[#2c4136]">إلى تاريخ</Label>
+              <Input type="date" value={endDate} onChange={(event) => setEndDate(event.target.value)} className="h-11 rounded-xl bg-[#f7f8f4]" />
             </div>
             <Button
               onClick={() => closeMutation.mutate()}
               disabled={closeMutation.isPending || !companyId}
-              className="h-11 gap-2 rounded-xl bg-[#020617] text-white hover:bg-[#020617]/90"
+              className="h-11 gap-2 rounded-xl bg-[#2c4136] text-white hover:bg-[#2c4136]/90"
             >
               {closeMutation.isPending ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Lock className="h-4 w-4" />}
               إقفال الفترة
@@ -306,26 +306,26 @@ export function MonthlyClosePanel() {
           <div className="overflow-hidden rounded-2xl border border-slate-200">
             <Table>
               <TableHeader>
-                <TableRow className="bg-[#F6F8FB]">
-                  <TableHead className="text-right text-xs font-black text-[#94A3B8]">الفترة</TableHead>
-                  <TableHead className="text-right text-xs font-black text-[#94A3B8]">النطاق</TableHead>
-                  <TableHead className="text-right text-xs font-black text-[#94A3B8]">الحالة</TableHead>
+                <TableRow className="bg-[#f7f8f4]">
+                  <TableHead className="text-right text-xs font-black text-[#829074]">الفترة</TableHead>
+                  <TableHead className="text-right text-xs font-black text-[#829074]">النطاق</TableHead>
+                  <TableHead className="text-right text-xs font-black text-[#829074]">الحالة</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {periodsQuery.isLoading ? (
                   <TableRow>
-                    <TableCell colSpan={3} className="py-8 text-center text-sm font-bold text-[#94A3B8]">
+                    <TableCell colSpan={3} className="py-8 text-center text-sm font-bold text-[#829074]">
                       جاري تحميل الفترات...
                     </TableCell>
                   </TableRow>
                 ) : periodsQuery.data?.length ? (
                   periodsQuery.data.map((period) => (
                     <TableRow key={period.id}>
-                      <TableCell className="font-black text-[#020617]">{period.period_name}</TableCell>
-                      <TableCell className="text-sm text-[#64748B]">{period.start_date} - {period.end_date}</TableCell>
+                      <TableCell className="font-black text-[#2c4136]">{period.period_name}</TableCell>
+                      <TableCell className="text-sm text-[#5b6b52]">{period.start_date} - {period.end_date}</TableCell>
                       <TableCell>
-                        <Badge className={period.status === "locked" ? "border-0 bg-[#E8FBF6] text-[#22C7A1]" : "border-0 bg-[#F6F8FB] text-[#94A3B8]"}>
+                        <Badge className={period.status === "locked" ? "border-0 bg-[#edf4e6] text-[#2f7966]" : "border-0 bg-[#f7f8f4] text-[#829074]"}>
                           {period.status === "locked" ? "مقفلة" : period.status}
                         </Badge>
                       </TableCell>
@@ -333,7 +333,7 @@ export function MonthlyClosePanel() {
                   ))
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={3} className="py-8 text-center text-sm font-bold text-[#94A3B8]">
+                    <TableCell colSpan={3} className="py-8 text-center text-sm font-bold text-[#829074]">
                       لا توجد فترات مالية بعد. ابدأ بإقفال الشهر السابق.
                     </TableCell>
                   </TableRow>
@@ -342,7 +342,7 @@ export function MonthlyClosePanel() {
             </Table>
           </div>
 
-          <div className="flex items-start gap-3 rounded-2xl bg-[#E8FBF6] p-3 text-sm font-bold text-[#0F766E]">
+          <div className="flex items-start gap-3 rounded-2xl bg-[#edf4e6] p-3 text-sm font-bold text-[#0F766E]">
             <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" />
             <span>بعد الإقفال، أي محاولة تسجيل دفعة أو قيد بتاريخ داخل الفترة ستُرفض من طبقة الضوابط المالية.</span>
           </div>
@@ -359,8 +359,8 @@ export function MonthlyClosePanel() {
                 <Wallet className="h-5 w-5" />
               </div>
               <div>
-                <CardTitle className="text-lg font-black text-[#020617]">الإقفال السنوي</CardTitle>
-                <p className="mt-1 text-sm font-medium text-[#94A3B8]">
+                <CardTitle className="text-lg font-black text-[#2c4136]">الإقفال السنوي</CardTitle>
+                <p className="mt-1 text-sm font-medium text-[#829074]">
                   إقفال حسابات الإيرادات والمصروفات في الأرباح المحتجزة وإنشاء قيد افتتاحي للسنة المالية الجديدة.
                 </p>
               </div>
@@ -375,28 +375,28 @@ export function MonthlyClosePanel() {
         <CardContent className="space-y-5 p-4">
           <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-4 md:items-end">
             <div className="space-y-2">
-              <Label className="text-sm font-bold text-[#020617]">السنة المالية</Label>
+              <Label className="text-sm font-bold text-[#2c4136]">السنة المالية</Label>
               <Input
                 type="number"
                 value={fiscalYear}
                 onChange={(event) => setFiscalYear(Number(event.target.value))}
-                className="h-11 rounded-xl bg-[#F6F8FB]"
+                className="h-11 rounded-xl bg-[#f7f8f4]"
                 min={2000}
                 max={2100}
               />
             </div>
             <div className="space-y-2">
-              <Label className="text-sm font-bold text-[#020617]">من تاريخ</Label>
-              <Input type="date" value={annualStart} onChange={(event) => setAnnualStart(event.target.value)} className="h-11 rounded-xl bg-[#F6F8FB]" />
+              <Label className="text-sm font-bold text-[#2c4136]">من تاريخ</Label>
+              <Input type="date" value={annualStart} onChange={(event) => setAnnualStart(event.target.value)} className="h-11 rounded-xl bg-[#f7f8f4]" />
             </div>
             <div className="space-y-2">
-              <Label className="text-sm font-bold text-[#020617]">إلى تاريخ</Label>
-              <Input type="date" value={annualEnd} onChange={(event) => setAnnualEnd(event.target.value)} className="h-11 rounded-xl bg-[#F6F8FB]" />
+              <Label className="text-sm font-bold text-[#2c4136]">إلى تاريخ</Label>
+              <Input type="date" value={annualEnd} onChange={(event) => setAnnualEnd(event.target.value)} className="h-11 rounded-xl bg-[#f7f8f4]" />
             </div>
             <div className="space-y-2">
-              <Label className="text-sm font-bold text-[#020617]">حساب الأرباح المحتجزة</Label>
+              <Label className="text-sm font-bold text-[#2c4136]">حساب الأرباح المحتجزة</Label>
               <Select value={retainedEarningsAccountId} onValueChange={setRetainedEarningsAccountId}>
-                <SelectTrigger className="h-11 rounded-xl bg-[#F6F8FB]">
+                <SelectTrigger className="h-11 rounded-xl bg-[#f7f8f4]">
                   <SelectValue placeholder="اختر حساب حقوق الملكية" />
                 </SelectTrigger>
                 <SelectContent>
@@ -417,12 +417,12 @@ export function MonthlyClosePanel() {
           </div>
 
           <div className="space-y-2">
-            <Label className="text-sm font-bold text-[#020617]">ملاحظات (اختياري)</Label>
+            <Label className="text-sm font-bold text-[#2c4136]">ملاحظات (اختياري)</Label>
             <Input
               value={annualNotes}
               onChange={(event) => setAnnualNotes(event.target.value)}
               placeholder="ملاحظات حول الإقفال السنوي..."
-              className="h-11 rounded-xl bg-[#F6F8FB]"
+              className="h-11 rounded-xl bg-[#f7f8f4]"
             />
           </div>
 
@@ -430,7 +430,7 @@ export function MonthlyClosePanel() {
             <Button
               onClick={() => calculateAnnualCloseMutation.mutate()}
               disabled={calculateAnnualCloseMutation.isPending || !companyId || !retainedEarningsAccountId}
-              className="h-11 gap-2 rounded-xl bg-[#020617] text-white hover:bg-[#020617]/90"
+              className="h-11 gap-2 rounded-xl bg-[#2c4136] text-white hover:bg-[#2c4136]/90"
             >
               {calculateAnnualCloseMutation.isPending ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Wallet className="h-4 w-4" />}
               حساب الإقفال السنوي
@@ -438,7 +438,7 @@ export function MonthlyClosePanel() {
             <Button
               onClick={() => approveAnnualCloseMutation.mutate()}
               disabled={approveAnnualCloseMutation.isPending || !calculatedRunId}
-              className="h-11 gap-2 rounded-xl bg-[#22C7A1] text-white hover:bg-[#22C7A1]/90"
+              className="h-11 gap-2 rounded-xl bg-[#2f7966] text-white hover:bg-[#2f7966]/90"
             >
               {approveAnnualCloseMutation.isPending ? <RefreshCw className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
               اعتماد الإقفال السنوي
@@ -447,17 +447,17 @@ export function MonthlyClosePanel() {
 
           {calculatedResult && (
             <div className="grid gap-3 sm:grid-cols-3">
-              <div className="rounded-2xl bg-[#E8FBF6] p-4">
+              <div className="rounded-2xl bg-[#edf4e6] p-4">
                 <p className="text-xs font-bold text-[#0F766E]">إجمالي الإيرادات</p>
-                <p className="mt-1 text-lg font-black text-[#020617]">{formatCurrency(calculatedResult.revenue)}</p>
+                <p className="mt-1 text-lg font-black text-[#2c4136]">{formatCurrency(calculatedResult.revenue)}</p>
               </div>
               <div className="rounded-2xl bg-[#FEF2F2] p-4">
                 <p className="text-xs font-bold text-[#991B1B]">إجمالي المصروفات</p>
-                <p className="mt-1 text-lg font-black text-[#020617]">{formatCurrency(calculatedResult.expense)}</p>
+                <p className="mt-1 text-lg font-black text-[#2c4136]">{formatCurrency(calculatedResult.expense)}</p>
               </div>
-              <div className={`rounded-2xl p-4 ${calculatedResult.netIncome >= 0 ? "bg-[#E8FBF6]" : "bg-[#FEF2F2]"}`}>
+              <div className={`rounded-2xl p-4 ${calculatedResult.netIncome >= 0 ? "bg-[#edf4e6]" : "bg-[#FEF2F2]"}`}>
                 <p className={`text-xs font-bold ${calculatedResult.netIncome >= 0 ? "text-[#0F766E]" : "text-[#991B1B]"}`}>صافي الدخل</p>
-                <p className="mt-1 text-lg font-black text-[#020617]">{formatCurrency(calculatedResult.netIncome)}</p>
+                <p className="mt-1 text-lg font-black text-[#2c4136]">{formatCurrency(calculatedResult.netIncome)}</p>
               </div>
             </div>
           )}
@@ -465,38 +465,38 @@ export function MonthlyClosePanel() {
           <div className="overflow-hidden rounded-2xl border border-slate-200">
             <Table>
               <TableHeader>
-                <TableRow className="bg-[#F6F8FB]">
-                  <TableHead className="text-right text-xs font-black text-[#94A3B8]">السنة</TableHead>
-                  <TableHead className="text-right text-xs font-black text-[#94A3B8]">النطاق</TableHead>
-                  <TableHead className="text-right text-xs font-black text-[#94A3B8]">الإيرادات</TableHead>
-                  <TableHead className="text-right text-xs font-black text-[#94A3B8]">المصروفات</TableHead>
-                  <TableHead className="text-right text-xs font-black text-[#94A3B8]">صافي الدخل</TableHead>
-                  <TableHead className="text-right text-xs font-black text-[#94A3B8]">الحالة</TableHead>
+                <TableRow className="bg-[#f7f8f4]">
+                  <TableHead className="text-right text-xs font-black text-[#829074]">السنة</TableHead>
+                  <TableHead className="text-right text-xs font-black text-[#829074]">النطاق</TableHead>
+                  <TableHead className="text-right text-xs font-black text-[#829074]">الإيرادات</TableHead>
+                  <TableHead className="text-right text-xs font-black text-[#829074]">المصروفات</TableHead>
+                  <TableHead className="text-right text-xs font-black text-[#829074]">صافي الدخل</TableHead>
+                  <TableHead className="text-right text-xs font-black text-[#829074]">الحالة</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {annualCloseRunsQuery.isLoading ? (
                   <TableRow>
-                    <TableCell colSpan={6} className="py-8 text-center text-sm font-bold text-[#94A3B8]">
+                    <TableCell colSpan={6} className="py-8 text-center text-sm font-bold text-[#829074]">
                       جاري تحميل الإقفالات السنوية...
                     </TableCell>
                   </TableRow>
                 ) : annualCloseRunsQuery.data?.length ? (
                   annualCloseRunsQuery.data.map((run) => (
                     <TableRow key={run.id}>
-                      <TableCell className="font-black text-[#020617]">{run.fiscal_year}</TableCell>
-                      <TableCell className="text-sm text-[#64748B]">{run.period_start} - {run.period_end}</TableCell>
+                      <TableCell className="font-black text-[#2c4136]">{run.fiscal_year}</TableCell>
+                      <TableCell className="text-sm text-[#5b6b52]">{run.period_start} - {run.period_end}</TableCell>
                       <TableCell className="text-sm text-[#0F766E]">{formatCurrency(run.revenue_total)}</TableCell>
                       <TableCell className="text-sm text-[#991B1B]">{formatCurrency(run.expense_total)}</TableCell>
-                      <TableCell className="text-sm font-bold text-[#020617]">{formatCurrency(run.net_income)}</TableCell>
+                      <TableCell className="text-sm font-bold text-[#2c4136]">{formatCurrency(run.net_income)}</TableCell>
                       <TableCell>
                         <Badge
                           className={
                             run.status === "closed"
-                              ? "border-0 bg-[#E8FBF6] text-[#22C7A1]"
+                              ? "border-0 bg-[#edf4e6] text-[#2f7966]"
                               : run.status === "calculated"
                                 ? "border-0 bg-[#FEF3C7] text-[#D97706]"
-                                : "border-0 bg-[#F6F8FB] text-[#94A3B8]"
+                                : "border-0 bg-[#f7f8f4] text-[#829074]"
                           }
                         >
                           {ANNUAL_CLOSE_STATUS_LABELS[run.status] ?? run.status}
@@ -506,7 +506,7 @@ export function MonthlyClosePanel() {
                   ))
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={6} className="py-8 text-center text-sm font-bold text-[#94A3B8]">
+                    <TableCell colSpan={6} className="py-8 text-center text-sm font-bold text-[#829074]">
                       لا توجد إقفالات سنوية بعد. ابدأ بحساب إقفال السنة المالية السابقة.
                     </TableCell>
                   </TableRow>

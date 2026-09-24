@@ -1,18 +1,32 @@
 import { useState } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useStockMovements, type StockMovement } from "@/hooks/useInventoryStockLevels";
 import { useInventoryItems } from "@/hooks/useInventoryItems";
 import { useInventoryWarehouses } from "@/hooks/useInventoryWarehouses";
-import { LoadingSpinner } from "@/components/ui/loading-spinner";
-import { TrendingUp, TrendingDown, Search, Download, Package, Warehouse as WarehouseIcon, Calendar } from "lucide-react";
-import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from "@/components/ui/breadcrumb";
+import { TrendingUp, TrendingDown, Search, Download, Package, Warehouse as WarehouseIcon } from "lucide-react";
 import { format } from "date-fns";
 import { ar } from "date-fns/locale";
+import { PageEmpty, PageLoading, PagePanel } from "@/components/dashboard/workspace/PageKit";
+import '@/components/dashboard/workspace/dashboard-workspace.css';
+import '@/components/dashboard/workspace/page-kit.css';
+
+const movementTypeTones: Record<string, string> = {
+  PURCHASE: 'is-ok',
+  SALE: 'is-risk',
+  ADJUSTMENT: 'is-warn',
+  TRANSFER_IN: 'is-ok',
+  TRANSFER_OUT: 'is-risk',
+  RETURN: 'is-info',
+};
+
+const movementTypeLabels: Record<string, string> = {
+  PURCHASE: "شراء",
+  SALE: "بيع",
+  ADJUSTMENT: "تسوية",
+  TRANSFER_IN: "تحويل وارد",
+  TRANSFER_OUT: "تحويل صادر",
+  RETURN: "مرتجع",
+};
 
 const StockMovements = () => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -55,12 +69,6 @@ const StockMovements = () => {
     ['SALE', 'TRANSFER_OUT'].includes(m.movement_type) || (m.movement_type === 'ADJUSTMENT' && m.quantity < 0)
   ).length;
 
-  // Get unique items moved this month
-  const thisMonth = new Date();
-  thisMonth.setDate(1);
-  const thisMonthMovements = movements?.filter(m => getMovementDate(m) >= thisMonth) || [];
-  const uniqueItemsThisMonth = new Set(thisMonthMovements.map(m => m.item_id)).size;
-
   // Get most active warehouse
   const warehouseMovements = movements?.reduce((acc: Record<string, number>, m) => {
     acc[m.warehouse_id] = (acc[m.warehouse_id] || 0) + 1;
@@ -70,33 +78,11 @@ const StockMovements = () => {
     .sort(([,a], [,b]) => b - a)[0]?.[0];
   const mostActiveWarehouse = warehouses?.find(w => w.id === mostActiveWarehouseId);
 
-  const getMovementIcon = (type: string) => {
-    if (['PURCHASE', 'TRANSFER_IN', 'RETURN'].includes(type)) {
-      return <TrendingUp className="h-4 w-4 text-green-500" />;
-    }
-    return <TrendingDown className="h-4 w-4 text-red-500" />;
-  };
-
-  const getMovementTypeBadge = (type: string) => {
-    const types: Record<string, { label: string; variant: "default" | "secondary" | "destructive" | "outline" }> = {
-      PURCHASE: { label: "شراء", variant: "default" },
-      SALE: { label: "بيع", variant: "destructive" },
-      ADJUSTMENT: { label: "تسوية", variant: "secondary" },
-      TRANSFER_IN: { label: "تحويل وارد", variant: "default" },
-      TRANSFER_OUT: { label: "تحويل صادر", variant: "destructive" },
-      RETURN: { label: "مرتجع", variant: "outline" },
-    };
-
-    const typeInfo = types[type] || { label: type, variant: "outline" as const };
-    return <Badge variant={typeInfo.variant}>{typeInfo.label}</Badge>;
-  };
-
   const handleExportCSV = () => {
     if (!filteredMovements || filteredMovements.length === 0) {
       return;
     }
 
-    // Create CSV header
     const headers = [
       "التاريخ",
       "الصنف",
@@ -110,7 +96,6 @@ const StockMovements = () => {
       "ملاحظات"
     ].join(",");
 
-    // Create CSV rows
     const rows = filteredMovements.map((movement) => {
       const item = items?.find(i => i.id === movement.item_id);
       const warehouse = warehouses?.find(w => w.id === movement.warehouse_id);
@@ -125,14 +110,12 @@ const StockMovements = () => {
         movement.total_cost || 0,
         movement.reference_type || "-",
         movement.reference_number || "-",
-        (movement.notes || "-").replace(/,/g, ";") // Replace commas in notes
+        (movement.notes || "-").replace(/,/g, ";")
       ].join(",");
     });
 
-    // Combine header and rows
     const csv = [headers, ...rows].join("\n");
 
-    // Create blob and download
     const blob = new Blob(["\ufeff" + csv], { type: "text/csv;charset=utf-8;" });
     const link = document.createElement("a");
     link.href = URL.createObjectURL(blob);
@@ -140,238 +123,193 @@ const StockMovements = () => {
     link.click();
   };
 
+  const dwMetrics = [
+    { label: 'إجمالي الحركات', value: totalMovements, hint: 'حركة مسجلة', accent: true },
+    { label: 'حركات وارد', value: inboundMovements, hint: 'شراء، تحويل وارد، مرتجع', accent: false },
+    { label: 'حركات صادر', value: outboundMovements, hint: 'بيع، تحويل صادر', accent: false },
+    { label: 'أكثر مستودع نشاطاً', value: mostActiveWarehouse?.warehouse_name || "-", hint: `${warehouseMovements[mostActiveWarehouseId || ""] || 0} حركة`, accent: false },
+  ];
+
   return (
-    <div className="space-y-6">
-      {/* Breadcrumb */}
-      <Breadcrumb>
-        <BreadcrumbList>
-          <BreadcrumbItem>
-            <BreadcrumbLink href="/">الرئيسية</BreadcrumbLink>
-          </BreadcrumbItem>
-          <BreadcrumbSeparator />
-          <BreadcrumbItem>
-            <BreadcrumbLink href="/inventory">إدارة المخزون</BreadcrumbLink>
-          </BreadcrumbItem>
-          <BreadcrumbSeparator />
-          <BreadcrumbItem>
-            <BreadcrumbPage>حركات المخزون</BreadcrumbPage>
-          </BreadcrumbItem>
-        </BreadcrumbList>
-      </Breadcrumb>
-
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <div className="p-3 bg-gradient-to-br from-green-500 to-green-600 rounded-xl text-white">
-            <TrendingUp className="h-6 w-6" />
-          </div>
+    <div className="dashboard-workspace" dir="rtl">
+      <div className="dw-container">
+        <header className="dw-header">
           <div>
-            <h1 className="text-2xl font-bold">حركات المخزون</h1>
-            <p className="text-muted-foreground">سجل كامل لجميع حركات الأصناف بين المستودعات</p>
+            <div className="dw-eyebrow">
+              <span className="dw-mark" />
+              العراف لتأجير السيارات <span>/</span> المخزون <span>/</span> حركات المخزون
+            </div>
+            <h1>حركات المخزون</h1>
+            <p>سجل كامل لجميع حركات الأصناف بين المستودعات.</p>
           </div>
+          <div className="dw-header-tools">
+            <button type="button" className="dw-button" onClick={handleExportCSV} disabled={filteredMovements.length === 0}>
+              <Download size={17} />
+              تصدير CSV
+            </button>
+          </div>
+        </header>
+
+        <section className="dw-metrics" aria-label="مؤشرات الحركات">
+          {dwMetrics.map((metric) => (
+            <div key={metric.label} className={`dw-metric ${metric.accent ? 'dw-metric-accent' : ''}`}>
+              <div className="dw-metric-top">
+                <span>{metric.label}</span>
+              </div>
+              <strong style={{ fontSize: typeof metric.value === 'string' && metric.value.length > 8 ? '18px' : undefined }}>{metric.value}</strong>
+              <div className="dw-metric-bottom">
+                <small>{metric.hint}</small>
+              </div>
+            </div>
+          ))}
+        </section>
+
+        <div className="dw-main-grid">
+          <PagePanel
+            number="01"
+            title="سجل الحركات"
+            subtitle="عرض وتصفية جميع حركات المخزون"
+            className="wk-panel-full"
+            action={
+              <div className="wk-toolbar-group">
+                <div className="relative">
+                  <Search className="absolute right-3 top-1/2 -translate-y-1/2 text-[#9aa791]" size={14} />
+                  <input
+                    className="wk-field"
+                    style={{ paddingRight: 32, minWidth: 180 }}
+                    placeholder="ابحث بالمرجع أو الملاحظات…"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    aria-label="بحث في الحركات"
+                  />
+                </div>
+                <Select value={selectedItem} onValueChange={setSelectedItem}>
+                  <SelectTrigger className="wk-field" style={{ width: 150 }}>
+                    <SelectValue placeholder="جميع الأصناف" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">جميع الأصناف</SelectItem>
+                    {items?.map((item) => (
+                      <SelectItem key={item.id} value={item.id}>
+                        {item.item_name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Select value={selectedWarehouse} onValueChange={setSelectedWarehouse}>
+                  <SelectTrigger className="wk-field" style={{ width: 150 }}>
+                    <SelectValue placeholder="المستودع" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">جميع المستودعات</SelectItem>
+                    {warehouses?.map((warehouse) => (
+                      <SelectItem key={warehouse.id} value={warehouse.id}>
+                        {warehouse.warehouse_name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Select value={selectedType} onValueChange={setSelectedType}>
+                  <SelectTrigger className="wk-field" style={{ width: 140 }}>
+                    <SelectValue placeholder="نوع الحركة" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">جميع الأنواع</SelectItem>
+                    <SelectItem value="PURCHASE">شراء</SelectItem>
+                    <SelectItem value="SALE">بيع</SelectItem>
+                    <SelectItem value="ADJUSTMENT">تسوية</SelectItem>
+                    <SelectItem value="TRANSFER_IN">تحويل وارد</SelectItem>
+                    <SelectItem value="TRANSFER_OUT">تحويل صادر</SelectItem>
+                    <SelectItem value="RETURN">مرتجع</SelectItem>
+                  </SelectContent>
+                </Select>
+                <input
+                  type="date"
+                  className="wk-field"
+                  style={{ width: 140 }}
+                  value={dateFrom}
+                  onChange={(e) => setDateFrom(e.target.value)}
+                  aria-label="من تاريخ"
+                />
+                <input
+                  type="date"
+                  className="wk-field"
+                  style={{ width: 140 }}
+                  value={dateTo}
+                  onChange={(e) => setDateTo(e.target.value)}
+                  aria-label="إلى تاريخ"
+                />
+              </div>
+            }
+          >
+            {movementsLoading ? (
+              <PageLoading label="جاري تحميل الحركات…" />
+            ) : filteredMovements.length === 0 ? (
+              <PageEmpty icon={Package} message="لا توجد حركات مخزون مطابقة" />
+            ) : (
+              <div className="wk-table-wrap">
+                <table>
+                  <caption className="sr-only">حركات المخزون</caption>
+                  <thead>
+                    <tr>
+                      <th scope="col">التاريخ</th>
+                      <th scope="col">الصنف</th>
+                      <th scope="col">المستودع</th>
+                      <th scope="col">النوع</th>
+                      <th scope="col">الكمية</th>
+                      <th scope="col">التكلفة الإجمالية</th>
+                      <th scope="col">المرجع</th>
+                      <th scope="col">ملاحظات</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredMovements.map((movement) => {
+                      const item = items?.find(i => i.id === movement.item_id);
+                      const warehouse = warehouses?.find(w => w.id === movement.warehouse_id);
+                      const isInbound = ['PURCHASE', 'TRANSFER_IN', 'RETURN'].includes(movement.movement_type);
+
+                      return (
+                        <tr key={movement.id}>
+                          <td>{format(getMovementDate(movement), "dd/MM/yyyy HH:mm", { locale: ar })}</td>
+                          <td><strong><bdi>{item?.item_name || "-"}</bdi></strong></td>
+                          <td>{warehouse?.warehouse_name || "-"}</td>
+                          <td>
+                            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                              {isInbound ? <TrendingUp size={13} color="#487038" /> : <TrendingDown size={13} color="#b3694c" />}
+                              <span className={`wk-badge ${movementTypeTones[movement.movement_type] ?? 'is-neutral'}`}>
+                                {movementTypeLabels[movement.movement_type] || movement.movement_type}
+                              </span>
+                            </span>
+                          </td>
+                          <td>
+                            <span className={`wk-badge ${movement.quantity > 0 ? 'is-ok' : 'is-risk'}`}>
+                              {movement.quantity > 0 ? "+" : ""}{movement.quantity}
+                            </span>
+                          </td>
+                          <td>{movement.total_cost ? `${movement.total_cost.toFixed(2)} ريال` : "-"}</td>
+                          <td>
+                            {movement.reference_number ? (
+                              <>
+                                <strong>{movement.reference_number}</strong>
+                                <span className="wk-sub">{movement.reference_type}</span>
+                              </>
+                            ) : "-"}
+                          </td>
+                          <td>{movement.notes || "-"}</td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+            <div className="dw-panel-foot">
+              <WarehouseIcon size={14} />
+              <span>{filteredMovements.length} حركة معروضة بعد التصفية.</span>
+            </div>
+          </PagePanel>
         </div>
-        <Button onClick={handleExportCSV} disabled={filteredMovements.length === 0}>
-          <Download className="h-4 w-4 mr-2" />
-          تصدير CSV
-        </Button>
       </div>
-
-      {/* Stats Cards */}
-      <div className="grid gap-4 md:grid-cols-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">إجمالي الحركات</CardTitle>
-            <Package className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{totalMovements}</div>
-            <p className="text-xs text-muted-foreground">حركة مسجلة</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">حركات وارد</CardTitle>
-            <TrendingUp className="h-4 w-4 text-green-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-green-600">{inboundMovements}</div>
-            <p className="text-xs text-muted-foreground">شراء، تحويل وارد، مرتجع</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">حركات صادر</CardTitle>
-            <TrendingDown className="h-4 w-4 text-red-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-red-600">{outboundMovements}</div>
-            <p className="text-xs text-muted-foreground">بيع، تحويل صادر</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">أكثر مستودع نشاطاً</CardTitle>
-            <WarehouseIcon className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{mostActiveWarehouse?.warehouse_name || "-"}</div>
-            <p className="text-xs text-muted-foreground">{warehouseMovements[mostActiveWarehouseId || ""] || 0} حركة</p>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Main Content */}
-      <Card>
-        <CardHeader>
-          <CardTitle>سجل الحركات</CardTitle>
-          <CardDescription>عرض وتصفية جميع حركات المخزون</CardDescription>
-        </CardHeader>
-        <CardContent>
-          {/* Filters */}
-          <div className="grid gap-4 md:grid-cols-6 mb-6">
-            <div className="relative">
-              <Search className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                placeholder="البحث..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pr-10"
-              />
-            </div>
-
-            <Select value={selectedItem} onValueChange={setSelectedItem}>
-              <SelectTrigger>
-                <SelectValue placeholder="جميع الأصناف" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">جميع الأصناف</SelectItem>
-                {items?.map((item) => (
-                  <SelectItem key={item.id} value={item.id}>
-                    {item.item_name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-
-            <Select value={selectedWarehouse} onValueChange={setSelectedWarehouse}>
-              <SelectTrigger>
-                <SelectValue placeholder="جميع المستودعات" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">جميع المستودعات</SelectItem>
-                {warehouses?.map((warehouse) => (
-                  <SelectItem key={warehouse.id} value={warehouse.id}>
-                    {warehouse.warehouse_name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-
-            <Select value={selectedType} onValueChange={setSelectedType}>
-              <SelectTrigger>
-                <SelectValue placeholder="نوع الحركة" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">جميع الأنواع</SelectItem>
-                <SelectItem value="PURCHASE">شراء</SelectItem>
-                <SelectItem value="SALE">بيع</SelectItem>
-                <SelectItem value="ADJUSTMENT">تسوية</SelectItem>
-                <SelectItem value="TRANSFER_IN">تحويل وارد</SelectItem>
-                <SelectItem value="TRANSFER_OUT">تحويل صادر</SelectItem>
-                <SelectItem value="RETURN">مرتجع</SelectItem>
-              </SelectContent>
-            </Select>
-
-            <Input
-              type="date"
-              placeholder="من تاريخ"
-              value={dateFrom}
-              onChange={(e) => setDateFrom(e.target.value)}
-            />
-
-            <Input
-              type="date"
-              placeholder="إلى تاريخ"
-              value={dateTo}
-              onChange={(e) => setDateTo(e.target.value)}
-            />
-          </div>
-
-          {/* Movements Table */}
-          {movementsLoading ? (
-            <div className="flex justify-center py-8">
-              <LoadingSpinner />
-            </div>
-          ) : filteredMovements.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
-              لا توجد حركات مخزون
-            </div>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>التاريخ</TableHead>
-                  <TableHead>الصنف</TableHead>
-                  <TableHead>المستودع</TableHead>
-                  <TableHead>النوع</TableHead>
-                  <TableHead>الكمية</TableHead>
-                  <TableHead>التكلفة الإجمالية</TableHead>
-                  <TableHead>المرجع</TableHead>
-                  <TableHead>ملاحظات</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredMovements.map((movement) => {
-                  const item = items?.find(i => i.id === movement.item_id);
-                  const warehouse = warehouses?.find(w => w.id === movement.warehouse_id);
-
-                  return (
-                    <TableRow key={movement.id}>
-                      <TableCell className="text-xs">
-                        {format(getMovementDate(movement), "dd/MM/yyyy HH:mm", { locale: ar })}
-                      </TableCell>
-                      <TableCell className="font-medium">
-                        {item?.item_name || "-"}
-                      </TableCell>
-                      <TableCell>
-                        {warehouse?.warehouse_name || "-"}
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          {getMovementIcon(movement.movement_type)}
-                          {getMovementTypeBadge(movement.movement_type)}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <span className={movement.quantity > 0 ? "text-green-600" : "text-red-600"}>
-                          {movement.quantity > 0 ? "+" : ""}{movement.quantity}
-                        </span>
-                      </TableCell>
-                      <TableCell>
-                        {movement.total_cost ? `${movement.total_cost.toFixed(2)} ريال` : "-"}
-                      </TableCell>
-                      <TableCell>
-                        {movement.reference_number ? (
-                          <div className="text-xs">
-                            <div className="font-medium">{movement.reference_number}</div>
-                            <div className="text-muted-foreground">{movement.reference_type}</div>
-                          </div>
-                        ) : "-"}
-                      </TableCell>
-                      <TableCell className="text-xs text-muted-foreground max-w-[200px] truncate">
-                        {movement.notes || "-"}
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
-              </TableBody>
-            </Table>
-          )}
-        </CardContent>
-      </Card>
     </div>
   );
 };

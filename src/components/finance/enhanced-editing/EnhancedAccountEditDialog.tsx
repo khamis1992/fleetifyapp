@@ -60,11 +60,65 @@ export const EnhancedAccountEditDialog: React.FC<EnhancedAccountEditDialogProps>
     defaultValue: isArabic ? 'تصنيف الميزانية العمومية' : 'Balance sheet classification',
   });
   const subtypeLabels: Record<string, string> = {
+    cash: t('accountEdit.subtypes.cash', {
+      defaultValue: isArabic ? 'نقد وصناديق' : 'Cash',
+    }),
+    bank: t('accountEdit.subtypes.bank', {
+      defaultValue: isArabic ? 'حسابات بنكية' : 'Bank accounts',
+    }),
+    cash_and_cash_equivalents: t('accountEdit.subtypes.cashEquivalents', {
+      defaultValue: isArabic ? 'النقد وما في حكمه' : 'Cash and cash equivalents',
+    }),
+    accounts_receivable: t('accountEdit.subtypes.accountsReceivable', {
+      defaultValue: isArabic ? 'مدينون / ذمم عملاء' : 'Accounts receivable',
+    }),
+    receivables: t('accountEdit.subtypes.receivables', {
+      defaultValue: isArabic ? 'مدينون' : 'Receivables',
+    }),
     current_asset: t('accountEdit.subtypes.currentAsset', {
       defaultValue: isArabic ? 'أصل متداول' : 'Current asset',
     }),
+    current_assets: t('accountEdit.subtypes.currentAssets', {
+      defaultValue: isArabic ? 'أصول متداولة' : 'Current assets',
+    }),
+    inventory: t('accountEdit.subtypes.inventory', {
+      defaultValue: isArabic ? 'مخزون' : 'Inventory',
+    }),
+    prepayments: t('accountEdit.subtypes.prepayments', {
+      defaultValue: isArabic ? 'مدفوعات مقدمة' : 'Prepayments',
+    }),
+    prepaid_expenses: t('accountEdit.subtypes.prepaidExpenses', {
+      defaultValue: isArabic ? 'مصروفات مدفوعة مقدماً' : 'Prepaid expenses',
+    }),
     non_current_asset: t('accountEdit.subtypes.nonCurrentAsset', {
       defaultValue: isArabic ? 'أصل غير متداول' : 'Non-current asset',
+    }),
+    non_current_assets: t('accountEdit.subtypes.nonCurrentAssets', {
+      defaultValue: isArabic ? 'أصول غير متداولة' : 'Non-current assets',
+    }),
+    fixed_asset: t('accountEdit.subtypes.fixedAsset', {
+      defaultValue: isArabic ? 'أصل ثابت' : 'Fixed asset',
+    }),
+    fixed_assets: t('accountEdit.subtypes.fixedAssets', {
+      defaultValue: isArabic ? 'أصول ثابتة' : 'Fixed assets',
+    }),
+    property_plant_equipment: t('accountEdit.subtypes.ppe', {
+      defaultValue: isArabic ? 'ممتلكات وآلات ومعدات' : 'Property, plant and equipment',
+    }),
+    accumulated_depreciation: t('accountEdit.subtypes.accumulatedDepreciation', {
+      defaultValue: isArabic ? 'مجمع الإهلاك' : 'Accumulated depreciation',
+    }),
+    accumulated_amortization: t('accountEdit.subtypes.accumulatedAmortization', {
+      defaultValue: isArabic ? 'مجمع الاستنفاد' : 'Accumulated amortization',
+    }),
+    intangible_asset: t('accountEdit.subtypes.intangibleAsset', {
+      defaultValue: isArabic ? 'أصل غير ملموس' : 'Intangible asset',
+    }),
+    intangible_assets: t('accountEdit.subtypes.intangibleAssets', {
+      defaultValue: isArabic ? 'أصول غير ملموسة' : 'Intangible assets',
+    }),
+    long_term_investments: t('accountEdit.subtypes.longTermInvestments', {
+      defaultValue: isArabic ? 'استثمارات طويلة الأجل' : 'Long-term investments',
     }),
     contra_current_asset: t('accountEdit.subtypes.contraCurrentAsset', {
       defaultValue: isArabic ? 'حساب مقابل لأصل متداول' : 'Contra account for a current asset',
@@ -74,11 +128,47 @@ export const EnhancedAccountEditDialog: React.FC<EnhancedAccountEditDialogProps>
         ? 'حساب مقابل لأصل غير متداول (مثل مجمع الإهلاك)'
         : 'Contra account for a non-current asset (e.g. accumulated depreciation)',
     }),
+    allowance_for_doubtful_accounts: t('accountEdit.subtypes.allowanceDoubtful', {
+      defaultValue: isArabic ? 'مخصص الديون المشكوك فيها' : 'Allowance for doubtful accounts',
+    }),
+    customer_deposits: t('accountEdit.subtypes.customerDeposits', {
+      defaultValue: isArabic ? 'دفعات مقدمة من العملاء' : 'Customer deposits',
+    }),
+    accounts_payable: t('accountEdit.subtypes.accountsPayable', {
+      defaultValue: isArabic ? 'دائنون / ذمم موردين' : 'Accounts payable',
+    }),
     current_liability: t('accountEdit.subtypes.currentLiability', {
       defaultValue: isArabic ? 'التزام متداول' : 'Current liability',
     }),
+    current_liabilities: t('accountEdit.subtypes.currentLiabilities', {
+      defaultValue: isArabic ? 'التزامات متداولة' : 'Current liabilities',
+    }),
+    accrued_expenses: t('accountEdit.subtypes.accruedExpenses', {
+      defaultValue: isArabic ? 'مصاريف مستحقة' : 'Accrued expenses',
+    }),
+    tax_payable: t('accountEdit.subtypes.taxPayable', {
+      defaultValue: isArabic ? 'ضرائب مستحقة' : 'Tax payable',
+    }),
+    short_term_loans: t('accountEdit.subtypes.shortTermLoans', {
+      defaultValue: isArabic ? 'تسهيلات بنكية قصيرة الأجل' : 'Short-term loans',
+    }),
     non_current_liability: t('accountEdit.subtypes.nonCurrentLiability', {
       defaultValue: isArabic ? 'التزام غير متداول' : 'Non-current liability',
+    }),
+    non_current_liabilities: t('accountEdit.subtypes.nonCurrentLiabilities', {
+      defaultValue: isArabic ? 'التزامات غير متداولة' : 'Non-current liabilities',
+    }),
+    long_term_liability: t('accountEdit.subtypes.longTermLiability', {
+      defaultValue: isArabic ? 'التزام طويل الأجل' : 'Long-term liability',
+    }),
+    long_term_liabilities: t('accountEdit.subtypes.longTermLiabilities', {
+      defaultValue: isArabic ? 'التزامات طويلة الأجل' : 'Long-term liabilities',
+    }),
+    long_term_loans: t('accountEdit.subtypes.longTermLoans', {
+      defaultValue: isArabic ? 'قروض طويلة الأجل' : 'Long-term loans',
+    }),
+    long_term_debt: t('accountEdit.subtypes.longTermDebt', {
+      defaultValue: isArabic ? 'دين طويل الأجل' : 'Long-term debt',
     }),
   };
   const [activeTab, setActiveTab] = useState('basic');
@@ -101,10 +191,28 @@ export const EnhancedAccountEditDialog: React.FC<EnhancedAccountEditDialogProps>
   const updateAccount = useUpdateAccount();
   const { data: allAccounts } = useChartOfAccounts();
   const validator = new AccountMoveValidator(allAccounts || []);
+  // Full set of subtypes the balance sheet RPC understands; grouped per type
+  // so every classified account can be classified correctly from this dialog.
+  const assetSubtypeOptions = [
+    'cash', 'bank', 'cash_and_cash_equivalents',
+    'accounts_receivable', 'receivables', 'current_asset', 'current_assets',
+    'inventory', 'prepayments', 'prepaid_expenses',
+    'fixed_asset', 'fixed_assets', 'property_plant_equipment',
+    'non_current_asset', 'non_current_assets',
+    'accumulated_depreciation', 'accumulated_amortization',
+    'intangible_asset', 'intangible_assets', 'long_term_investments',
+    'contra_current_asset', 'allowance_for_doubtful_accounts', 'contra_non_current_asset',
+  ];
+  const liabilitySubtypeOptions = [
+    'accounts_payable', 'current_liability', 'current_liabilities',
+    'accrued_expenses', 'tax_payable', 'short_term_loans', 'customer_deposits',
+    'non_current_liability', 'non_current_liabilities',
+    'long_term_liability', 'long_term_liabilities', 'long_term_loans', 'long_term_debt',
+  ];
   const subtypeOptions = formData.account_type === 'assets'
-    ? ['current_asset', 'non_current_asset', 'contra_current_asset', 'contra_non_current_asset']
+    ? assetSubtypeOptions
     : formData.account_type === 'liabilities'
-      ? ['current_liability', 'non_current_liability']
+      ? liabilitySubtypeOptions
       : [];
 
   // Initialize form data when account changes

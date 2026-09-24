@@ -72,6 +72,26 @@
 .wk-more-note { padding: 0 24px 18px; font-size: 10px; color: #829074; }
 .wk-panel-foot { display: flex; align-items: center; gap: 8px; padding: 12px 24px; background: #fafbf7; border-top: 1px solid #eef1e9; color: #7e8c72; font-size: 9px; margin-top: auto; }
 
+/* Sales pipeline kanban grid. */
+.sp-pipeline-grid { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 14px; padding: 20px 24px; }
+.sp-pipeline-column { min-width: 0; display: flex; flex-direction: column; gap: 10px; }
+.sp-pipeline-column-head { border: 1px solid var(--dw-line); border-radius: 10px; background: #f7f9f2; padding: 12px 14px; }
+.sp-pipeline-column-title { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.sp-pipeline-column-title h3 { font-size: 12px; font-weight: 700; color: #405a33; }
+.sp-pipeline-column-head small { display: block; margin-top: 6px; font-size: 10px; color: #7e8b73; }
+.sp-pipeline-cards { display: grid; gap: 10px; }
+.sp-pipeline-card { display: flex; flex-direction: column; gap: 6px; width: 100%; text-align: start; padding: 14px; border: 1px solid var(--dw-line); border-radius: 10px; background: #fff; cursor: grab; font-family: inherit; color: var(--dw-ink); }
+.sp-pipeline-card:hover { border-color: #98b3a0; background: #fafcf7; }
+.sp-pipeline-card strong { font-size: 12px; font-weight: 700; color: #405a33; line-height: 1.7; }
+.sp-pipeline-card > span { font-size: 10px; color: #7e8b73; }
+.sp-pipeline-card-meta { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 4px; }
+.sp-pipeline-card-meta b { font-size: 12px; font-weight: 600; color: #3f6136; font-variant-numeric: tabular-nums; }
+.sp-pipeline-card small { font-size: 9px; color: #829074; }
+
+@media (max-width: 1400px) { .sp-pipeline-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+@media (max-width: 950px) { .sp-pipeline-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 640px) { .sp-pipeline-grid { grid-template-columns: minmax(0, 1fr); padding: 16px 18px; } }
+
 @media (max-width: 1050px) {
   .wk-panel-main, .wk-panel-side, .wk-panel-full { grid-column: span 12; }
   .wk-metrics-5 { grid-template-columns: repeat(2, minmax(0, 1fr)); }

@@ -34,10 +34,10 @@ const qarFormatter = new Intl.NumberFormat("ar-QA", {
 });
 
 const statusMap = {
-  draft: { label: "مسودة", className: "border-[#94A3B8]/25 bg-[#F6F8FB] text-[#64748B]" },
-  approved: { label: "معتمدة", className: "border-[#38BDF8]/25 bg-[#EAF8FE] text-[#0284C7]" },
-  active: { label: "نشطة", className: "border-[#22C7A1]/25 bg-[#E8FBF6] text-[#0F9F82]" },
-  closed: { label: "مغلقة", className: "border-[#7C83F6]/25 bg-[#ECEEFE] text-[#5B62D8]" },
+  draft: { label: "مسودة", className: "border-[#829074]/25 bg-[#f7f8f4] text-[#5b6b52]" },
+  approved: { label: "معتمدة", className: "border-[#4a707c]/25 bg-[#e9f1f3] text-[#0284C7]" },
+  active: { label: "نشطة", className: "border-[#2f7966]/25 bg-[#edf4e6] text-[#0F9F82]" },
+  closed: { label: "مغلقة", className: "border-[#5b6b52]/25 bg-[#f1f4ec] text-[#5b6b52]" },
 } as const;
 
 const formatQar = (value?: number | null) => qarFormatter.format(value || 0);
@@ -50,13 +50,13 @@ const statusClassName = (status?: string) =>
   statusMap[status as keyof typeof statusMap]?.className || "border-slate-200 bg-slate-50 text-slate-600";
 
 const fieldClassName =
-  "h-11 rounded-xl border-slate-200 bg-[#F6F8FB] text-[#020617] shadow-none focus-visible:ring-[#22C7A1]";
+  "h-11 rounded-xl border-slate-200 bg-[#f7f8f4] text-[#2c4136] shadow-none focus-visible:ring-[#2f7966]";
 
 const metricCards = [
-  { key: "count", label: "إجمالي الموازنات", icon: FileText, color: "#38BDF8", bg: "#EAF8FE" },
-  { key: "revenue", label: "الإيرادات المتوقعة", icon: TrendingUp, color: "#22C7A1", bg: "#E8FBF6" },
-  { key: "expenses", label: "المصروفات المتوقعة", icon: TrendingDown, color: "#FB6B7A", bg: "#FFF0F2" },
-  { key: "net", label: "صافي الدخل المتوقع", icon: Calculator, color: "#7C83F6", bg: "#ECEEFE" },
+  { key: "count", label: "إجمالي الموازنات", icon: FileText, color: "#4a707c", bg: "#e9f1f3" },
+  { key: "revenue", label: "الإيرادات المتوقعة", icon: TrendingUp, color: "#2f7966", bg: "#edf4e6" },
+  { key: "expenses", label: "المصروفات المتوقعة", icon: TrendingDown, color: "#b3694c", bg: "#fdf1eb" },
+  { key: "net", label: "صافي الدخل المتوقع", icon: Calculator, color: "#5b6b52", bg: "#f1f4ec" },
 ];
 
 const BudgetForm = ({
@@ -78,9 +78,9 @@ const BudgetForm = ({
 
   return (
     <div className="space-y-5">
-      <div className="rounded-2xl border border-slate-200 bg-[#F6F8FB] p-4">
-        <p className="text-xs font-bold text-[#94A3B8]">صافي الموازنة المتوقع</p>
-        <p className={netIncome >= 0 ? "mt-1 text-2xl font-black text-[#22C7A1]" : "mt-1 text-2xl font-black text-[#FB6B7A]"}>
+      <div className="rounded-2xl border border-slate-200 bg-[#f7f8f4] p-4">
+        <p className="text-xs font-bold text-[#829074]">صافي الموازنة المتوقع</p>
+        <p className={netIncome >= 0 ? "mt-1 text-2xl font-black text-[#2f7966]" : "mt-1 text-2xl font-black text-[#b3694c]"}>
           {formatQar(netIncome)}
         </p>
       </div>
@@ -153,14 +153,14 @@ const BudgetForm = ({
             value={value.notes || ""}
             onChange={(event) => onChange({ ...value, notes: event.target.value })}
             placeholder="أي ملاحظات أو افتراضات مرتبطة بهذه الموازنة"
-            className="min-h-24 rounded-xl border-slate-200 bg-[#F6F8FB] text-[#020617] focus-visible:ring-[#22C7A1]"
+            className="min-h-24 rounded-xl border-slate-200 bg-[#f7f8f4] text-[#2c4136] focus-visible:ring-[#2f7966]"
           />
         </div>
       </div>
 
       <Button
         onClick={onSubmit}
-        className="h-11 w-full rounded-xl bg-[#22C7A1] font-black text-white hover:bg-[#1DAE8D]"
+        className="h-11 w-full rounded-xl bg-[#2f7966] font-black text-white hover:bg-[#1DAE8D]"
         disabled={isPending}
       >
         {isPending ? "جاري الحفظ..." : submitLabel}
@@ -270,7 +270,7 @@ const Budgets = () => {
   }
 
   if (error) {
-    return <div className="rounded-2xl border border-[#FB6B7A]/20 bg-[#FFF0F2] p-5 text-center font-bold text-[#FB6B7A]">حدث خطأ في تحميل البيانات</div>;
+    return <div className="rounded-2xl border border-[#b3694c]/20 bg-[#fdf1eb] p-5 text-center font-bold text-[#b3694c]">حدث خطأ في تحميل البيانات</div>;
   }
 
   return (
@@ -286,8 +286,8 @@ const Budgets = () => {
               <CardContent className="p-4">
                 <div className="flex items-start justify-between gap-3">
                   <div>
-                    <p className="text-xs font-bold text-[#94A3B8]">{metric.label}</p>
-                    <p className="mt-2 text-xl font-black text-[#020617]">{value}</p>
+                    <p className="text-xs font-bold text-[#829074]">{metric.label}</p>
+                    <p className="mt-2 text-xl font-black text-[#2c4136]">{value}</p>
                   </div>
                   <div className="flex h-10 w-10 items-center justify-center rounded-2xl" style={{ backgroundColor: metric.bg, color: metric.color }}>
                     <Icon className="h-5 w-5" />
@@ -302,8 +302,8 @@ const Budgets = () => {
       <div className="grid gap-5 xl:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)]">
         <Card className="rounded-2xl border-slate-200 bg-white shadow-sm">
           <CardHeader className="pb-3">
-            <CardTitle className="flex items-center gap-2 text-lg font-black text-[#020617]">
-              <Gauge className="h-5 w-5 text-[#22C7A1]" />
+            <CardTitle className="flex items-center gap-2 text-lg font-black text-[#2c4136]">
+              <Gauge className="h-5 w-5 text-[#2f7966]" />
               تنفيذ الموازنة
             </CardTitle>
           </CardHeader>
@@ -317,12 +317,12 @@ const Budgets = () => {
           <CardHeader className="pb-3">
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
-                <CardTitle className="text-lg font-black text-[#020617]">قائمة الموازنات</CardTitle>
-                <p className="mt-1 text-sm text-[#94A3B8]">بحث وحالة وإجراءات في مساحة واحدة</p>
+                <CardTitle className="text-lg font-black text-[#2c4136]">قائمة الموازنات</CardTitle>
+                <p className="mt-1 text-sm text-[#829074]">بحث وحالة وإجراءات في مساحة واحدة</p>
               </div>
               <div className="flex flex-col flex-wrap gap-2 sm:flex-row">
                 <div className="relative">
-                  <Search className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#94A3B8]" />
+                  <Search className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#829074]" />
                   <Input
                     placeholder="ابحث بالاسم أو السنة..."
                     value={searchTerm}
@@ -344,14 +344,14 @@ const Budgets = () => {
                 </Select>
                 <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
                   <DialogTrigger asChild>
-                    <Button className="h-11 rounded-xl bg-[#22C7A1] font-black text-white hover:bg-[#1DAE8D]">
+                    <Button className="h-11 rounded-xl bg-[#2f7966] font-black text-white hover:bg-[#1DAE8D]">
                       <Plus className="ml-2 h-4 w-4" />
                       موازنة جديدة
                     </Button>
                   </DialogTrigger>
                   <DialogContent className="max-w-2xl rounded-2xl" dir="rtl">
                     <DialogHeader>
-                      <DialogTitle className="text-2xl font-black text-[#020617]">إنشاء موازنة جديدة</DialogTitle>
+                      <DialogTitle className="text-2xl font-black text-[#2c4136]">إنشاء موازنة جديدة</DialogTitle>
                       <DialogDescription>أدخل الأرقام الأساسية، وسيتم احتساب صافي الموازنة مباشرة.</DialogDescription>
                     </DialogHeader>
                     <BudgetForm
@@ -369,34 +369,34 @@ const Budgets = () => {
           <CardContent>
             <div className="overflow-x-auto rounded-2xl border border-slate-200">
               <Table className="min-w-[820px]" aria-label="جدول الموازنات">
-                <TableHeader className="bg-[#F6F8FB]">
+                <TableHeader className="bg-[#f7f8f4]">
                   <TableRow>
-                    <TableHead className="text-[#64748B]">الموازنة</TableHead>
-                    <TableHead className="text-[#64748B]">السنة</TableHead>
-                    <TableHead className="text-[#64748B]">الإيرادات</TableHead>
-                    <TableHead className="text-[#64748B]">المصروفات</TableHead>
-                    <TableHead className="text-[#64748B]">الصافي</TableHead>
-                    <TableHead className="text-[#64748B]">الحالة</TableHead>
-                    <TableHead className="text-[#64748B]">الإجراءات</TableHead>
+                    <TableHead className="text-[#5b6b52]">الموازنة</TableHead>
+                    <TableHead className="text-[#5b6b52]">السنة</TableHead>
+                    <TableHead className="text-[#5b6b52]">الإيرادات</TableHead>
+                    <TableHead className="text-[#5b6b52]">المصروفات</TableHead>
+                    <TableHead className="text-[#5b6b52]">الصافي</TableHead>
+                    <TableHead className="text-[#5b6b52]">الحالة</TableHead>
+                    <TableHead className="text-[#5b6b52]">الإجراءات</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {filteredBudgets?.map((budget) => {
                     const netIncome = budgetNet(budget);
                     return (
-                      <TableRow key={budget.id} className="hover:bg-[#F6F8FB]/70">
+                      <TableRow key={budget.id} className="hover:bg-[#f7f8f4]/70">
                         <TableCell>
                           <div>
-                            <p className="font-black text-[#020617]">{budget.budget_name}</p>
-                            <p className="text-xs text-[#94A3B8]">
+                            <p className="font-black text-[#2c4136]">{budget.budget_name}</p>
+                            <p className="text-xs text-[#829074]">
                               {new Date(budget.created_at).toLocaleDateString("ar-QA")}
                             </p>
                           </div>
                         </TableCell>
-                        <TableCell className="font-bold text-[#020617]">{budget.budget_year}</TableCell>
-                        <TableCell className="font-bold text-[#22C7A1]">{formatQar(budget.total_revenue)}</TableCell>
-                        <TableCell className="font-bold text-[#FB6B7A]">{formatQar(budget.total_expenses)}</TableCell>
-                        <TableCell className={netIncome >= 0 ? "font-black text-[#22C7A1]" : "font-black text-[#FB6B7A]"}>
+                        <TableCell className="font-bold text-[#2c4136]">{budget.budget_year}</TableCell>
+                        <TableCell className="font-bold text-[#2f7966]">{formatQar(budget.total_revenue)}</TableCell>
+                        <TableCell className="font-bold text-[#b3694c]">{formatQar(budget.total_expenses)}</TableCell>
+                        <TableCell className={netIncome >= 0 ? "font-black text-[#2f7966]" : "font-black text-[#b3694c]"}>
                           {formatQar(netIncome)}
                         </TableCell>
                         <TableCell>
@@ -409,7 +409,7 @@ const Budgets = () => {
                             <Button
                               variant="ghost"
                               size="icon"
-                              className="h-9 w-9 rounded-xl text-[#38BDF8] hover:bg-[#EAF8FE]"
+                              className="h-9 w-9 rounded-xl text-[#4a707c] hover:bg-[#e9f1f3]"
                               onClick={() => {
                                 setSelectedBudget(budget);
                                 setIsViewDialogOpen(true);
@@ -421,7 +421,7 @@ const Budgets = () => {
                             <Button
                               variant="ghost"
                               size="icon"
-                              className="h-9 w-9 rounded-xl text-[#7C83F6] hover:bg-[#ECEEFE]"
+                              className="h-9 w-9 rounded-xl text-[#5b6b52] hover:bg-[#f1f4ec]"
                               onClick={() => handleEditBudget(budget)}
                               aria-label="تعديل"
                             >
@@ -453,16 +453,16 @@ const Budgets = () => {
       <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
         <DialogContent className="max-w-2xl rounded-2xl" dir="rtl">
           <DialogHeader>
-            <DialogTitle className="text-2xl font-black text-[#020617]">تفاصيل الموازنة</DialogTitle>
+            <DialogTitle className="text-2xl font-black text-[#2c4136]">تفاصيل الموازنة</DialogTitle>
             <DialogDescription>قراءة سريعة للأرقام والحالة.</DialogDescription>
           </DialogHeader>
           {selectedBudget && (
             <div className="space-y-4">
-              <div className="rounded-2xl bg-[#F6F8FB] p-4">
+              <div className="rounded-2xl bg-[#f7f8f4] p-4">
                 <div className="flex items-start justify-between gap-3">
                   <div>
-                    <p className="text-sm font-bold text-[#94A3B8]">اسم الموازنة</p>
-                    <p className="mt-1 text-xl font-black text-[#020617]">{selectedBudget.budget_name}</p>
+                    <p className="text-sm font-bold text-[#829074]">اسم الموازنة</p>
+                    <p className="mt-1 text-xl font-black text-[#2c4136]">{selectedBudget.budget_name}</p>
                   </div>
                   <Badge variant="outline" className={`rounded-full px-3 py-1 font-black ${statusClassName(selectedBudget.status)}`}>
                     {statusLabel(selectedBudget.status)}
@@ -471,28 +471,28 @@ const Budgets = () => {
               </div>
               <div className="grid gap-3 md:grid-cols-3">
                 <div className="rounded-2xl border border-slate-200 p-4">
-                  <p className="text-xs font-bold text-[#94A3B8]">الإيرادات</p>
-                  <p className="mt-1 font-black text-[#22C7A1]">{formatQar(selectedBudget.total_revenue)}</p>
+                  <p className="text-xs font-bold text-[#829074]">الإيرادات</p>
+                  <p className="mt-1 font-black text-[#2f7966]">{formatQar(selectedBudget.total_revenue)}</p>
                 </div>
                 <div className="rounded-2xl border border-slate-200 p-4">
-                  <p className="text-xs font-bold text-[#94A3B8]">المصروفات</p>
-                  <p className="mt-1 font-black text-[#FB6B7A]">{formatQar(selectedBudget.total_expenses)}</p>
+                  <p className="text-xs font-bold text-[#829074]">المصروفات</p>
+                  <p className="mt-1 font-black text-[#b3694c]">{formatQar(selectedBudget.total_expenses)}</p>
                 </div>
                 <div className="rounded-2xl border border-slate-200 p-4">
-                  <p className="text-xs font-bold text-[#94A3B8]">صافي الدخل</p>
-                  <p className={budgetNet(selectedBudget) >= 0 ? "mt-1 font-black text-[#22C7A1]" : "mt-1 font-black text-[#FB6B7A]"}>
+                  <p className="text-xs font-bold text-[#829074]">صافي الدخل</p>
+                  <p className={budgetNet(selectedBudget) >= 0 ? "mt-1 font-black text-[#2f7966]" : "mt-1 font-black text-[#b3694c]"}>
                     {formatQar(budgetNet(selectedBudget))}
                   </p>
                 </div>
               </div>
               {selectedBudget.notes && (
                 <div className="rounded-2xl border border-slate-200 p-4">
-                  <p className="text-xs font-bold text-[#94A3B8]">الملاحظات</p>
-                  <p className="mt-2 text-sm leading-6 text-[#020617]">{selectedBudget.notes}</p>
+                  <p className="text-xs font-bold text-[#829074]">الملاحظات</p>
+                  <p className="mt-2 text-sm leading-6 text-[#2c4136]">{selectedBudget.notes}</p>
                 </div>
               )}
-              <div className="flex items-center gap-2 text-sm font-bold text-[#94A3B8]">
-                <CheckCircle2 className="h-4 w-4 text-[#22C7A1]" />
+              <div className="flex items-center gap-2 text-sm font-bold text-[#829074]">
+                <CheckCircle2 className="h-4 w-4 text-[#2f7966]" />
                 السنة المالية {selectedBudget.budget_year}
               </div>
             </div>
@@ -503,7 +503,7 @@ const Budgets = () => {
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
         <DialogContent className="max-w-2xl rounded-2xl" dir="rtl">
           <DialogHeader>
-            <DialogTitle className="text-2xl font-black text-[#020617]">تعديل الموازنة</DialogTitle>
+            <DialogTitle className="text-2xl font-black text-[#2c4136]">تعديل الموازنة</DialogTitle>
             <DialogDescription>عدّل الأرقام أو الحالة مع مراجعة الصافي قبل الحفظ.</DialogDescription>
           </DialogHeader>
           <BudgetForm

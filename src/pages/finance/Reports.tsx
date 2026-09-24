@@ -246,7 +246,7 @@ const Reports = () => {
               <TabsTrigger
                 key={tab.id}
                 value={tab.id}
-                className="data-[state=active]:bg-rose-500 data-[state=active]:text-white rounded-lg px-3 py-2 text-sm gap-1.5 transition-all"
+                className="data-[state=active]:bg-[#2f7966] data-[state=active]:text-white rounded-lg px-3 py-2 text-sm gap-1.5 transition-all"
               >
                 <tab.icon className="w-4 h-4" />
                 <span className="hidden md:inline">{tab.label}</span>

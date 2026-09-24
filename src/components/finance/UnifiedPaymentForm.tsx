@@ -468,8 +468,8 @@ export const UnifiedPaymentForm: React.FC<UnifiedPaymentFormProps> = ({
               <ReceiptText className="h-5 w-5" />
             </span>
             <div className="min-w-0">
-              <Title className="text-xl font-black text-[#020617]">{getDialogTitle()}</Title>
-              <Description className="mt-1 font-bold text-[#94A3B8]">
+              <Title className="text-xl font-black text-[#2c4136]">{getDialogTitle()}</Title>
+              <Description className="mt-1 font-bold text-[#829074]">
             {getDialogDescription()}
               </Description>
             </div>
@@ -478,7 +478,7 @@ export const UnifiedPaymentForm: React.FC<UnifiedPaymentFormProps> = ({
             <FeatureTourButton
               tour={unifiedPaymentTour}
               onStart={setActiveTour}
-              className="h-9 gap-2 border-[#E5EAF1] bg-white text-[#020617] hover:bg-[#F6F8FB]"
+              className="h-9 gap-2 border-[#dfe5d9] bg-white text-[#2c4136] hover:bg-[#f7f8f4]"
             />
             <span>{paymentSubtype === 'receipt' ? 'قبض' : 'صرف'}</span>
             <strong>{watchedValues.currency || companyCurrency || 'QAR'}</strong>
@@ -715,17 +715,17 @@ export const UnifiedPaymentForm: React.FC<UnifiedPaymentFormProps> = ({
                                     className="h-12 w-full justify-between px-3 font-normal"
                                   >
                                     <span className="flex min-w-0 items-center gap-2 text-right">
-                                      <UserRound className="h-4 w-4 shrink-0 text-[#64748B]" />
+                                      <UserRound className="h-4 w-4 shrink-0 text-[#5b6b52]" />
                                       <span className="min-w-0">
                                         <strong className="block truncate text-sm text-[#0F172A]">
                                           {selectedCustomer ? getCustomerDisplayName(selectedCustomer) : 'ابحث واختر العميل'}
                                         </strong>
-                                        <small className="block truncate text-xs text-[#64748B]" dir="ltr">
+                                        <small className="block truncate text-xs text-[#5b6b52]" dir="ltr">
                                           {selectedCustomer?.phone || selectedCustomer?.national_id || 'الاسم، الهاتف، الرقم الشخصي أو رمز العميل'}
                                         </small>
                                       </span>
                                     </span>
-                                    <ChevronsUpDown className="h-4 w-4 shrink-0 text-[#94A3B8]" />
+                                    <ChevronsUpDown className="h-4 w-4 shrink-0 text-[#829074]" />
                                   </Button>
                                 </FormControl>
                               </PopoverTrigger>
@@ -842,19 +842,19 @@ export const UnifiedPaymentForm: React.FC<UnifiedPaymentFormProps> = ({
                                     className="h-12 w-full justify-between px-3 font-normal"
                                   >
                                     <span className="flex min-w-0 items-center gap-2 text-right">
-                                      <Car className="h-4 w-4 shrink-0 text-[#64748B]" />
+                                      <Car className="h-4 w-4 shrink-0 text-[#5b6b52]" />
                                       <span className="min-w-0">
                                         <strong className="block truncate text-sm text-[#0F172A]">
                                           {selectedContract?.contract_number || 'ابحث واختر العقد'}
                                         </strong>
-                                        <small className="block truncate text-xs text-[#64748B]" dir="ltr">
+                                        <small className="block truncate text-xs text-[#5b6b52]" dir="ltr">
                                           {selectedContract?.vehicle?.plate_number
                                             ? `${selectedContract.vehicle.plate_number} · ${selectedContract.vehicle.make || ''} ${selectedContract.vehicle.model || ''}`.trim()
                                             : effectiveCustomerId ? 'عقود العميل النشطة' : 'رقم العقد، اللوحة أو المركبة'}
                                         </small>
                                       </span>
                                     </span>
-                                    <ChevronsUpDown className="h-4 w-4 shrink-0 text-[#94A3B8]" />
+                                    <ChevronsUpDown className="h-4 w-4 shrink-0 text-[#829074]" />
                                   </Button>
                                 </FormControl>
                               </PopoverTrigger>

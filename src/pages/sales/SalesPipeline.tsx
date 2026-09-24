@@ -1,26 +1,22 @@
 import { useState } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useSalesOpportunities, useUpdateOpportunityStage, useSalesPipelineMetrics, type SalesOpportunity } from "@/hooks/useSalesOpportunities";
-import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { Plus, TrendingUp, DollarSign, Target, Award } from "lucide-react";
-import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from "@/components/ui/breadcrumb";
-import { cn } from "@/lib/utils";
 import { AddOpportunityForm } from "@/components/sales/AddOpportunityForm";
+import { PageEmpty, PageLoading, PagePanel } from "@/components/dashboard/workspace/PageKit";
+import '@/components/dashboard/workspace/dashboard-workspace.css';
+import '@/components/dashboard/workspace/page-kit.css';
 
 const STAGES = [
-  { id: 'lead', name: 'عميل محتمل', color: 'bg-slate-100 border-slate-300' },
-  { id: 'qualified', name: 'مؤهل', color: 'bg-blue-100 border-blue-300' },
-  { id: 'proposal', name: 'عرض سعر', color: 'bg-yellow-100 border-yellow-300' },
-  { id: 'negotiation', name: 'تفاوض', color: 'bg-orange-100 border-orange-300' },
-  { id: 'won', name: 'مغلق - ناجح', color: 'bg-green-100 border-green-300' },
-  { id: 'lost', name: 'مغلق - فاشل', color: 'bg-red-100 border-red-300' },
+  { id: 'lead', name: 'عميل محتمل', tone: 'is-neutral' },
+  { id: 'qualified', name: 'مؤهل', tone: 'is-info' },
+  { id: 'proposal', name: 'عرض سعر', tone: 'is-warn' },
+  { id: 'negotiation', name: 'تفاوض', tone: 'is-warn' },
+  { id: 'won', name: 'مغلق - ناجح', tone: 'is-ok' },
+  { id: 'lost', name: 'مغلق - فاشل', tone: 'is-risk' },
 ];
 
 const SalesPipeline = () => {
-  const [selectedOpportunity, setSelectedOpportunity] = useState<SalesOpportunity | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
   const { data: opportunities, isLoading } = useSalesOpportunities({ is_active: true });
@@ -55,189 +51,129 @@ const SalesPipeline = () => {
     }).format(amount);
   };
 
+  const dwMetrics = [
+    { label: 'إجمالي القيمة', value: formatCurrency(metrics?.total_pipeline_value || 0), hint: 'قيمة جميع الفرص النشطة', accent: true },
+    { label: 'الفرص النشطة', value: opportunities?.length || 0, hint: 'فرصة بيعية نشطة', accent: false },
+    { label: 'صفقات ناجحة', value: metrics?.won_count || 0, hint: formatCurrency(metrics?.won_value || 0), accent: false },
+    { label: 'متوسط القيمة', value: formatCurrency(metrics?.avg_opportunity_value || 0), hint: 'متوسط قيمة الفرصة', accent: false },
+  ];
+
   return (
-    <div className="space-y-6">
-      {/* Breadcrumb */}
-      <Breadcrumb>
-        <BreadcrumbList>
-          <BreadcrumbItem>
-            <BreadcrumbLink href="/">الرئيسية</BreadcrumbLink>
-          </BreadcrumbItem>
-          <BreadcrumbSeparator />
-          <BreadcrumbItem>
-            <BreadcrumbLink href="/sales/pipeline">المبيعات</BreadcrumbLink>
-          </BreadcrumbItem>
-          <BreadcrumbSeparator />
-          <BreadcrumbItem>
-            <BreadcrumbPage>خط الأنابيب</BreadcrumbPage>
-          </BreadcrumbItem>
-        </BreadcrumbList>
-      </Breadcrumb>
-
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <div className="p-3 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl text-white">
-            <TrendingUp className="h-6 w-6" />
-          </div>
+    <div className="dashboard-workspace" dir="rtl">
+      <div className="dw-container">
+        <header className="dw-header">
           <div>
-            <h1 className="text-2xl font-bold">خط أنابيب المبيعات</h1>
-            <p className="text-muted-foreground">متابعة الفرص البيعية ومراحلها</p>
+            <div className="dw-eyebrow">
+              <span className="dw-mark" />
+              العراف لتأجير السيارات <span>/</span> المبيعات <span>/</span> خط الأنابيب
+            </div>
+            <h1>خط أنابيب المبيعات</h1>
+            <p>متابعة الفرص البيعية ومراحلها من التأهيل إلى الإغلاق.</p>
           </div>
-        </div>
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogTrigger asChild>
-            <Button>
-              <Plus className="h-4 w-4 mr-2" />
+          <div className="dw-header-tools">
+            <button type="button" className="dw-button dw-button-primary" onClick={() => setIsDialogOpen(true)}>
+              <Plus size={17} />
               فرصة جديدة
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>إضافة فرصة بيعية جديدة</DialogTitle>
-              <DialogDescription>
-                أدخل بيانات الفرصة البيعية الجديدة
-              </DialogDescription>
-            </DialogHeader>
-            <AddOpportunityForm onSuccess={() => setIsDialogOpen(false)} />
-          </DialogContent>
-        </Dialog>
-      </div>
+            </button>
+          </div>
+        </header>
 
-      {/* Stats Cards */}
-      <div className="grid gap-4 md:grid-cols-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">إجمالي القيمة</CardTitle>
-            <DollarSign className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {formatCurrency(metrics?.total_pipeline_value || 0)}
-            </div>
-            <p className="text-xs text-muted-foreground">قيمة جميع الفرص النشطة</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">الفرص النشطة</CardTitle>
-            <Target className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{opportunities?.length || 0}</div>
-            <p className="text-xs text-muted-foreground">فرصة بيعية نشطة</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">صفقات ناجحة</CardTitle>
-            <Award className="h-4 w-4 text-green-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-green-600">
-              {metrics?.won_count || 0}
-            </div>
-            <p className="text-xs text-muted-foreground">
-              {formatCurrency(metrics?.won_value || 0)}
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">متوسط القيمة</CardTitle>
-            <TrendingUp className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {formatCurrency(metrics?.avg_opportunity_value || 0)}
-            </div>
-            <p className="text-xs text-muted-foreground">متوسط قيمة الفرصة</p>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Kanban Board */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
-        {STAGES.map((stage) => {
-          const stageOpportunities = getOpportunitiesByStage(stage.id);
-          const stageValue = stageOpportunities.reduce((sum, opp) => sum + (opp.estimated_value || 0), 0);
-
-          return (
-            <div
-              key={stage.id}
-              className="flex flex-col"
-              onDragOver={handleDragOver}
-              onDrop={(e) => handleDrop(e, stage.id)}
-            >
-              <Card className={cn("border-2", stage.color)}>
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-sm font-medium flex items-center justify-between">
-                    <span>{stage.name}</span>
-                    <Badge variant="outline">{stageOpportunities.length}</Badge>
-                  </CardTitle>
-                  <CardDescription className="text-xs">
-                    {formatCurrency(stageValue)}
-                  </CardDescription>
-                </CardHeader>
-              </Card>
-
-              <div className="flex-1 space-y-2 mt-2">
-                {isLoading ? (
-                  <div className="flex justify-center py-8">
-                    <LoadingSpinner />
-                  </div>
-                ) : stageOpportunities.length === 0 ? (
-                  <div className="text-center py-4 text-sm text-muted-foreground">
-                    لا توجد فرص
-                  </div>
-                ) : (
-                  stageOpportunities.map((opportunity) => (
-                    <Card
-                      key={opportunity.id}
-                      draggable
-                      onDragStart={(e) => handleDragStart(e, opportunity)}
-                      className="cursor-move hover:shadow-md transition-shadow"
-                      onClick={() => {
-                        setSelectedOpportunity(opportunity);
-                        setIsDialogOpen(true);
-                      }}
-                    >
-                      <CardHeader className="p-3">
-                        <CardTitle className="text-sm">
-                          {opportunity.opportunity_name}
-                        </CardTitle>
-                        {opportunity.opportunity_name_ar && (
-                          <CardDescription className="text-xs">
-                            {opportunity.opportunity_name_ar}
-                          </CardDescription>
-                        )}
-                      </CardHeader>
-                      <CardContent className="p-3 pt-0 space-y-2">
-                        <div className="flex items-center justify-between">
-                          <span className="text-sm font-semibold">
-                            {formatCurrency(opportunity.estimated_value || 0)}
-                          </span>
-                          <Badge variant="outline" className="text-xs">
-                            {opportunity.probability}%
-                          </Badge>
-                        </div>
-                        {opportunity.expected_close_date && (
-                          <div className="text-xs text-muted-foreground">
-                            الإغلاق المتوقع: {new Date(opportunity.expected_close_date).toLocaleDateString('en-US')}
-                          </div>
-                        )}
-                      </CardContent>
-                    </Card>
-                  ))
-                )}
+        <section className="dw-metrics" aria-label="مؤشرات المبيعات">
+          {dwMetrics.map((metric) => (
+            <div key={metric.label} className={`dw-metric ${metric.accent ? 'dw-metric-accent' : ''}`}>
+              <div className="dw-metric-top">
+                <span>{metric.label}</span>
+              </div>
+              <strong>{metric.value}</strong>
+              <div className="dw-metric-bottom">
+                <small>{metric.hint}</small>
               </div>
             </div>
-          );
-        })}
+          ))}
+        </section>
+
+        <div className="dw-main-grid">
+          <PagePanel
+            number="01"
+            title="مراحل خط الأنابيب"
+            subtitle="اسحب الفرصة وأفلتها لنقلها بين المراحل"
+            className="wk-panel-full"
+          >
+            {isLoading ? (
+              <PageLoading label="جاري تحميل الفرص…" />
+            ) : !opportunities?.length ? (
+              <PageEmpty icon={Target} message="لا توجد فرص بيعية بعد">
+                <button type="button" className="dw-button" onClick={() => setIsDialogOpen(true)}>
+                  <Plus size={16} />
+                  إضافة فرصة جديدة
+                </button>
+              </PageEmpty>
+            ) : (
+              <div className="sp-pipeline-grid">
+                {STAGES.map((stage) => {
+                  const stageOpportunities = getOpportunitiesByStage(stage.id);
+                  const stageValue = stageOpportunities.reduce((sum, opp) => sum + (opp.estimated_value || 0), 0);
+
+                  return (
+                    <div
+                      key={stage.id}
+                      className="sp-pipeline-column"
+                      onDragOver={handleDragOver}
+                      onDrop={(e) => handleDrop(e, stage.id)}
+                    >
+                      <div className="sp-pipeline-column-head">
+                        <div className="sp-pipeline-column-title">
+                          <h3>{stage.name}</h3>
+                          <span className={`wk-badge ${stage.tone}`}>{stageOpportunities.length}</span>
+                        </div>
+                        <small>{formatCurrency(stageValue)}</small>
+                      </div>
+                      <div className="sp-pipeline-cards">
+                        {stageOpportunities.map((opportunity) => (
+                          <button
+                            key={opportunity.id}
+                            type="button"
+                            draggable
+                            onDragStart={(e) => handleDragStart(e, opportunity)}
+                            className="sp-pipeline-card"
+                            onClick={() => setIsDialogOpen(true)}
+                          >
+                            <strong><bdi>{opportunity.opportunity_name}</bdi></strong>
+                            {opportunity.opportunity_name_ar && <span>{opportunity.opportunity_name_ar}</span>}
+                            <div className="sp-pipeline-card-meta">
+                              <b>{formatCurrency(opportunity.estimated_value || 0)}</b>
+                              <span className="wk-badge is-neutral">{opportunity.probability}%</span>
+                            </div>
+                            {opportunity.expected_close_date && (
+                              <small>الإغلاق المتوقع: {new Date(opportunity.expected_close_date).toLocaleDateString('en-GB')}</small>
+                            )}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+            <div className="dw-panel-foot">
+              <TrendingUp size={14} />
+              <span>الفرص النشطة فقط تظهر هنا — الفرص المعلّقة تُدار من قائمة الفرص.</span>
+            </div>
+          </PagePanel>
+        </div>
       </div>
+
+      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>إضافة فرصة بيعية جديدة</DialogTitle>
+            <DialogDescription>
+              أدخل بيانات الفرصة البيعية الجديدة
+            </DialogDescription>
+          </DialogHeader>
+          <AddOpportunityForm onSuccess={() => setIsDialogOpen(false)} />
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

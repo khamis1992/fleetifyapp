@@ -3,41 +3,39 @@
  * Advanced OCR with Arabic/English handwriting support and fuzzy matching
  */
 
-import React, { useState, useCallback, useRef } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Progress } from '@/components/ui/progress';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { preprocessImage, quickPreprocess, analyzeImage } from '@/utils/imagePreprocessing';
+import { preprocessImage } from '@/utils/imagePreprocessing';
 import { LazyImage } from '@/components/common/LazyImage';
 import EnhancedMobileCamera from './EnhancedMobileCamera';
 import { useBackgroundQueue } from '@/utils/backgroundProcessingQueue';
-import { useFleetifyTranslation } from "@/hooks/useTranslation";
-import { 
-  Camera, 
-  Upload, 
-  FileText, 
-  Zap, 
-  Check, 
-  AlertTriangle, 
-  Eye, 
-  User, 
-  Car, 
+import { useFleetifyTranslation } from '@/hooks/useTranslation';
+import {
+  Camera,
+  Upload,
+  Files,
+  ScanLine,
+  ChevronDown,
+  Check,
+  AlertTriangle,
+  User,
+  Car,
   Calendar,
-  DollarSign,
-  Brain,
+  Banknote,
   Languages,
-  Target,
-  Clock,
-  Settings
+  Sparkles,
+  RefreshCw,
+  Users,
+  RotateCcw
 } from 'lucide-react';
 
 interface ScanResult {
@@ -63,7 +61,11 @@ interface ScanResult {
       confidence: number;
       match_reasons: string[];
     };
-    all_matches: any[];
+    all_matches: Array<{
+    id?: string;
+    name?: string;
+    confidence?: number;
+  }>;
     total_confidence: number;
     name_similarity: number;
     car_match_score: number;
@@ -83,6 +85,7 @@ interface InvoiceScannerProps {
 
 type OcrEngine = 'gemini' | 'google-vision' | 'hybrid';
 type ProcessingLanguage = 'auto' | 'arabic' | 'english';
+type CaptureMode = 'upload' | 'bulk' | 'camera';
 
 const isOcrEngine = (value: unknown): value is OcrEngine =>
   typeof value === 'string' && ['gemini', 'google-vision', 'hybrid'].includes(value);
@@ -90,18 +93,54 @@ const isOcrEngine = (value: unknown): value is OcrEngine =>
 const isProcessingLanguage = (value: unknown): value is ProcessingLanguage =>
   typeof value === 'string' && ['auto', 'arabic', 'english'].includes(value);
 
-const IntelligentInvoiceScanner: React.FC<InvoiceScannerProps> = ({ 
-  onScanComplete, 
-  className = "" 
+const MAX_BULK_FILES = 10;
+
+const bulkCountLabel = (count: number) => `${count} ${count === 1 ? 'فاتورة' : 'فواتير'}`;
+
+const CONFIDENCE_TIERS = {
+  auto: { min: 85 },
+  review: { min: 70 },
+} as const;
+
+const getMatchTier = (confidence: number): 'auto' | 'review' | 'manual' => {
+  if (confidence >= CONFIDENCE_TIERS.auto.min) return 'auto';
+  if (confidence >= CONFIDENCE_TIERS.review.min) return 'review';
+  return 'manual';
+};
+
+const confidenceTone = (confidence: number): string => {
+  if (confidence >= CONFIDENCE_TIERS.auto.min) return 'text-emerald-600';
+  if (confidence >= CONFIDENCE_TIERS.review.min) return 'text-amber-600';
+  return 'text-red-600';
+};
+
+const confidenceBadge = (confidence: number): string => {
+  if (confidence >= CONFIDENCE_TIERS.auto.min) return 'border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-50';
+  if (confidence >= CONFIDENCE_TIERS.review.min) return 'border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-50';
+  return 'border-red-200 bg-red-50 text-red-700 hover:bg-red-50';
+};
+
+const tierMeta: Record<'auto' | 'review' | 'manual', { label: string; hint: string }> = {
+  auto: { label: 'مطابقة تلقائية', hint: 'يمكن تأكيد التطابق بضغطة واحدة.' },
+  review: { label: 'يحتاج مراجعة', hint: 'راجع التطابق المقترح قبل التأكيد.' },
+  manual: { label: 'مراجعة يدوية', hint: 'لم يُعثر على تطابق موثوق — اربط الفاتورة يدوياً.' },
+};
+
+const IntelligentInvoiceScanner: React.FC<InvoiceScannerProps> = ({
+  onScanComplete,
+  className = ''
 }) => {
-  const { t } = useFleetifyTranslation("ui");
+  const { t } = useFleetifyTranslation('ui');
   const [isScanning, setIsScanning] = useState(false);
   const [scanResult, setScanResult] = useState<ScanResult | null>(null);
   const [progress, setProgress] = useState(0);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [ocrEngine, setOcrEngine] = useState<OcrEngine>('gemini');
   const [language, setLanguage] = useState<ProcessingLanguage>('auto');
-  const [activeTab, setActiveTab] = useState('upload');
+  const [captureMode, setCaptureMode] = useState<CaptureMode>('upload');
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [confirmState, setConfirmState] = useState<'idle' | 'confirmed'>('idle');
+  const [showAllMatches, setShowAllMatches] = useState(false);
   const [enablePreprocessing, setEnablePreprocessing] = useState(true);
   const [preprocessingOptions, setPreprocessingOptions] = useState({
     enhanceContrast: true,
@@ -109,140 +148,192 @@ const IntelligentInvoiceScanner: React.FC<InvoiceScannerProps> = ({
     sharpenText: true,
     normalizeSize: true
   });
-  
+
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const resultRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
-  const { addJob, getJob, getJobs, getStatistics } = useBackgroundQueue();
+  const { addJob, getJob } = useBackgroundQueue();
+
+  useEffect(() => {
+    if (scanResult && resultRef.current) {
+      resultRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }, [scanResult]);
+
+  const runOcr = useCallback(async (base64: string, fileName: string) => {
+    const { data, error } = await supabase.functions.invoke('scan-invoice', {
+      body: { imageBase64: base64, fileName, ocrEngine, language }
+    });
+
+    if (error) {
+      throw new Error(error.message || 'OCR processing failed');
+    }
+    if (!data.success) {
+      throw new Error('Failed to process invoice');
+    }
+
+    const result: ScanResult = {
+      id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      data: data.data,
+      matching: data.matching || {
+        all_matches: [],
+        total_confidence: 0,
+        name_similarity: 0,
+        car_match_score: 0,
+        context_match_score: 0
+      },
+      processing_info: data.data.processing_info || {
+        ocr_engine: ocrEngine,
+        language_detected: language,
+        ocr_confidence: 0
+      }
+    };
+    return result;
+  }, [ocrEngine, language]);
 
   const handleImageUpload = useCallback(async (file: File) => {
     if (!file.type.startsWith('image/')) {
       toast({
-        title: "خطأ في نوع الملف",
-        description: "يرجى اختيار ملف صورة صالح",
-        variant: "destructive"
+        title: 'خطأ في نوع الملف',
+        description: 'يرجى اختيار ملف صورة صالح',
+        variant: 'destructive'
       });
       return;
     }
 
     setIsScanning(true);
-    setProgress(0);
+    setScanResult(null);
+    setConfirmState('idle');
+    setShowAllMatches(false);
+    setProgress(8);
+
+    const progressInterval = setInterval(() => {
+      setProgress((prev) => Math.min(prev + 6, 90));
+    }, 600);
 
     try {
       let processedFile = file;
-      let improvements: string[] = [];
-      
-      // Apply preprocessing if enabled
+
       if (enablePreprocessing) {
-        toast({
-          title: "تحسين الصورة",
-          description: "جاري تحسين جودة الصورة لدقة أفضل...",
-          variant: "default"
-        });
-        
         try {
           const result = await preprocessImage(file, preprocessingOptions);
           processedFile = result.processedFile;
-          improvements = result.improvements;
-          
-          console.log('Image preprocessing completed:', {
-            originalSize: result.originalSize,
-            processedSize: result.processedSize,
-            improvements: result.improvements
-          });
         } catch (error) {
           console.warn('Image preprocessing failed, using original:', error);
         }
       }
 
-      // Convert to base64
-      const reader = new FileReader();
-      reader.onload = async (e) => {
-        const base64 = e.target?.result as string;
-        setSelectedImage(base64);
-        
-        // Simulate progress updates
-        const progressInterval = setInterval(() => {
-          setProgress(prev => Math.min(prev + 10, 90));
-        }, 500);
+      const base64 = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = (e) => resolve(e.target?.result as string);
+        reader.onerror = reject;
+        reader.readAsDataURL(processedFile);
+      });
 
-        try {
-          // Call OCR Edge Function
-          const { data, error } = await supabase.functions.invoke('scan-invoice', {
-            body: {
-              imageBase64: base64,
-              fileName: file.name,
-              ocrEngine,
-              language
-            }
-          });
+      setSelectedImage(base64);
 
-          clearInterval(progressInterval);
-          setProgress(100);
+      const result = await runOcr(base64, file.name);
 
-          if (error) {
-            throw new Error(error.message || 'OCR processing failed');
-          }
+      setProgress(100);
+      setScanResult(result);
+      onScanComplete?.(result);
 
-          if (data.success) {
-            const result: ScanResult = {
-              id: Date.now().toString(),
-              data: data.data,
-              matching: data.matching || {
-                all_matches: [],
-                total_confidence: 0,
-                name_similarity: 0,
-                car_match_score: 0,
-                context_match_score: 0
-              },
-              processing_info: data.data.processing_info || {
-                ocr_engine: ocrEngine,
-                language_detected: language,
-                ocr_confidence: 0
-              }
-            };
-
-            setScanResult(result);
-            onScanComplete?.(result);
-
-            toast({
-              title: "تم المسح بنجاح",
-              description: `تم استخراج البيانات بثقة ${result.processing_info.ocr_confidence}%`,
-              variant: "default"
-            });
-          } else {
-            throw new Error('Failed to process invoice');
-          }
-
-        } catch (error) {
-          clearInterval(progressInterval);
-          console.error('Error scanning invoice:', error);
-          toast({
-            title: "خطأ في المسح",
-            description: error instanceof Error ? error.message : "فشل في معالجة الصورة",
-            variant: "destructive"
-          });
-        }
-      };
-
-      reader.readAsDataURL(file);
+      const tier = getMatchTier(result.matching.total_confidence);
+      if (tier === 'auto') {
+        toast({
+          title: 'تم التطابق التلقائي',
+          description: `تم تعيين الفاتورة تلقائياً للعميل: ${result.matching.best_match?.name ?? 'غير معروف'}`,
+          variant: 'default'
+        });
+      } else if (tier === 'review') {
+        toast({
+          title: 'يحتاج مراجعة',
+          description: 'تم إيجاد تطابقات محتملة، يرجى المراجعة',
+          variant: 'default'
+        });
+      } else {
+        toast({
+          title: 'مراجعة يدوية مطلوبة',
+          description: 'لم يتم إيجاد تطابق موثوق، يرجى المراجعة اليدوية',
+          variant: 'destructive'
+        });
+      }
     } catch (error) {
-      console.error('Error preparing file:', error);
+      console.error('Error scanning invoice:', error);
       toast({
-        title: "خطأ",
-        description: "فشل في تحضير الصورة للمعالجة",
-        variant: "destructive"
+        title: 'خطأ في المسح',
+        description: error instanceof Error ? error.message : 'فشل في معالجة الصورة',
+        variant: 'destructive'
       });
     } finally {
+      clearInterval(progressInterval);
       setIsScanning(false);
     }
-  }, [ocrEngine, language, toast, onScanComplete]);
+  }, [enablePreprocessing, preprocessingOptions, runOcr, onScanComplete, toast]);
 
   const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
       handleImageUpload(file);
     }
+    e.target.value = '';
   };
+
+  const handleBulkUpload = useCallback(async (files: File[]) => {
+    if (files.length === 0) return;
+
+    const limitedFiles = files.slice(0, MAX_BULK_FILES);
+
+    toast({
+      title: t('bulkProcessingStarted'),
+      description: `تمت إضافة ${bulkCountLabel(limitedFiles.length)} إلى قائمة المعالجة في الخلفية`,
+      variant: 'default'
+    });
+
+    try {
+      const processedFiles = await Promise.all(limitedFiles.map((file) =>
+        new Promise<{ name: string; base64: string }>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = (e) => resolve({ name: file.name, base64: e.target?.result as string });
+          reader.onerror = reject;
+          reader.readAsDataURL(file);
+        })
+      ));
+
+      const jobId = addJob('batch_scan', {
+        files: processedFiles,
+        options: { ocrEngine, language }
+      }, 'high');
+
+      const monitorInterval = setInterval(() => {
+        const job = getJob(jobId);
+        if (!job) return;
+        if (job.status === 'completed') {
+          clearInterval(monitorInterval);
+          toast({
+            title: 'اكتملت المعالجة المتعددة',
+            description: `تمت معالجة ${jobId ? '' : ''}الدفعة بنجاح`,
+            variant: 'default'
+          });
+        } else if (job.status === 'failed') {
+          clearInterval(monitorInterval);
+          toast({
+            title: t('batchProcessingFailed'),
+            description: job.error || 'حدث خطأ غير معروف',
+            variant: 'destructive'
+          });
+        }
+      }, 2000);
+
+      setTimeout(() => clearInterval(monitorInterval), 10 * 60 * 1000);
+    } catch (error) {
+      toast({
+        title: t('errorProcessingFiles'),
+        description: error instanceof Error ? error.message : 'Failed to process files',
+        variant: 'destructive'
+      });
+    }
+  }, [ocrEngine, language, addJob, getJob, toast, t]);
 
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -256,331 +347,104 @@ const IntelligentInvoiceScanner: React.FC<InvoiceScannerProps> = ({
     e.preventDefault();
   };
 
-  const handleBulkUpload = async (files: File[]) => {
-    if (files.length === 0) return;
-    
-    // Limit to 10 files maximum
-    const limitedFiles = files.slice(0, 10);
-    
-    toast({
-      title: t("bulkProcessingStarted"),
-      description: `Adding ${limitedFiles.length} invoices to background processing queue`,
-      variant: "default"
-    });
-
-    // Convert files to base64 and add to background queue
-    const filePromises = limitedFiles.map(async (file) => {
-      return new Promise<{ name: string; base64: string }>((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-          resolve({
-            name: file.name,
-            base64: e.target?.result as string
-          });
-        };
-        reader.onerror = reject;
-        reader.readAsDataURL(file);
-      });
-    });
-
-    try {
-      const processedFiles = await Promise.all(filePromises);
-      
-      // Add batch job to background queue
-      const jobId = addJob('batch_scan', {
-        files: processedFiles,
-        options: {
-          ocrEngine,
-          language
-        }
-      }, 'high');
-
-      toast({
-        title: t("batchJobCreated"),
-        description: `Job ID: ${jobId}. Processing in background...`,
-        variant: "default"
-      });
-
-      // Set up progress monitoring
-      const monitorInterval = setInterval(() => {
-        const job = getJob(jobId);
-        if (job) {
-          if (job.status === 'completed') {
-            clearInterval(monitorInterval);
-            toast({
-              title: "Batch Processing Complete",
-              description: `Successfully processed batch job`,
-              variant: "default"
-            });
-          } else if (job.status === 'failed') {
-            clearInterval(monitorInterval);
-            toast({
-              title: t("batchProcessingFailed"),
-              description: job.error || 'Unknown error occurred',
-              variant: "destructive"
-            });
-          }
-        }
-      }, 2000);
-
-      // Clear monitoring after 10 minutes
-      setTimeout(() => clearInterval(monitorInterval), 10 * 60 * 1000);
-      
-    } catch (error) {
-      toast({
-        title: t("errorProcessingFiles"),
-        description: error instanceof Error ? error.message : 'Failed to process files',
-        variant: "destructive"
-      });
-    }
+  const resetScanner = () => {
+    setScanResult(null);
+    setSelectedImage(null);
+    setConfirmState('idle');
+    setShowAllMatches(false);
+    setProgress(0);
   };
 
-  const processInvoiceFile = async (file: File) => {
-    // Individual file processing logic
-    const reader = new FileReader();
-    return new Promise((resolve, reject) => {
-      reader.onload = async (e) => {
-        const base64 = e.target?.result as string;
-        setSelectedImage(base64);
-        
-        try {
-          const { data, error } = await supabase.functions.invoke('scan-invoice', {
-            body: {
-              imageBase64: base64,
-              fileName: file.name,
-              ocrEngine,
-              language
-            }
-          });
+  const modeTabs: { id: CaptureMode; label: string; icon: typeof Upload; hint: string }[] = [
+    { id: 'upload', label: 'رفع صورة', icon: Upload, hint: 'اسحب الصورة هنا أو انقر للاختيار' },
+    { id: 'bulk', label: 'رفع متعدد', icon: Files, hint: 'حتى 10 فواتير تُعالج في الخلفية' },
+    { id: 'camera', label: 'كاميرا', icon: Camera, hint: 'التقاط مباشر مع تحسين تلقائي' },
+  ];
 
-          if (error) {
-            reject(new Error(error.message || 'OCR processing failed'));
-            return;
-          }
+  const progressSteps = [
+    { threshold: 25, label: 'تحليل الصورة وتحسينها' },
+    { threshold: 50, label: 'استخراج النص بالذكاء الاصطناعي' },
+    { threshold: 75, label: 'مطابقة العملاء' },
+    { threshold: 100, label: 'إنهاء المعالجة' },
+  ];
+  const currentStepLabel = progressSteps.find((step) => progress < step.threshold)?.label ?? progressSteps[progressSteps.length - 1].label;
 
-          if (data.success) {
-            const result = {
-              id: Date.now().toString() + Math.random(),
-              data: data.data,
-              matching: data.matching || {
-                all_matches: [],
-                total_confidence: 0,
-                name_similarity: 0,
-                car_match_score: 0,
-                context_match_score: 0
-              },
-              processing_info: data.data.processing_info || {
-                ocr_engine: ocrEngine,
-                language_detected: language,
-                ocr_confidence: 0
-              }
-            };
-            resolve(result);
-          } else {
-            reject(new Error('Failed to process invoice'));
-          }
-        } catch (error) {
-          reject(error);
-        }
-      };
-      reader.onerror = reject;
-      reader.readAsDataURL(file);
-    });
-  };
+  const resultTier = scanResult ? getMatchTier(scanResult.matching.total_confidence) : 'manual';
 
-  const getConfidenceColor = (confidence: number) => {
-    if (confidence >= 85) return 'text-green-600';
-    if (confidence >= 70) return 'text-yellow-600';
-    return 'text-red-600';
-  };
-
-  const getConfidenceBadge = (confidence: number) => {
-    if (confidence >= 85) return 'bg-green-100 text-green-800';
-    if (confidence >= 70) return 'bg-yellow-100 text-yellow-800';
-    return 'bg-red-100 text-red-800';
-  };
+  const extractedFields = scanResult
+    ? [
+        { icon: User, label: 'اسم العميل', value: scanResult.data.customer_name },
+        { icon: Car, label: 'رقم المركبة', value: scanResult.data.car_number },
+        { icon: Banknote, label: 'المبلغ', value: scanResult.data.total_amount ? `${scanResult.data.total_amount} ر.ق` : undefined },
+        { icon: Calendar, label: 'تاريخ الفاتورة', value: scanResult.data.invoice_date },
+        { icon: ScanLine, label: 'رقم الفاتورة', value: scanResult.data.invoice_number },
+        { icon: Languages, label: 'اللغة', value: scanResult.data.language_detected },
+      ].filter((field): field is { icon: typeof User; label: string; value: string } => Boolean(field.value))
+    : [];
 
   return (
     <div className={`space-y-6 ${className}`}>
-      {/* Header */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Brain className="h-6 w-6 text-primary" />
-            ماسح الفواتير الذكي
-            <Badge variant="secondary" className="text-xs">
-              <Zap className="h-3 w-3 mr-1" />{t("aipowered")}</Badge>
-          </CardTitle>
-          <p className="text-sm text-muted-foreground">
-            مسح ذكي للفواتير المكتوبة باليد أو المطبوعة بالعربية والإنجليزية مع تطابق تلقائي للعملاء
-          </p>
-        </CardHeader>
-      </Card>
-
-      {/* Settings */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-lg">
-            <Settings className="h-5 w-5" />
-            إعدادات المسح
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label>محرك التعرف الضوئي</Label>
-              <Select
-                value={ocrEngine}
-                onValueChange={(value: unknown) => {
-                  if (isOcrEngine(value)) setOcrEngine(value);
-                }}
+      {/* Capture */}
+      <Card className="overflow-hidden">
+        <CardContent className="p-0">
+          <div className="flex flex-wrap gap-2 border-b border-[var(--finance-border)] p-4">
+            {modeTabs.map(({ id, label, icon: Icon }) => (
+              <button
+                key={id}
+                type="button"
+                onClick={() => setCaptureMode(id)}
+                aria-pressed={captureMode === id}
+                className={`inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition-colors ${
+                  captureMode === id
+                    ? 'bg-[#14675e] text-white'
+                    : 'border border-[var(--finance-border)] bg-[var(--finance-paper)] text-[var(--finance-muted)] hover:bg-[var(--finance-wash)]'
+                }`}
               >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="gemini">جيميني فلاش 2.5 (للقراءة اليدوية)</SelectItem>
-                  <SelectItem value="google-vision">{t("googleVisionApi")}</SelectItem>
-                  <SelectItem value="hybrid">هجين (أعلى دقة)</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label>لغة المعالجة</Label>
-              <Select
-                value={language}
-                onValueChange={(value: unknown) => {
-                  if (isProcessingLanguage(value)) setLanguage(value);
-                }}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="auto">تلقائي</SelectItem>
-                  <SelectItem value="arabic">العربية</SelectItem>
-                  <SelectItem value="english">الإنجليزية</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+                <Icon className="h-4 w-4" aria-hidden="true" />
+                {label}
+              </button>
+            ))}
           </div>
-          
-          {/* Image Preprocessing Settings */}
-          <div className="mt-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
-            <div className="flex items-center justify-between mb-3">
-              <h4 className="font-medium text-blue-900">📷 تحسين جودة الصورة</h4>
-              <div className="flex items-center space-x-2">
-                <input
-                  type="checkbox"
-                  id="enable-preprocessing"
-                  checked={enablePreprocessing}
-                  onChange={(e) => setEnablePreprocessing(e.target.checked)}
-                  className="rounded"
-                />
-                <label htmlFor="enable-preprocessing" className="text-sm font-medium">
-                  تفعيل التحسين التلقائي
-                </label>
+
+          {captureMode === 'upload' && (
+            <div
+              className="flex cursor-pointer flex-col items-center gap-3 px-6 py-12 text-center transition-colors hover:bg-[var(--finance-wash)]"
+              onClick={() => fileInputRef.current?.click()}
+              onDrop={handleDrop}
+              onDragOver={handleDragOver}
+              role="button"
+              tabIndex={0}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  fileInputRef.current?.click();
+                }
+              }}
+            >
+              <div className="grid h-14 w-14 place-items-center rounded-2xl bg-[var(--finance-wash)] text-[var(--finance-accent)]">
+                <Upload className="h-7 w-7" aria-hidden="true" />
               </div>
+              <div>
+                <p className="text-base font-semibold">اسحب صورة الفاتورة وأفلتها هنا</p>
+                <p className="mt-1 text-sm text-[var(--finance-muted)]">أو انقر لاختيار ملف — PNG أو JPG أو JPEG</p>
+              </div>
+              <Button variant="outline" className="pointer-events-none">
+                اختيار صورة
+              </Button>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handleFileInputChange}
+                className="hidden"
+                aria-label="اختيار صورة فاتورة"
+              />
             </div>
-            
-            {enablePreprocessing && (
-              <div className="grid grid-cols-2 gap-3 text-sm">
-                <label className="flex items-center space-x-2">
-                  <input
-                    type="checkbox"
-                    checked={preprocessingOptions.enhanceContrast}
-                    onChange={(e) => setPreprocessingOptions(prev => ({ ...prev, enhanceContrast: e.target.checked }))}
-                    className="rounded"
-                  />
-                  <span>تحسين التباين</span>
-                </label>
-                
-                <label className="flex items-center space-x-2">
-                  <input
-                    type="checkbox"
-                    checked={preprocessingOptions.sharpenText}
-                    onChange={(e) => setPreprocessingOptions(prev => ({ ...prev, sharpenText: e.target.checked }))}
-                    className="rounded"
-                  />
-                  <span>توضيح النص</span>
-                </label>
-                
-                <label className="flex items-center space-x-2">
-                  <input
-                    type="checkbox"
-                    checked={preprocessingOptions.reduceNoise}
-                    onChange={(e) => setPreprocessingOptions(prev => ({ ...prev, reduceNoise: e.target.checked }))}
-                    className="rounded"
-                  />
-                  <span>إزالة التشويش</span>
-                </label>
-                
-                <label className="flex items-center space-x-2">
-                  <input
-                    type="checkbox"
-                    checked={preprocessingOptions.normalizeSize}
-                    onChange={(e) => setPreprocessingOptions(prev => ({ ...prev, normalizeSize: e.target.checked }))}
-                    className="rounded"
-                  />
-                  <span>تطبيع الحجم</span>
-                </label>
-              </div>
-            )}
-          </div>
-        </CardContent>
-      </Card>
+          )}
 
-      {/* Upload Interface */}
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="upload" className="flex items-center gap-2">
-            <Upload className="h-4 w-4" />
-            رفع صورة
-          </TabsTrigger>
-          <TabsTrigger value="bulk" className="flex items-center gap-2">
-            <FileText className="h-4 w-4" />
-            رفع متعدد
-          </TabsTrigger>
-          <TabsTrigger value="camera" className="flex items-center gap-2">
-            <Camera className="h-4 w-4" />
-            التقاط بالكاميرا
-          </TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="upload">
-          <Card>
-            <CardContent className="pt-6">
+          {captureMode === 'bulk' && (
+            <div className="space-y-4 p-6">
               <div
-                className="border-2 border-dashed border-slate-300 rounded-lg p-8 text-center hover:border-primary/50 transition-colors cursor-pointer"
-                onClick={() => fileInputRef.current?.click()}
-                onDrop={handleDrop}
-                onDragOver={handleDragOver}
-              >
-                <Upload className="h-12 w-12 mx-auto mb-4 text-slate-400" />
-                <p className="text-lg font-medium mb-2">اسحب وأفلت صورة الفاتورة هنا</p>
-                <p className="text-sm text-muted-foreground mb-4">
-                  أو انقر لاختيار ملف (PNG, JPG, JPEG)
-                </p>
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/*"
-                  onChange={handleFileInputChange}
-                  className="hidden"
-                />
-                <Button variant="outline" className="mt-2">
-                  اختيار صورة
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="bulk">
-          <Card>
-            <CardContent className="pt-6">
-              <div
-                className="border-2 border-dashed border-orange-300 rounded-lg p-8 text-center hover:border-orange-500 transition-colors cursor-pointer bg-orange-50"
+                className="flex cursor-pointer flex-col items-center gap-3 rounded-xl border border-dashed border-[var(--finance-border)] px-6 py-10 text-center transition-colors hover:bg-[var(--finance-wash)]"
                 onClick={() => {
                   const input = document.createElement('input');
                   input.type = 'file';
@@ -594,255 +458,307 @@ const IntelligentInvoiceScanner: React.FC<InvoiceScannerProps> = ({
                   };
                   input.click();
                 }}
+                role="button"
+                tabIndex={0}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    (e.currentTarget as HTMLElement).click();
+                  }
+                }}
               >
-                <FileText className="h-12 w-12 mx-auto mb-4 text-orange-500" />
-                <p className="text-lg font-medium mb-2">رفع عدة فواتير معاً</p>
-                <p className="text-sm text-muted-foreground mb-4">
-                  اختر عدة صور لمعالجتها في دفعة واحدة
-                </p>
-                <Button variant="outline" className="mt-2 border-orange-500 text-orange-700 hover:bg-orange-100">
-                  <FileText className="h-4 w-4 mr-2" />
+                <div className="grid h-14 w-14 place-items-center rounded-2xl bg-[var(--finance-wash)] text-[var(--finance-accent)]">
+                  <Files className="h-7 w-7" aria-hidden="true" />
+                </div>
+                <div>
+                  <p className="text-base font-semibold">رفع عدة فواتير معاً</p>
+                  <p className="mt-1 text-sm text-[var(--finance-muted)]">حتى {MAX_BULK_FILES} صور تُعالج في الخلفية دفعة واحدة</p>
+                </div>
+                <Button variant="outline" className="pointer-events-none">
                   اختيار عدة صور
                 </Button>
               </div>
-              
-              <div className="mt-6 p-4 bg-blue-50 rounded-lg">
-                <h4 className="font-medium mb-2 text-blue-900">🚀 ميزات المعالجة المتعددة:</h4>
-                <ul className="text-sm text-blue-800 space-y-1">
-                  <li>• معالجة حتى 10 فواتير في نفس الوقت</li>
-                  <li>• عرض تقدم شريط موحد لجميع الفواتير</li>
-                  <li>• تجميع النتائج وعرضها في جدول واحد</li>
-                  <li>• حفظ تلقائي للفواتير عالية الثقة</li>
-                </ul>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
+              <ul className="grid gap-2 text-sm text-[var(--finance-muted)] sm:grid-cols-2">
+                <li className="flex items-center gap-2"><Sparkles className="h-4 w-4 text-[var(--finance-accent)]" aria-hidden="true" /> معالجة خلفية دون تعطيل الصفحة</li>
+                <li className="flex items-center gap-2"><Sparkles className="h-4 w-4 text-[var(--finance-accent)]" aria-hidden="true" /> إشعار فوري عند اكتمال الدفعة</li>
+                <li className="flex items-center gap-2"><Sparkles className="h-4 w-4 text-[var(--finance-accent)]" aria-hidden="true" /> تجميع النتائج في تقرير واحد</li>
+                <li className="flex items-center gap-2"><Sparkles className="h-4 w-4 text-[var(--finance-accent)]" aria-hidden="true" /> حفظ تلقائي للفواتير عالية الثقة</li>
+              </ul>
+            </div>
+          )}
 
-        <TabsContent value="camera">
-          <Card>
-            <CardContent className="pt-6">
-              <EnhancedMobileCamera 
+          {captureMode === 'camera' && (
+            <div className="p-6">
+              <EnhancedMobileCamera
                 onImageCapture={handleImageUpload}
                 isProcessing={isScanning}
                 enablePreprocessing={enablePreprocessing}
                 preprocessingOptions={preprocessingOptions}
               />
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Processing Progress */}
       {isScanning && (
         <Card>
-          <CardContent className="pt-6">
-            <div className="space-y-4">
+          <CardContent className="space-y-3 p-6">
+            <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <Clock className="h-5 w-5 animate-spin" />
-                <span className="font-medium">جاري معالجة الصورة...</span>
+                <RefreshCw className="h-4 w-4 animate-spin text-[var(--finance-accent)]" aria-hidden="true" />
+                <span className="text-sm font-semibold">جاري معالجة الصورة…</span>
               </div>
-              <Progress value={progress} className="w-full" />
-              <div className="text-sm text-muted-foreground text-center">
-                {progress < 30 && "تحليل الصورة..."}
-                {progress >= 30 && progress < 60 && "استخراج النص بالذكاء الاصطناعي..."}
-                {progress >= 60 && progress < 90 && "البحث عن تطابقات العملاء..."}
-                {progress >= 90 && "جاري الانتهاء..."}
-              </div>
+              <span className="text-sm font-bold tabular-nums text-[var(--finance-accent)]">{progress}%</span>
             </div>
+            <Progress value={progress} className="h-2" aria-label="تقدم المعالجة" />
+            <p className="text-center text-xs text-[var(--finance-muted)]">{currentStepLabel}</p>
           </CardContent>
         </Card>
       )}
 
-      {/* Selected Image Preview */}
-      {selectedImage && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-lg">
-              <Eye className="h-5 w-5" />
-              معاينة الصورة
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex justify-center">
-              <LazyImage
-                src={selectedImage}
-                alt="Invoice preview"
-                className="max-w-full max-h-96 rounded-lg shadow-lg"
-              />
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Scan Results */}
+      {/* Results */}
       {scanResult && (
-        <div className="space-y-6">
-          {/* Confidence Overview */}
+        <div ref={resultRef} className="space-y-4">
+          {/* Confidence summary */}
           <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Target className="h-5 w-5" />
-                نتائج المسح والتطابق
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <div className="text-center">
-                  <div className={`text-2xl font-bold ${getConfidenceColor(scanResult.processing_info.ocr_confidence)}`}>
-                    {scanResult.processing_info.ocr_confidence}%
-                  </div>
-                  <div className="text-sm text-muted-foreground">دقة التعرف الضوئي</div>
-                </div>
-                <div className="text-center">
-                  <div className={`text-2xl font-bold ${getConfidenceColor(scanResult.matching.total_confidence)}`}>
-                    {Math.round(scanResult.matching.total_confidence)}%
-                  </div>
-                  <div className="text-sm text-muted-foreground">دقة التطابق</div>
-                </div>
-                <div className="text-center">
-                  <div className={`text-2xl font-bold ${getConfidenceColor(scanResult.matching.name_similarity)}`}>
-                    {scanResult.matching.name_similarity}%
-                  </div>
-                  <div className="text-sm text-muted-foreground">تطابق الاسم</div>
-                </div>
-                <div className="text-center">
-                  <Badge className={getConfidenceBadge(scanResult.matching.total_confidence)}>
-                    {scanResult.matching.total_confidence >= 85 ? 'تلقائي' : 
-                     scanResult.matching.total_confidence >= 70 ? 'يحتاج مراجعة' : 'مراجعة يدوية'}
-                  </Badge>
-                  <div className="text-sm text-muted-foreground mt-1">الحالة</div>
-                </div>
+            <CardContent className="flex flex-wrap items-center gap-4 p-5">
+              <div className="flex-1 min-w-40">
+                <p className="text-xs text-[var(--finance-muted)]">دقة التعرف الضوئي (OCR)</p>
+                <p className={`text-2xl font-bold tabular-nums ${confidenceTone(scanResult.processing_info.ocr_confidence)}`}>
+                  {scanResult.processing_info.ocr_confidence}%
+                </p>
+              </div>
+              <div className="h-10 w-px bg-[var(--finance-border)]" aria-hidden="true" />
+              <div className="flex-1 min-w-40">
+                <p className="text-xs text-[var(--finance-muted)]">دقة التطابق مع العميل</p>
+                <p className={`text-2xl font-bold tabular-nums ${confidenceTone(scanResult.matching.total_confidence)}`}>
+                  {Math.round(scanResult.matching.total_confidence)}%
+                </p>
+              </div>
+              <div className="ms-auto">
+                <Badge className={`gap-1 ${confidenceBadge(scanResult.matching.total_confidence)}`}>
+                  {resultTier === 'auto' && <Check className="h-3 w-3" aria-hidden="true" />}
+                  {resultTier === 'review' && <AlertTriangle className="h-3 w-3" aria-hidden="true" />}
+                  {tierMeta[resultTier].label}
+                </Badge>
+                <p className="mt-1 max-w-56 text-xs text-[var(--finance-muted)]">{tierMeta[resultTier].hint}</p>
               </div>
             </CardContent>
           </Card>
 
-          {/* Extracted Data */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <FileText className="h-5 w-5" />
-                البيانات المستخرجة
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {scanResult.data.customer_name && (
-                  <div className="flex items-center gap-2">
-                    <User className="h-4 w-4 text-blue-500" />
-                    <span className="font-medium">اسم العميل:</span>
-                    <span>{scanResult.data.customer_name}</span>
-                  </div>
-                )}
-                {scanResult.data.car_number && (
-                  <div className="flex items-center gap-2">
-                    <Car className="h-4 w-4 text-green-500" />
-                    <span className="font-medium">رقم المركبة:</span>
-                    <span>{scanResult.data.car_number}</span>
-                  </div>
-                )}
-                {scanResult.data.total_amount && (
-                  <div className="flex items-center gap-2">
-                    <DollarSign className="h-4 w-4 text-yellow-500" />
-                    <span className="font-medium">المبلغ:</span>
-                    <span>{scanResult.data.total_amount} ر.ق</span>
-                  </div>
-                )}
-                {scanResult.data.invoice_date && (
-                  <div className="flex items-center gap-2">
-                    <Calendar className="h-4 w-4 text-purple-500" />
-                    <span className="font-medium">تاريخ الفاتورة:</span>
-                    <span>{scanResult.data.invoice_date}</span>
-                  </div>
-                )}
-                {scanResult.data.language_detected && (
-                  <div className="flex items-center gap-2">
-                    <Languages className="h-4 w-4 text-red-500" />
-                    <span className="font-medium">اللغة المكتشفة:</span>
-                    <span>{scanResult.data.language_detected}</span>
-                  </div>
-                )}
-              </div>
-
-              {scanResult.data.notes && (
-                <div className="mt-4">
-                  <Label className="font-medium">ملاحظات:</Label>
-                  <Textarea 
-                    value={scanResult.data.notes} 
-                    readOnly 
-                    className="mt-1 resize-none h-20"
-                  />
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Best Match */}
-          {scanResult.matching.best_match && (
+          <div className="grid gap-4 lg:grid-cols-2">
+            {/* Extracted data */}
             <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Check className="h-5 w-5 text-green-500" />
-                  أفضل تطابق مقترح
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="bg-green-50 rounded-lg p-4">
-                  <div className="flex items-center justify-between mb-3">
-                    <h3 className="font-semibold text-lg">{scanResult.matching.best_match.name}</h3>
-                    <Badge className={getConfidenceBadge(scanResult.matching.best_match.confidence)}>
-                      {scanResult.matching.best_match.confidence}% ثقة
-                    </Badge>
-                  </div>
-                  <div className="space-y-2">
-                    {scanResult.matching.best_match.phone && (
-                      <p><span className="font-medium">الهاتف:</span> {scanResult.matching.best_match.phone}</p>
-                    )}
-                    {scanResult.matching.best_match.car_number && (
-                      <p><span className="font-medium">رقم المركبة:</span> {scanResult.matching.best_match.car_number}</p>
-                    )}
-                    <div>
-                      <span className="font-medium">أسباب التطابق:</span>
-                      <div className="flex flex-wrap gap-1 mt-1">
-                        {scanResult.matching.best_match.match_reasons.map((reason, index) => (
-                          <Badge key={index} variant="outline" className="text-xs">
-                            {reason}
-                          </Badge>
-                        ))}
+              <CardContent className="space-y-4 p-5">
+                <h3 className="text-sm font-bold">البيانات المستخرجة</h3>
+                {extractedFields.length === 0 ? (
+                  <p className="text-sm text-[var(--finance-muted)]">لم يتم استخراج حقول قابلة للعرض من هذه الصورة.</p>
+                ) : (
+                  <dl className="grid gap-3">
+                    {extractedFields.map(({ icon: Icon, label, value }) => (
+                      <div key={label} className="flex items-center gap-3">
+                        <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-[var(--finance-wash)] text-[var(--finance-accent)]">
+                          <Icon className="h-4 w-4" aria-hidden="true" />
+                        </span>
+                        <div className="min-w-0">
+                          <dt className="text-xs text-[var(--finance-muted)]">{label}</dt>
+                          <dd className="truncate text-sm font-semibold">{value}</dd>
+                        </div>
                       </div>
-                    </div>
+                    ))}
+                  </dl>
+                )}
+                {scanResult.data.notes && (
+                  <div>
+                    <Label className="text-xs text-[var(--finance-muted)]">ملاحظات</Label>
+                    <p className="mt-1 rounded-lg bg-[var(--finance-wash)] p-3 text-sm leading-6">{scanResult.data.notes}</p>
                   </div>
-                </div>
+                )}
               </CardContent>
             </Card>
-          )}
 
-          {/* Action Buttons */}
+            {/* Best match + image preview */}
+            <Card>
+              <CardContent className="space-y-4 p-5">
+                <h3 className="text-sm font-bold">التطابق المقترح</h3>
+                {scanResult.matching.best_match ? (
+                  <div className="rounded-xl border border-[var(--finance-border)] bg-[var(--finance-wash)] p-4">
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="font-bold">{scanResult.matching.best_match.name}</p>
+                      <Badge className={confidenceBadge(scanResult.matching.best_match.confidence)}>
+                        {Math.round(scanResult.matching.best_match.confidence)}% ثقة
+                      </Badge>
+                    </div>
+                    <div className="mt-2 space-y-1 text-sm text-[var(--finance-muted)]">
+                      {scanResult.matching.best_match.phone && (
+                        <p>الهاتف: {scanResult.matching.best_match.phone}</p>
+                      )}
+                      {scanResult.matching.best_match.car_number && (
+                        <p>رقم المركبة: {scanResult.matching.best_match.car_number}</p>
+                      )}
+                    </div>
+                    <div className="mt-3 flex flex-wrap gap-1">
+                      {scanResult.matching.best_match.match_reasons.map((reason, index) => (
+                        <Badge key={index} variant="outline" className="text-xs font-normal">
+                          {reason}
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+                ) : (
+                  <p className="text-sm text-[var(--finance-muted)]">لا يوجد تطابق مقترح لهذه الفاتورة.</p>
+                )}
+
+                {scanResult.matching.all_matches.length > 0 && (
+                  <div>
+                    <button
+                      type="button"
+                      onClick={() => setShowAllMatches((prev) => !prev)}
+                      className="inline-flex items-center gap-2 text-sm font-medium text-[var(--finance-accent)] hover:underline"
+                      aria-expanded={showAllMatches}
+                    >
+                      <Users className="h-4 w-4" aria-hidden="true" />
+                      {showAllMatches ? 'إخفاء' : 'عرض'} جميع التطابقات ({scanResult.matching.all_matches.length})
+                    </button>
+                    {showAllMatches && (
+                      <ul className="mt-3 space-y-2">
+                        {scanResult.matching.all_matches.map((match, index) => (
+                          <li key={match.id ?? index} className="flex items-center justify-between rounded-lg border border-[var(--finance-border)] px-3 py-2 text-sm">
+                            <span className="truncate">{match.name}</span>
+                            <Badge variant="outline" className="text-xs font-normal tabular-nums">
+                              {Math.round(match.confidence ?? 0)}%
+                            </Badge>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+                )}
+
+                {selectedImage && (
+                  <div className="flex justify-center">
+                    <LazyImage
+                      src={selectedImage}
+                      alt="معاينة الفاتورة"
+                      className="max-h-72 w-full rounded-lg object-contain"
+                    />
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Actions */}
           <Card>
-            <CardContent className="pt-6">
-              <div className="flex flex-wrap gap-3">
-                {scanResult.matching.total_confidence >= 85 ? (
-                  <Button className="flex items-center gap-2">
-                    <Check className="h-4 w-4" />
+            <CardContent className="flex flex-wrap items-center gap-3 p-5">
+              {resultTier === 'auto' ? (
+                confirmState === 'confirmed' ? (
+                  <Badge className="gap-1 border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-50">
+                    <Check className="h-4 w-4" aria-hidden="true" />
+                    تم تأكيد التطابق
+                  </Badge>
+                ) : (
+                  <Button onClick={() => setConfirmState('confirmed')} className="gap-2">
+                    <Check className="h-4 w-4" aria-hidden="true" />
                     تأكيد التطابق التلقائي
                   </Button>
-                ) : (
-                  <Button variant="outline" className="flex items-center gap-2">
-                    <AlertTriangle className="h-4 w-4" />
-                    مراجعة يدوية مطلوبة
-                  </Button>
-                )}
-                <Button variant="outline">
-                  عرض جميع التطابقات ({scanResult.matching.all_matches.length})
-                </Button>
-                <Button variant="secondary">
-                  إعادة المسح
-                </Button>
-              </div>
+                )
+              ) : (
+                <Badge variant="outline" className="gap-1 text-[var(--finance-muted)]">
+                  <AlertTriangle className="h-4 w-4 text-amber-600" aria-hidden="true" />
+                  مراجعة يدوية مطلوبة — راجع التطابق المقترح أعلاه
+                </Badge>
+              )}
+              <Button variant="outline" onClick={resetScanner} className="gap-2">
+                <RotateCcw className="h-4 w-4" aria-hidden="true" />
+                مسح فاتورة جديدة
+              </Button>
             </CardContent>
           </Card>
         </div>
       )}
+
+      {/* Settings */}
+      <Collapsible open={settingsOpen} onOpenChange={setSettingsOpen}>
+        <Card>
+          <CollapsibleTrigger className="flex w-full items-center justify-between p-4">
+            <span className="text-sm font-bold">إعدادات المسح</span>
+            <ChevronDown
+              className={`h-4 w-4 text-[var(--finance-muted)] transition-transform ${settingsOpen ? 'rotate-180' : ''}`}
+              aria-hidden="true"
+            />
+          </CollapsibleTrigger>
+          <CollapsibleContent>
+            <div className="space-y-5 border-t border-[var(--finance-border)] p-4">
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="space-y-2">
+                  <Label>محرك التعرف الضوئي</Label>
+                  <Select
+                    value={ocrEngine}
+                    onValueChange={(value: unknown) => {
+                      if (isOcrEngine(value)) setOcrEngine(value);
+                    }}
+                  >
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="gemini">جيميني فلاش 2.5 (للقراءة اليدوية)</SelectItem>
+                      <SelectItem value="google-vision">{t('googleVisionApi')}</SelectItem>
+                      <SelectItem value="hybrid">هجين (أعلى دقة)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>لغة المعالجة</Label>
+                  <Select
+                    value={language}
+                    onValueChange={(value: unknown) => {
+                      if (isProcessingLanguage(value)) setLanguage(value);
+                    }}
+                  >
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="auto">تلقائي</SelectItem>
+                      <SelectItem value="arabic">العربية</SelectItem>
+                      <SelectItem value="english">الإنجليزية</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div className="rounded-xl border border-[var(--finance-border)] p-4">
+                <div className="flex items-center justify-between gap-4">
+                  <div>
+                    <Label>تحسين جودة الصورة تلقائياً</Label>
+                    <p className="mt-0.5 text-xs text-[var(--finance-muted)]">يزيد التباين ويوضح النص قبل القراءة لتحسين الدقة.</p>
+                  </div>
+                  <Switch checked={enablePreprocessing} onCheckedChange={setEnablePreprocessing} aria-label="تفعيل التحسين التلقائي" />
+                </div>
+
+                {enablePreprocessing && (
+                  <div className="mt-4 grid grid-cols-2 gap-3 text-sm">
+                    {([
+                      { key: 'enhanceContrast', label: 'تحسين التباين' },
+                      { key: 'sharpenText', label: 'توضيح النص' },
+                      { key: 'reduceNoise', label: 'إزالة التشويش' },
+                      { key: 'normalizeSize', label: 'تطبيع الحجم' },
+                    ] as const).map(({ key, label }) => (
+                      <label key={key} className="flex items-center gap-2">
+                        <input
+                          type="checkbox"
+                          checked={preprocessingOptions[key]}
+                          onChange={(e) => setPreprocessingOptions((prev) => ({ ...prev, [key]: e.target.checked }))}
+                          className="rounded"
+                        />
+                        <span>{label}</span>
+                      </label>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          </CollapsibleContent>
+        </Card>
+      </Collapsible>
     </div>
   );
 };

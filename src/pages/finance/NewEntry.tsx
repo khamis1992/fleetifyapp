@@ -77,7 +77,7 @@ const NewEntry = () => {
         {/* Header */}
         <div data-finance-heading="" className="flex justify-between items-center">
           <div className="flex items-center gap-4">
-            <div className="p-3 bg-gradient-to-br from-primary to-primary/80 rounded-xl text-primary-foreground">
+            <div className="p-3 bg-[#2f7966] rounded-xl text-white">
               <Plus className="h-6 w-6" />
             </div>
             <div className="text-right">

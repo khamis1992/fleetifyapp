@@ -1,17 +1,16 @@
 import { useState } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Label } from "@/components/ui/label";
 import { useInventoryWarehouses, useCreateInventoryWarehouse, useUpdateInventoryWarehouse, useDeleteInventoryWarehouse, type InventoryWarehouse } from "@/hooks/useInventoryWarehouses";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { Warehouse, Plus, Search, Edit, Trash2, MapPin, Phone, Mail } from "lucide-react";
-import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from "@/components/ui/breadcrumb";
 import { useForm } from "react-hook-form";
+import { PageEmpty, PageLoading, PagePanel } from "@/components/dashboard/workspace/PageKit";
+import '@/components/dashboard/workspace/dashboard-workspace.css';
+import '@/components/dashboard/workspace/page-kit.css';
 
 interface WarehouseFormData {
   warehouse_name: string;
@@ -186,224 +185,177 @@ const Warehouses = () => {
   );
 
   return (
-    <div className="space-y-6">
-      {/* Breadcrumb */}
-      <Breadcrumb>
-        <BreadcrumbList>
-          <BreadcrumbItem>
-            <BreadcrumbLink href="/">الرئيسية</BreadcrumbLink>
-          </BreadcrumbItem>
-          <BreadcrumbSeparator />
-          <BreadcrumbItem>
-            <BreadcrumbLink href="/inventory">إدارة المخزون</BreadcrumbLink>
-          </BreadcrumbItem>
-          <BreadcrumbSeparator />
-          <BreadcrumbItem>
-            <BreadcrumbPage>المستودعات</BreadcrumbPage>
-          </BreadcrumbItem>
-        </BreadcrumbList>
-      </Breadcrumb>
-
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <div className="p-3 bg-gradient-to-br from-blue-500 to-cyan-600 rounded-xl text-white">
-            <Warehouse className="h-6 w-6" />
-          </div>
+    <div className="dashboard-workspace" dir="rtl">
+      <div className="dw-container">
+        <header className="dw-header">
           <div>
-            <h1 className="text-2xl font-bold">إدارة المستودعات</h1>
-            <p className="text-muted-foreground">إدارة وتنظيم المستودعات ومواقع التخزين</p>
+            <div className="dw-eyebrow">
+              <span className="dw-mark" />
+              العراف لتأجير السيارات <span>/</span> المخزون <span>/</span> المستودعات
+            </div>
+            <h1>إدارة المستودعات</h1>
+            <p>إدارة وتنظيم المستودعات ومواقع التخزين.</p>
           </div>
-        </div>
-        <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-          <DialogTrigger asChild>
-            <Button>
-              <Plus className="h-4 w-4 mr-2" />
+          <div className="dw-header-tools">
+            <button type="button" className="dw-button dw-button-primary" onClick={() => setIsCreateDialogOpen(true)}>
+              <Plus size={17} />
               مستودع جديد
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>إضافة مستودع جديد</DialogTitle>
-              <DialogDescription>
-                أدخل بيانات المستودع الجديد
-              </DialogDescription>
-            </DialogHeader>
-            <WarehouseForm onSubmit={handleCreate} />
-          </DialogContent>
-        </Dialog>
+            </button>
+          </div>
+        </header>
+
+        <section className="dw-metrics" aria-label="مؤشرات المستودعات">
+          <div className="dw-metric dw-metric-accent">
+            <div className="dw-metric-top"><span>إجمالي المستودعات</span><Warehouse size={19} /></div>
+            <strong>{warehouses?.length || 0}</strong>
+            <div className="dw-metric-bottom"><small>مستودع نشط</small></div>
+          </div>
+          <div className="dw-metric">
+            <div className="dw-metric-top"><span>المدن</span><MapPin size={19} /></div>
+            <strong>{new Set(warehouses?.map(w => w.location_city).filter(Boolean)).size || 0}</strong>
+            <div className="dw-metric-bottom"><small>موقع جغرافي</small></div>
+          </div>
+          <div className="dw-metric">
+            <div className="dw-metric-top"><span>مستودعات نشطة</span><Warehouse size={19} /></div>
+            <strong>{warehouses?.filter(w => w.is_active).length || 0}</strong>
+            <div className="dw-metric-bottom"><small>قيد التشغيل</small></div>
+          </div>
+        </section>
+
+        <div className="dw-main-grid">
+          <PagePanel
+            number="01"
+            title="قائمة المستودعات"
+            subtitle="عرض وإدارة جميع المستودعات"
+            className="wk-panel-full"
+            action={
+              <div className="wk-toolbar-group">
+                <div className="relative">
+                  <Search className="absolute right-3 top-1/2 -translate-y-1/2 text-[#9aa791]" size={14} />
+                  <input
+                    className="wk-field"
+                    style={{ paddingRight: 32, minWidth: 240 }}
+                    placeholder="ابحث بالاسم، الكود، المدينة…"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    aria-label="بحث في المستودعات"
+                  />
+                </div>
+              </div>
+            }
+          >
+            {isLoading ? (
+              <PageLoading label="جاري تحميل المستودعات…" />
+            ) : filteredWarehouses.length === 0 ? (
+              <PageEmpty icon={Warehouse} message="لا توجد مستودعات">
+                <button type="button" className="dw-button" onClick={() => setIsCreateDialogOpen(true)}>
+                  <Plus size={16} />
+                  إضافة مستودع
+                </button>
+              </PageEmpty>
+            ) : (
+              <div className="wk-table-wrap">
+                <table>
+                  <caption className="sr-only">المستودعات</caption>
+                  <thead>
+                    <tr>
+                      <th scope="col">المستودع</th>
+                      <th scope="col">الكود</th>
+                      <th scope="col">الموقع</th>
+                      <th scope="col">جهة الاتصال</th>
+                      <th scope="col">الحالة</th>
+                      <th scope="col"><span className="sr-only">إجراءات</span></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredWarehouses.map((warehouse) => (
+                      <tr key={warehouse.id}>
+                        <td>
+                          <strong><bdi>{warehouse.warehouse_name}</bdi></strong>
+                          {warehouse.warehouse_name_ar && <span className="wk-sub">{warehouse.warehouse_name_ar}</span>}
+                        </td>
+                        <td>{warehouse.warehouse_code || "-"}</td>
+                        <td>
+                          {warehouse.location_city ? `${warehouse.location_city}${warehouse.location_country ? `, ${warehouse.location_country}` : ''}` : "-"}
+                          {warehouse.location_address && <span className="wk-sub">{warehouse.location_address}</span>}
+                        </td>
+                        <td>
+                          {warehouse.phone && (
+                            <span className="wk-sub">
+                              <Phone size={11} style={{ marginInlineEnd: 4, verticalAlign: 'middle' }} />
+                              <bdi>{warehouse.phone}</bdi>
+                            </span>
+                          )}
+                          {warehouse.email && (
+                            <span className="wk-sub">
+                              <Mail size={11} style={{ marginInlineEnd: 4, verticalAlign: 'middle' }} />
+                              <bdi>{warehouse.email}</bdi>
+                            </span>
+                          )}
+                          {!warehouse.phone && !warehouse.email && <span className="wk-sub">-</span>}
+                        </td>
+                        <td>
+                          <span className={`wk-badge ${warehouse.is_active ? 'is-ok' : 'is-neutral'}`}>
+                            {warehouse.is_active ? "نشط" : "غير نشط"}
+                          </span>
+                        </td>
+                        <td>
+                          <div className="wk-actions">
+                            <button type="button" className="wk-action" title="تعديل" aria-label={`تعديل ${warehouse.warehouse_name}`} onClick={() => handleEdit(warehouse)}>
+                              <Edit size={15} />
+                            </button>
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <button type="button" className="wk-action" title="حذف" aria-label={`حذف ${warehouse.warehouse_name}`}>
+                                  <Trash2 size={15} />
+                                </button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>هل أنت متأكد؟</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    سيتم حذف المستودع "{warehouse.warehouse_name}". هذا الإجراء لا يمكن التراجع عنه.
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>إلغاء</AlertDialogCancel>
+                                  <AlertDialogAction
+                                    onClick={() => handleDelete(warehouse)}
+                                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                  >
+                                    حذف
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+            <div className="dw-panel-foot">
+              <Warehouse size={14} />
+              <span>{filteredWarehouses.length} مستودع معروض.</span>
+            </div>
+          </PagePanel>
+        </div>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid gap-4 md:grid-cols-3">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">إجمالي المستودعات</CardTitle>
-            <Warehouse className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{warehouses?.length || 0}</div>
-            <p className="text-xs text-muted-foreground">مستودع نشط</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">المدن</CardTitle>
-            <MapPin className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {new Set(warehouses?.map(w => w.location_city).filter(Boolean)).size || 0}
-            </div>
-            <p className="text-xs text-muted-foreground">موقع جغرافي</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">مستودعات محلية</CardTitle>
-            <Warehouse className="h-4 w-4 text-blue-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {warehouses?.filter(w => w.location_country === "السعودية").length || 0}
-            </div>
-            <p className="text-xs text-muted-foreground">داخل المملكة</p>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Main Content */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle>قائمة المستودعات</CardTitle>
-              <CardDescription>عرض وإدارة جميع المستودعات</CardDescription>
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent>
-          {/* Search */}
-          <div className="mb-4">
-            <div className="relative">
-              <Search className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                placeholder="البحث عن مستودع (الاسم، الكود، المدينة)..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pr-10"
-              />
-            </div>
-          </div>
-
-          {/* Table */}
-          {isLoading ? (
-            <div className="flex justify-center py-8">
-              <LoadingSpinner />
-            </div>
-          ) : filteredWarehouses.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
-              لا توجد مستودعات
-            </div>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>المستودع</TableHead>
-                  <TableHead>الكود</TableHead>
-                  <TableHead>الموقع</TableHead>
-                  <TableHead>جهة الاتصال</TableHead>
-                  <TableHead>الحالة</TableHead>
-                  <TableHead>الإجراءات</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredWarehouses.map((warehouse) => (
-                  <TableRow key={warehouse.id}>
-                    <TableCell className="font-medium">
-                      <div>
-                        <div>{warehouse.warehouse_name}</div>
-                        {warehouse.warehouse_name_ar && (
-                          <div className="text-xs text-muted-foreground">{warehouse.warehouse_name_ar}</div>
-                        )}
-                      </div>
-                    </TableCell>
-                    <TableCell>{warehouse.warehouse_code || "-"}</TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-1 text-sm">
-                        <MapPin className="h-3 w-3" />
-                        {warehouse.location_city ? `${warehouse.location_city}${warehouse.location_country ? `, ${warehouse.location_country}` : ''}` : "-"}
-                      </div>
-                      {warehouse.location_address && (
-                        <div className="text-xs text-muted-foreground">{warehouse.location_address}</div>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      <div className="space-y-1 text-sm">
-                        {warehouse.phone && (
-                          <div className="flex items-center gap-1">
-                            <Phone className="h-3 w-3" />
-                            {warehouse.phone}
-                          </div>
-                        )}
-                        {warehouse.email && (
-                          <div className="flex items-center gap-1">
-                            <Mail className="h-3 w-3" />
-                            {warehouse.email}
-                          </div>
-                        )}
-                        {!warehouse.phone && !warehouse.email && "-"}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant={warehouse.is_active ? "default" : "secondary"}>
-                        {warehouse.is_active ? "نشط" : "غير نشط"}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex gap-2">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleEdit(warehouse)}
-                        >
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <AlertDialog>
-                          <AlertDialogTrigger asChild>
-                            <Button variant="ghost" size="sm">
-                              <Trash2 className="h-4 w-4 text-destructive" />
-                            </Button>
-                          </AlertDialogTrigger>
-                          <AlertDialogContent>
-                            <AlertDialogHeader>
-                              <AlertDialogTitle>هل أنت متأكد؟</AlertDialogTitle>
-                              <AlertDialogDescription>
-                                سيتم حذف المستودع "{warehouse.warehouse_name}". هذا الإجراء لا يمكن التراجع عنه.
-                              </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                              <AlertDialogCancel>إلغاء</AlertDialogCancel>
-                              <AlertDialogAction
-                                onClick={() => handleDelete(warehouse)}
-                                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                              >
-                                حذف
-                              </AlertDialogAction>
-                            </AlertDialogFooter>
-                          </AlertDialogContent>
-                        </AlertDialog>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          )}
-        </CardContent>
-      </Card>
+      {/* Create Dialog */}
+      <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>إضافة مستودع جديد</DialogTitle>
+            <DialogDescription>
+              أدخل بيانات المستودع الجديد
+            </DialogDescription>
+          </DialogHeader>
+          <WarehouseForm onSubmit={handleCreate} />
+        </DialogContent>
+      </Dialog>
 
       {/* Edit Dialog */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>

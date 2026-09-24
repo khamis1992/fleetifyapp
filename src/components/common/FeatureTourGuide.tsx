@@ -27,7 +27,7 @@ export function FeatureTourButton({ tour, onStart, className }: FeatureTourButto
       onClick={() => onStart(tour)}
       className={className || 'h-9 gap-2 rounded-[8px] border bg-white'}
     >
-      <PlayCircle className="h-4 w-4 text-emerald-600" />
+      <PlayCircle className="h-4 w-4 text-[#487038]" />
       ابدأ الجولة التعريفية
     </Button>
   );

@@ -285,7 +285,7 @@ export function InvoiceEditDialog({ open, onOpenChange, invoice, onSave }: Invoi
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent className="max-h-[90vh] max-w-5xl overflow-y-auto rounded-lg">
           <div className="flex items-center justify-center p-8">
-            <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-[#22C7A1]" />
+            <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-[#2f7966]" />
           </div>
         </DialogContent>
       </Dialog>
@@ -305,10 +305,10 @@ export function InvoiceEditDialog({ open, onOpenChange, invoice, onSave }: Invoi
               <Receipt className="h-6 w-6" />
             </span>
             <div className="min-w-0">
-              <DialogTitle className="text-xl font-black tracking-normal text-[#020617]">
+              <DialogTitle className="text-xl font-black tracking-normal text-[#2c4136]">
                 تعديل الفاتورة #{invoice.invoice_number}
               </DialogTitle>
-              <DialogDescription className="mt-1 text-sm text-[#94A3B8]">
+              <DialogDescription className="mt-1 text-sm text-[#829074]">
                 تعديل تفاصيل الفاتورة والأصناف مع مراجعة الإجماليات قبل الحفظ.
               </DialogDescription>
             </div>
@@ -317,7 +317,7 @@ export function InvoiceEditDialog({ open, onOpenChange, invoice, onSave }: Invoi
             <FeatureTourButton
               tour={invoiceEditTour}
               onStart={setActiveTour}
-              className="h-9 gap-2 border-[#E5EAF1] bg-white text-[#020617] hover:bg-[#F6F8FB]"
+              className="h-9 gap-2 border-[#dfe5d9] bg-white text-[#2c4136] hover:bg-[#f7f8f4]"
             />
             <span>الحالة</span>
             <strong>{invoice.payment_status || "غير محدد"}</strong>
@@ -328,8 +328,8 @@ export function InvoiceEditDialog({ open, onOpenChange, invoice, onSave }: Invoi
           <div className="invoice-edit-scroll">
             <section className="invoice-edit-summary">
               <div>
-                <p className="text-xs font-black uppercase tracking-[0.16em] text-[#94A3B8]">إجمالي الفاتورة</p>
-                <h3 className="mt-1 text-2xl font-black text-[#020617]">
+                <p className="text-xs font-black uppercase tracking-[0.16em] text-[#829074]">إجمالي الفاتورة</p>
+                <h3 className="mt-1 text-2xl font-black text-[#2c4136]">
                   {formatCurrency(total, { currency: invoiceData.currency })}
                 </h3>
               </div>
@@ -476,7 +476,7 @@ export function InvoiceEditDialog({ open, onOpenChange, invoice, onSave }: Invoi
                     <p>عدّل الوصف والحساب والقيم المالية لكل صنف.</p>
                   </div>
                 </div>
-                <Button type="button" onClick={addItem} className="gap-2 bg-[#020617] text-white hover:bg-[#020617]/90">
+                <Button type="button" onClick={addItem} className="gap-2 bg-[#2c4136] text-white hover:bg-[#2c4136]/90">
                   <Plus className="h-4 w-4" />
                   إضافة صنف
                 </Button>
@@ -572,8 +572,8 @@ export function InvoiceEditDialog({ open, onOpenChange, invoice, onSave }: Invoi
             <div className="flex min-w-0 items-center gap-3">
               <FieldIcon icon={Building2} color={editColors.focus} />
               <div className="min-w-0">
-                <p className="truncate text-sm font-black text-[#020617]">الإجمالي بعد التعديل</p>
-                <p className="text-xs text-[#94A3B8]">يشمل الضريبة والخصم</p>
+                <p className="truncate text-sm font-black text-[#2c4136]">الإجمالي بعد التعديل</p>
+                <p className="text-xs text-[#829074]">يشمل الضريبة والخصم</p>
               </div>
             </div>
             <div className="invoice-edit-footer-total">{formatCurrency(total, { currency: invoiceData.currency })}</div>
@@ -582,7 +582,7 @@ export function InvoiceEditDialog({ open, onOpenChange, invoice, onSave }: Invoi
                 <X className="h-4 w-4" />
                 إلغاء
               </Button>
-              <Button type="submit" className="gap-2 bg-[#22C7A1] text-white hover:bg-[#1cae8d]" disabled={updateInvoice.isPending}>
+              <Button type="submit" className="gap-2 bg-[#2f7966] text-white hover:bg-[#256450]" disabled={updateInvoice.isPending}>
                 <Save className="h-4 w-4" />
                 {updateInvoice.isPending ? "جاري الحفظ..." : "حفظ التغييرات"}
               </Button>

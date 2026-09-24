@@ -24,7 +24,7 @@ const UnifiedReports = () => {
           {/* Header */}
           <div data-finance-heading="" className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div className="flex items-center gap-3 md:gap-4">
-              <div className="p-2.5 md:p-3 bg-gradient-to-br from-green-500 to-green-600 rounded-xl text-white">
+              <div className="p-2.5 md:p-3 bg-[#2f7966] rounded-xl text-white">
                 <FileText className="h-5 w-5 md:h-6 md:w-6" />
               </div>
               <div>

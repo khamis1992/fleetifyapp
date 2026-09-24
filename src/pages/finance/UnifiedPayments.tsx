@@ -21,7 +21,7 @@ const UnifiedPayments = () => {
           {/* Header */}
           <div data-finance-heading="" className="flex justify-between items-center">
             <div className="flex items-center gap-4">
-              <div className="p-3 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl text-white">
+              <div className="p-3 bg-[#5b6b52] rounded-xl text-white">
                 <CreditCard className="h-6 w-6" />
               </div>
               <div>

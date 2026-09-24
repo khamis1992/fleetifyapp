@@ -221,9 +221,9 @@ export default function Treasury({ section = "banks" }: { section?: "banks" | "t
   };
 
   const getReconciliationClass = (transaction: BankTransaction) => {
-    if (transaction.reconciled) return "bg-[#22C7A1]/10 text-[#148768]";
+    if (transaction.reconciled) return "bg-[#2f7966]/10 text-[#148768]";
     if (transaction.status === "completed") return "bg-[#FFF7ED] text-[#D97706]";
-    return "bg-[#EEF2FF] text-[#7C83F6]";
+    return "bg-[#f1f4ec] text-[#5b6b52]";
   };
 
   const handleCreateBank = async () => {
@@ -319,26 +319,26 @@ export default function Treasury({ section = "banks" }: { section?: "banks" | "t
   };
 
   const getTransactionIcon = (type: string) => {
-    if (type === "deposit") return <ArrowDownRight className="h-4 w-4 text-[#22C7A1]" aria-hidden="true" />;
-    if (type === "withdrawal") return <ArrowUpRight className="h-4 w-4 text-[#FB6B7A]" aria-hidden="true" />;
-    return <ArrowRightLeft className="h-4 w-4 text-[#38BDF8]" aria-hidden="true" />;
+    if (type === "deposit") return <ArrowDownRight className="h-4 w-4 text-[#2f7966]" aria-hidden="true" />;
+    if (type === "withdrawal") return <ArrowUpRight className="h-4 w-4 text-[#b3694c]" aria-hidden="true" />;
+    return <ArrowRightLeft className="h-4 w-4 text-[#4a707c]" aria-hidden="true" />;
   };
 
   const getTransactionBadge = (type: string) => {
     if (type === "deposit") {
-      return <Badge className="border-0 bg-[#22C7A1]/10 text-[#22C7A1] hover:bg-[#22C7A1]/10">إيداع</Badge>;
+      return <Badge className="border-0 bg-[#2f7966]/10 text-[#2f7966] hover:bg-[#2f7966]/10">إيداع</Badge>;
     }
     if (type === "withdrawal") {
-      return <Badge className="border-0 bg-[#FB6B7A]/10 text-[#FB6B7A] hover:bg-[#FB6B7A]/10">سحب</Badge>;
+      return <Badge className="border-0 bg-[#b3694c]/10 text-[#b3694c] hover:bg-[#b3694c]/10">سحب</Badge>;
     }
-    return <Badge className="border-0 bg-[#38BDF8]/10 text-[#38BDF8] hover:bg-[#38BDF8]/10">تحويل</Badge>;
+    return <Badge className="border-0 bg-[#4a707c]/10 text-[#4a707c] hover:bg-[#4a707c]/10">تحويل</Badge>;
   };
 
   if (!user || banksLoading || summaryLoading) {
     return (
       <div className="treasury-system flex min-h-screen items-center justify-center" dir="rtl" style={treasuryStyle}>
         <div className="treasury-state">
-          <RefreshCw className="h-10 w-10 animate-spin text-[#FB6B7A]" />
+          <RefreshCw className="h-10 w-10 animate-spin text-[#b3694c]" />
           <p>جاري تحميل بيانات الخزينة...</p>
         </div>
       </div>
@@ -352,8 +352,8 @@ export default function Treasury({ section = "banks" }: { section?: "banks" | "t
           <span className="treasury-state-icon">
             <Landmark className="h-8 w-8" />
           </span>
-          <p className="font-bold text-[#FB6B7A]">حدث خطأ في تحميل البيانات</p>
-          <Button onClick={handleRefresh} className="mt-2 bg-[#020617] text-white hover:bg-[#020617]/90">
+          <p className="font-bold text-[#b3694c]">حدث خطأ في تحميل البيانات</p>
+          <Button onClick={handleRefresh} className="mt-2 bg-[#2c4136] text-white hover:bg-[#2c4136]/90">
             إعادة المحاولة
           </Button>
         </div>
@@ -416,7 +416,7 @@ export default function Treasury({ section = "banks" }: { section?: "banks" | "t
           </div>
           <div className="treasury-search">
             <div className="relative min-w-0 flex-1">
-              <Search className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#94A3B8]" aria-hidden="true" />
+              <Search className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#829074]" aria-hidden="true" />
               <Input
                 placeholder="ابحث باسم البنك، رقم الحساب، رقم الحركة أو الوصف"
                 value={searchTerm}
@@ -499,7 +499,7 @@ export default function Treasury({ section = "banks" }: { section?: "banks" | "t
                         {getBankName(bank)}
                       </h4>
                       {bank.is_primary && (
-                        <Badge className="border-0 bg-[#EEF2FF] text-[#5B5FE8] hover:bg-[#EEF2FF]">
+                        <Badge className="border-0 bg-[#f1f4ec] text-[#5B5FE8] hover:bg-[#f1f4ec]">
                           رئيسي
                         </Badge>
                       )}
@@ -554,7 +554,7 @@ export default function Treasury({ section = "banks" }: { section?: "banks" | "t
                 </p>
               </div>
             </div>
-            <Button className="gap-2 bg-[#020617] text-white hover:bg-[#020617]/90" onClick={() => setIsCreateTransactionDialogOpen(true)}>
+            <Button className="gap-2 bg-[#2c4136] text-white hover:bg-[#2c4136]/90" onClick={() => setIsCreateTransactionDialogOpen(true)}>
               <Plus className="h-4 w-4" />
               حركة
             </Button>
@@ -562,20 +562,20 @@ export default function Treasury({ section = "banks" }: { section?: "banks" | "t
 
           {transactionsLoading ? (
             <div className="flex items-center justify-center py-16">
-              <RefreshCw className="h-10 w-10 animate-spin text-[#FB6B7A]" />
+              <RefreshCw className="h-10 w-10 animate-spin text-[#b3694c]" />
             </div>
           ) : (
             <div className="overflow-x-auto">
               <Table className="min-w-[820px]" aria-label="جدول المعاملات البنكية">
                 <TableHeader>
-                  <TableRow className="border-b border-[#E5EAF1] bg-[#F6F8FB]">
-                    <TableHead className="text-right text-xs font-black text-[#64748B]" scope="col">الحركة</TableHead>
-                    <TableHead className="text-right text-xs font-black text-[#64748B]" scope="col">الحساب</TableHead>
-                    <TableHead className="text-right text-xs font-black text-[#64748B]" scope="col">التاريخ</TableHead>
-                    <TableHead className="text-right text-xs font-black text-[#64748B]" scope="col">النوع</TableHead>
-                    <TableHead className="text-right text-xs font-black text-[#64748B]" scope="col">المبلغ</TableHead>
-                    <TableHead className="text-right text-xs font-black text-[#64748B]" scope="col">التسوية</TableHead>
-                    <TableHead className="text-right text-xs font-black text-[#64748B]" scope="col">الإجراء</TableHead>
+                  <TableRow className="border-b border-[#dfe5d9] bg-[#f7f8f4]">
+                    <TableHead className="text-right text-xs font-black text-[#5b6b52]" scope="col">الحركة</TableHead>
+                    <TableHead className="text-right text-xs font-black text-[#5b6b52]" scope="col">الحساب</TableHead>
+                    <TableHead className="text-right text-xs font-black text-[#5b6b52]" scope="col">التاريخ</TableHead>
+                    <TableHead className="text-right text-xs font-black text-[#5b6b52]" scope="col">النوع</TableHead>
+                    <TableHead className="text-right text-xs font-black text-[#5b6b52]" scope="col">المبلغ</TableHead>
+                    <TableHead className="text-right text-xs font-black text-[#5b6b52]" scope="col">التسوية</TableHead>
+                    <TableHead className="text-right text-xs font-black text-[#5b6b52]" scope="col">الإجراء</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -590,25 +590,25 @@ export default function Treasury({ section = "banks" }: { section?: "banks" | "t
                           animate={{ opacity: 1, x: 0 }}
                           exit={{ opacity: 0, x: 12 }}
                           transition={{ delay: index * 0.025 }}
-                          className="border-b border-[#E5EAF1]/70 transition-colors hover:bg-[#F6F8FB]"
+                          className="border-b border-[#dfe5d9]/70 transition-colors hover:bg-[#f7f8f4]"
                         >
                           <TableCell>
-                            <div className="font-mono text-sm font-black text-[#020617]">{transaction.transaction_number}</div>
-                            <div className="mt-1 max-w-[260px] truncate text-xs text-[#64748B]">
+                            <div className="font-mono text-sm font-black text-[#2c4136]">{transaction.transaction_number}</div>
+                            <div className="mt-1 max-w-[260px] truncate text-xs text-[#5b6b52]">
                               {transaction.description || "بدون وصف"}
                             </div>
                           </TableCell>
                           <TableCell>
-                            <div className="max-w-[180px] truncate text-sm font-bold text-[#020617]">
+                            <div className="max-w-[180px] truncate text-sm font-bold text-[#2c4136]">
                               {getBankName(transactionBank)}
                             </div>
-                            <div className="mt-1 text-xs text-[#94A3B8]">
+                            <div className="mt-1 text-xs text-[#829074]">
                               {transactionBank?.account_number || "-"}
                             </div>
                           </TableCell>
-                          <TableCell className="text-sm text-[#64748B]">
+                          <TableCell className="text-sm text-[#5b6b52]">
                             <span className="inline-flex items-center gap-2">
-                              <CalendarDays className="h-4 w-4 text-[#94A3B8]" />
+                              <CalendarDays className="h-4 w-4 text-[#829074]" />
                               {getTransactionDate(transaction.transaction_date)}
                             </span>
                           </TableCell>
@@ -631,7 +631,7 @@ export default function Treasury({ section = "banks" }: { section?: "banks" | "t
                                 {getReconciliationLabel(transaction)}
                               </Badge>
                               {transaction.status === "completed" && (
-                                <Badge className="inline-flex items-center gap-1 border-0 bg-[#E8FBF6] text-[#148768]">
+                                <Badge className="inline-flex items-center gap-1 border-0 bg-[#edf4e6] text-[#148768]">
                                   <CheckCircle2 className="h-3 w-3" />
                                   مكتملة
                                 </Badge>
@@ -644,7 +644,7 @@ export default function Treasury({ section = "banks" }: { section?: "banks" | "t
                                 <Button
                                   variant="ghost"
                                   size="sm"
-                                  className="gap-2 text-[#E04F5F] hover:bg-[#FFF0F2] hover:text-[#E04F5F]"
+                                  className="gap-2 text-[#E04F5F] hover:bg-[#fdf1eb] hover:text-[#E04F5F]"
                                   aria-label={`عكس المعاملة ${transaction.transaction_number}`}
                                 >
                                   <RotateCcw className="h-4 w-4" />
@@ -776,7 +776,7 @@ export default function Treasury({ section = "banks" }: { section?: "banks" | "t
               />
               <p className="mt-1 text-xs text-muted-foreground">يُسجل الرصيد الافتتاحي لاحقًا بحركة محاسبية لها حساب مقابل.</p>
             </div>
-            <div className="flex items-center justify-between rounded-lg border border-[#E5EAF1] bg-[#F6F8FB] p-3">
+            <div className="flex items-center justify-between rounded-lg border border-[#dfe5d9] bg-[#f7f8f4] p-3">
               <Label htmlFor="isPrimary" className="cursor-pointer">حساب رئيسي</Label>
               <Switch
                 id="isPrimary"
@@ -786,7 +786,7 @@ export default function Treasury({ section = "banks" }: { section?: "banks" | "t
             </div>
             <Button
               onClick={handleCreateBank}
-              className="w-full bg-[#020617] text-white hover:bg-[#020617]/90"
+              className="w-full bg-[#2c4136] text-white hover:bg-[#2c4136]/90"
               disabled={createBank.isPending}
             >
               {createBank.isPending ? "جاري الإنشاء..." : "إنشاء الحساب"}
@@ -893,7 +893,7 @@ export default function Treasury({ section = "banks" }: { section?: "banks" | "t
             </div>
             <Button
               onClick={handleCreateTransaction}
-              className="w-full bg-[#020617] text-white hover:bg-[#020617]/90"
+              className="w-full bg-[#2c4136] text-white hover:bg-[#2c4136]/90"
               disabled={createTransaction.isPending}
             >
               {createTransaction.isPending ? "جاري الإنشاء..." : "إنشاء المعاملة"}

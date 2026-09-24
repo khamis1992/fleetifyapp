@@ -131,7 +131,7 @@ export function AccountMovementsDialog({
                   <LoadingSpinner />
                 </div>
               ) : movements && movements.length > 0 ? (
-                <div className="max-h-[430px] overflow-auto rounded-lg border border-[#E5EAF1]">
+                <div className="max-h-[430px] overflow-auto rounded-lg border border-[#dfe5d9]">
                   <Table>
                     <TableHeader>
                       <TableRow>
@@ -175,7 +175,7 @@ export function AccountMovementsDialog({
                           </TableCell>
                           <TableCell className="text-right">
                             {movement.debit_amount > 0 ? (
-                              <span className="font-black text-[#22C7A1]">
+                              <span className="font-black text-[#2f7966]">
                                 {formatQar(movement.debit_amount)}
                               </span>
                             ) : (
@@ -184,7 +184,7 @@ export function AccountMovementsDialog({
                           </TableCell>
                           <TableCell className="text-right">
                             {movement.credit_amount > 0 ? (
-                              <span className="font-black text-[#FB6B7A]">
+                              <span className="font-black text-[#b3694c]">
                                 {formatQar(movement.credit_amount)}
                               </span>
                             ) : (

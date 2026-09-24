@@ -108,7 +108,7 @@ const AnalysisCard: React.FC<AnalysisCardProps> = ({
   trend = 'neutral',
   change,
   icon: Icon,
-  color = 'text-rose-500',
+  color = 'text-[#2f7966]',
 }) => (
   <div className="p-4 bg-slate-50 rounded-xl hover:bg-slate-100 transition-colors">
     <div className="flex items-center justify-between mb-2">
@@ -145,7 +145,7 @@ const FinancialAnalysis = () => {
     return (
       <div className="min-h-screen bg-[#F6F8FB] flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">
-          <RefreshCw className="w-10 h-10 animate-spin text-rose-500" />
+          <RefreshCw className="w-10 h-10 animate-spin text-[#2f7966]" />
           <p className="text-neutral-500">جاري تحميل التحليل المالي...</p>
         </div>
       </div>
@@ -168,7 +168,7 @@ const FinancialAnalysis = () => {
     {
       category: "نسب السيولة",
       icon: Wallet,
-      color: "from-blue-500 to-cyan-500",
+      color: "bg-[#4a707c]",
       ratios: analysisData?.ratios.filter(r => 
         r.name === "نسبة التداول" || r.name === "النسبة السريعة"
       ) || []
@@ -176,7 +176,7 @@ const FinancialAnalysis = () => {
     {
       category: "نسب الربحية",
       icon: TrendingUp,
-      color: "from-green-500 to-emerald-500",
+      color: "bg-[#2f7966]",
       ratios: analysisData?.ratios.filter(r => 
         r.name.includes("الربح") || r.name.includes("العائد")
       ) || []
@@ -184,7 +184,7 @@ const FinancialAnalysis = () => {
     {
       category: "نسب المديونية",
       icon: Building2,
-      color: "from-orange-500 to-amber-500",
+      color: "bg-[#9b7c36]",
       ratios: analysisData?.ratios.filter(r => 
         r.name.includes("الدين")
       ) || []
@@ -200,10 +200,10 @@ const FinancialAnalysis = () => {
   };
 
   const getHealthScoreColor = (score: number) => {
-    if (score >= 80) return 'from-green-500 to-emerald-500';
-    if (score >= 60) return 'from-blue-500 to-cyan-500';
-    if (score >= 40) return 'from-amber-500 to-orange-500';
-    return 'from-red-500 to-rose-500';
+    if (score >= 80) return 'bg-[#2f7966]';
+    if (score >= 60) return 'bg-[#4a707c]';
+    if (score >= 40) return 'bg-[#9b7c36]';
+    return 'bg-[#b3694c]';
   };
 
   const getHealthScoreLabel = (score: number) => {
@@ -218,7 +218,7 @@ const FinancialAnalysis = () => {
     <div className="min-h-screen bg-[#F6F8FB] p-6" dir="rtl">
       {/* Hero Header */}
       <motion.div
-        className="bg-gradient-to-r from-rose-500 to-orange-500 rounded-xl p-6 mb-6 text-white shadow-lg"
+        className="bg-[#2f7966] rounded-xl p-6 mb-6 text-white shadow-lg"
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
       >
@@ -294,49 +294,49 @@ const FinancialAnalysis = () => {
           <TabsList className="bg-white dark:bg-slate-900 p-1.5 rounded-xl shadow-sm w-full flex flex-wrap justify-start gap-1">
             <TabsTrigger 
               value="trends" 
-              className="data-[state=active]:bg-rose-500 data-[state=active]:text-white rounded-lg px-4 py-2"
+              className="data-[state=active]:bg-[#2f7966] data-[state=active]:text-white rounded-lg px-4 py-2"
             >
               <TrendingUp className="w-4 h-4 ml-2" />
               الاتجاهات
             </TabsTrigger>
             <TabsTrigger 
               value="performance"
-              className="data-[state=active]:bg-rose-500 data-[state=active]:text-white rounded-lg px-4 py-2"
+              className="data-[state=active]:bg-[#2f7966] data-[state=active]:text-white rounded-lg px-4 py-2"
             >
               <BarChart3 className="w-4 h-4 ml-2" />
               الأداء
             </TabsTrigger>
             <TabsTrigger 
               value="budget"
-              className="data-[state=active]:bg-rose-500 data-[state=active]:text-white rounded-lg px-4 py-2"
+              className="data-[state=active]:bg-[#2f7966] data-[state=active]:text-white rounded-lg px-4 py-2"
             >
               <Target className="w-4 h-4 ml-2" />
               الميزانية
             </TabsTrigger>
             <TabsTrigger 
               value="analytics"
-              className="data-[state=active]:bg-rose-500 data-[state=active]:text-white rounded-lg px-4 py-2"
+              className="data-[state=active]:bg-[#2f7966] data-[state=active]:text-white rounded-lg px-4 py-2"
             >
               <Sparkles className="w-4 h-4 ml-2" />
               التحليل المتقدم
             </TabsTrigger>
             <TabsTrigger 
               value="cost-centers"
-              className="data-[state=active]:bg-rose-500 data-[state=active]:text-white rounded-lg px-4 py-2"
+              className="data-[state=active]:bg-[#2f7966] data-[state=active]:text-white rounded-lg px-4 py-2"
             >
               <Building2 className="w-4 h-4 ml-2" />
               مراكز التكلفة
             </TabsTrigger>
             <TabsTrigger 
               value="forecast"
-              className="data-[state=active]:bg-rose-500 data-[state=active]:text-white rounded-lg px-4 py-2"
+              className="data-[state=active]:bg-[#2f7966] data-[state=active]:text-white rounded-lg px-4 py-2"
             >
               <Calendar className="w-4 h-4 ml-2" />
               التنبؤات
             </TabsTrigger>
             <TabsTrigger 
               value="ratios"
-              className="data-[state=active]:bg-rose-500 data-[state=active]:text-white rounded-lg px-4 py-2"
+              className="data-[state=active]:bg-[#2f7966] data-[state=active]:text-white rounded-lg px-4 py-2"
             >
               <Percent className="w-4 h-4 ml-2" />
               النسب المالية
@@ -353,7 +353,7 @@ const FinancialAnalysis = () => {
           >
             <div className="bg-white rounded-xl p-6 shadow-sm">
               <div className="flex items-center gap-3 mb-6">
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-rose-500 to-orange-500 flex items-center justify-center">
+                <div className="w-10 h-10 rounded-xl bg-[#2f7966] flex items-center justify-center">
                   <TrendingUp className="w-5 h-5 text-white" />
                 </div>
                 <div>
@@ -412,7 +412,7 @@ const FinancialAnalysis = () => {
             {/* Financial Performance */}
             <div className="bg-white rounded-xl p-6 shadow-sm">
               <div className="flex items-center gap-3 mb-6">
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-green-500 to-emerald-500 flex items-center justify-center">
+                <div className="w-10 h-10 rounded-xl bg-[#2f7966] flex items-center justify-center">
                   <DollarSign className="w-5 h-5 text-white" />
                 </div>
                 <div>
@@ -430,7 +430,7 @@ const FinancialAnalysis = () => {
                   <span className="text-neutral-600">إجمالي المصروفات</span>
                   <span className="font-bold text-red-600">{formatCurrency(analysisData?.incomeStatement.expenses || 0)}</span>
                 </div>
-                <div className="flex justify-between items-center p-4 bg-gradient-to-r from-rose-50 to-orange-50 rounded-xl border border-rose-200">
+                <div className="flex justify-between items-center p-4 bg-[#faf5e7] rounded-xl border border-rose-200">
                   <span className="font-medium text-neutral-700">صافي الربح</span>
                   <span className={cn(
                     "text-xl font-bold",
@@ -445,7 +445,7 @@ const FinancialAnalysis = () => {
             {/* Key Indicators */}
             <div className="bg-white rounded-xl p-6 shadow-sm">
               <div className="flex items-center gap-3 mb-6">
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-500 to-indigo-500 flex items-center justify-center">
+                <div className="w-10 h-10 rounded-xl bg-[#5b6b52] flex items-center justify-center">
                   <BarChart3 className="w-5 h-5 text-white" />
                 </div>
                 <div>
@@ -458,7 +458,7 @@ const FinancialAnalysis = () => {
                 <div className="p-4 bg-slate-50 rounded-xl">
                   <div className="flex justify-between items-center mb-2">
                     <span className="text-neutral-600">هامش الربح الصافي</span>
-                    <span className="font-bold text-coral-600">
+                    <span className="font-bold text-[#256450]">
                       {analysisData?.ratios.find(r => r.name === "هامش الربح الصافي")?.value?.toFixed(2) || '0.00'}%
                     </span>
                   </div>
@@ -504,7 +504,7 @@ const FinancialAnalysis = () => {
           >
             <div className="bg-white rounded-xl p-6 shadow-sm">
               <div className="flex items-center gap-3 mb-6">
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center">
+                <div className="w-10 h-10 rounded-xl bg-[#9b7c36] flex items-center justify-center">
                   <Target className="w-5 h-5 text-white" />
                 </div>
                 <div>
@@ -516,7 +516,7 @@ const FinancialAnalysis = () => {
               {analysisData?.budgetComparison ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   {/* Revenue Comparison */}
-                  <div className="p-5 bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl border border-green-200">
+                  <div className="p-5 bg-[#edf4e6] rounded-xl border border-green-200">
                     <div className="flex items-center gap-2 mb-4">
                       <DollarSign className="w-5 h-5 text-green-600" />
                       <h4 className="font-semibold text-green-800">الإيرادات</h4>
@@ -552,7 +552,7 @@ const FinancialAnalysis = () => {
                   </div>
 
                   {/* Expenses Comparison */}
-                  <div className="p-5 bg-gradient-to-br from-red-50 to-rose-50 rounded-xl border border-red-200">
+                  <div className="p-5 bg-[#fdf1eb] rounded-xl border border-red-200">
                     <div className="flex items-center gap-2 mb-4">
                       <BarChart3 className="w-5 h-5 text-red-600" />
                       <h4 className="font-semibold text-red-800">المصروفات</h4>
@@ -611,7 +611,7 @@ const FinancialAnalysis = () => {
           >
             {advancedLoading ? (
               <div className="flex items-center justify-center py-16">
-                <RefreshCw className="w-10 h-10 animate-spin text-rose-500" />
+                <RefreshCw className="w-10 h-10 animate-spin text-[#2f7966]" />
               </div>
             ) : (
               <>
@@ -619,7 +619,7 @@ const FinancialAnalysis = () => {
                 {advancedAnalytics?.financialHealthScore && (
                   <div className="bg-white rounded-xl p-6 shadow-sm">
                     <div className="flex items-center gap-3 mb-6">
-                      <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-rose-500 to-orange-500 flex items-center justify-center">
+                      <div className="w-10 h-10 rounded-xl bg-[#2f7966] flex items-center justify-center">
                         <Activity className="w-5 h-5 text-white" />
                       </div>
                       <div>
@@ -632,7 +632,7 @@ const FinancialAnalysis = () => {
                       {/* Score Display */}
                       <div className="text-center">
                         <div className={cn(
-                          "w-32 h-32 rounded-full mx-auto flex items-center justify-center bg-gradient-to-br",
+                          "w-32 h-32 rounded-full mx-auto flex items-center justify-center bg-[#2f7966]",
                           getHealthScoreColor(advancedAnalytics.financialHealthScore.score)
                         )}>
                           <span className="text-4xl font-bold text-white">
@@ -691,7 +691,7 @@ const FinancialAnalysis = () => {
                 {advancedAnalytics?.cashFlowAnalysis && (
                   <div className="bg-white rounded-xl p-6 shadow-sm">
                     <div className="flex items-center gap-3 mb-6">
-                      <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center">
+                      <div className="w-10 h-10 rounded-xl bg-[#4a707c] flex items-center justify-center">
                         <Wallet className="w-5 h-5 text-white" />
                       </div>
                       <div>
@@ -701,7 +701,7 @@ const FinancialAnalysis = () => {
                     </div>
                     
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                      <div className="p-4 bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl border border-green-200 text-center">
+                      <div className="p-4 bg-[#edf4e6] rounded-xl border border-green-200 text-center">
                         <p className="text-sm text-neutral-600 mb-2">التدفق التشغيلي</p>
                         <p className={cn(
                           "text-xl font-bold",
@@ -710,7 +710,7 @@ const FinancialAnalysis = () => {
                           {formatCurrency(advancedAnalytics.cashFlowAnalysis.operatingCashFlow)}
                         </p>
                       </div>
-                      <div className="p-4 bg-gradient-to-br from-blue-50 to-cyan-50 rounded-xl border border-blue-200 text-center">
+                      <div className="p-4 bg-[#e9f1f3] rounded-xl border border-blue-200 text-center">
                         <p className="text-sm text-neutral-600 mb-2">التدفق الاستثماري</p>
                         <p className={cn(
                           "text-xl font-bold",
@@ -719,7 +719,7 @@ const FinancialAnalysis = () => {
                           {formatCurrency(advancedAnalytics.cashFlowAnalysis.investingCashFlow)}
                         </p>
                       </div>
-                      <div className="p-4 bg-gradient-to-br from-purple-50 to-indigo-50 rounded-xl border border-purple-200 text-center">
+                      <div className="p-4 bg-[#f1f4ec] rounded-xl border border-purple-200 text-center">
                         <p className="text-sm text-neutral-600 mb-2">التدفق التمويلي</p>
                         <p className={cn(
                           "text-xl font-bold",
@@ -728,7 +728,7 @@ const FinancialAnalysis = () => {
                           {formatCurrency(advancedAnalytics.cashFlowAnalysis.financingCashFlow)}
                         </p>
                       </div>
-                      <div className="p-4 bg-gradient-to-br from-rose-50 to-orange-50 rounded-xl border border-rose-200 text-center">
+                      <div className="p-4 bg-[#faf5e7] rounded-xl border border-rose-200 text-center">
                         <p className="text-sm text-neutral-600 mb-2">صافي التدفق النقدي</p>
                         <p className={cn(
                           "text-xl font-bold",
@@ -745,7 +745,7 @@ const FinancialAnalysis = () => {
                 {advancedAnalytics?.costCenterPerformance && advancedAnalytics.costCenterPerformance.length > 0 && (
                   <div className="bg-white rounded-xl p-6 shadow-sm">
                     <div className="flex items-center gap-3 mb-6">
-                      <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center">
+                      <div className="w-10 h-10 rounded-xl bg-[#9b7c36] flex items-center justify-center">
                         <Target className="w-5 h-5 text-white" />
                       </div>
                       <div>
@@ -821,7 +821,7 @@ const FinancialAnalysis = () => {
             {/* Forecasts */}
             <div className="bg-white rounded-xl p-6 shadow-sm">
               <div className="flex items-center gap-3 mb-6">
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center">
+                <div className="w-10 h-10 rounded-xl bg-[#5b6b52] flex items-center justify-center">
                   <Calendar className="w-5 h-5 text-white" />
                 </div>
                 <div>
@@ -838,7 +838,7 @@ const FinancialAnalysis = () => {
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: index * 0.1 }}
-                      className="p-5 bg-gradient-to-br from-indigo-50 to-purple-50 rounded-xl border border-indigo-200"
+                      className="p-5 bg-[#f1f4ec] rounded-xl border border-indigo-200"
                     >
                       <div className="flex items-center justify-between mb-4">
                         <h4 className="font-semibold text-indigo-800">{forecast.period}</h4>
@@ -894,7 +894,7 @@ const FinancialAnalysis = () => {
             {analysisData?.historicalComparison && (
               <div className="bg-white rounded-xl p-6 shadow-sm">
                 <div className="flex items-center gap-3 mb-6">
-                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-teal-500 to-cyan-500 flex items-center justify-center">
+                  <div className="w-10 h-10 rounded-xl bg-[#4a707c] flex items-center justify-center">
                     <LineChart className="w-5 h-5 text-white" />
                   </div>
                   <div>
@@ -957,7 +957,7 @@ const FinancialAnalysis = () => {
               <div key={catIndex} className="bg-white rounded-xl p-6 shadow-sm">
                 <div className="flex items-center gap-3 mb-6">
                   <div className={cn(
-                    "w-10 h-10 rounded-xl bg-gradient-to-br flex items-center justify-center",
+                    "w-10 h-10 rounded-xl flex items-center justify-center",
                     category.color
                   )}>
                     <category.icon className="w-5 h-5 text-white" />
@@ -978,7 +978,7 @@ const FinancialAnalysis = () => {
                       className="p-4 bg-slate-50 rounded-xl hover:bg-slate-100 transition-colors"
                     >
                       <p className="text-sm font-medium text-neutral-600 mb-2">{ratio.name}</p>
-                      <p className="text-2xl font-bold text-coral-600 mb-2">
+                      <p className="text-2xl font-bold text-[#256450] mb-2">
                         {ratio.value == null ? 'غير متاح' : ratio.percentage
                           ? `${ratio.value.toFixed(2)}%` 
                           : ratio.value.toFixed(2)
