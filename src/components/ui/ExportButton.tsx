@@ -12,17 +12,19 @@ interface ExportButtonProps {
   onExportCSV?: () => void;
   onExportPDF?: () => void;
   label?: string;
+  disabled?: boolean;
 }
 
 export const ExportButton: React.FC<ExportButtonProps> = ({
   onExportCSV,
   onExportPDF,
   label = "تصدير",
+  disabled = false,
 }) => {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="outline" size="sm" className="gap-2">
+        <Button variant="outline" size="sm" className="gap-2" disabled={disabled}>
           <Download className="w-4 h-4" />
           {label}
         </Button>

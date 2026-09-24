@@ -32613,6 +32613,19 @@ export type Database = {
           unbalanced_entries_count: number
         }[]
       }
+      get_billing_register_stats: {
+        Args: { p_company_id: string }
+        Returns: {
+          invoices_total: number
+          invoices_paid: number
+          invoices_pending: number
+          invoices_count: number
+          payments_month_total: number
+          payments_month_count: number
+          payments_completed_count: number
+          payments_pending_count: number
+        }[]
+      }
       get_grouped_reminders_for_today: {
         Args: never
         Returns: {
