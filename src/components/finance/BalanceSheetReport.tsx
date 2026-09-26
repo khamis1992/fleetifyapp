@@ -44,6 +44,8 @@ import {
   useNegativeExplanations,
   useUpsertNegativeExplanation,
 } from "@/hooks/finance/useFleetBridge";
+import { useFinancialStatementNotes } from "@/hooks/finance/useFinancialStatementNotes";
+import { BalanceSheetNotesSection } from "@/components/finance/BalanceSheetNotesSection";
 import { financeToday } from "@/services/financialReporting";
 import {
   balanceSheetErrorMessage,
@@ -132,6 +134,7 @@ function BalanceSheetWorkspace({
   const actions = useBalanceSheetActions();
   const explanations = useNegativeExplanations(asOf);
   const upsertExplanation = useUpsertNegativeExplanation(asOf);
+  const statementNotes = useFinancialStatementNotes(asOf);
   const savedVersions =
     history.data?.filter((row) => row.company_id === companyId) || [];
   const snapshot = selected
@@ -293,6 +296,7 @@ function BalanceSheetWorkspace({
         snapshot: issuingSnapshot,
         locale,
         face: viewMode,
+        statementNotes: statementNotes.data ?? [],
       };
       if (type === "pdf") {
         // Text-based PDF with embedded Amiri: selectable, searchable Arabic —
@@ -929,6 +933,24 @@ function BalanceSheetWorkspace({
                     )}
               </p>
             </PagePanel>
+
+            {viewMode === "published" && statementNotes.data && statementNotes.data.length > 0 && (
+              <PagePanel
+                number="03.5"
+                title={tr("إيضاحات", "Notes")}
+                subtitle={tr(
+                  "إيضاحات القوائم المالية المعتمدة",
+                  "Approved financial statement notes"
+                )}
+                className="wk-panel-full"
+              >
+                <BalanceSheetNotesSection
+                  notes={statementNotes.data}
+                  loading={statementNotes.isLoading}
+                  tr={tr}
+                />
+              </PagePanel>
+            )}
 
             <PagePanel
               number="04"
