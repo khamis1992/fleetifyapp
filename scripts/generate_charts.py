@@ -36,11 +36,11 @@ fig.patch.set_facecolor('#F8FAFC')
 # 1. Assets vs Liabilities vs Equity
 x = np.arange(len(years))
 width = 0.25
-r1 = ax1.bar(x - width, assets, width, label=ar('إجمالي الأصول (Assets)'), color='#1F4E78')
+r1 = ax1.bar(x - width, assets, width, label=ar('إجمالي الأصول (Assets)'), color='#294B62')
 r2 = ax1.bar(x, liabilities, width, label=ar('إجمالي الالتزامات (Liabilities)'), color='#DC2626')
 r3 = ax1.bar(x + width, equity, width, label=ar('حقوق الملكية (Equity)'), color='#16A34A')
 
-ax1.set_title(ar('تطور المركز المالي: الأصول مقابل الالتزامات وحقوق الملكية (2023 - 2026)'), fontproperties=prop_title, pad=12, color='#0F172A')
+ax1.set_title(ar('تطور المركز المالي: الأصول مقابل الالتزامات وحقوق الملكية (2023 - 2026)'), fontproperties=prop_title, pad=12, color='#173247')
 ax1.set_ylabel(ar('مليون ريال قطري (Million QAR)'), fontproperties=prop_bold)
 ax1.set_xticks(x)
 ax1.set_xticklabels(years, fontsize=11, fontweight='bold')
@@ -60,7 +60,7 @@ p2 = ax2.bar(years, receivables, bottom=cash, label=ar('الذمم المدين�
 bottom_fleet = [c + r for c, r in zip(cash, receivables)]
 p3 = ax2.bar(years, fleet_net, bottom=bottom_fleet, label=ar('صافي أسطول السيارات (Fleet Net)'), color='#10B981')
 
-ax2.set_title(ar('هيكل الأصول التشغيلية وتطور بنودها عبر السنوات'), fontproperties=prop_title, pad=12, color='#0F172A')
+ax2.set_title(ar('هيكل الأصول التشغيلية وتطور بنودها عبر السنوات'), fontproperties=prop_title, pad=12, color='#173247')
 ax2.set_ylabel(ar('مليون ريال قطري (Million QAR)'), fontproperties=prop_bold)
 ax2.legend(loc='upper left', prop=prop, frameon=True, facecolor='white')
 for idx, tot in enumerate(assets):
@@ -77,7 +77,7 @@ cred_sizes = [6.118, 1.366, 0.081, 0.065]
 colors = ['#DC2626', '#3B82F6', '#8B5CF6', '#94A3B8']
 wedges, texts = ax3.pie(cred_sizes, labels=cred_labels, colors=colors, startangle=140,
                         textprops={'fontproperties': prop_bold}, wedgeprops=dict(width=0.45, edgecolor='white', linewidth=2))
-ax3.set_title(ar('توزيع هيكل الدائنين والالتزامات القائمة كما في 2026'), fontproperties=prop_title, pad=12, color='#0F172A')
+ax3.set_title(ar('توزيع هيكل الدائنين والالتزامات القائمة كما في 2026'), fontproperties=prop_title, pad=12, color='#173247')
 
 # 4. Cash Flow & Installments Paid
 cf_years = ['2023', '2024', '2025', '2026']
@@ -86,7 +86,7 @@ installments_paid_cum = [0.10, 0.95, 2.62, 3.29]
 
 ax4.plot(cf_years, cash_balances, marker='o', linewidth=3.5, color='#0284C7', label=ar('رصيد الصندوق الدفتري (Book Cash)'))
 ax4.plot(cf_years, installments_paid_cum, marker='s', linewidth=3.5, color='#DC2626', linestyle='--', label=ar('مسدد تراكمي أقساط السيارات (Installments Paid)'))
-ax4.set_title(ar('مسار السيولة النقدية مقابل سداد أقساط تمويل السيارات'), fontproperties=prop_title, pad=12, color='#0F172A')
+ax4.set_title(ar('مسار السيولة النقدية مقابل سداد أقساط تمويل السيارات'), fontproperties=prop_title, pad=12, color='#173247')
 ax4.set_ylabel(ar('مليون ريال قطري (Million QAR)'), fontproperties=prop_bold)
 ax4.legend(loc='center left', prop=prop, frameon=True, facecolor='white')
 for i, txt in enumerate(cash_balances):
