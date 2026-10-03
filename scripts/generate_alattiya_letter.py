@@ -5,7 +5,7 @@ from docx.enum.table import WD_TABLE_ALIGNMENT
 from docx.oxml import OxmlElement, parse_xml
 from docx.oxml.ns import qn, nsdecls
 
-def create_tight_letter():
+def update_alattiya_letter():
     doc = docx.Document('/home/ubuntu/upload/قالبالعراف.docx')
     
     for s in doc.sections:
@@ -102,7 +102,7 @@ def create_tight_letter():
 
     add_p("بالإشارة إلى الموضوع أعلاه، وإلى أسطول سيارات شانجان (Changan Alsvin 2024) البالغ عددها (20) مركبة، المسجلة باسم شركتنا / شركة العراف لتأجير السيارات (ذ.م.م) والممولة لديكم / تحت إشرافكم؛", size=10, space_after=3)
     
-    add_p("نرجو التكرم بالموافقة وإصدار كتابكم المعتمد بعدم الممانعة والموجه إلى إدارة المرور والدوريات (وزارة الداخلية) لاتخاذ إجراءات نقل الملكية وتعديل فئة اللوحات وفق التالي:", size=10, space_after=3)
+    add_p("نرجو التكرم بالموافقة وإصدار كتابكم المعتمد بعدم الممانعة والموجه إلى إدارة المرور والدوريات (وزارة الداخلية) لاتخاذ إجراءات نقل الملكية وتعديل فئة اللوحات المرورية وفق التالي:", size=10, space_after=3)
 
     add_p("1. نقل الملكية من:", size=10, bold=True, color=(41, 75, 98), space_after=1)
     add_p("   - شركة العراف لتأجير السيارات (ذ.م.م) — سجل تجاري: (146832) — قيد منشأة: (17-2015-86).", size=9.5, space_after=2)
@@ -113,8 +113,9 @@ def create_tight_letter():
     add_p("3. تعديل نوع التسجيل واللوحات المرورية:", size=10, bold=True, color=(41, 75, 98), space_after=1)
     add_p("   - تحويل اللوحات المرورية من فئة (ليموزين / نقل ركاب) إلى لوحات فئة (خصوصي).", size=9.5, space_after=3)
 
-    add_p("تعهد وإقرار المشتري الجديد:", size=10, bold=True, color=(41, 75, 98), space_after=1)
-    add_p("تقر وتتعهد شركة جبريل لتوزيع الأغذية والمشروبات (ذ.م.م) بسداد كافة الرسوم الإدارية والمرورية المترتبة على نقل الملكية وتغيير اللوحات، والالتزام التام بأية أقساط أو مبالغ متبقية مستحقة لصالحكم تخص هذه المركبات وفقاً للاتفاق المبرم.", size=9.5, space_after=4)
+    # UPDATED PAYMENT AND FEES CLAUSE
+    add_p("آلية سداد الأقساط والرسوم:", size=10, bold=True, color=(41, 75, 98), space_after=1)
+    add_p("نحيطكم علماً ونؤكد بأن سداد الأقساط الشهرية والتسهيلات التمويلية المتبقية لصالحكم الخاصة بهذه المركبات سيستمر كما هو قائم ومعمول به حالياً من قبل السيد / خميس هاشم الجبر دون أي تغيير أو تأخير في مواعيد استحقاقها المعتمدة، في حين تتحمل شركة جبريل لتوزيع الأغذية والمشروبات (ذ.م.م) كافة الرسوم الإدارية والمرورية المترتبة على نقل الملكية وتغيير اللوحات إلى خصوصي.", size=9.5, space_after=4)
 
     add_p("مرفق طيه بالملحق رقم (1) الكشف التفصيلي المتضمن أرقام اللوحات وأرقام الشاسيه (VIN) للـ (20) مركبة.", size=9.5, bold=True, color=(100, 116, 139), space_after=4)
 
@@ -127,7 +128,7 @@ def create_tight_letter():
     cell_r = t_sig.cell(0, 0)
     p_r = cell_r.paragraphs[0]
     set_rtl(p_r, align=WD_ALIGN_PARAGRAPH.CENTER, space_after=1)
-    r_r1 = p_r.add_run("عن الطرف الأول (المتنازل):\n")
+    r_r1 = p_r.add_run("عن الطرف الأول (المتنازل والملتزم بالسداد):\n")
     r_r1.bold = True
     r_r1.font.color.rgb = RGBColor(41, 75, 98)
     r_r2 = p_r.add_run("شركة العراف لتأجير السيارات ذ.م.م\nالمدير المفوض: خميس هاشم الجبر\n\nالتوقيع والختم: .......................................")
@@ -238,6 +239,6 @@ def create_tight_letter():
 
     out_docx = '/home/ubuntu/fleetifyapp/reports/letter_alattiya_changan_transfer.docx'
     doc.save(out_docx)
-    print("Tight 2-page letter saved successfully!")
+    print("Updated tight 2-page letter saved successfully!")
 
-create_tight_letter()
+update_alattiya_letter()
