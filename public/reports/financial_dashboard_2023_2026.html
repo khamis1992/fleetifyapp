@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>لوحة المؤشرات المالية وتطور المركز المالي (2023 - 2026) | شركة العراف</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap');
+    
+    :root {
+      --primary: #1F4E78;
+      --primary-dark: #14324f;
+      --danger: #DC2626;
+      --success: #16A34A;
+      --warning: #F59E0B;
+      --info: #0284C7;
+      --bg: #F8FAFC;
+      --card-bg: #FFFFFF;
+      --border: #E2E8F0;
+      --text-main: #0F172A;
+      --text-muted: #64748B;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Cairo', sans-serif;
+      background-color: var(--bg);
+      color: var(--text-main);
+      padding: 24px;
+      line-height: 1.6;
+    }
+
+    .header {
+      background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+      color: white;
+      padding: 28px 32px;
+      border-radius: 16px;
+      margin-bottom: 24px;
+      box-shadow: 0 10px 25px -5px rgba(31, 78, 120, 0.2);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+    .header h1 { font-size: 24px; font-weight: 800; margin-bottom: 4px; }
+    .header p { font-size: 14px; opacity: 0.9; }
+    .badge {
+      background-color: rgba(255, 255, 255, 0.2);
+      padding: 6px 14px;
+      border-radius: 9999px;
+      font-size: 13px;
+      font-weight: 600;
+      border: 1px solid rgba(255, 255, 255, 0.3);
+    }
+
+    /* Consolidated Status Overview Card */
+    .status-overview-card {
+      background: var(--card-bg);
+      border-radius: 16px;
+      border: 1px solid var(--border);
+      padding: 24px;
+      margin-bottom: 24px;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+    }
+    .status-overview-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 18px;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 12px;
+    }
+    .status-overview-header h2 {
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--primary);
+    }
+    .overview-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+    }
+    .overview-item {
+      background: #F1F5F9;
+      padding: 16px;
+      border-radius: 12px;
+      border-right: 4px solid var(--primary);
+    }
+    .overview-item.danger { border-right-color: var(--danger); }
+    .overview-item.success { border-right-color: var(--success); }
+    .overview-item.info { border-right-color: var(--info); }
+    .overview-item.warning { border-right-color: var(--warning); }
+    
+    .overview-label { font-size: 12.5px; color: var(--text-muted); font-weight: 600; margin-bottom: 4px; }
+    .overview-val { font-size: 20px; font-weight: 800; color: var(--text-main); }
+    .overview-sub { font-size: 11px; color: var(--text-muted); margin-top: 4px; }
+
+    /* Charts Grid */
+    .charts-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+      gap: 24px;
+      margin-bottom: 24px;
+    }
+    .chart-card {
+      background: var(--card-bg);
+      border-radius: 16px;
+      border: 1px solid var(--border);
+      padding: 20px;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+    }
+    .chart-card h3 {
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--text-main);
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .chart-container {
+      position: relative;
+      height: 320px;
+      width: 100%;
+    }
+
+    /* Links Footer */
+    .links-card {
+      background: #F8FAFC;
+      border: 1px dashed var(--primary);
+      border-radius: 14px;
+      padding: 18px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 16px;
+      background: var(--primary);
+      color: white;
+      text-decoration: none;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      transition: background 0.2s;
+    }
+    .btn:hover { background: var(--primary-dark); }
+
+    @media (max-width: 768px) {
+      .charts-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Header -->
+  <div class="header">
+    <div>
+      <h1>لوحة البيانات وتطور المركز المالي (2023 — 2026)</h1>
+      <p>شركة العراف لتأجير السيارات ذ.م.م | معتمدة لملف التصفية القضائية وإشهار الإفلاس</p>
+    </div>
+    <div class="badge">حزمة الاعتماد: 4329bfef-ab4f-4b86</div>
+  </div>
+
+  <!-- Consolidated Status Overview Card -->
+  <div class="status-overview-card">
+    <div class="status-overview-header">
+      <h2>نظرة عامة موحدة على الموقف المالي والتصفية (Financial Status Overview)</h2>
+      <span style="font-size: 12px; color: var(--text-muted); font-weight: 600;">تاريخ القطع: 30 سبتمبر 2026</span>
+    </div>
+    <div class="overview-grid">
+      <div class="overview-item">
+        <div class="overview-label">إجمالي الأصول الحالية (Assets)</div>
+        <div class="overview-val">7.45M ر.ق</div>
+        <div class="overview-sub">نقدية + ذمم + أسطول دفتري</div>
+      </div>
+      <div class="overview-item danger">
+        <div class="overview-label">إجمالي الالتزامات (Liabilities)</div>
+        <div class="overview-val">7.63M ر.ق</div>
+        <div class="overview-sub">تمويل المانع (6.12M) + تأمينات (1.37M)</div>
+      </div>
+      <div class="overview-item danger">
+        <div class="overview-label">حقوق الملكية (العجز الصافي)</div>
+        <div class="overview-val">-183.9K ر.ق</div>
+        <div class="overview-sub">خسائر متراكمة (-385K) + رأس المال</div>
+      </div>
+      <div class="overview-item info">
+        <div class="overview-label">أسطول المركبات (221 مركبة)</div>
+        <div class="overview-val">9.68M ر.ق</div>
+        <div class="overview-sub">صافي القيمة الدفترية التقديرية</div>
+      </div>
+      <div class="overview-item success">
+        <div class="overview-label">مسدد أقساط السيارات (163 قسطاً)</div>
+        <div class="overview-val">3.29M ر.ق</div>
+        <div class="overview-sub">مسدد فعلياً لوكلاء التمويل</div>
+      </div>
+      <div class="overview-item warning">
+        <div class="overview-label">التحصيل المتوقع للذمم المدينة</div>
+        <div class="overview-val">928.3K ر.ق</div>
+        <div class="overview-sub">من أصل 3.22M مديونيات عملاء</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Charts Grid -->
+  <div class="charts-grid">
+    <!-- Chart 1: Balance Sheet Evolution -->
+    <div class="chart-card">
+      <h3>1. تطور الميزانية: الأصول مقابل الالتزامات وحقوق الملكية (مليون ر.ق)</h3>
+      <div class="chart-container">
+        <canvas id="balanceSheetChart"></canvas>
+      </div>
+    </div>
+
+    <!-- Chart 2: Asset Breakdown -->
+    <div class="chart-card">
+      <h3>2. هيكل الأصول التشغيلية وتطور بنودها (مليون ر.ق)</h3>
+      <div class="chart-container">
+        <canvas id="assetsChart"></canvas>
+      </div>
+    </div>
+
+    <!-- Chart 3: Liabilities Breakdown Donut -->
+    <div class="chart-card">
+      <h3>3. توزيع هيكل الدائنين والالتزامات القائمة كما في 2026</h3>
+      <div class="chart-container">
+        <canvas id="liabilitiesChart"></canvas>
+      </div>
+    </div>
+
+    <!-- Chart 4: Cash Flow vs Installments Paid -->
+    <div class="chart-card">
+      <h3>4. مسار السيولة النقدية مقابل مسدد أقساط سيارات الأسطول (مليون ر.ق)</h3>
+      <div class="chart-container">
+        <canvas id="cashFlowChart"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- Links Card -->
+  <div class="links-card">
+    <div>
+      <h4 style="font-size: 14px; font-weight: 700; color: var(--primary);">حزمة المستندات الرسمية المحفوظة في النظام</h4>
+      <p style="font-size: 12px; color: var(--text-muted);">كافة القوائم والتقارير والمذكرات معتمدة ومطابقة لميزان المراجعة والسجلات القضائية</p>
+    </div>
+    <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+      <a href="complete_financial_dossier_2023_2026.pdf" class="btn">الملف المالي المتكامل (PDF)</a>
+      <a href="trustee_explanatory_memo_official.pdf" class="btn">المذكرة الإيضاحية (PDF)</a>
+      <a href="multi_year_financial_statements_2023_2026.xlsx" class="btn">جدول المقارنة (Excel)</a>
+      <a href="complete_lawyer_insolvency_package.zip" class="btn" style="background: var(--primary-dark);">تنزيل الحزمة الشاملة (ZIP)</a>
+    </div>
+  </div>
+
+  <script>
+    const years = ['2023', '2024', '2025', '2026'];
+
+    // 1. Balance Sheet Chart
+    new Chart(document.getElementById('balanceSheetChart'), {
+      type: 'bar',
+      data: {
+        labels: years,
+        datasets: [
+          { label: 'إجمالي الأصول (Assets)', data: [7.29, 12.47, 8.39, 7.45], backgroundColor: '#1F4E78' },
+          { label: 'إجمالي الالتزامات (Liabilities)', data: [0.67, 2.79, 8.50, 7.63], backgroundColor: '#DC2626' },
+          { label: 'حقوق الملكية (Equity)', data: [6.62, 9.68, -0.11, -0.18], backgroundColor: '#16A34A' }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { position: 'top', rtl: true } },
+        scales: { y: { title: { display: true, text: 'مليون ريال قطري' } } }
+      }
+    });
+
+    // 2. Asset Breakdown Chart (Stacked)
+    new Chart(document.getElementById('assetsChart'), {
+      type: 'bar',
+      data: {
+        labels: years,
+        datasets: [
+          { label: 'النقد وما في حكمه (Cash & Bank)', data: [0.57, 1.22, 1.79, 1.64], backgroundColor: '#0284C7' },
+          { label: 'الذمم المدينة (Receivables)', data: [0.45, 1.20, 1.60, 3.20], backgroundColor: '#F59E0B' },
+          { label: 'صافي أسطول السيارات (Fleet)', data: [6.25, 10.02, 4.95, 2.54], backgroundColor: '#10B981' }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { position: 'top', rtl: true } },
+        scales: {
+          x: { stacked: true },
+          y: { stacked: true, title: { display: true, text: 'مليون ريال قطري' } }
+        }
+      }
+    });
+
+    // 3. Liabilities Donut Chart
+    new Chart(document.getElementById('liabilitiesChart'), {
+      type: 'doughnut',
+      data: {
+        labels: [
+          'المانع للسيارات / BESTUNE (6.12M - 80.2%)',
+          'تأمينات ودفعات العملاء (1.37M - 17.9%)',
+          'شانجان إيلاف أوتو (0.08M - 1.1%)',
+          'التزامات أخرى (0.07M - 0.9%)'
+        ],
+        datasets: [{
+          data: [6.118, 1.366, 0.081, 0.065],
+          backgroundColor: ['#DC2626', '#3B82F6', '#8B5CF6', '#94A3B8'],
+          borderWidth: 2,
+          borderColor: '#FFFFFF'
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { position: 'bottom', rtl: true } }
+      }
+    });
+
+    // 4. Cash Flow vs Installments Paid
+    new Chart(document.getElementById('cashFlowChart'), {
+      type: 'line',
+      data: {
+        labels: years,
+        datasets: [
+          {
+            label: 'رصيد الصندوق الدفتري (Book Cash)',
+            data: [0.57, 1.22, 1.79, 1.64],
+            borderColor: '#0284C7',
+            backgroundColor: 'rgba(2, 132, 199, 0.1)',
+            fill: true,
+            tension: 0.3,
+            borderWidth: 3
+          },
+          {
+            label: 'مسدد تراكمي أقساط السيارات (Installments Paid)',
+            data: [0.10, 0.95, 2.62, 3.29],
+            borderColor: '#DC2626',
+            borderDash: [5, 5],
+            fill: false,
+            tension: 0.3,
+            borderWidth: 3
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { position: 'top', rtl: true } },
+        scales: { y: { title: { display: true, text: 'مليون ريال قطري' } } }
+      }
+    });
+  </script>
+</body>
+</html>
