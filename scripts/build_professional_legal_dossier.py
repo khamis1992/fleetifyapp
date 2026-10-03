@@ -8,10 +8,10 @@ from docx.oxml import OxmlElement, parse_xml
 from docx.oxml.ns import qn, nsdecls
 
 FONT_NAME = "Amiri"
-PRIMARY_COLOR = (22, 78, 99)     # Deep Teal / Navy
-HEADER_BG = "1F4E78"             # Navy Blue
-ALT_ROW_BG = "F2F5F9"            # Very Light Blue Gray
-SUB_BG = "D9E1F2"                # Light Blue Accent
+PRIMARY_COLOR = (41, 75, 98)     # Deep Teal / Navy
+HEADER_BG = "294B62"             # Navy Blue
+ALT_ROW_BG = "F1F5F7"            # Very Light Blue Gray
+SUB_BG = "E1ECF2"                # Light Blue Accent
 
 def set_rtl_paragraph(p, alignment=WD_ALIGN_PARAGRAPH.RIGHT, space_after=4, line_spacing=1.15):
     p.alignment = alignment
