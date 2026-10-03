@@ -445,6 +445,20 @@ export async function buildBalanceSheetWorkbook(options: BalanceSheetExportOptio
     target.eachRow(row => { row.alignment = { wrapText: true, vertical: 'top' }; });
     return target;
   };
+  if (published && options.statementNotes && options.statementNotes.length > 0) {
+    const notesSheet = createSheet(
+      options.locale === 'ar' ? 'إيضاحات' : 'Notes',
+      [options.locale === 'ar' ? 'العنوان' : 'Title', options.locale === 'ar' ? 'النص' : 'Content'],
+      options.statementNotes.map((note) => {
+        const titleWithAcct = note.account_code 
+          ? `${note.title_ar} (${options.locale === 'ar' ? 'حساب' : 'Acct'} ${note.account_code})` 
+          : note.title_ar;
+        return [titleWithAcct, note.body_ar];
+      })
+    );
+    notesSheet.getColumn(1).width = 40;
+    notesSheet.getColumn(2).width = 100;
+  }
   const issueMetadata: (string | number | null)[][] = [...metadata,
     [text.basis, text.basisText], [text.basis, text.resultText], [text.basis, text.reviewText],
     ...(snapshot?.notes ? [[text.notes, snapshot.notes]] : []),
@@ -484,7 +498,7 @@ export async function exportBalanceSheetExcel(options: BalanceSheetExportOptions
  * with the same rows and status the raster/Excel exports produce.
  */
 export async function exportBalanceSheetArabicPdf(options: BalanceSheetExportOptions): Promise<void> {
-  const { report, face = 'working', locale } = options;
+  const { report, face = 'working', locale, statementNotes = [] } = options;
   const { snapshot, status, text } = exportContext(options);
   const comparison = report.comparisonDate !== null;
   const published = face === 'published';
@@ -536,6 +550,13 @@ export async function exportBalanceSheetArabicPdf(options: BalanceSheetExportOpt
           rows,
         },
       },
+      ...(published && statementNotes.length > 0 ? [{
+        title: ar ? 'ثانياً: إيضاحات' : 'II. Notes to financial statements',
+        paragraphs: statementNotes.map((note, idx) => {
+          const noteLabel = ar ? `${idx + 1}. ${note.title_ar}${note.account_code ? ` (حساب ${note.account_code})` : ''}` : `${idx + 1}. ${note.title_ar}${note.account_code ? ` (Acct ${note.account_code})` : ''}`;
+          return `${noteLabel}\n${note.body_ar}`;
+        }),
+      }] : []),
       {
         title: ar ? '??????: ???? ???????' : 'II. Basis of preparation',
         paragraphs: [

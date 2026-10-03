@@ -148,6 +148,7 @@ const ARAgingReport = lazy(() => import('@/pages/finance/ARAgingReport'));
 const PaymentTracking = lazy(() => import('@/pages/finance/PaymentTracking'));
 const Vendors = lazy(() => import('@/pages/finance/Vendors'));
 const PurchaseOrders = lazy(() => import('@/pages/finance/PurchaseOrders'));
+const FinancialStatementNotesAdmin = lazy(() => import('@/pages/finance/FinancialStatementNotesAdmin'));
 
 // Sales/CRM Management pages
 const SalesPipeline = lazy(() => import('@/pages/sales/SalesPipeline'));
@@ -974,6 +975,19 @@ const routeConfigs: RouteConfig[] = [
     description: 'Payment tracking',
     group: 'finance',
     priority: 31,
+    protected: true,
+    layout: 'bento',
+    requiredRole: 'admin',
+  },
+  {
+    path: '/finance/settings/statement-notes',
+    component: FinancialStatementNotesAdmin,
+    lazy: true,
+    exact: true,
+    title: 'Statement Notes',
+    description: 'Financial statement notes management',
+    group: 'finance',
+    priority: 32,
     protected: true,
     layout: 'bento',
     requiredRole: 'admin',

@@ -120,4 +120,12 @@ export interface BalanceSheetExportOptions {
   locale: BalanceSheetLocale;
   /** Which face to render: aggregated published statement or account-level working paper. */
   face?: 'published' | 'working';
+  /** Statement notes to append in exports (إيضاحات). */
+  statementNotes?: Array<{
+    id: string;
+    title_ar: string;
+    body_ar: string;
+    account_code?: string | null;
+    sort_order: number;
+  }>;
 }
