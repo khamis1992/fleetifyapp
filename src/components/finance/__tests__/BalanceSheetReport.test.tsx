@@ -55,6 +55,9 @@ vi.mock('@/hooks/finance/useFleetBridge', () => ({
   useNegativeExplanations: () => ({ data: [], error: null, isFetching: false, isLoading: false }),
   useUpsertNegativeExplanation: () => ({ mutateAsync: vi.fn(), isPending: false }),
 }));
+vi.mock('@/hooks/finance/useFinancialStatementNotes', () => ({
+  useFinancialStatementNotes: () => ({ data: [], error: null, isFetching: false, isLoading: false }),
+}));
 vi.mock('@/utils/balanceSheetExport', () => ({
   exportBalanceSheetPDF: exportPDF, exportBalanceSheetExcel: exportExcel, printBalanceSheet: printReport,
 }));
