@@ -29,12 +29,22 @@ describe('financial navigation', () => {
     expect(filterFinanceNavigation({ admin: false, superAdmin: false, permissions: new Set() })).toEqual([]);
     const groups = filterFinanceNavigation({ admin: false, superAdmin: false, permissions: new Set(['finance.treasury.view']) });
     expect(groups.map(group => group.id)).toEqual(['treasury']);
-    expect(groups[0].items.map(item => item.id)).toEqual(['treasury', 'bank-reconciliation']);
+    expect(groups[0].items.map(item => item.id)).toEqual(['treasury', 'bank-reconciliation', 'bank-ledger-reconciliation']);
   });
   it('does not show super-admin settings to company admins', () => {
-    const items = filterFinanceNavigation({ admin: true, superAdmin: false, permissions: new Set() }).flatMap(group => group.items);
-    expect(items.some(item => item.id === 'vendors')).toBe(true);
+    const items = filterFinanceNavigation({ admin: true, superAdmin: false, permissions: new Set() }, true).flatMap(group => group.items);
+    expect(items.some(item => item.id === 'system-settings')).toBe(true);
     expect(items.some(item => item.superAdmin)).toBe(false);
+  });
+  it('requires reports permission for the lawyer portfolio in the menu and search', () => {
+    const access = { admin: false, superAdmin: false, permissions: new Set(['finance.view']) };
+    for (const includeSecondary of [false, true]) {
+      const destinations = (permissions: Set<string>) => filterFinanceNavigation({ ...access, permissions }, includeSecondary)
+        .flatMap(group => [...group.items, ...group.secondaryItems]);
+      expect(destinations(access.permissions).some(item => item.id === 'report-insolvency-portfolio')).toBe(false);
+      const portfolio = destinations(new Set(['finance.view', 'finance.reports.view'])).find(item => item.id === 'report-insolvency-portfolio');
+      expect(portfolio).toMatchObject({ href: '/finance/reports/insolvency-portfolio', permission: 'finance.reports.view' });
+    }
   });
   it('opens the current group and marks its exact report link', () => {
     render(<MemoryRouter initialEntries={['/finance/reports-analysis?tab=reports&report=balance-sheet']}><FinanceSidebarNavigation /></MemoryRouter>);
@@ -48,11 +58,12 @@ describe('financial navigation', () => {
     render(<MemoryRouter initialEntries={['/finance/overview']}><FinanceSidebarNavigation onNavigate={onNavigate} /></MemoryRouter>);
     fireEvent.change(screen.getByRole('textbox'), { target: { value: 'reconciliation' } });
     const link = screen.getByRole('link', { name: 'التسوية البنكية' });
-    expect(screen.getAllByRole('link')).toHaveLength(1);
+    expect(screen.getAllByRole('link').map(item => item.textContent)).toEqual(['التسوية البنكية', 'مطابقة البنك مع الدفتر']);
     fireEvent.click(link);
     expect(onNavigate).toHaveBeenCalledOnce();
-    fireEvent.change(screen.getByRole('textbox'), { target: { value: 'تصنيفات' } });
-    expect(screen.getByRole('link', { name: 'تصنيفات الموردين' })).toBeVisible();
+    fireEvent.change(screen.getByRole('textbox'), { target: { value: 'حافظة' } });
+    expect(screen.getByRole('link', { name: 'حافظة الوضع المالي ومستندات المحامي' })).toHaveAttribute('href', '/finance/reports/insolvency-portfolio');
+    expect(screen.getAllByRole('link')).toHaveLength(1);
   });
   it('keeps just one sidebar group expanded outside search', () => {
     render(<MemoryRouter initialEntries={['/finance/invoices']}><FinanceSidebarNavigation /></MemoryRouter>);
@@ -60,7 +71,7 @@ describe('financial navigation', () => {
     fireEvent.click(screen.getByRole('button', {name: 'المحاسبة العامة'}));
     expect(screen.getByRole('button', {name: 'الفوترة والتحصيل'})).toHaveAttribute('aria-expanded', 'false');
     expect(screen.getAllByRole('button').filter(button => button.getAttribute('aria-expanded') === 'true')).toHaveLength(1);
-    expect(financeNavigation).toHaveLength(9);
+    expect(financeNavigation.map(group => group.id)).toEqual(['overview', 'billing', 'accounting', 'treasury', 'planning', 'reports', 'controls', 'settings']);
   });
   it('never exposes restricted tools through search', () => {
     const groups = filterFinanceNavigation({admin: false, superAdmin: false, permissions: new Set(['finance.invoices.view'])}, true);

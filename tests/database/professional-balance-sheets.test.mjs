@@ -21,7 +21,7 @@ const foreignAccount='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa7';
 const asset='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa8';
 const confirmations={assets:true,liabilities:true,equity:true,reconciliation:true,completeness:true};
 const notes='Reviewed all ledger reconciliations and complete supporting documents.';
-const migration='20260918001000_professional_balance_sheets';
+const migration='20260917235302_professional_balance_sheets';
 const read=p=>readFile(new URL(p,import.meta.url),'utf8');
 let db;
 const rows=async(sql,args=[]) => (await db.query(sql,args)).rows;

@@ -24,8 +24,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import * as XLSX from 'xlsx';
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import { format, subMonths, startOfMonth, endOfMonth } from 'date-fns';
-import { ar } from 'date-fns/locale';
+import { buildIncomeStatementComparisonPeriods } from '@/utils/incomeStatementPeriods';
 import { buildIncomeStatementReport } from "@/utils/standardFinancialReportRules";
 import {
   exportOfficialFinancialReportToExcel,
@@ -34,36 +33,28 @@ import {
 import { exportArabicReportPdf, formatPdfMoney, type PdfAlign } from "@/utils/arabicReportPdf";
 
 import { useFleetifyTranslation } from "@/hooks/useTranslation";
+import { financeToday } from "@/services/financialReporting";
 
 export function IncomeStatementReport() {
   const { t } = useFleetifyTranslation("ui");
   const [viewMode, setViewMode] = useState<'single' | 'comparative'>('single');
-  const [startDate, setStartDate] = useState<string>(`${new Date().getFullYear()}-01-01`);
-  const [endDate, setEndDate] = useState<string>(new Date().toISOString().split('T')[0]);
+  const [startDate, setStartDate] = useState<string>(`${financeToday().slice(0, 4)}-01-01`);
+  const [endDate, setEndDate] = useState<string>(financeToday());
   const { formatCurrency } = useCurrencyFormatter();
   const { user } = useAuth();
   const { data: company } = useCurrentCompany();
 
   // Fetch main period data
-  const { data: reportData, isLoading, error } = useEnhancedFinancialReports(
+  const { data: fetchedReportData, isLoading, isFetching, error } = useEnhancedFinancialReports(
     'income_statement',
     startDate,
     endDate
   );
+  const reportData = isFetching || error ? undefined : fetchedReportData;
 
-  // Calculate comparative periods (last 6 months)
-  const periods = [];
-  for (let i = 0; i < 6; i++) {
-    const date = subMonths(new Date(), i);
-    const start = startOfMonth(date).toISOString().split('T')[0];
-    const end = endOfMonth(date).toISOString().split('T')[0];
-    periods.push({
-      month: format(date, 'MMMM yyyy', { locale: ar }),
-      startDate: start,
-      endDate: end
-    });
-  }
-  periods.reverse();
+  // Month boundaries stay calendar dates in Qatar; the selected cutoff also
+  // caps the final month instead of reading future dates or shifting to UTC.
+  const periods = buildIncomeStatementComparisonPeriods(endDate || financeToday());
 
   // The six hooks are intentionally explicit so their order is stable across renders.
   const period0 = useEnhancedFinancialReports('income_statement', periods[0].startDate, periods[0].endDate);
@@ -75,7 +66,9 @@ export function IncomeStatementReport() {
   const comparativeResults = [period0, period1, period2, period3, period4, period5];
   const periodsData = periods.map((period, index) => ({
     ...period,
-    data: comparativeResults[index].data,
+    data: comparativeResults[index].isFetching || comparativeResults[index].error
+      ? undefined
+      : comparativeResults[index].data,
   }));
 
   // Calculate totals
@@ -85,7 +78,7 @@ export function IncomeStatementReport() {
   const profitMargin = totalRevenue > 0 ? ((netIncome / totalRevenue) * 100) : 0;
 
   // Prepare chart data
-  const chartData = periodsData.map((period) => ({
+  const chartData = periodsData.filter(period => period.data !== undefined).map((period) => ({
     month: period.month,
     revenue: period.data?.totalCredits || 0,
     expenses: period.data?.totalDebits || 0,
@@ -95,7 +88,7 @@ export function IncomeStatementReport() {
   // Export to Excel
   const handleExportExcel = () => {
     if (!reportData || !reportData.sections || reportData.sections.length === 0) {
-      toast.error("Ù„Ø§ ØªÙˆØ¬Ø¯ Ø¨ÙŠØ§Ù†Ø§Øª Ù„Ù„ØªØµØ¯ÙŠØ±");
+      toast.error("لا توجد بيانات للتصدير");
       return;
     }
 
@@ -104,38 +97,38 @@ export function IncomeStatementReport() {
 
       // Main Report Sheet
       const revenueData = reportData.sections[0]?.accounts?.map(acc => ({
-        'Ø±Ù…Ø² Ø§Ù„Ø­Ø³Ø§Ø¨': acc.accountCode,
-        'Ø§Ø³Ù… Ø§Ù„Ø­Ø³Ø§Ø¨': acc.accountNameAr || acc.accountName,
-        'Ø§Ù„Ù…Ø¨Ù„Øº': Number(acc.balance)
+        'رمز الحساب': acc.accountCode,
+        'اسم الحساب': acc.accountNameAr || acc.accountName,
+        'المبلغ': Number(acc.balance)
       })) || [];
 
       const expenseData = reportData.sections[1]?.accounts?.map(acc => ({
-        'Ø±Ù…Ø² Ø§Ù„Ø­Ø³Ø§Ø¨': acc.accountCode,
-        'Ø§Ø³Ù… Ø§Ù„Ø­Ø³Ø§Ø¨': acc.accountNameAr || acc.accountName,
-        'Ø§Ù„Ù…Ø¨Ù„Øº': Number(acc.balance)
+        'رمز الحساب': acc.accountCode,
+        'اسم الحساب': acc.accountNameAr || acc.accountName,
+        'المبلغ': Number(acc.balance)
       })) || [];
 
       // Add summary rows
       revenueData.push({
-        'Ø±Ù…Ø² Ø§Ù„Ø­Ø³Ø§Ø¨': '',
-        'Ø§Ø³Ù… Ø§Ù„Ø­Ø³Ø§Ø¨': 'Ø¥Ø¬Ù…Ø§Ù„ÙŠ Ø§Ù„Ø¥ÙŠØ±Ø§Ø¯Ø§Øª',
-        'Ø§Ù„Ù…Ø¨Ù„Øº': totalRevenue
+        'رمز الحساب': '',
+        'اسم الحساب': 'إجمالي الإيرادات',
+        'المبلغ': totalRevenue
       });
 
       const combinedData = [
         ...revenueData,
-        { 'Ø±Ù…Ø² Ø§Ù„Ø­Ø³Ø§Ø¨': '', 'Ø§Ø³Ù… Ø§Ù„Ø­Ø³Ø§Ø¨': '', 'Ø§Ù„Ù…Ø¨Ù„Øº': '' },
+        { 'رمز الحساب': '', 'اسم الحساب': '', 'المبلغ': '' },
         ...expenseData,
         {
-          'Ø±Ù…Ø² Ø§Ù„Ø­Ø³Ø§Ø¨': '',
-          'Ø§Ø³Ù… Ø§Ù„Ø­Ø³Ø§Ø¨': 'Ø¥Ø¬Ù…Ø§Ù„ÙŠ Ø§Ù„Ù…ØµØ±ÙˆÙØ§Øª',
-          'Ø§Ù„Ù…Ø¨Ù„Øº': totalExpenses
+          'رمز الحساب': '',
+          'اسم الحساب': 'إجمالي المصروفات',
+          'المبلغ': totalExpenses
         },
-        { 'Ø±Ù…Ø² Ø§Ù„Ø­Ø³Ø§Ø¨': '', 'Ø§Ø³Ù… Ø§Ù„Ø­Ø³Ø§Ø¨': '', 'Ø§Ù„Ù…Ø¨Ù„Øº': '' },
+        { 'رمز الحساب': '', 'اسم الحساب': '', 'المبلغ': '' },
         {
-          'Ø±Ù…Ø² Ø§Ù„Ø­Ø³Ø§Ø¨': '',
-          'Ø§Ø³Ù… Ø§Ù„Ø­Ø³Ø§Ø¨': 'ØµØ§ÙÙŠ Ø§Ù„Ø¯Ø®Ù„',
-          'Ø§Ù„Ù…Ø¨Ù„Øº': netIncome
+          'رمز الحساب': '',
+          'اسم الحساب': 'صافي الدخل',
+          'المبلغ': netIncome
         }
       ];
 
@@ -145,41 +138,43 @@ export function IncomeStatementReport() {
         { wch: 40 },
         { wch: 20 }
       ];
-      XLSX.utils.book_append_sheet(wb, ws, 'Ù‚Ø§Ø¦Ù…Ø© Ø§Ù„Ø¯Ø®Ù„');
+      XLSX.utils.book_append_sheet(wb, ws, 'قائمة الدخل');
 
       // Comparative Analysis Sheet (if available)
       if (viewMode === 'comparative' && chartData.length > 0) {
         const compData = chartData.map(item => ({
-          'Ø§Ù„Ø´Ù‡Ø±': item.month,
-          'Ø§Ù„Ø¥ÙŠØ±Ø§Ø¯Ø§Øª': item.revenue,
-          'Ø§Ù„Ù…ØµØ±ÙˆÙØ§Øª': item.expenses,
-          'ØµØ§ÙÙŠ Ø§Ù„Ø¯Ø®Ù„': item.netIncome
+          'الشهر': item.month,
+          'الإيرادات': item.revenue,
+          'المصروفات': item.expenses,
+          'صافي الدخل': item.netIncome
         }));
         const wsComp = XLSX.utils.json_to_sheet(compData);
-        XLSX.utils.book_append_sheet(wb, wsComp, 'Ø§Ù„ØªØ­Ù„ÙŠÙ„ Ø§Ù„Ù…Ù‚Ø§Ø±Ù†');
+        XLSX.utils.book_append_sheet(wb, wsComp, 'التحليل المقارن');
       }
 
       // Metadata Sheet
       const metadata = XLSX.utils.aoa_to_sheet([
-        ['Ù‚Ø§Ø¦Ù…Ø© Ø§Ù„Ø¯Ø®Ù„ - Income Statement'],
-        ['Ù…Ù† ØªØ§Ø±ÙŠØ®:', startDate || 'Ø¨Ø¯Ø§ÙŠØ© Ø§Ù„Ø³Ù†Ø©'],
-        ['Ø¥Ù„Ù‰ ØªØ§Ø±ÙŠØ®:', endDate],
-        ['ØªØ§Ø±ÙŠØ® Ø§Ù„Ø¥ØµØ¯Ø§Ø±:', new Date().toLocaleDateString('ar-EG')],
+        ['قائمة الدخل - Income Statement'],
+        ['مسودة دفترية للمراجعة — غير معتمدة وغير موقعة'],
+        ['النتيجة لا تثبت الربحية أو الملاءة أو اكتمال المصروفات والإهلاك والخسائر؛ يلزم مراجعة المحاسب.'],
+        ['من تاريخ:', startDate || 'بداية السنة'],
+        ['إلى تاريخ:', endDate],
+        ['تاريخ الإصدار:', new Date().toLocaleDateString('ar-EG')],
         [''],
-        ['Ø§Ù„Ù…Ù„Ø®Øµ Ø§Ù„Ù…Ø§Ù„ÙŠ'],
-        ['Ø¥Ø¬Ù…Ø§Ù„ÙŠ Ø§Ù„Ø¥ÙŠØ±Ø§Ø¯Ø§Øª:', totalRevenue],
-        ['Ø¥Ø¬Ù…Ø§Ù„ÙŠ Ø§Ù„Ù…ØµØ±ÙˆÙØ§Øª:', totalExpenses],
-        ['ØµØ§ÙÙŠ Ø§Ù„Ø¯Ø®Ù„:', netIncome],
-        ['Ù‡Ø§Ù…Ø´ Ø§Ù„Ø±Ø¨Ø­:', `${profitMargin.toFixed(2)}%`]
+        ['الملخص المالي'],
+        ['إجمالي الإيرادات:', totalRevenue],
+        ['إجمالي المصروفات:', totalExpenses],
+        ['صافي الدخل:', netIncome],
+        ['هامش الربح:', `${profitMargin.toFixed(2)}%`]
       ]);
-      XLSX.utils.book_append_sheet(wb, metadata, 'Ù…Ø¹Ù„ÙˆÙ…Ø§Øª Ø§Ù„ØªÙ‚Ø±ÙŠØ±');
+      XLSX.utils.book_append_sheet(wb, metadata, 'معلومات التقرير');
 
       const fileName = `income_statement_${endDate}.xlsx`;
       XLSX.writeFile(wb, fileName);
-      toast.success("ØªÙ… ØªØµØ¯ÙŠØ± Ø§Ù„ØªÙ‚Ø±ÙŠØ± Ø¨Ù†Ø¬Ø§Ø­");
+      toast.success("تم تصدير التقرير بنجاح");
     } catch (error) {
       console.error('Excel export error:', error);
-      toast.error("Ø­Ø¯Ø« Ø®Ø·Ø£ Ø£Ø«Ù†Ø§Ø¡ ØªØµØ¯ÙŠØ± Ø§Ù„ØªÙ‚Ø±ÙŠØ±");
+      toast.error("حدث خطأ أثناء تصدير التقرير");
     }
   };
 
@@ -224,7 +219,7 @@ export function IncomeStatementReport() {
         periodEnd: endDate,
         currency: company?.currency || "QAR",
         exportedAt: new Date().toISOString(),
-        status: "published",
+        status: "draft",
         sourceFingerprint: sourceReport.sourceFingerprint,
         reportHash: sourceReport.sourceFingerprint,
       },
@@ -260,32 +255,32 @@ export function IncomeStatementReport() {
       await exportArabicReportPdf(
         {
           metadata: {
-            reportTitle: "Ù‚Ø§Ø¦Ù…Ø© Ø§Ù„Ø¯Ø®Ù„",
-            companyAr: company?.name_ar || company?.name || "Ø´Ø±ÙƒØ© Ø§Ù„Ø¹Ø±Ø§Ù Ù„ØªØ£Ø¬ÙŠØ± Ø§Ù„Ø³ÙŠØ§Ø±Ø§Øª Ø°.Ù….Ù…",
+            reportTitle: "قائمة الدخل",
+            companyAr: company?.name_ar || company?.name || "شركة العراف لتأجير السيارات ذ.م.م",
             companyEn: company?.name || "Alaraf Car Rental LLC",
             commercialRegister: company?.commercial_register || "146832",
-            addressAr: company?.address_ar || company?.address || "Ø§Ù„Ø¯ÙˆØ­Ø© - Ø¯ÙˆÙ„Ø© Ù‚Ø·Ø±",
+            addressAr: company?.address_ar || company?.address || "الدوحة - دولة قطر",
             currency: company?.currency || "QAR",
             periodStart: startDate || null,
             periodEnd: endDate,
-            status: "Ù†Ø´Ø±",
+            status: "مسودة دفترية للمراجعة — غير معتمدة",
             sourceFingerprint: sourceReport.sourceFingerprint,
             preparedBy: user?.email,
             exportedAt: new Date().toISOString(),
           },
           sections: [
             {
-              title: "Ø£ÙˆÙ„Ø§Ù‹: Ø¨Ù†ÙˆØ¯ Ù‚Ø§Ø¦Ù…Ø© Ø§Ù„Ø¯Ø®Ù„",
+              title: "أولاً: بنود قائمة الدخل",
               table: {
                 header: {
-                  cells: ["Ø§Ù„Ø¨Ù†Ø¯", "Ø±Ù…Ø² Ø§Ù„Ø­Ø³Ø§Ø¨", "Ø§Ø³Ù… Ø§Ù„Ø­Ø³Ø§Ø¨", "Ø§Ù„Ù…Ø¨Ù„Øº"],
+                  cells: ["البند", "رمز الحساب", "اسم الحساب", "المبلغ"],
                   widths: [16, 16, 48, 20],
                   aligns: ["right", "right", "right", "left"],
                 },
                 rows: [
                   ...revenueAccounts.map((acc: any) => ({
                     cells: [
-                      "Ø§Ù„Ø¥ÙŠØ±Ø§Ø¯Ø§Øª",
+                      "الإيرادات",
                       acc.accountCode,
                       acc.accountNameAr || acc.accountName,
                       formatPdfMoney(Number(acc.balance || 0)),
@@ -295,7 +290,7 @@ export function IncomeStatementReport() {
                   })),
                   ...expenseAccounts.map((acc: any) => ({
                     cells: [
-                      "Ø§Ù„Ù…ØµØ±ÙˆÙØ§Øª",
+                      "المصروفات",
                       acc.accountCode,
                       acc.accountNameAr || acc.accountName,
                       formatPdfMoney(Number(acc.balance || 0)),
@@ -306,22 +301,22 @@ export function IncomeStatementReport() {
                 ],
                 summaryRows: [
                   {
-                    cells: ["", "", "Ø¥Ø¬Ù…Ø§Ù„ÙŠ Ø§Ù„Ø¥ÙŠØ±Ø§Ø¯Ø§Øª", formatPdfMoney(totalRevenue)],
+                    cells: ["", "", "إجمالي الإيرادات", formatPdfMoney(totalRevenue)],
                     widths: [16, 16, 48, 20],
                     aligns: ["right", "right", "right", "left"] as PdfAlign[],
                   },
                   {
-                    cells: ["", "", "Ø¥Ø¬Ù…Ø§Ù„ÙŠ Ø§Ù„Ù…ØµØ±ÙˆÙØ§Øª", formatPdfMoney(totalExpenses)],
+                    cells: ["", "", "إجمالي المصروفات", formatPdfMoney(totalExpenses)],
                     widths: [16, 16, 48, 20],
                     aligns: ["right", "right", "right", "left"] as PdfAlign[],
                   },
                   {
-                    cells: ["", "", "ØµØ§ÙÙŠ Ø§Ù„Ø¯Ø®Ù„", formatPdfMoney(netIncome)],
+                    cells: ["", "", "صافي الدخل", formatPdfMoney(netIncome)],
                     widths: [16, 16, 48, 20],
                     aligns: ["right", "right", "right", "left"] as PdfAlign[],
                   },
                   {
-                    cells: ["", "", "Ù‡Ø§Ù…Ø´ Ø§Ù„Ø±Ø¨Ø­", `${profitMargin.toFixed(2)}%`],
+                    cells: ["", "", "هامش الربح", `${profitMargin.toFixed(2)}%`],
                     widths: [16, 16, 48, 20],
                     aligns: ["right", "right", "right", "left"] as PdfAlign[],
                   },
@@ -329,53 +324,56 @@ export function IncomeStatementReport() {
               },
             },
             {
-              title: "Ø«Ø§Ù†ÙŠØ§Ù‹: Ø£Ø³Ø§Ø³ Ø§Ù„Ø¥Ø¹Ø¯Ø§Ø¯",
+              title: "ثانياً: أساس الإعداد",
               paragraphs: [
-                "ØªØ¹Ø±Ø¶ Ø§Ù„Ù‚Ø§Ø¦Ù…Ø© Ø§Ù„Ø¥ÙŠØ±Ø§Ø¯Ø§Øª ÙˆØ§Ù„Ù…ØµØ±ÙˆÙØ§Øª Ø§Ù„Ù…Ø±Ø­Ù„Ø© Ø®Ù„Ø§Ù„ Ø§Ù„ÙØªØ±Ø© Ø§Ù„Ù…Ø­Ø¯Ø¯Ø© Ø£Ø¹Ù„Ø§Ù‡.",
-                "Ø§Ù„Ø§Ø¹ØªÙ…Ø§Ø¯ Ø¯Ø§Ø®Ù„ Ø§Ù„Ø´Ø±ÙƒØ© Ù„Ø§ ÙŠÙ…Ø«Ù„ Ø±Ø£ÙŠ ØªØ¯Ù‚ÙŠÙ‚ Ø£Ùˆ ØªØµØ¯ÙŠÙ‚Ø§Ù‹ Ù…Ù† Ù…Ø­Ø§Ø³Ø¨ Ù‚Ø§Ù†ÙˆÙ†ÙŠ Ø®Ø§Ø±Ø¬ÙŠ.",
+                "تعرض القائمة الإيرادات والمصروفات المرحلة خلال الفترة المحددة أعلاه.",
+                "هذه نتيجة دفترية؛ لا تثبت الربحية أو الملاءة أو اكتمال المصروفات والإهلاك وخسائر السرقة والانخفاض والتعويضات. يلزم التحقق منها قبل الاعتماد.",
+                "الاعتماد داخل الشركة لا يمثل رأي تدقيق أو تصديقاً من محاسب قانوني خارجي.",
               ],
             },
           ],
-          footerNote: `Ø£ÙØ¹Ø¯ Ø¨ÙˆØ§Ø³Ø·Ø©: ${user?.email || "â€”"} â€” ÙˆÙ‚Øª Ø§Ù„Ø¥ØµØ¯Ø§Ø±: ${new Date().toLocaleString("ar-QA")}`,
+          footerNote: `أُعد بواسطة: ${user?.email || "—"} — وقت الإصدار: ${new Date().toLocaleString("ar-QA")}`,
         },
         `income_statement_${endDate}_${sourceReport.sourceFingerprint.slice(0, 8)}.pdf`,
       );
-      toast.success("ØªÙ… ØªØµØ¯ÙŠØ± Ù‚Ø§Ø¦Ù…Ø© Ø§Ù„Ø¯Ø®Ù„ Ø¨ØµÙŠØºØ© PDF Ù†ØµÙŠØ© Ø±Ø³Ù…ÙŠØ©");
+      toast.success("تم تصدير مسودة قائمة الدخل بصيغة PDF");
     } catch (error) {
       console.error("PDF export error:", error);
-      toast.error("ØªØ¹Ø°Ø± ØªØµØ¯ÙŠØ± Ù…Ù„Ù PDF");
+      toast.error("تعذر تصدير ملف PDF");
     }
   };
 
   // Export to CSV
   const handleExportCSV = () => {
     if (!reportData || !reportData.sections || reportData.sections.length === 0) {
-      toast.error("Ù„Ø§ ØªÙˆØ¬Ø¯ Ø¨ÙŠØ§Ù†Ø§Øª Ù„Ù„ØªØµØ¯ÙŠØ±");
+      toast.error("لا توجد بيانات للتصدير");
       return;
     }
 
     try {
-      let csvContent = 'Ù‚Ø§Ø¦Ù…Ø© Ø§Ù„Ø¯Ø®Ù„ - Income Statement\n';
-      csvContent += `Ù…Ù† ØªØ§Ø±ÙŠØ® - From,${startDate || 'Ø¨Ø¯Ø§ÙŠØ© Ø§Ù„Ø³Ù†Ø©'}\n`;
-      csvContent += `Ø¥Ù„Ù‰ ØªØ§Ø±ÙŠØ® - To,${endDate}\n`;
-      csvContent += `ØªØ§Ø±ÙŠØ® Ø§Ù„Ø¥ØµØ¯Ø§Ø± - Generated,${new Date().toLocaleDateString('ar-EG')}\n\n`;
+      let csvContent = 'قائمة الدخل - Income Statement\n';
+      csvContent += 'مسودة دفترية للمراجعة — غير معتمدة وغير موقعة\n';
+      csvContent += 'لا تثبت الربحية أو الملاءة أو اكتمال المصروفات والإهلاك والخسائر\n';
+      csvContent += `من تاريخ - From,${startDate || 'بداية السنة'}\n`;
+      csvContent += `إلى تاريخ - To,${endDate}\n`;
+      csvContent += `تاريخ الإصدار - Generated,${new Date().toLocaleDateString('ar-EG')}\n\n`;
 
-      csvContent += 'Ø§Ù„Ø¥ÙŠØ±Ø§Ø¯Ø§Øª - Revenue\n';
-      csvContent += 'Ø±Ù…Ø² Ø§Ù„Ø­Ø³Ø§Ø¨,Ø§Ø³Ù… Ø§Ù„Ø­Ø³Ø§Ø¨,Ø§Ù„Ù…Ø¨Ù„Øº\n';
+      csvContent += 'الإيرادات - Revenue\n';
+      csvContent += 'رمز الحساب,اسم الحساب,المبلغ\n';
       reportData.sections[0]?.accounts?.forEach(acc => {
         csvContent += `${acc.accountCode},${acc.accountNameAr || acc.accountName},${acc.balance}\n`;
       });
-      csvContent += `,,Ø¥Ø¬Ù…Ø§Ù„ÙŠ Ø§Ù„Ø¥ÙŠØ±Ø§Ø¯Ø§Øª,${totalRevenue}\n\n`;
+      csvContent += `,,إجمالي الإيرادات,${totalRevenue}\n\n`;
 
-      csvContent += 'Ø§Ù„Ù…ØµØ±ÙˆÙØ§Øª - Expenses\n';
-      csvContent += 'Ø±Ù…Ø² Ø§Ù„Ø­Ø³Ø§Ø¨,Ø§Ø³Ù… Ø§Ù„Ø­Ø³Ø§Ø¨,Ø§Ù„Ù…Ø¨Ù„Øº\n';
+      csvContent += 'المصروفات - Expenses\n';
+      csvContent += 'رمز الحساب,اسم الحساب,المبلغ\n';
       reportData.sections[1]?.accounts?.forEach(acc => {
         csvContent += `${acc.accountCode},${acc.accountNameAr || acc.accountName},${acc.balance}\n`;
       });
-      csvContent += `,,Ø¥Ø¬Ù…Ø§Ù„ÙŠ Ø§Ù„Ù…ØµØ±ÙˆÙØ§Øª,${totalExpenses}\n\n`;
+      csvContent += `,,إجمالي المصروفات,${totalExpenses}\n\n`;
 
-      csvContent += `,,ØµØ§ÙÙŠ Ø§Ù„Ø¯Ø®Ù„ - Net Income,${netIncome}\n`;
-      csvContent += `,,Ù‡Ø§Ù…Ø´ Ø§Ù„Ø±Ø¨Ø­ - Profit Margin,${profitMargin.toFixed(2)}%\n`;
+      csvContent += `,,صافي الدخل - Net Income,${netIncome}\n`;
+      csvContent += `,,هامش الربح - Profit Margin,${profitMargin.toFixed(2)}%\n`;
 
       const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8;' });
       const link = document.createElement('a');
@@ -387,10 +385,10 @@ export function IncomeStatementReport() {
       link.click();
       document.body.removeChild(link);
 
-      toast.success("ØªÙ… ØªØµØ¯ÙŠØ± Ø§Ù„ØªÙ‚Ø±ÙŠØ± Ø¨Ù†Ø¬Ø§Ø­");
+      toast.success("تم تصدير التقرير بنجاح");
     } catch (error) {
       console.error('CSV export error:', error);
-      toast.error("Ø­Ø¯Ø« Ø®Ø·Ø£ Ø£Ø«Ù†Ø§Ø¡ ØªØµØ¯ÙŠØ± Ø§Ù„ØªÙ‚Ø±ÙŠØ±");
+      toast.error("حدث خطأ أثناء تصدير التقرير");
     }
   };
 
@@ -400,7 +398,7 @@ export function IncomeStatementReport() {
         <CardContent className="p-6">
           <div className="flex items-center gap-2 text-destructive">
             <TrendingDown className="h-5 w-5" />
-            <p>Ø­Ø¯Ø« Ø®Ø·Ø£ ÙÙŠ ØªØ­Ù…ÙŠÙ„ Ø§Ù„Ø¨ÙŠØ§Ù†Ø§Øª</p>
+            <p>حدث خطأ في تحميل البيانات</p>
           </div>
         </CardContent>
       </Card>
@@ -415,11 +413,14 @@ export function IncomeStatementReport() {
             <div>
               <CardTitle className="flex items-center gap-2">
                 <TrendingUp className="h-5 w-5" />
-                Ù‚Ø§Ø¦Ù…Ø© Ø§Ù„Ø¯Ø®Ù„
+                قائمة الدخل
               </CardTitle>
               <CardDescription>
-                Ø¹Ø±Ø¶ Ø§Ù„Ø¥ÙŠØ±Ø§Ø¯Ø§Øª ÙˆØ§Ù„Ù…ØµØ±ÙˆÙØ§Øª ÙˆØµØ§ÙÙŠ Ø§Ù„Ø±Ø¨Ø­ Ù„Ù„ÙØªØ±Ø© Ø§Ù„Ù…Ø­Ø¯Ø¯Ø©
+                مسودة الإيرادات والمصروفات المرحلة للفترة المحددة — غير معتمدة
               </CardDescription>
+              <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
+                هذه نتيجة دفترية؛ لا تثبت الربحية أو الملاءة أو اكتمال المصروفات والإهلاك وخسائر السرقة والانخفاض والتعويضات. يلزم التحقق منها قبل الاعتماد. يعرض الجدول الحسابات ذات المبالغ غير الصفرية، وتحتفظ الصادرات بجميع الحسابات.
+              </p>
             </div>
             <div className="flex items-center gap-2">
               <Button
@@ -427,7 +428,7 @@ export function IncomeStatementReport() {
                 variant="outline"
                 size="sm"
                 disabled={isLoading || !reportData}
-                title={isLoading ? 'Ø¬Ø§Ø±Ù ØªØ­Ù…ÙŠÙ„ Ø¨ÙŠØ§Ù†Ø§Øª Ø§Ù„ÙØªØ±Ø©â€¦' : reportData ? '' : 'Ø­Ø¯Ø¯ ÙØªØ±Ø© Ø§Ù„ØªÙ‚Ø±ÙŠØ± Ø£ÙˆÙ„Ø§Ù‹ Ù„ØªØªÙ…ÙƒÙ† Ù…Ù† Ø§Ù„ØªØµØ¯ÙŠØ±'}
+                title={isLoading ? 'جارٍ تحميل بيانات الفترة…' : reportData ? '' : 'حدد فترة التقرير أولاً لتتمكن من التصدير'}
               >
                 <Download className="h-4 w-4 mr-2" />{t("pdf")}</Button>
               <Button
@@ -435,7 +436,7 @@ export function IncomeStatementReport() {
                 variant="outline"
                 size="sm"
                 disabled={isLoading || !reportData}
-                title={isLoading ? 'Ø¬Ø§Ø±Ù ØªØ­Ù…ÙŠÙ„ Ø¨ÙŠØ§Ù†Ø§Øª Ø§Ù„ÙØªØ±Ø©â€¦' : reportData ? '' : 'Ø­Ø¯Ø¯ ÙØªØ±Ø© Ø§Ù„ØªÙ‚Ø±ÙŠØ± Ø£ÙˆÙ„Ø§Ù‹ Ù„ØªØªÙ…ÙƒÙ† Ù…Ù† Ø§Ù„ØªØµØ¯ÙŠØ±'}
+                title={isLoading ? 'جارٍ تحميل بيانات الفترة…' : reportData ? '' : 'حدد فترة التقرير أولاً لتتمكن من التصدير'}
               >
                 <FileSpreadsheet className="h-4 w-4 mr-2" />{t("excel")}</Button>
               <Button
@@ -443,7 +444,7 @@ export function IncomeStatementReport() {
                 variant="outline"
                 size="sm"
                 disabled={isLoading || !reportData}
-                title={isLoading ? 'Ø¬Ø§Ø±Ù ØªØ­Ù…ÙŠÙ„ Ø¨ÙŠØ§Ù†Ø§Øª Ø§Ù„ÙØªØ±Ø©â€¦' : reportData ? '' : 'Ø­Ø¯Ø¯ ÙØªØ±Ø© Ø§Ù„ØªÙ‚Ø±ÙŠØ± Ø£ÙˆÙ„Ø§Ù‹ Ù„ØªØªÙ…ÙƒÙ† Ù…Ù† Ø§Ù„ØªØµØ¯ÙŠØ±'}
+                title={isLoading ? 'جارٍ تحميل بيانات الفترة…' : reportData ? '' : 'حدد فترة التقرير أولاً لتتمكن من التصدير'}
               >
                 <FileText className="h-4 w-4 mr-2" />{t("csv")}</Button>
             </div>
@@ -454,7 +455,7 @@ export function IncomeStatementReport() {
             {/* Date Filters */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
-                <Label htmlFor="startDate">Ù…Ù† ØªØ§Ø±ÙŠØ®</Label>
+                <Label htmlFor="startDate">من تاريخ</Label>
                 <div className="relative mt-1">
                   <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input
@@ -467,7 +468,7 @@ export function IncomeStatementReport() {
                 </div>
               </div>
               <div>
-                <Label htmlFor="endDate">Ø¥Ù„Ù‰ ØªØ§Ø±ÙŠØ®</Label>
+                <Label htmlFor="endDate">إلى تاريخ</Label>
                 <div className="relative mt-1">
                   <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input
@@ -480,7 +481,7 @@ export function IncomeStatementReport() {
                 </div>
               </div>
               <div>
-                <Label>Ù†ÙˆØ¹ Ø§Ù„Ø¹Ø±Ø¶</Label>
+                <Label>نوع العرض</Label>
                 <div className="flex gap-2 mt-1">
                   <Button
                     variant={viewMode === 'single' ? 'default' : 'outline'}
@@ -489,7 +490,7 @@ export function IncomeStatementReport() {
                     className="flex-1"
                   >
                     <FileText className="h-4 w-4 mr-2" />
-                    ÙØªØ±Ø© ÙˆØ§Ø­Ø¯Ø©
+                    فترة واحدة
                   </Button>
                   <Button
                     variant={viewMode === 'comparative' ? 'default' : 'outline'}
@@ -498,7 +499,7 @@ export function IncomeStatementReport() {
                     className="flex-1"
                   >
                     <BarChart3 className="h-4 w-4 mr-2" />
-                    Ù…Ù‚Ø§Ø±Ù†
+                    مقارن
                   </Button>
                 </div>
               </div>
@@ -507,8 +508,8 @@ export function IncomeStatementReport() {
             {/* Main Content Tabs */}
             <Tabs defaultValue="statement" className="w-full">
               <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="statement">Ù‚Ø§Ø¦Ù…Ø© Ø§Ù„Ø¯Ø®Ù„</TabsTrigger>
-                <TabsTrigger value="analysis">Ø§Ù„ØªØ­Ù„ÙŠÙ„ Ø§Ù„Ø¨ÙŠØ§Ù†ÙŠ</TabsTrigger>
+                <TabsTrigger value="statement">قائمة الدخل</TabsTrigger>
+                <TabsTrigger value="analysis">التحليل البياني</TabsTrigger>
               </TabsList>
 
               {/* Income Statement Tab */}
@@ -525,7 +526,7 @@ export function IncomeStatementReport() {
                         <CardContent className="p-4">
                           <div className="flex items-center justify-between">
                             <div>
-                              <p className="text-sm text-muted-foreground">Ø¥Ø¬Ù…Ø§Ù„ÙŠ Ø§Ù„Ø¥ÙŠØ±Ø§Ø¯Ø§Øª</p>
+                              <p className="text-sm text-muted-foreground">إجمالي الإيرادات</p>
                               <p className="text-2xl font-bold text-green-600">
                                 {formatCurrency(totalRevenue)}
                               </p>
@@ -538,7 +539,7 @@ export function IncomeStatementReport() {
                         <CardContent className="p-4">
                           <div className="flex items-center justify-between">
                             <div>
-                              <p className="text-sm text-muted-foreground">Ø¥Ø¬Ù…Ø§Ù„ÙŠ Ø§Ù„Ù…ØµØ±ÙˆÙØ§Øª</p>
+                              <p className="text-sm text-muted-foreground">إجمالي المصروفات</p>
                               <p className="text-2xl font-bold text-red-600">
                                 {formatCurrency(totalExpenses)}
                               </p>
@@ -551,13 +552,13 @@ export function IncomeStatementReport() {
                         <CardContent className="p-4">
                           <div className="flex items-center justify-between">
                             <div>
-                              <p className="text-sm text-muted-foreground">ØµØ§ÙÙŠ Ø§Ù„Ø¯Ø®Ù„</p>
+                              <p className="text-sm text-muted-foreground">صافي الدخل</p>
                               <p className={`text-2xl font-bold ${netIncome >= 0 ? 'text-blue-600' : 'text-red-600'}`}>
                                 {formatCurrency(netIncome)}
                               </p>
                             </div>
                             <Badge variant={netIncome >= 0 ? "default" : "destructive"}>
-                              {netIncome >= 0 ? 'Ø±Ø¨Ø­' : 'Ø®Ø³Ø§Ø±Ø©'}
+                              {netIncome >= 0 ? 'ربح' : 'خسارة'}
                             </Badge>
                           </div>
                         </CardContent>
@@ -566,7 +567,7 @@ export function IncomeStatementReport() {
                         <CardContent className="p-4">
                           <div className="flex items-center justify-between">
                             <div>
-                              <p className="text-sm text-muted-foreground">Ù‡Ø§Ù…Ø´ Ø§Ù„Ø±Ø¨Ø­</p>
+                              <p className="text-sm text-muted-foreground">هامش الربح</p>
                               <p className="text-2xl font-bold">
                                 {profitMargin.toFixed(2)}%
                               </p>
@@ -581,9 +582,9 @@ export function IncomeStatementReport() {
                       <Table>
                         <TableHeader>
                           <TableRow className="bg-muted">
-                            <TableHead className="w-[120px]">Ø±Ù…Ø² Ø§Ù„Ø­Ø³Ø§Ø¨</TableHead>
-                            <TableHead>Ø§Ø³Ù… Ø§Ù„Ø­Ø³Ø§Ø¨</TableHead>
-                            <TableHead className="text-right">Ø§Ù„Ù…Ø¨Ù„Øº</TableHead>
+                            <TableHead className="w-[120px]">رمز الحساب</TableHead>
+                            <TableHead>اسم الحساب</TableHead>
+                            <TableHead className="text-right">المبلغ</TableHead>
                           </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -592,11 +593,11 @@ export function IncomeStatementReport() {
                             <TableCell colSpan={3} className="font-bold text-green-700">
                               <div className="flex items-center gap-2">
                                 <TrendingUp className="h-4 w-4" />
-                                Ø§Ù„Ø¥ÙŠØ±Ø§Ø¯Ø§Øª
+                                الإيرادات
                               </div>
                             </TableCell>
                           </TableRow>
-                          {reportData.sections[0]?.accounts?.map((account, index) => (
+                          {reportData.sections[0]?.accounts?.filter(account => Number(account.balance) !== 0).map((account, index) => (
                             <TableRow key={index}>
                               <TableCell className="font-mono">{account.accountCode}</TableCell>
                               <TableCell>{account.accountNameAr || account.accountName}</TableCell>
@@ -606,7 +607,7 @@ export function IncomeStatementReport() {
                             </TableRow>
                           ))}
                           <TableRow className="bg-green-100 font-bold">
-                            <TableCell colSpan={2}>Ø¥Ø¬Ù…Ø§Ù„ÙŠ Ø§Ù„Ø¥ÙŠØ±Ø§Ø¯Ø§Øª</TableCell>
+                            <TableCell colSpan={2}>إجمالي الإيرادات</TableCell>
                             <TableCell className="text-right text-green-700">
                               {formatCurrency(totalRevenue)}
                             </TableCell>
@@ -622,11 +623,11 @@ export function IncomeStatementReport() {
                             <TableCell colSpan={3} className="font-bold text-red-700">
                               <div className="flex items-center gap-2">
                                 <TrendingDown className="h-4 w-4" />
-                                Ø§Ù„Ù…ØµØ±ÙˆÙØ§Øª
+                                المصروفات
                               </div>
                             </TableCell>
                           </TableRow>
-                          {reportData.sections[1]?.accounts?.map((account, index) => (
+                          {reportData.sections[1]?.accounts?.filter(account => Number(account.balance) !== 0).map((account, index) => (
                             <TableRow key={index}>
                               <TableCell className="font-mono">{account.accountCode}</TableCell>
                               <TableCell>{account.accountNameAr || account.accountName}</TableCell>
@@ -636,7 +637,7 @@ export function IncomeStatementReport() {
                             </TableRow>
                           ))}
                           <TableRow className="bg-red-100 font-bold">
-                            <TableCell colSpan={2}>Ø¥Ø¬Ù…Ø§Ù„ÙŠ Ø§Ù„Ù…ØµØ±ÙˆÙØ§Øª</TableCell>
+                            <TableCell colSpan={2}>إجمالي المصروفات</TableCell>
                             <TableCell className="text-right text-red-700">
                               {formatCurrency(totalExpenses)}
                             </TableCell>
@@ -645,7 +646,7 @@ export function IncomeStatementReport() {
                           {/* Net Income */}
                           <TableRow className={`${netIncome >= 0 ? 'bg-blue-100' : 'bg-red-200'} font-bold text-lg`}>
                             <TableCell colSpan={2} className="py-6">
-                              ØµØ§ÙÙŠ Ø§Ù„Ø¯Ø®Ù„
+                              صافي الدخل
                             </TableCell>
                             <TableCell className={`text-right py-6 ${netIncome >= 0 ? 'text-blue-700' : 'text-red-700'}`}>
                               {formatCurrency(netIncome)}
@@ -658,8 +659,8 @@ export function IncomeStatementReport() {
                 ) : (
                   <div className="flex flex-col items-center justify-center h-64 text-muted-foreground">
                     <FileText className="h-16 w-16 mb-4 opacity-20" />
-                    <p className="text-lg">Ù„Ø§ ØªÙˆØ¬Ø¯ Ø¨ÙŠØ§Ù†Ø§Øª Ù„Ø¹Ø±Ø¶Ù‡Ø§</p>
-                    <p className="text-sm">Ù‚Ù… Ø¨Ø¥Ù†Ø´Ø§Ø¡ Ù‚ÙŠÙˆØ¯ Ù…Ø­Ø§Ø³Ø¨ÙŠØ© Ù„Ù„Ø¥ÙŠØ±Ø§Ø¯Ø§Øª ÙˆØ§Ù„Ù…ØµØ±ÙˆÙØ§Øª</p>
+                    <p className="text-lg">لا توجد بيانات لعرضها</p>
+                    <p className="text-sm">قم بإنشاء قيود محاسبية للإيرادات والمصروفات</p>
                   </div>
                 )}
               </TabsContent>
@@ -673,7 +674,7 @@ export function IncomeStatementReport() {
                       <CardHeader>
                         <CardTitle className="flex items-center gap-2">
                           <BarChart3 className="h-5 w-5" />
-                          Ù…Ù‚Ø§Ø±Ù†Ø© Ø§Ù„Ø¥ÙŠØ±Ø§Ø¯Ø§Øª ÙˆØ§Ù„Ù…ØµØ±ÙˆÙØ§Øª (6 Ø£Ø´Ù‡Ø±)
+                          مقارنة الإيرادات والمصروفات (6 أشهر)
                         </CardTitle>
                       </CardHeader>
                       <CardContent>
@@ -684,8 +685,8 @@ export function IncomeStatementReport() {
                             <YAxis />
                             <Tooltip formatter={(value) => formatCurrency(Number(value))} />
                             <Legend />
-                            <Bar dataKey="revenue" name="Ø§Ù„Ø¥ÙŠØ±Ø§Ø¯Ø§Øª" fill="#22c55e" />
-                            <Bar dataKey="expenses" name="Ø§Ù„Ù…ØµØ±ÙˆÙØ§Øª" fill="#ef4444" />
+                            <Bar dataKey="revenue" name="الإيرادات" fill="#22c55e" />
+                            <Bar dataKey="expenses" name="المصروفات" fill="#ef4444" />
                           </BarChart>
                         </ResponsiveContainer>
                       </CardContent>
@@ -696,7 +697,7 @@ export function IncomeStatementReport() {
                       <CardHeader>
                         <CardTitle className="flex items-center gap-2">
                           <LineChartIcon className="h-5 w-5" />
-                          Ø§ØªØ¬Ø§Ù‡ ØµØ§ÙÙŠ Ø§Ù„Ø¯Ø®Ù„ (6 Ø£Ø´Ù‡Ø±)
+                          اتجاه صافي الدخل (6 أشهر)
                         </CardTitle>
                       </CardHeader>
                       <CardContent>
@@ -710,7 +711,7 @@ export function IncomeStatementReport() {
                             <Line 
                               type="monotone" 
                               dataKey="netIncome" 
-                              name="ØµØ§ÙÙŠ Ø§Ù„Ø¯Ø®Ù„" 
+                              name="صافي الدخل"
                               stroke="#3b82f6" 
                               strokeWidth={2}
                               dot={{ r: 4 }}
@@ -723,21 +724,21 @@ export function IncomeStatementReport() {
                     {/* Monthly Comparison Table */}
                     <Card>
                       <CardHeader>
-                        <CardTitle>Ø§Ù„Ø¬Ø¯ÙˆÙ„ Ø§Ù„Ù…Ù‚Ø§Ø±Ù† Ø§Ù„Ø´Ù‡Ø±ÙŠ</CardTitle>
+                        <CardTitle>الجدول المقارن الشهري</CardTitle>
                       </CardHeader>
                       <CardContent>
                         <Table>
                           <TableHeader>
                             <TableRow>
-                              <TableHead>Ø§Ù„Ø´Ù‡Ø±</TableHead>
-                              <TableHead className="text-right">Ø§Ù„Ø¥ÙŠØ±Ø§Ø¯Ø§Øª</TableHead>
-                              <TableHead className="text-right">Ø§Ù„Ù…ØµØ±ÙˆÙØ§Øª</TableHead>
-                              <TableHead className="text-right">ØµØ§ÙÙŠ Ø§Ù„Ø¯Ø®Ù„</TableHead>
-                              <TableHead className="text-right">Ù‡Ø§Ù…Ø´ Ø§Ù„Ø±Ø¨Ø­</TableHead>
+                              <TableHead>الشهر</TableHead>
+                              <TableHead className="text-right">الإيرادات</TableHead>
+                              <TableHead className="text-right">المصروفات</TableHead>
+                              <TableHead className="text-right">صافي الدخل</TableHead>
+                              <TableHead className="text-right">هامش الربح</TableHead>
                             </TableRow>
                           </TableHeader>
                           <TableBody>
-                            {periodsData.map((period, index) => {
+                            {periodsData.filter(period => period.data !== undefined).map((period, index) => {
                               const revenue = period.data?.totalCredits || 0;
                               const expenses = period.data?.totalDebits || 0;
                               const net = period.data?.netIncome || 0;
@@ -771,8 +772,8 @@ export function IncomeStatementReport() {
                 ) : (
                   <div className="flex flex-col items-center justify-center h-64 text-muted-foreground">
                     <LineChartIcon className="h-16 w-16 mb-4 opacity-20" />
-                    <p className="text-lg">Ù„Ø§ ØªÙˆØ¬Ø¯ Ø¨ÙŠØ§Ù†Ø§Øª Ù„Ù„ØªØ­Ù„ÙŠÙ„</p>
-                    <p className="text-sm">Ø£Ø¶Ù Ø§Ù„Ù…Ø²ÙŠØ¯ Ù…Ù† Ø§Ù„Ù‚ÙŠÙˆØ¯ Ø§Ù„Ù…Ø­Ø§Ø³Ø¨ÙŠØ© Ù„Ø±Ø¤ÙŠØ© Ø§Ù„Ø§ØªØ¬Ø§Ù‡Ø§Øª</p>
+                    <p className="text-lg">لا توجد بيانات للتحليل</p>
+                    <p className="text-sm">أضف المزيد من القيود المحاسبية لرؤية الاتجاهات</p>
                   </div>
                 )}
               </TabsContent>

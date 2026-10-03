@@ -11,12 +11,21 @@ interface ReceivablesReportProps {
 }
 
 export const ReceivablesReport = ({ companyName }: ReceivablesReportProps) => {
-const { data: receivablesData, isLoading } = useReceivablesReport()
+  const { data: receivablesData, isLoading, isFetching, isError, error, refetch, reportMetadata } = useReceivablesReport()
 
   const { formatCurrency } = useCurrencyFormatter()
 
+  const exportBlocked = isLoading || isFetching || isError || !receivablesData;
+  const scopeNote = <div className="space-y-1 text-sm text-muted-foreground">
+    <p>تاريخ قطع الفواتير: <bdi>{reportMetadata.asOf}</bdi></p>
+    <p>{reportMetadata.description}</p>
+    {reportMetadata.retrievedAt && <p>وقت قراءة المصدر: <bdi>{reportMetadata.retrievedAt}</bdi></p>}
+    {isFetching && <p role="status">جاري تحديث الأرصدة؛ التصدير متوقف حتى تكتمل القراءة.</p>}
+  </div>;
+  const escapeText = (value: string) => value.replace(/[&<>"']/g, character => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[character]!);
+
   const handleExportHTML = () => {
-    if (!receivablesData) return
+    if (exportBlocked || !receivablesData) return
 
     const tableContent = `
       <table>
@@ -32,7 +41,7 @@ const { data: receivablesData, isLoading } = useReceivablesReport()
         <tbody>
           ${receivablesData.map(item => `
             <tr>
-              <td>${item.customer_name}</td>
+              <td>${escapeText(item.customer_name)}</td>
               <td>${formatCurrency(item.amount)}</td>
               <td>${new Date(item.due_date).toLocaleDateString('ar-QA')}</td>
               <td>${item.overdue_days}</td>
@@ -49,7 +58,11 @@ const { data: receivablesData, isLoading } = useReceivablesReport()
       </table>
     `
 
-    exportToHTML(tableContent, "تقرير الحسابات المدينة", companyName)
+    exportToHTML(tableContent, "تقرير الحسابات المدينة", companyName, reportMetadata)
+  }
+
+  if (isError) {
+    return <section className="dw-panel"><div className="dw-state" role="alert"><p>تعذر استكمال قراءة الأرصدة: {error instanceof Error ? error.message : 'خطأ في المصدر'}. لا يمكن اعتبار النتيجة كشفًا خاليًا من الأرصدة.</p><Button onClick={() => void refetch()} disabled={isFetching}>إعادة المحاولة</Button>{scopeNote}</div></section>;
   }
 
   if (isLoading) {
@@ -63,12 +76,14 @@ const { data: receivablesData, isLoading } = useReceivablesReport()
     )
   }
 
-  if (!receivablesData || receivablesData.length === 0) {
+  if (!receivablesData) return <div className="dw-panel" role="status">لم تكتمل قراءة الأرصدة بعد؛ التصدير غير متاح. {scopeNote}</div>;
+
+  if (receivablesData.length === 0) {
     return (
       <div className="dw-panel">
         <div className="dw-state">
           <Inbox size={28} />
-          <p>لا توجد حسابات مدينة مستحقة</p>
+          <p>لا توجد حسابات مدينة مستحقة ضمن قراءة الفواتير الحالية</p>{scopeNote}
         </div>
       </div>
     )
@@ -86,16 +101,17 @@ const { data: receivablesData, isLoading } = useReceivablesReport()
           <span className="dw-section-number">01</span>
           <div>
             <h2>أرصدة العملاء المستحقة</h2>
-            <p>المبالغ المستحقة من العملاء كما في {new Date().toLocaleDateString('ar-QA')}</p>
+            <p>أرصدة الفواتير الحالية وقت القراءة، لفواتير العملاء بتاريخ الفاتورة حتى تاريخ القطع.</p>
           </div>
         </div>
-        <Button onClick={handleExportHTML} size="sm" variant="outline">
+        <Button onClick={handleExportHTML} disabled={exportBlocked} size="sm" variant="outline">
           <Download className="h-4 w-4 mr-2" />
           تحميل التقرير
         </Button>
       </header>
 
       <div className="p-5 pt-0">
+        {scopeNote}
         <div className="dw-metrics cells-3" style={{ marginBottom: 20 }}>
           <div className="dw-metric dw-metric-accent">
             <div className="dw-metric-top">

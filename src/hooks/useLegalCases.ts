@@ -4,6 +4,14 @@ import type { Tables } from "@/integrations/supabase/types";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCompanyFilter } from "@/hooks/useCompanyScope";
 import { toast } from "sonner";
+import { loadLegalCasesPage, type LegalCaseFilters } from "@/services/legalCaseQueries";
+import { parseLegalClaimAmount } from '@/components/legal/workspace/legalCaseExport';
+
+async function verifyLegalCustomer(companyId: string, clientId?: string) {
+  if (!clientId) return;
+  const { data, error } = await supabase.from('customers').select('id').eq('id', clientId).eq('company_id', companyId).single();
+  if (error || !data) throw new Error('الطرف المحدد غير متاح ضمن الشركة الحالية');
+}
 
 type LegalCaseCustomer = Pick<
   Tables<'customers'>,
@@ -122,18 +130,7 @@ export interface LegalCaseFormData {
   outcome_notes?: string | null;
 }
 
-interface UseLegalCasesFilters {
-  contract_id?: string;
-  case_status?: string;
-  exclude_cancelled?: boolean;
-  case_type?: string;
-  priority?: string;
-  client_id?: string;
-  lawyer_id?: string;
-  search?: string;
-  page?: number;
-  pageSize?: number;
-}
+type UseLegalCasesFilters = LegalCaseFilters;
 
 export const useLegalCases = (filters?: UseLegalCasesFilters, enabled: boolean = true) => {
   const { user } = useAuth();
@@ -144,154 +141,56 @@ export const useLegalCases = (filters?: UseLegalCasesFilters, enabled: boolean =
     queryFn: async () => {
       if (!user?.id) throw new Error('المستخدم غير مصرح له');
 
-      const page = filters?.page || 1;
-      const pageSize = filters?.pageSize || 50;
-      const from = (page - 1) * pageSize;
-      const to = from + pageSize - 1;
-
-      let query = supabase
-        .from('legal_cases')
-        .select(`
-          id,
-          case_number,
-          case_title,
-          case_title_ar,
-          case_type,
-          case_status,
-          workflow_stage,
-          stage_updated_at,
-          appeal_deadline,
-          closed_at,
-          closure_reason,
-          reopened_at,
-          reopen_reason,
-          priority,
-          client_id,
-          client_name,
-          case_value,
-          total_costs,
-          created_at,
-          updated_at,
-          hearing_date,
-          filing_date,
-          court_name,
-          case_reference,
-          judge_name,
-          notes,
-          tags,
-          description,
-          contract_id,
-          case_direction,
-          outcome_type,
-          outcome_amount,
-          outcome_amount_type,
-          payment_direction,
-          outcome_date,
-          outcome_journal_entry_id,
-          outcome_notes,
-          outcome_payment_status,
-          contract:contracts!legal_cases_contract_id_fkey(
-            id,
-            contract_number,
-            customer_id,
-            customer:customers!fk_contracts_customer_id(
-              id,
-              first_name,
-              last_name,
-              first_name_ar,
-              last_name_ar,
-              company_name,
-              company_name_ar,
-              customer_type,
-              phone
-            )
-          )
-        `, { count: 'exact' })
-        .order('hearing_date', { ascending: true, nullsFirst: false })
-        .range(from, to);
-
-      // Apply company filter
-      if (companyFilter.company_id) {
-        query = query.eq('company_id', companyFilter.company_id);
-      }
-
-      // Apply filters
-      if (filters?.contract_id) {
-        query = query.eq('contract_id', filters.contract_id);
-      }
-      if (filters?.case_status) {
-        query = query.eq('case_status', filters.case_status);
-      }
-      if (filters?.exclude_cancelled) {
-        query = query.or('case_status.is.null,case_status.neq.cancelled');
-      }
-      if (filters?.case_type) {
-        query = query.eq('case_type', filters.case_type);
-      }
-      if (filters?.priority) {
-        query = query.eq('priority', filters.priority);
-      }
-      if (filters?.client_id) {
-        query = query.eq('client_id', filters.client_id);
-      }
-      if (filters?.lawyer_id) {
-        query = query.eq('primary_lawyer_id', filters.lawyer_id);
-      }
-      if (filters?.search) {
-        query = query.or(`case_title.ilike.%${filters.search}%,case_number.ilike.%${filters.search}%,client_name.ilike.%${filters.search}%`);
-      }
-
-      const { data, error, count } = await query;
-
-      if (error) throw error;
-      return { data: data as LegalCase[], count: count || 0 };
+      if (!companyFilter.company_id) throw new Error("تعذر تحديد الشركة");
+      return loadLegalCasesPage(supabase, companyFilter.company_id, filters);
     },
-    enabled: !!user?.id && enabled,
+    enabled: !!user?.id && !!companyFilter.company_id && enabled,
     staleTime: 30000, // Cache for 30 seconds
   });
 };
 
 export const useLegalCase = (caseId: string) => {
   const { user } = useAuth();
+  const companyFilter = useCompanyFilter();
 
   return useQuery({
-    queryKey: ['legal-case', caseId],
+    queryKey: ['legal-case', companyFilter.company_id, caseId],
     queryFn: async () => {
       if (!user?.id) throw new Error('المستخدم غير مصرح له');
+      if (!companyFilter.company_id) throw new Error('تعذر تحديد الشركة');
 
       const { data, error } = await supabase
         .from('legal_cases')
         .select('*')
         .eq('id', caseId)
+        .eq('company_id', companyFilter.company_id)
         .single();
 
       if (error) throw error;
       return data as LegalCase;
     },
-    enabled: !!user?.id && !!caseId,
+    enabled: !!user?.id && !!companyFilter.company_id && !!caseId,
   });
 };
 
 export const useCreateLegalCase = () => {
   const { user } = useAuth();
+  const companyFilter = useCompanyFilter();
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: async (formData: LegalCaseFormData) => {
       if (!user?.id) throw new Error('المستخدم غير مصرح له');
 
-      // Get user's company
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('company_id')
-        .eq('user_id', user.id)
-        .single();
-
-      if (!profile?.company_id) throw new Error('لم يتم العثور على الشركة');
+      const companyId = companyFilter.company_id;
+      if (!companyId) throw new Error('لم يتم العثور على الشركة');
+      parseLegalClaimAmount(formData.case_value);
+      if (!['filed_by_us', 'filed_against_us'].includes(formData.case_direction || 'filed_by_us')) throw new Error('اتجاه الدعوى غير صالح');
+      await verifyLegalCustomer(companyId, formData.client_id);
 
       // Generate case number
       const { data: caseNumber, error: numberError } = await supabase
-        .rpc('generate_legal_case_number', { company_id_param: profile.company_id });
+        .rpc('generate_legal_case_number', { company_id_param: companyId });
 
       if (numberError) throw numberError;
 
@@ -303,7 +202,8 @@ export const useCreateLegalCase = () => {
         .insert({
           ...formData,
           case_number: caseNumber,
-          company_id: profile.company_id,
+          company_id: companyId,
+          case_direction: formData.case_direction || 'filed_by_us',
           total_costs,
           created_by: user.id,
         })
@@ -317,7 +217,7 @@ export const useCreateLegalCase = () => {
         .from('legal_case_activities')
         .insert({
           case_id: data.id,
-          company_id: profile.company_id,
+          company_id: companyId,
           activity_type: 'case_created',
           activity_title: 'تم إنشاء القضية',
           activity_description: `تم إنشاء القضية ${data.case_number} - ${data.case_title}`,
@@ -339,22 +239,35 @@ export const useCreateLegalCase = () => {
 
 export const useUpdateLegalCase = () => {
   const { user } = useAuth();
+  const companyFilter = useCompanyFilter();
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: async ({ id, data }: { id: string; data: Partial<LegalCaseFormData> }) => {
       if (!user?.id) throw new Error('المستخدم غير مصرح له');
+      const companyId = companyFilter.company_id;
+      if (!companyId) throw new Error('تعذر تحديد الشركة');
+      if (data.case_value !== undefined) parseLegalClaimAmount(data.case_value);
+      if (data.case_direction !== undefined && !['filed_by_us', 'filed_against_us'].includes(data.case_direction)) throw new Error('اتجاه الدعوى غير صالح');
+      await verifyLegalCustomer(companyId, data.client_id);
 
       // Calculate total costs if financial fields are updated
       // Workflow status is changed only through the audited workflow RPCs.
       const { case_status: _ignoredStatus, ...editableData } = data;
       const updateData: any = { ...editableData };
+      // Never allow a form payload to move a case between companies or replace its identity.
+      delete updateData.company_id;
+      delete updateData.id;
+      delete updateData.created_by;
       if (data.legal_fees !== undefined || data.court_fees !== undefined || data.other_expenses !== undefined) {
-        const { data: currentCase } = await supabase
+        const { data: currentCase, error: currentError } = await supabase
           .from('legal_cases')
           .select('legal_fees, court_fees, other_expenses')
           .eq('id', id)
+          .eq('company_id', companyId)
           .single();
+
+        if (currentError) throw currentError;
 
         if (currentCase) {
           updateData.total_costs = 
@@ -368,24 +281,19 @@ export const useUpdateLegalCase = () => {
         .from('legal_cases')
         .update(updateData)
         .eq('id', id)
+        .eq('company_id', companyId)
         .select()
         .single();
 
       if (error) throw error;
 
       // Create activity log
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('company_id')
-        .eq('user_id', user.id)
-        .single();
-
-      if (profile?.company_id) {
+      if (result) {
         await supabase
           .from('legal_case_activities')
           .insert({
             case_id: id,
-            company_id: profile.company_id,
+            company_id: companyId,
             activity_type: 'case_updated',
             activity_title: 'تم تحديث القضية',
             activity_description: `تم تحديث بيانات القضية`,
@@ -416,6 +324,7 @@ export const useLegalCaseStats = () => {
     queryKey: ['legal-case-stats', companyFilter],
     queryFn: async () => {
       if (!user?.id) throw new Error('المستخدم غير مصرح له');
+      if (!companyFilter.company_id) throw new Error('تعذر تحديد الشركة');
 
       let query = supabase
         .from('legal_cases')
@@ -474,7 +383,7 @@ export const useLegalCaseStats = () => {
 
       return stats;
     },
-    enabled: !!user?.id,
+    enabled: !!user?.id && !!companyFilter.company_id,
     staleTime: 60000, // Cache for 1 minute
   });
 };

@@ -84,6 +84,10 @@ const FinancialStatementsPanel = lazyWithRetry(
   () => import("./finance/FinancialStatementsPanel"),
   "FinancialStatementsPanel"
 );
+const InsolvencyPortfolio = lazyWithRetry(
+  () => import("./finance/InsolvencyPortfolio"),
+  "InsolvencyPortfolio"
+);
 const AnalysisPage = lazyWithRetry(
   () =>
     import("./finance/FinanceSectionPages").then((m) => ({
@@ -381,6 +385,14 @@ export default function Finance() {
           element={
             <ProtectedFinanceRoute permission="finance.view">
               <ReportsLibrary />
+            </ProtectedFinanceRoute>
+          }
+        />
+        <Route
+          path="reports/insolvency-portfolio"
+          element={
+            <ProtectedFinanceRoute permission="finance.reports.view">
+              <InsolvencyPortfolio />
             </ProtectedFinanceRoute>
           }
         />

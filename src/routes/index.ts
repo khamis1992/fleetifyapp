@@ -58,6 +58,7 @@ const TeamReports = lazy(() => import('@/pages/TeamReports'));
 const TeamEmployeeDetails = lazy(() => import('@/pages/EmployeeDetails'));
 const EmployeeDetailedReport = lazy(() => import('@/pages/EmployeeDetailedReport'));
 const Finance = lazy(() => import('@/pages/Finance'));
+const InsolvencyPortfolioRoute = lazy(() => import('@/pages/finance/InsolvencyPortfolioRoute'));
 const CustomersPageRedesigned = lazy(() => import('@/pages/customers/CustomersPageRedesigned'));
 const CustomerDetailsPageNew = lazy(() => import('@/components/customers/CustomerDetailsPageNew'));
 const CustomerCRM = lazy(() => import('@/pages/customers/CustomerCRMRedesigned'));
@@ -646,6 +647,19 @@ const routeConfigs: RouteConfig[] = [
     description: 'Redirects to main dashboard',
     group: 'dashboard',
     priority: 12,
+    protected: true,
+    layout: 'bento',
+    requiredRole: 'admin',
+  },
+  {
+    path: '/finance/reports/insolvency-portfolio',
+    component: InsolvencyPortfolioRoute,
+    lazy: true,
+    exact: true,
+    title: 'Financial position and lawyer portfolio',
+    description: 'Complete company registers, available attachments and outstanding evidence',
+    group: 'finance',
+    priority: 11,
     protected: true,
     layout: 'bento',
     requiredRole: 'admin',

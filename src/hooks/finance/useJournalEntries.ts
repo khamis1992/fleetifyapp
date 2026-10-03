@@ -261,6 +261,7 @@ export const useCreateJournalEntry = () => {
   const idempotencyKey = useRef(crypto.randomUUID());
 
   return useMutation({
+    retry: false,
     mutationFn: async (entry: CreateJournalEntryInput) => {
       if (!companyId) throw new Error("No company access");
       if (!financeAccess.can('finance.journal.create_draft')) {
@@ -286,12 +287,13 @@ export const useCreateJournalEntry = () => {
         p_idempotency_key: idempotencyKey.current,
         p_actor_id: user?.id,
       });
-      if (error) throw error;
+      if (error) throw new Error(error.message);
       return data;
     },
     onSuccess: () => {
       idempotencyKey.current = crypto.randomUUID();
       queryClient.invalidateQueries({ queryKey: queryKeys.journalEntries.all });
+      queryClient.invalidateQueries({ queryKey: ['enhancedJournalEntries'] });
       toast.success("تم إنشاء القيد بنجاح");
     },
     onError: (error) => {
@@ -300,27 +302,37 @@ export const useCreateJournalEntry = () => {
   });
 };
 
+export type PostJournalEntryInput = string | {
+  entryId: string;
+  selfReviewAcknowledged?: boolean;
+};
+
 export const usePostJournalEntry = () => {
   const queryClient = useQueryClient();
   const { companyId, user } = useUnifiedCompanyAccess();
   const financeAccess = useFinanceAccessGuard();
 
   return useMutation({
-    mutationFn: async (entryId: string) => {
-      if (!companyId) throw new Error("No company access");
+    retry: false,
+    mutationFn: async (input: PostJournalEntryInput) => {
+      if (!companyId || !user?.id) throw new Error("Authenticated company required");
       if (!financeAccess.can('finance.journal.post')) {
         throw new Error("ليس لديك صلاحية ترحيل القيود المحاسبية");
       }
+      const entryId = typeof input === 'string' ? input : input.entryId;
+      const selfReviewAcknowledged = typeof input !== 'string' && input.selfReviewAcknowledged === true;
       const { data, error } = await supabase.rpc('post_manual_journal_entry_v1', {
         p_company_id: companyId,
         p_entry_id: entryId,
         p_actor_id: user?.id,
+        p_self_review_acknowledged: selfReviewAcknowledged,
       });
-      if (error) throw error;
+      if (error) throw new Error(error.message);
       return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.journalEntries.all });
+      queryClient.invalidateQueries({ queryKey: ['enhancedJournalEntries'] });
       queryClient.invalidateQueries({ queryKey: ["accountBalances"] });
       queryClient.invalidateQueries({ queryKey: ["trialBalance"] });
       toast.success("تم ترحيل القيد بنجاح");

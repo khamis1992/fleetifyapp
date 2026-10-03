@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { CustomerAccountTransaction } from '@/types/customer';
+import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
+import type { CustomerAccountTransaction } from '@/types/customer';
 
 interface UseCustomerAccountStatementParams {
   customerCode?: string;
@@ -10,72 +11,42 @@ interface UseCustomerAccountStatementParams {
 }
 
 export const useCustomerAccountStatement = ({
-  customerCode,
-  dateFrom,
-  dateTo,
-  enabled = true
+  customerCode, dateFrom, dateTo, enabled = true,
 }: UseCustomerAccountStatementParams) => {
-  return useQuery({
-    queryKey: ['customer-account-statement', customerCode, dateFrom, dateTo],
+  const access = useUnifiedCompanyAccess();
+  const scopeBusy = access.isInitializing || access.isAuthenticating;
+  const actorId = access.user?.id;
+  const canRead = enabled && !!customerCode && !!access.companyId && !!actorId && !scopeBusy && !access.authError;
+  const scopeError = enabled && !!customerCode && !scopeBusy && (access.authError || !access.companyId || !actorId)
+    ? new Error(access.authError || 'تعذر تحديد جلسة المستخدم أو شركة كشف الحساب.')
+    : null;
+  const query = useQuery({
+    queryKey: ['customer-account-statement', actorId, access.companyId, customerCode, dateFrom, dateTo],
     queryFn: async (): Promise<CustomerAccountTransaction[]> => {
-      if (!customerCode) {
-        throw new Error('Customer code is required');
+      if (!customerCode || !access.companyId || !actorId || scopeBusy || access.authError) {
+        throw new Error('تعذر تحديد نطاق كشف الحساب.');
       }
-
-      // Get current user's company with currency
-      const { data: authData } = await supabase.auth.getUser();
-      if (!authData.user?.id) {
-        throw new Error('User is not authenticated');
-      }
-
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('company_id, companies(currency)')
-        .eq('user_id', authData.user.id)
-        .single();
-
-      if (!profile?.company_id) {
-        throw new Error('User company not found');
-      }
-
-      // Call the database function
-      console.log('🔍 [useCustomerAccountStatement] Calling RPC with:', {
-        p_company_id: profile.company_id,
-        p_customer_code: customerCode,
-        p_date_from: dateFrom,
-        p_date_to: dateTo
-      });
-
+      access.validateCompanyAccess(access.companyId);
       const { data, error } = await supabase.rpc('get_customer_account_statement_by_code', {
-        p_company_id: profile.company_id,
+        p_company_id: access.companyId,
         p_customer_code: customerCode,
         p_date_from: dateFrom,
-        p_date_to: dateTo
+        p_date_to: dateTo,
       });
-
-      if (error) {
-        console.error('❌ [useCustomerAccountStatement] RPC Error:', {
-          message: error.message,
-          details: error.details,
-          hint: error.hint,
-          code: error.code
-        });
-        
-        // Check if function doesn't exist
-        if (error.message?.includes('function') && error.message?.includes('does not exist')) {
-          throw new Error('Database function not installed. Please run CREATE_SIMPLE_CUSTOMER_STATEMENT.sql in Supabase Dashboard.');
-        }
-        
-        throw error;
-      }
-
+      if (error) throw new Error(error.message || 'تعذر قراءة كشف حساب العميل.');
       return (data || []).map(item => ({
         ...item,
-        transaction_type: item.transaction_type as 'payment' | 'invoice'
+        transaction_type: item.transaction_type as 'payment' | 'invoice',
       }));
     },
-    enabled: enabled && !!customerCode,
-    staleTime: 1000 * 60 * 5, // 5 minutes
-    gcTime: 1000 * 60 * 10 // 10 minutes
+    enabled: canRead,
+    staleTime: 1000 * 60 * 5,
+    gcTime: 1000 * 60 * 10,
   });
+  return {
+    ...query,
+    data: canRead && !query.isFetching && !query.isError ? query.data : undefined,
+    isLoading: scopeBusy || (canRead && (query.isLoading || query.isFetching)),
+    error: scopeError || query.error,
+  };
 };

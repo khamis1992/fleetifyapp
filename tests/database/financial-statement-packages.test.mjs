@@ -12,7 +12,7 @@ const cash='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1',revenue='aaaaaaaa-aaaa-4aaa-8a
 const capital='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa3',expense='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa4';
 const fixed='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa5',liability='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa6';
 const retained='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa7',reserve='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa8';
-const migration='20260918002000_financial_statement_packages';
+const migration='20260917235336_financial_statement_packages';
 const review={classifications:true,policies:true,reconciliations:true,disclosures:true,periodCutoff:true};
 let db,config;
 const query=async(sql,args=[])=>(await db.query(sql,args)).rows;
@@ -62,9 +62,9 @@ async function setup(instance=new PGlite()){
  const baseline=await read('../../supabase/migrations/20260712052300_atomic_payment_cancellation_and_contract_totals.sql');
  const start=baseline.indexOf('CREATE OR REPLACE FUNCTION public.is_finance_action_authorized(');
  await db.exec(baseline.slice(start,baseline.indexOf('CREATE OR REPLACE FUNCTION public.canonical_contract_paid_amount',start)));
- await db.exec(await read('../../supabase/migrations/20260918001000_professional_balance_sheets.sql'));
+ await db.exec(await read('../../supabase/migrations/20260917235302_professional_balance_sheets.sql'));
  await db.exec(await read(`../../supabase/migrations/${migration}.sql`));
- await db.exec(await read('../../supabase/migrations/20260918005000_financial_report_calculation_performance.sql')); 
+ await db.exec(await read('../../supabase/migrations/20260918014423_financial_report_calculation_performance.sql'));
  await db.query(`INSERT INTO companies VALUES($1,'Synthetic company','شركة اختبار','TEST-CR','QAR','Doha','الدوحة'),($2,'Other company','شركة أخرى','OTHER','QAR','Doha','الدوحة')`,[company,foreign]);
  await db.query(`INSERT INTO profiles(user_id,company_id,is_active,first_name,last_name) VALUES($1,$3,true,'Maker','Accountant'),($2,$3,true,'Reviewer','Accountant')`,[maker,reviewer,company]);
  await db.query(`INSERT INTO user_roles VALUES($1,$3,'accountant'),($2,$3,'accountant')`,[maker,reviewer,company]);

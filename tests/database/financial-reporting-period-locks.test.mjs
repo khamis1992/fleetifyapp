@@ -12,7 +12,7 @@ const accountant='33333333-3333-4333-8333-333333333333';
 const manager='44444444-4444-4444-8444-444444444444';
 const outsider='55555555-5555-4555-8555-555555555555';
 const reason='Accounting reconciliation completed and cutoff explicitly authorized.';
-const migration='20260918003000_financial_reporting_period_locks';
+const migration='20260917235406_financial_reporting_period_locks';
 const read=p=>readFile(new URL(p,import.meta.url),'utf8');
 let db;
 const rows=async(sql,args=[]) => (await db.query(sql,args)).rows;
@@ -66,7 +66,7 @@ async function install(instance=new PGlite()) {
   const controls=await read('../../supabase/migrations/20260627001000_financial_controls_layer.sql');
   await instance.exec(controls.slice(controls.indexOf('CREATE OR REPLACE FUNCTION public.financial_controls_bypass_enabled()'),
     controls.indexOf('CREATE OR REPLACE FUNCTION public.prevent_payment_hard_delete()')));
-  await instance.exec(await read('../../supabase/migrations/20260918001000_professional_balance_sheets.sql'));
+  await instance.exec(await read('../../supabase/migrations/20260917235302_professional_balance_sheets.sql'));
   await instance.exec(await read(`../../supabase/migrations/${migration}.sql`));
   // The existing trigger remains in production; exercise the replacement function too.
   await instance.exec(`CREATE TRIGGER enforce_journal_entry_financial_controls_trigger BEFORE INSERT OR UPDATE ON journal_entries

@@ -54,9 +54,19 @@ export interface FinancialJournalFilters {
   costCenterId?: string;
 }
 
+/** Literal substring search, quoted for PostgREST's OR grammar. */
+export function buildFinancialJournalSearchFilter(searchTerm?: string): string | null {
+  if (!searchTerm?.trim()) return null;
+  // imatch avoids LIKE's %/_/* aliases; escape every regex metacharacter.
+  const pattern = searchTerm.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const quoted = '"' + pattern.replace(/\\/g, '\\\\').replace(/"/g, '\\"') + '"';
+  return ['entry_number', 'description'].map(column => column + '.imatch.' + quoted).join(',');
+}
+
 /** Page parent entries and lines independently, so an embedded row cap cannot truncate a journal. */
-export async function readFinancialJournals(companyId: string, filters?: FinancialJournalFilters) {
+export async function readFinancialJournals(companyId: string, filters?: FinancialJournalFilters, signal?: AbortSignal) {
   requireFinanceCompany(companyId);
+  const searchFilter = buildFinancialJournalSearchFilter(filters?.searchTerm);
   const entries = await readFinancialPages((from, to) => {
     let query = supabase
       .from('journal_entries')
@@ -74,6 +84,8 @@ export async function readFinancialJournals(companyId: string, filters?: Financi
         filters.status === 'reversed'
           ? query.not('reversed_at', 'is', null)
           : query.eq('status', filters.status);
+    if (searchFilter) query = query.or(searchFilter);
+    if (signal) query = query.abortSignal(signal);
     return query;
   });
   if (!entries.length) return [];
@@ -83,12 +95,13 @@ export async function readFinancialJournals(companyId: string, filters?: Financi
       .select(
         `
       id,journal_entry_id,account_id,cost_center_id,line_number,line_description,debit_amount,credit_amount,
-      chart_of_accounts!fk_journal_entry_lines_account(id,account_code,account_name,account_name_ar),
+      chart_of_accounts!journal_entry_lines_account_id_fkey(id,company_id,account_code,account_name,account_name_ar),
       journal_entries!inner(company_id,entry_date,reference_type,status,reversed_at)
     `,
         { count: 'exact' }
       )
       .eq('journal_entries.company_id', companyId)
+      .eq('chart_of_accounts.company_id', companyId)
       .order('line_number')
       .order('id')
       .range(from, to);
@@ -100,13 +113,41 @@ export async function readFinancialJournals(companyId: string, filters?: Financi
         filters.status === 'reversed'
           ? query.not('journal_entries.reversed_at', 'is', null)
           : query.eq('journal_entries.status', filters.status);
+    if (searchFilter) query = query.or(searchFilter, { referencedTable: 'journal_entries' });
+    if (signal) query = query.abortSignal(signal);
     return query;
   });
   const byEntry = new Map<string, typeof lines>();
+  const entryIds = new Set(entries.map(entry => entry.id));
+  const lineIds = new Set<string>();
+  if (entryIds.size !== entries.length) throw new Error('Duplicate journals detected; reload the financial report');
   for (const line of lines) {
+    if (line.chart_of_accounts?.company_id !== companyId) {
+      throw new Error('Journal account could not be verified for the selected company');
+    }
+    if (!entryIds.has(line.journal_entry_id) || lineIds.has(line.id)) {
+      throw new Error('Journal detail changed or repeated during reading; reload the financial report');
+    }
+    lineIds.add(line.id);
     const list = byEntry.get(line.journal_entry_id) || [];
     list.push(line);
     byEntry.set(line.journal_entry_id, list);
+  }
+  for (const entry of entries) {
+    const requiresBalancedDetail = ['posted', 'reversed'].includes(entry.status);
+    const hasDraftTotals = entry.status === 'draft' && Number.isFinite(entry.total_debit) && Number.isFinite(entry.total_credit);
+    if (!requiresBalancedDetail && !hasDraftTotals) continue;
+    const entryLines = byEntry.get(entry.id) || [];
+    if (requiresBalancedDetail && entryLines.length < 2) throw new Error(`Incomplete journal detail: ${entry.entry_number}`);
+    if (!Number.isFinite(entry.total_debit) || !Number.isFinite(entry.total_credit) || entryLines.some(line => !Number.isFinite(line.debit_amount) || !Number.isFinite(line.credit_amount))) {
+      throw new Error(`Unverifiable journal amounts: ${entry.entry_number}`);
+    }
+    // Every nullable amount was checked above; convert only after that guard.
+    const debit = entryLines.reduce((sum, line) => sum + Number(line.debit_amount), 0);
+    const credit = entryLines.reduce((sum, line) => sum + Number(line.credit_amount), 0);
+    if (Math.abs(debit - entry.total_debit) > 0.01 || Math.abs(credit - entry.total_credit) > 0.01 || (requiresBalancedDetail && Math.abs(debit - credit) > 0.01)) {
+      throw new Error(`Journal detail does not reconcile to its header: ${entry.entry_number}`);
+    }
   }
   const search = filters?.searchTerm?.toLocaleLowerCase();
   return entries

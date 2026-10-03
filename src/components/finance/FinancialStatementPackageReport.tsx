@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { FileSpreadsheet, FileText, LockKeyhole, Printer, RefreshCw, Save, ShieldCheck } from 'lucide-react';
 import { toast } from 'sonner';
@@ -19,6 +19,7 @@ import { defaultStatementConfiguration } from '@/utils/financialStatementConfigu
 import { canonicalFinancialStatementContent, validateFinancialStatementConfiguration } from '@/utils/financialStatementPackageValidation';
 import { exportFinancialStatementPackageExcel, exportFinancialStatementPackagePDF, printFinancialStatementPackage } from '@/utils/financialStatementPackageExport';
 import { FinancialStatementJournalEditor, FinancialStatementMappingsEditor, FinancialStatementNotesEditor, FinancialStatementPeriodEditor } from './FinancialStatementConfigurationEditor';
+import { FinancialStatementConfigurationImport } from './FinancialStatementConfigurationImport';
 import type { BalanceSheetLocale } from '@/types/balanceSheet';
 import type { FinancialStatementPackageExportOptions, FinancialStatementReview, FinancialStatementSection, SavedFinancialStatementPackage } from '@/types/financialStatementPackage';
 import './FinancialStatementPackageReport.css';
@@ -62,6 +63,8 @@ function FinancialStatementPackageWorkspace({ companyId, actorId, locale }: { co
   const ar = locale === 'ar', tr = (a: string, e: string) => ar ? a : e;
   const [params, setParams] = useSearchParams();
   const initialDate = params.get('asOf');
+  const requestedVersionId = params.get('reportId');
+  const hasRequestedVersion = params.has('reportId');
   const [configuration, setConfiguration] = useState(() => defaultStatementConfiguration(initialDate && /^\d{4}-\d{2}-\d{2}$/.test(initialDate) ? initialDate : '2026-08-31'));
   const [requested, setRequested] = useState(configuration);
   const [selected, setSelected] = useState<SavedFinancialStatementPackage | null>(null);
@@ -73,34 +76,54 @@ function FinancialStatementPackageWorkspace({ companyId, actorId, locale }: { co
   const live = useFinancialStatementPackage(requested), history = useFinancialStatementPackageHistory(), locks = useFinancialReportingPeriodLocks();
   const actions = useFinancialStatementPackageActions();
   const versions = history.data?.filter(item => item.company_id === companyId) || [];
-  const snapshot = selected ? versions.find(item => item.id === selected.id) || selected : null;
-  const candidate = snapshot?.payload || live.data;
+  const urlVersion = versions.find(item => item.id === requestedVersionId);
+  const invalidVersionId = hasRequestedVersion && !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(requestedVersionId ?? '');
+  const snapshot = selected && selected.id === requestedVersionId ? versions.find(item => item.id === selected.id) || selected : null;
+  const candidate = hasRequestedVersion ? snapshot?.payload : live.data;
   const dirty = canonicalFinancialStatementContent(configuration) !== canonicalFinancialStatementContent(requested);
   let valid = true;
   try { validateFinancialStatementConfiguration(configuration, financeToday()); } catch { valid = false; }
-  const versionMissing = Boolean(selected && history.data && !versions.some(item => item.id === selected.id));
+  const versionMissing = invalidVersionId || Boolean(hasRequestedVersion && history.data && !urlVersion);
+  const restoringVersion = hasRequestedVersion && !versionMissing && !snapshot;
   const scoped = Boolean(candidate?.company.id === companyId && canonicalFinancialStatementContent(candidate.configuration) === canonicalFinancialStatementContent(requested));
   const report = scoped ? candidate : undefined;
   const busy = exporting || actions.save.isPending || actions.approve.isPending || actions.voidReport.isPending || actions.periodLock.isPending;
-  const readBusy = live.isFetching || Boolean(snapshot && history.isFetching);
-  const readFailed = Boolean(live.error || (snapshot && history.error) || versionMissing);
+  const readBusy = live.isFetching || (hasRequestedVersion && history.isFetching) || restoringVersion;
+  const readFailed = Boolean(live.error || (hasRequestedVersion && history.error) || versionMissing);
   const stale = Boolean(snapshot && live.data && snapshot.source_fingerprint !== live.data.fingerprint);
   const blocking = report?.findings.filter(item => item.severity === 'error' && item.count > 0) || [];
   const canIssue = scoped && !dirty && valid && !busy && !readBusy && !readFailed && snapshot?.status !== 'voided';
   const canApprove = Boolean(snapshot?.status === 'draft' && snapshot.created_by !== actorId && live.data?.permissions.canApprove && !stale && !blocking.length && canIssue);
-  // Sole-admin path: the preparer may approve their own draft only with an
+  // The preparer may approve their own draft only with an
   // explicit documented self-review acknowledgment.
   const selfReviewEligible = Boolean(snapshot?.status === 'draft' && snapshot.created_by === actorId && live.data?.permissions.canApprove && !stale && !blocking.length && canIssue);
   const reviewComplete = reviewNotes.trim().length >= 20 && Object.values(review).every(Boolean) && (canApprove || selfAckChecked);
   const status = snapshot?.status === 'approved' ? tr('معتمد داخليًا', 'Internally approved') : snapshot?.status === 'voided' ? tr('ملغى', 'Voided') : tr('مسودة للإعداد والمراجعة', 'Draft for preparation and review');
-  const editingDisabled = busy || Boolean(snapshot);
+  const editingDisabled = busy || hasRequestedVersion;
+
+  // Restore only history entries parsed and scoped by the history service. A URL
+  // for an unavailable version must not silently display a different report.
+  useEffect(() => {
+    if (!hasRequestedVersion) {
+      if (selected) { setSelected(null); setReview({ ...emptyReview }); setReviewNotes(''); setVoidReason(''); setSelfAckChecked(false); }
+      return;
+    }
+    if (history.error || !urlVersion || selected?.id === requestedVersionId) return;
+    setConfiguration(urlVersion.payload.configuration); setRequested(urlVersion.payload.configuration);
+    setSelected(urlVersion); setLockCutoff(urlVersion.payload.configuration.periodEnd);
+    setReview({ ...emptyReview }); setReviewNotes(''); setVoidReason(''); setSelfAckChecked(false);
+  }, [hasRequestedVersion, requestedVersionId, urlVersion, selected, history.error]);
 
   const resetReview = () => { setReview({ ...emptyReview }); setReviewNotes(''); setVoidReason(''); setSelfAckChecked(false); };
+  const prepareNewVersion = () => {
+    setSelected(null); resetReview();
+    const next = new URLSearchParams(params); next.delete('reportId'); setParams(next, { replace: true });
+  };
   const applyConfiguration = () => {
     try {
       const clean = validateFinancialStatementConfiguration(configuration, financeToday());
       setConfiguration(clean); setRequested(clean); setSelected(null); resetReview();
-      const next = new URLSearchParams(params); next.set('asOf', clean.periodEnd); setParams(next, { replace: true });
+      const next = new URLSearchParams(params); next.delete('reportId'); next.set('asOf', clean.periodEnd); setParams(next, { replace: true });
       if (canonicalFinancialStatementContent(clean) === canonicalFinancialStatementContent(requested)) void live.refetch();
       // Auto-save a version on generation so calculated packages are always
       // retained for review (zero saved versions otherwise).
@@ -108,13 +131,13 @@ function FinancialStatementPackageWorkspace({ companyId, actorId, locale }: { co
         void actions.save.mutateAsync(clean).then(saved => {
           choose(saved);
           toast.success(tr('حُسبت الحزمة وحُفظت نسخة ثابتة للمراجعة تلقائياً.', 'Package calculated and a review version saved automatically.'));
-        }).catch(() => { /* save errors surface through perform() paths */ });
+        }).catch(error => { toast.error(tr('تعذر حفظ نسخة الحزمة. الإعدادات باقية في المسودة؛ لم يُسجل حفظ أو اعتماد.', 'The package version could not be saved. Settings remain in the draft; no save or approval was recorded.') + ' ' + financialStatementPackageError(error, locale)); });
       }
     } catch { toast.error(tr('راجع تواريخ الفترات وحقول المعالجات. لا بد من سبب لكل معالجة خاصة.', 'Check reporting dates and treatment fields. Each specific treatment needs a reason.')); }
   };
   const choose = (saved: SavedFinancialStatementPackage) => {
     setConfiguration(saved.payload.configuration); setRequested(saved.payload.configuration); setSelected(saved); setLockCutoff(saved.payload.configuration.periodEnd); resetReview();
-    const next = new URLSearchParams(params); next.set('asOf', saved.payload.configuration.periodEnd); setParams(next, { replace: true });
+    const next = new URLSearchParams(params); next.set('reportId', saved.id); next.set('asOf', saved.payload.configuration.periodEnd); setParams(next, { replace: true });
   };
   const perform = async (operation: () => Promise<void>) => { try { await operation(); } catch (error) { toast.error(financialStatementPackageError(error, locale)); } };
   const save = () => perform(async () => { const saved = await actions.save.mutateAsync(requested); choose(saved); toast.success(tr('حُفظت نسخة ثابتة من الحزمة.', 'A fixed package version was saved.')); });
@@ -145,14 +168,16 @@ function FinancialStatementPackageWorkspace({ companyId, actorId, locale }: { co
     <FinancialReportLanguage />
     <Card><CardHeader><div className="flex flex-wrap items-start justify-between gap-3"><div><CardTitle>{tr('حزمة القوائم المالية', 'Financial statement package')}</CardTitle><CardDescription className="mt-2">{tr('قوائم مترابطة وإيضاحات وتصنيفات محفوظة مع كل نسخة. تُستكمل بيانات الشركة والسياسات قبل الاعتماد.', 'Linked statements, disclosures and classifications stored with each version. Complete company data and policies before approval.')}</CardDescription></div><Badge variant={snapshot?.status === 'approved' ? 'default' : 'secondary'}>{status}</Badge></div></CardHeader>
       <CardContent className="space-y-4">
-        <div className="flex flex-wrap gap-2"><Button variant="outline" disabled={busy} onClick={() => { const value = { ...configuration, ...defaultStatementConfiguration('2025-12-31'), accountMappings: configuration.accountMappings, notes: configuration.notes, legalForm: configuration.legalForm }; setSelected(null); setConfiguration(value); resetReview(); }}>{tr('إعداد 2025', 'Prepare 2025')}</Button><Button variant="outline" disabled={busy} onClick={() => { const value = { ...configuration, ...defaultStatementConfiguration('2026-08-31'), accountMappings: configuration.accountMappings, notes: configuration.notes, legalForm: configuration.legalForm }; setSelected(null); setConfiguration(value); resetReview(); }}>{tr('إعداد أغسطس 2026', 'Prepare August 2026')}</Button><Button variant="link" asChild><Link to={`/finance/reports/balance-sheet?asOf=${configuration.periodEnd}&compare=${configuration.positionComparisonDate}`}>{tr('الميزانية العمومية التفصيلية', 'Detailed balance sheet')}</Link></Button></div>
+        <div className="flex flex-wrap gap-2"><Button variant="outline" disabled={busy} onClick={() => { const value = { ...configuration, ...defaultStatementConfiguration('2025-12-31'), accountMappings: configuration.accountMappings, notes: configuration.notes, legalForm: configuration.legalForm }; prepareNewVersion(); setConfiguration(value); }}>{tr('إعداد 2025', 'Prepare 2025')}</Button><Button variant="outline" disabled={busy} onClick={() => { const value = { ...configuration, ...defaultStatementConfiguration('2026-08-31'), accountMappings: configuration.accountMappings, notes: configuration.notes, legalForm: configuration.legalForm }; prepareNewVersion(); setConfiguration(value); }}>{tr('إعداد أغسطس 2026', 'Prepare August 2026')}</Button><Button variant="link" asChild><Link to={`/finance/reports/balance-sheet?asOf=${configuration.periodEnd}&compare=${configuration.positionComparisonDate}`}>{tr('الميزانية العمومية التفصيلية', 'Detailed balance sheet')}</Link></Button></div>
         <FinancialStatementPeriodEditor configuration={configuration} onChange={setConfiguration} locale={locale} disabled={editingDisabled} />
+        <FinancialStatementConfigurationImport companyId={companyId} report={report} locale={locale} disabled={editingDisabled || readBusy || readFailed} onApply={value => { if (editingDisabled) return; setConfiguration(value); resetReview(); }} />
         {dirty && <p role="status" className="rounded-md bg-amber-50 p-3 text-sm text-amber-950">{tr('توجد تغييرات في الإعدادات. احسب الحزمة مجددًا قبل الحفظ أو التصدير.', 'Settings have changed. Recalculate the package before saving or exporting.')}</p>}
         {!valid && <p role="alert" className="text-sm text-destructive">{tr('تواريخ الفترات أو بعض إعدادات الحزمة غير صالحة. راجعها قبل الحساب.', 'Reporting dates or package settings are invalid. Review them before calculating.')}</p>}
         <div className="flex flex-wrap gap-2">
-          <Button disabled={busy || !valid || Boolean(snapshot)} onClick={applyConfiguration}><RefreshCw className="me-2 h-4 w-4" />{tr('حساب الحزمة', 'Calculate package')}</Button>
-          <Button variant="outline" disabled={!canIssue || !live.data?.permissions.canSave || Boolean(snapshot)} onClick={save}><Save className="me-2 h-4 w-4" />{tr('حفظ نسخة للمراجعة', 'Save review version')}</Button>
-          {snapshot && <Button variant="outline" disabled={busy} onClick={() => { setSelected(null); resetReview(); }}>{tr('إعداد نسخة جديدة من هذه الإعدادات', 'Prepare a new version from these settings')}</Button>}
+          <Button disabled={editingDisabled || !valid} onClick={applyConfiguration}><RefreshCw className="me-2 h-4 w-4" />{tr('حساب الحزمة', 'Calculate package')}</Button>
+          <Button variant="outline" disabled={!canIssue || !live.data?.permissions.canSave || Boolean(requestedVersionId)} onClick={save}><Save className="me-2 h-4 w-4" />{tr('حفظ نسخة للمراجعة', 'Save review version')}</Button>
+          {snapshot && <Button variant="outline" disabled={busy} onClick={prepareNewVersion}>{tr('إعداد نسخة جديدة من هذه الإعدادات', 'Prepare a new version from these settings')}</Button>}
+          {versionMissing && <Button variant="outline" disabled={busy} onClick={prepareNewVersion}>{tr('بدء مسودة جديدة', 'Start a new draft')}</Button>}
           <Button variant="outline" disabled={!canIssue} onClick={() => void exportReport('pdf')}><FileText className="me-2 h-4 w-4" />PDF</Button>
           <Button variant="outline" disabled={!canIssue} onClick={() => void exportReport('excel')}><FileSpreadsheet className="me-2 h-4 w-4" />Excel</Button>
           <Button variant="outline" disabled={!canIssue} onClick={() => void exportReport('print')}><Printer className="me-2 h-4 w-4" />{tr('طباعة', 'Print')}</Button>
@@ -161,7 +186,7 @@ function FinancialStatementPackageWorkspace({ companyId, actorId, locale }: { co
       </CardContent>
     </Card>
 
-    {(live.error || (snapshot && history.error) || versionMissing) && <Card><CardContent className="pt-6"><p role="alert" className="text-destructive">{versionMissing ? tr('تعذر التحقق من حالة النسخة المحفوظة.', 'The saved version status could not be verified.') : financialStatementPackageError(live.error || history.error, locale)}</p></CardContent></Card>}
+    {(live.error || (requestedVersionId && history.error) || versionMissing) && <Card><CardContent className="pt-6"><p role="alert" className="text-destructive">{versionMissing ? tr('تعذر التحقق من حالة النسخة المحفوظة.', 'The saved version status could not be verified.') : financialStatementPackageError(live.error || history.error, locale)}</p></CardContent></Card>}
     {readBusy && <p role="status">{tr('جارٍ قراءة القيود وإعادة التحقق من الحزمة…', 'Reading journals and rechecking the package…')}</p>}
     {stale && <p role="alert" className="rounded-md bg-amber-50 p-3 text-amber-950">{tr('تغير المصدر بعد حفظ هذه النسخة. يلزم إعداد نسخة جديدة قبل اعتمادها.', 'The source changed after this version was saved. Prepare a new version before approval.')}</p>}
 
@@ -227,11 +252,18 @@ function FinancialStatementPackageWorkspace({ companyId, actorId, locale }: { co
           {!versions.length && !history.error && <p>{tr('لا توجد نسخ محفوظة بعد.', 'No versions have been saved yet.')}</p>}
           {versions.map(saved => <div key={saved.id} className="flex flex-wrap items-center justify-between gap-3 rounded-md border p-3"><div><bdi>{saved.payload.configuration.periodEnd}</bdi> · {saved.status === 'approved' ? tr('معتمد داخليًا', 'Internally approved') : saved.status === 'voided' ? tr('ملغى', 'Voided') : tr('مسودة', 'Draft')}<p className="text-xs text-muted-foreground">{saved.created_by_name} · <bdi>{saved.created_at}</bdi></p></div><Button variant="outline" disabled={busy} onClick={() => choose(saved)}>{tr('فتح النسخة', 'Open version')}</Button></div>)}
         </CardContent></Card>
-        {snapshot && <Card><CardHeader><CardTitle>{tr('مراجعة النسخة', 'Review this version')}</CardTitle><CardDescription>{tr('مراجع مستقل عن مُعدّ الحزمة، مع تأكيدات وخلاصة مراجعة. لا يستبدل هذا اعتماد مدقق الحسابات الخارجي.', 'A reviewer other than the preparer supplies confirmations and a conclusion. This does not replace external auditor approval.')}</CardDescription></CardHeader><CardContent className="space-y-4">
+        {snapshot && <Card><CardHeader><CardTitle>{tr('مراجعة النسخة', 'Review this version')}</CardTitle><CardDescription>{tr('مراجع مخول يقدم التأكيدات وخلاصة المراجعة. يجوز للمُعدّ المخول اعتماد نسخته بإقرار مراجعة ذاتية موثق بعد إغلاق الموانع. لا يستبدل هذا اعتماد مدقق الحسابات الخارجي.', 'An authorized reviewer supplies confirmations and a conclusion. An authorized preparer may approve their own version with a documented self-review acknowledgment once blockers are resolved. This does not replace external auditor approval.')}</CardDescription></CardHeader><CardContent className="space-y-4">
           <p className="break-all text-xs" dir="ltr">{snapshot.id}<br />{snapshot.source_fingerprint}</p>
           {snapshot.status === 'approved' && <p>{tr('المراجع', 'Reviewer')}: {snapshot.approved_by_name} · <bdi>{snapshot.approved_at}</bdi><br />{snapshot.review_notes}</p>}
           {snapshot.status === 'draft' && <>
-            {snapshot.created_by === actorId && !selfReviewEligible && <p role="status">{tr('أنت مُعدّ النسخة؛ يلزم أن يراجعها مستخدم مخول آخر.', 'You prepared this version; a different authorized user must review it.')}</p>}
+            {blocking.length > 0 && <div role="status" className="space-y-2 rounded-md border border-destructive/40 p-3 text-sm">
+              <p>{tr(`الاعتماد متوقف: توجد ${blocking.length} نتائج فحص مانعة في هذه النسخة. يلزم معالجتها وإعداد نسخة جديدة قبل تأكيد المراجعة.`, `Approval is unavailable: this version has ${blocking.length} blocking findings. Resolve them and prepare a new version before confirming the review.`)}</p>
+              <ul className="list-disc space-y-1 ps-5">{blocking.map((finding, index) => <li key={`${finding.code}-${index}`}>{ar ? finding.messageAr : finding.messageEn}</li>)}</ul>
+            </div>}
+            {stale && <p role="status">{tr('تغير المصدر بعد حفظ النسخة؛ أعد حساب الحزمة واحفظ نسخة جديدة قبل الاعتماد.', 'The source changed after this version was saved; recalculate and save a new version before approval.')}</p>}
+            {readBusy && <p role="status">{tr('انتظر اكتمال التحقق من المصدر والنسخة لتحديد إمكانية الاعتماد.', 'Wait for source and version verification to finish before approval becomes available.')}</p>}
+            {readFailed && <p role="status">{tr('تعذر التحقق من المصدر أو النسخة؛ يلزم استعادة القراءة قبل الاعتماد.', 'Source or version verification failed; restore access before approval.')}</p>}
+            {!readBusy && !readFailed && !live.data?.permissions.canApprove && <p role="status">{tr('حسابك لا يملك صلاحية اعتماد القوائم المالية لهذه الشركة؛ يلزم مراجع مخول.', 'Your account does not have financial statement approval permission for this company; an authorized reviewer is required.')}</p>}
             {selfReviewEligible && (
               <label className="flex items-start gap-2 rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-950">
                 <input className="mt-1" type="checkbox" checked={selfAckChecked} onChange={event => setSelfAckChecked(event.target.checked)} />

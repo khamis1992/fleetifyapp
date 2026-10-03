@@ -6,17 +6,15 @@ import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
-import { Check, ChevronDown } from 'lucide-react'
+import { Check, ChevronDown, Plus, Trash2, Calculator } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
-import { Plus, Trash2, Calculator } from 'lucide-react'
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { UnifiedAccountSelector } from '@/components/ui/unified-account-selector'
 import { useCreateJournalEntry } from '@/hooks/finance/useJournalEntries'
 import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess'
 import { useCostCenters } from '@/hooks/useCostCenters'
-import { ChartOfAccount } from '@/hooks/useChartOfAccounts'
 import { useQuery } from '@tanstack/react-query'
 import { supabase } from '@/integrations/supabase/client'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
@@ -75,11 +73,10 @@ export const JournalEntryForm: React.FC<JournalEntryFormProps> = ({ open, onOpen
     entry_number: '',
     entry_date: new Date().toISOString().slice(0, 10),
     description: '',
-    reference_type: '',
+    reference_type: 'manual',
     reference_id: ''
   })
 
-  const [accountSearchOpen, setAccountSearchOpen] = useState<{[key: string]: boolean}>({})
   const [costCenterSearchOpen, setCostCenterSearchOpen] = useState<{[key: string]: boolean}>({})
   const [assetSearchOpen, setAssetSearchOpen] = useState<{[key: string]: boolean}>({})
 
@@ -107,11 +104,15 @@ export const JournalEntryForm: React.FC<JournalEntryFormProps> = ({ open, onOpen
 
   // Fetch fixed assets
   const { data: assets, isLoading: assetsLoading } = useQuery({
-    queryKey: ['fixed-assets'],
+    queryKey: ['fixed-assets', companyId],
+    placeholderData: undefined,
+    enabled: Boolean(companyId),
     queryFn: async () => {
+      if (!companyId) throw new Error('Company is required')
       const { data, error } = await supabase
         .from('fixed_assets')
         .select('id, asset_code, asset_name, asset_name_ar')
+        .eq('company_id', companyId)
         .eq('is_active', true)
         .order('asset_code');
       if (error) throw error;
@@ -121,11 +122,15 @@ export const JournalEntryForm: React.FC<JournalEntryFormProps> = ({ open, onOpen
 
   // Fetch employees
   const { data: employees, isLoading: employeesLoading } = useQuery({
-    queryKey: ['employees'],
+    queryKey: ['employees', companyId],
+    placeholderData: undefined,
+    enabled: Boolean(companyId),
     queryFn: async () => {
+      if (!companyId) throw new Error('Company is required')
       const { data, error } = await supabase
         .from('employees')
         .select('id, employee_number, first_name, last_name')
+        .eq('company_id', companyId)
         .eq('is_active', true)
         .order('employee_number');
       if (error) throw error;
@@ -239,6 +244,10 @@ export const JournalEntryForm: React.FC<JournalEntryFormProps> = ({ open, onOpen
       toast.error('يلزم تحديد نوع المرجع (يدوي / فاتورة / عقد …) لتتبع القيد')
       return
     }
+    if (entryData.reference_id.trim() && !sanitizeUuid(entryData.reference_id)) {
+      toast.error('معرف المرجع غير صحيح؛ أدخل UUID صالحًا أو اتركه فارغًا')
+      return
+    }
 
     // The accounting period must be open before creating the draft.
     try {
@@ -253,7 +262,7 @@ export const JournalEntryForm: React.FC<JournalEntryFormProps> = ({ open, onOpen
 
     try {
       // Enhanced data preparation with comprehensive sanitization
-      const sanitizedLines = lines.map((line, index) => {
+      const sanitizedLines = meaningfulLines.map((line, index) => {
         // Enhanced account validation
         const accountId = sanitizeUuid(line.account_id)
         if (!accountId) {
@@ -311,7 +320,7 @@ export const JournalEntryForm: React.FC<JournalEntryFormProps> = ({ open, onOpen
         entry_number: '',
         entry_date: new Date().toISOString().slice(0, 10),
         description: '',
-        reference_type: '',
+        reference_type: 'manual',
         reference_id: ''
       })
       setLines([
@@ -345,6 +354,7 @@ export const JournalEntryForm: React.FC<JournalEntryFormProps> = ({ open, onOpen
             <Calculator className="h-5 w-5" />
             إنشاء قيد محاسبي جديد
           </DialogTitle>
+          <DialogDescription>أدخل القيد المتوازن ومراجعه لحفظه مسودة ومراجعته قبل الترحيل.</DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-6">
@@ -384,6 +394,30 @@ export const JournalEntryForm: React.FC<JournalEntryFormProps> = ({ open, onOpen
                   onChange={(e) => setEntryData({...entryData, description: e.target.value})}
                   placeholder="وصف القيد المحاسبي"
                   rows={2}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="reference_type">نوع المرجع</Label>
+                <select
+                  id="reference_type"
+                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                  value={entryData.reference_type}
+                  onChange={(e) => setEntryData({...entryData, reference_type: e.target.value})}
+                >
+                  <option value="manual">يدوي</option>
+                  <option value="invoice">فاتورة</option>
+                  <option value="contract">عقد</option>
+                  <option value="opening_balance">رصيد افتتاحي</option>
+                </select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="reference_id">معرف المرجع UUID (اختياري)</Label>
+                <Input
+                  id="reference_id"
+                  dir="ltr"
+                  value={entryData.reference_id}
+                  onChange={(e) => setEntryData({...entryData, reference_id: e.target.value})}
+                  placeholder="معرف المستند أو الملحق المرتبط بالقيد"
                 />
               </div>
             </CardContent>

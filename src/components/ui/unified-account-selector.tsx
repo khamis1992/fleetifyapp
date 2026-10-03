@@ -6,7 +6,7 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Badge } from '@/components/ui/badge';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
-import { useUnifiedAccountSelector, UnifiedAccount, UnifiedAccountSelectorOptions, filterAccountsBySearch } from '@/hooks/useUnifiedAccountSelector';
+import { useUnifiedAccountSelector, UnifiedAccountSelectorOptions, filterAccountsBySearch } from '@/hooks/useUnifiedAccountSelector';
 
 interface UnifiedAccountSelectorProps extends UnifiedAccountSelectorOptions {
   value?: string;
@@ -141,7 +141,7 @@ export const UnifiedAccountSelector: React.FC<UnifiedAccountSelectorProps> = ({
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-full p-0 min-w-[400px]" align="start">
-        <Command>
+        <Command shouldFilter={false}>
           {allowSearch && (
             <div className="flex items-center border-b px-3">
               <Search className="mr-2 h-4 w-4 shrink-0 opacity-50" />

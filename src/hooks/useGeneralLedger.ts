@@ -147,8 +147,10 @@ export const useEnhancedJournalEntries = (filters?: LedgerFilters) => {
   return useQuery({
     queryKey: ['enhancedJournalEntries', companyId, filters],
     enabled: Boolean(companyId) && !isAuthenticating && !authError,
-    queryFn: async () => {
-      const entries = await readFinancialJournals(companyId!, filters);
+    // Do not render a previous, potentially very large list while new filters load.
+    placeholderData: undefined,
+    queryFn: async ({ signal }) => {
+      const entries = await readFinancialJournals(companyId!, filters, signal);
       return entries.map((entry) => ({ ...entry, status: normalizeJournalEntryStatus(entry.status) }));
     },
   });

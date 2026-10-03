@@ -10,8 +10,10 @@
  */
 
 import React, { useMemo, useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
+import { useArAgingReport } from '@/hooks/finance/useArAgingReport';
+import type { PriorityItem } from '@/hooks/finance/arAgingReportData';
+import { financeToday } from '@/services/financialReporting';
+import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -30,12 +32,9 @@ import { ResponsiveTable } from '@/components/ui/ResponsiveTable'
 import {
   DollarSign,
   Download,
-  TrendingDown,
-  TrendingUp,
   AlertTriangle,
   Clock,
   Users,
-  FileText,
   Phone,
   Mail,
   Brain,
@@ -46,60 +45,6 @@ import {
   Copy,
   Send
 } from 'lucide-react';
-interface ARSummary {
-  total_customers_with_ar: number;
-  total_outstanding_invoices: number;
-  total_ar_amount: number;
-  current_total: number;
-  days_1_30_total: number;
-  days_31_60_total: number;
-  days_61_90_total: number;
-  days_90_plus_total: number;
-  current_percentage: number;
-  days_1_30_percentage: number;
-  days_31_60_percentage: number;
-  days_61_90_percentage: number;
-  days_90_plus_percentage: number;
-  avg_days_overdue: number;
-  high_priority_count: number;
-  high_priority_amount: number;
-}
-
-interface CustomerAging {
-  customer_id: string;
-  customer_name_ar: string;
-  customer_name_en: string;
-  customer_phone: string;
-  customer_email: string;
-  total_invoices: number;
-  total_outstanding: number;
-  current_amount: number;
-  days_1_30: number;
-  days_31_60: number;
-  days_61_90: number;
-  days_90_plus: number;
-  max_days_overdue: number;
-  last_payment_date: string;
-}
-
-interface PriorityItem {
-  customer_id: string;
-  customer_name_ar: string;
-  customer_name_en: string;
-  customer_phone: string;
-  customer_email: string;
-  total_outstanding: number;
-  total_invoices: number;
-  max_days_overdue: number;
-  critical_amount: number;
-  high_risk_amount: number;
-  priority_score: number;
-  risk_category: string;
-  recommended_action: string;
-  last_payment_date: string;
-  avg_dso: number;
-}
-
 type CollectionRiskLevel = 'high' | 'medium' | 'low';
 type CollectionPath = 'settlement' | 'legal' | 'reminder';
 
@@ -108,7 +53,7 @@ interface CollectionAIInsight {
   riskLevel: CollectionRiskLevel;
   riskLabel: string;
   riskClassName: string;
-  paymentProbability: number;
+  followupScore: number;
   collectionPath: CollectionPath;
   collectionPathLabel: string;
   collectionPathClassName: string;
@@ -169,7 +114,7 @@ const buildCollectionAIInsights = (items: PriorityItem[] = []): CollectionAIInsi
           ? 'medium'
           : 'low';
 
-      const paymentProbability = Math.max(
+      const followupScore = Math.max(
         12,
         Math.min(
           92,
@@ -177,13 +122,13 @@ const buildCollectionAIInsights = (items: PriorityItem[] = []): CollectionAIInsi
             Math.min(days, 120) * 0.42 -
             Math.min(outstanding / 1000, 35) +
             (hasRecentPayment ? 16 : 0) +
-            (hasPaymentHistory ? 8 : -6) -
+            (hasPaymentHistory ? 8 : 0) -
             (criticalAmount > 0 ? 10 : 0)
         )
       );
 
       const collectionPath: CollectionPath =
-        days >= 90 || (criticalAmount > 0 && paymentProbability < 45)
+        days >= 90 || (criticalAmount > 0 && followupScore < 45)
           ? 'legal'
           : days >= 31 || outstanding >= 5000
           ? 'settlement'
@@ -203,7 +148,7 @@ const buildCollectionAIInsights = (items: PriorityItem[] = []): CollectionAIInsi
           ? `ولديه سداد سابق قريب قبل ${lastPaymentAge} يوم`
           : hasPaymentHistory
           ? `آخر سداد قبل ${lastPaymentAge} يوم`
-          : 'ولا يوجد سداد حديث مسجل';
+          : 'وتاريخ آخر سداد غير متوفر في هذا الكشف';
 
       const nextAction =
         collectionPath === 'legal'
@@ -231,7 +176,7 @@ const buildCollectionAIInsights = (items: PriorityItem[] = []): CollectionAIInsi
             : riskLevel === 'medium'
             ? 'border-amber-200 bg-amber-50 text-amber-700'
             : 'border-emerald-200 bg-emerald-50 text-emerald-700',
-        paymentProbability: Math.round(paymentProbability),
+        followupScore: Math.round(followupScore),
         collectionPath,
         collectionPathLabel,
         collectionPathClassName:
@@ -254,48 +199,13 @@ const buildCollectionAIInsights = (items: PriorityItem[] = []): CollectionAIInsi
 export const ARAgingReport: React.FC = () => {
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState('summary');
-
-  // Fetch AR summary
-  const { data: summary, isLoading: summaryLoading } = useQuery({
-    queryKey: ['ar-summary'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('company_ar_aging_summary')
-        .select('*')
-        .single();
-      
-      if (error) throw error;
-      return data as ARSummary;
-    }
-  });
-
-  // Fetch customer aging
-  const { data: customerAging, isLoading: customerLoading } = useQuery({
-    queryKey: ['customer-ar-aging'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('customer_ar_aging_summary')
-        .select('*')
-        .order('total_outstanding', { ascending: false });
-      
-      if (error) throw error;
-      return data as CustomerAging[];
-    }
-  });
-
-  // Fetch priority list
-  const { data: priorityList, isLoading: priorityLoading } = useQuery({
-    queryKey: ['collections-priority'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('collections_priority_list')
-        .select('*')
-        .limit(50);
-      
-      if (error) throw error;
-      return data as PriorityItem[];
-    }
-  });
+  const [cutoff, setCutoff] = useState(financeToday);
+  const report = useArAgingReport(cutoff);
+  const summary = report.data?.summary;
+  const customerAging = report.data?.customerAging;
+  const priorityList = report.data?.priorityList;
+  const customerLoading = report.isLoading;
+  const priorityLoading = report.isLoading;
 
   const collectionAIInsights = useMemo(
     () => buildCollectionAIInsights(priorityList || []),
@@ -306,8 +216,8 @@ export const ARAgingReport: React.FC = () => {
   const highRiskAI = collectionAIInsights.filter((insight) => insight.riskLevel === 'high').length;
   const settlementAI = collectionAIInsights.filter((insight) => insight.collectionPath === 'settlement').length;
   const legalAI = collectionAIInsights.filter((insight) => insight.collectionPath === 'legal').length;
-  const avgPaymentProbability = collectionAIInsights.length
-    ? Math.round(collectionAIInsights.reduce((sum, insight) => sum + insight.paymentProbability, 0) / collectionAIInsights.length)
+  const avgFollowupScore = collectionAIInsights.length
+    ? Math.round(collectionAIInsights.reduce((sum, insight) => sum + insight.followupScore, 0) / collectionAIInsights.length)
     : 0;
 
   const copyWhatsAppMessage = async (message: string) => {
@@ -343,6 +253,7 @@ export const ARAgingReport: React.FC = () => {
 
   // Export to Excel
   const exportToExcel = async () => {
+    if (!report.data || report.isFetching || report.isError) return;
     try {
       // Lazy load xlsx (300KB) only when exporting
       const XLSX = (await import('xlsx')).default;
@@ -353,6 +264,12 @@ export const ARAgingReport: React.FC = () => {
       const summaryData = [
         ['تقرير تقادم الذمم المدينة'],
         ['تاريخ الإصدار:', new Date().toLocaleString('ar-QA')],
+        ['الشركة:', report.data.companyId],
+        ['تاريخ قطع الفواتير وأعمار التأخر:', report.data.asOf],
+        ['أساس الرصيد:', report.data.balanceBasis],
+        ['فواتير ذات رصيد غير متوفر:', report.data.unknown.length],
+        ['أرصدة دائنة منفصلة:', report.data.credits.reduce((sum, row) => sum + row.amount, 0)],
+        ['عملاء غير مطابقين:', report.data.unmatchedCustomers],
         [],
         ['إجمالي العملاء المدينين:', summary?.total_customers_with_ar || 0],
         ['إجمالي الفواتير المستحقة:', summary?.total_outstanding_invoices || 0],
@@ -396,6 +313,11 @@ export const ARAgingReport: React.FC = () => {
         XLSX.utils.book_append_sheet(workbook, customerSheet, 'تفاصيل العملاء');
       }
 
+      const creditSheet = XLSX.utils.json_to_sheet(report.data.credits);
+      XLSX.utils.book_append_sheet(workbook, creditSheet, 'أرصدة دائنة');
+      const reviewSheet = XLSX.utils.json_to_sheet(report.data.unknown);
+      XLSX.utils.book_append_sheet(workbook, reviewSheet, 'أرصدة غير متوفرة');
+
       // Priority list sheet
       if (priorityList && priorityList.length > 0) {
         const priorityData: Array<Array<string | number | null | undefined>> = [
@@ -422,7 +344,7 @@ export const ARAgingReport: React.FC = () => {
       }
 
       // Export
-      const fileName = `AR_Aging_Report_${new Date().toISOString().split('T')[0]}.xlsx`;
+      const fileName = `AR_Aging_Report_${report.data.asOf}.xlsx`;
       XLSX.writeFile(workbook, fileName);
 
       toast({
@@ -465,6 +387,16 @@ export const ARAgingReport: React.FC = () => {
     return labels[action] || action;
   };
 
+  if (report.isLoading || report.isError || !report.data) return (
+    <Alert variant={report.isError ? 'destructive' : 'default'}>
+      <AlertDescription>
+        <label className="block">تاريخ القطع<Input aria-label="تاريخ قطع أعمار الذمم" type="date" value={cutoff} onChange={event => setCutoff(event.target.value)} /></label>
+        {report.isError ? (report.error instanceof Error ? report.error.message : 'تعذر قراءة أعمار الذمم؛ لا تعني القراءة الفاشلة عدم وجود ديون.') : 'جاري قراءة جميع فواتير الشركة والعملاء...'}
+        {report.isError && <Button variant="outline" onClick={() => { void report.refetch(); }}>إعادة المحاولة</Button>}
+      </AlertDescription>
+    </Alert>
+  );
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -475,11 +407,19 @@ export const ARAgingReport: React.FC = () => {
             تحليل الفواتير المستحقة حسب الفترات الزمنية
           </p>
         </div>
-        <Button onClick={exportToExcel} disabled={!summary}>
+        <div className="flex items-center gap-2">
+        <label className="text-sm">تاريخ القطع<Input aria-label="تاريخ قطع أعمار الذمم" type="date" value={cutoff} onChange={event => setCutoff(event.target.value)} /></label>
+        <Button onClick={exportToExcel} disabled={!summary || report.isFetching}>
           <Download className="h-4 w-4 mr-2" />
           تصدير إلى إكسل
         </Button>
+        </div>
       </div>
+
+      <Alert><AlertDescription>{report.data.balanceBasis}<br />اقتراحات التحصيل تنظيمية وتحتاج مراجعة، وليست احتمال سداد موثقًا أو تصريحًا بفتح قضية. آخر سداد غير محسوب في هذا الكشف.</AlertDescription></Alert>
+      {(report.data.unknown.length > 0 || report.data.credits.length > 0 || report.data.unmatchedCustomers > 0) && <Alert><AlertDescription>
+        أرصدة مفقودة: {report.data.unknown.length}؛ أرصدة دائنة منفصلة: {report.data.credits.length} بإجمالي {formatQar(report.data.credits.reduce((sum, row) => sum + row.amount, 0))}؛ عملاء غير مطابقين: {report.data.unmatchedCustomers}. المفقود مستبعد من الإجماليات ولا يعني صفرًا؛ تفاصيله في التصدير.
+      </AlertDescription></Alert>}
 
       {/* Statistics Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -611,8 +551,8 @@ export const ARAgingReport: React.FC = () => {
                 <strong className="text-lg text-red-700">{legalAI}</strong>
               </div>
               <div className="rounded-lg border border-emerald-100 bg-white px-3 py-2">
-                <span className="block text-xs font-bold text-slate-500">احتمال السداد</span>
-                <strong className="text-lg text-emerald-600">{avgPaymentProbability}%</strong>
+                <span className="block text-xs font-bold text-slate-500">درجة المتابعة التنظيمية</span>
+                <strong className="text-lg text-emerald-600">{avgFollowupScore}/100</strong>
               </div>
             </div>
           </div>
@@ -634,8 +574,8 @@ export const ARAgingReport: React.FC = () => {
                   <p className="mt-2 max-w-3xl text-sm leading-7 text-slate-200">{topCollectionInsight.reason}</p>
                 </div>
                 <div className="rounded-lg bg-white px-5 py-4 text-center text-slate-950">
-                  <span className="block text-xs font-bold text-slate-500">احتمال السداد</span>
-                  <strong className="text-3xl font-black">{topCollectionInsight.paymentProbability}%</strong>
+                  <span className="block text-xs font-bold text-slate-500">درجة المتابعة التنظيمية</span>
+                  <strong className="text-3xl font-black">{topCollectionInsight.followupScore}/100</strong>
                 </div>
               </div>
 
@@ -660,8 +600,8 @@ export const ARAgingReport: React.FC = () => {
                           </p>
                         </div>
                         <div className="rounded-lg border border-emerald-100 bg-emerald-50 px-3 py-2 text-center">
-                          <span className="block text-xs font-bold text-emerald-700">سداد متوقع</span>
-                          <strong className="text-xl text-emerald-700">{insight.paymentProbability}%</strong>
+                          <span className="block text-xs font-bold text-emerald-700">درجة المتابعة التنظيمية</span>
+                          <strong className="text-xl text-emerald-700">{insight.followupScore}/100</strong>
                         </div>
                       </div>
 

@@ -33494,7 +33494,12 @@ export type Database = {
         Returns: Json
       }
       post_manual_journal_entry_v1: {
-        Args: { p_actor_id?: string; p_company_id: string; p_entry_id: string }
+        Args: {
+          p_actor_id?: string
+          p_company_id: string
+          p_entry_id: string
+          p_self_review_acknowledged?: boolean
+        }
         Returns: Database["public"]["Tables"]["journal_entries"]["Row"]
       }
       reverse_manual_bank_transaction_v1: {

@@ -21,6 +21,10 @@ describe(
     let db;
     before(async () => {
       db = new PGlite();
+      // Captured PostgreSQL function bodies and their inspected hashes use LF.
+      // Windows checkout CRLF must not change prosrc bytes during reconstruction.
+      const execute = db.exec.bind(db);
+      db.exec = (sql, ...options) => execute(sql.replace(/\r\n/g, "\n"), ...options);
       await installFinancialLifecycleFixture(db);
     });
     after(async () => {

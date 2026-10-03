@@ -4,7 +4,10 @@ import { LegalPageHeader } from '@/components/legal/workspace/LegalPageHeader';
  * @component LawsuitDataPage
  */
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
+import { collectLegalPages } from '@/services/legalCaseQueries';
+import { generatePackageDocument, recordedPackageDocuments, renderLawsuitPackageManifest, type PackageDocument } from '@/components/legal/workspace/lawsuitPackageManifest';
+import { parseLegalClaimAmount } from '@/components/legal/workspace/legalCaseExport';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -54,7 +57,6 @@ import {
 } from './LawsuitPreparation/utils/documentGenerators';
 import { generateLegalComplaintHTML } from '@/utils/legal-document-generator';
 import {
-  generateDocumentsListHtml,
   generateClaimsStatementHtml,
 } from '@/utils/official-letter-generator';
 import '@/styles/legal-system.css';
@@ -63,6 +65,7 @@ import { decodeDisplayText } from '@/utils/arabicDisplayText';
 
 interface LawsuitTemplate {
   id: number;
+  company_id: string;
   contract_id?: string;
   case_title: string;
   facts: string;
@@ -114,20 +117,21 @@ export default function LawsuitDataPage() {
   const { lawsuitId } = useParams<{ lawsuitId: string }>();
   const [searchTerm, setSearchTerm] = useState('');
   const [isGeneratingDocs, setIsGeneratingDocs] = useState(false);
+  const currentCompanyRef = useRef(companyId);
+  currentCompanyRef.current = companyId;
 
   // جلب بيانات القضايا
-  const { data: lawsuits, isLoading, refetch } = useQuery({
+  const { data: lawsuits, isLoading, error: lawsuitsError, refetch } = useQuery({
     queryKey: ['lawsuit_templates', companyId],
     queryFn: async () => {
-      if (!companyId) return [];
-      const { data, error } = await supabase
-        .from('lawsuit_templates')
-        .select('*')
-        .eq('company_id', companyId)
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-      return (data as LawsuitTemplate[]).filter((template) => !template.deleted_at);
+      if (!companyId) throw new Error('تعذر تحديد الشركة');
+      return collectLegalPages(async (offset, pageSize) => {
+        const { data, error, count } = await supabase.from('lawsuit_templates').select('*', { count: 'exact' })
+          .eq('company_id', companyId).is('deleted_at', null).order('created_at', { ascending: false }).order('id', { ascending: true }).range(offset, offset + pageSize - 1);
+        if (error) throw error;
+        if (data?.some(row => row.company_id !== companyId)) throw new Error('بيانات تقاضٍ خارج نطاق الشركة');
+        return { data: (data || []) as unknown as LawsuitTemplate[], count };
+      });
     },
     enabled: !!companyId,
   });
@@ -140,10 +144,10 @@ export default function LawsuitDataPage() {
     const term = searchTerm.toLowerCase();
     return lawsuits.filter(
       (lawsuit) =>
-        lawsuit.case_title.toLowerCase().includes(term) ||
-        lawsuit.defendant_first_name.toLowerCase().includes(term) ||
-        lawsuit.defendant_last_name.toLowerCase().includes(term) ||
-        lawsuit.defendant_id_number.toLowerCase().includes(term)
+        (lawsuit.case_title || '').toLowerCase().includes(term) ||
+        (lawsuit.defendant_first_name || '').toLowerCase().includes(term) ||
+        (lawsuit.defendant_last_name || '').toLowerCase().includes(term) ||
+        (lawsuit.defendant_id_number || '').toLowerCase().includes(term)
     );
   }, [lawsuits, searchTerm]);
 
@@ -217,122 +221,77 @@ export default function LawsuitDataPage() {
     return result;
   };
 
-  // توليد المستندات القانونية لجميع القضايا
+  // Generated drafts and an honest document inventory; stored originals are not included.
   const handleGenerateAllDocuments = async () => {
-    if (!companyId) {
-      toast.error('تعذر تحديد الشركة');
+    if (!companyId || lawsuitsError || !filteredLawsuits.length) {
+      toast.error('تعذر تحميل بيانات التقاضي كاملة أو لا توجد نتائج للتوليد');
       return;
     }
-    if (!filteredLawsuits || filteredLawsuits.length === 0) {
-      toast.error('لا توجد قضايا لتوليد المستندات');
-      return;
-    }
-
+    const exportCompany = companyId;
+    const exportLawsuits = [...filteredLawsuits];
     setIsGeneratingDocs(true);
-    
     try {
       const zip = new JSZip();
-      let successCount = 0;
-      let errorCount = 0;
-      
-      // تحميل جميع الصور مرة واحدة
-      const [logoBase64, signatureBase64, stampBase64] = await Promise.all([
-        loadImageAsBase64('/receipts/logo.png'),
-        loadImageAsBase64('/receipts/signature.png'),
-        loadImageAsBase64('/receipts/stamp.png'),
+      const results: Array<{ templateId: number; title: string; documents: PackageDocument[] }> = [];
+      const [logo, signature, stamp] = await Promise.all([
+        loadImageAsBase64('/receipts/logo.png'), loadImageAsBase64('/receipts/signature.png'), loadImageAsBase64('/receipts/stamp.png'),
       ]);
-      
-      const images = { logo: logoBase64, signature: signatureBase64, stamp: stampBase64 };
-
-      // توليد المستندات لكل عميل
-      for (const lawsuit of filteredLawsuits) {
-        try {
-          if (!lawsuit.contract_id) continue;
-          const customerName = `${lawsuit.defendant_first_name || ''} ${lawsuit.defendant_last_name || ''}`.trim();
-          const folderName = `${customerName} - ${lawsuit.contract_number}`;
-          const customerFolder = zip.folder(folderName);
-
-          if (!customerFolder) continue;
-
-          // جلب بيانات العقد والمركبة
-          const { data: contract } = await supabase
-            .from('contracts')
-            .select('*, vehicle:vehicles(*)')
-            .eq('id', lawsuit.contract_id)
-            .eq('company_id', companyId)
-            .single();
-
-          if (!contract) continue;
-
-          const legalState = await loadCanonicalLawsuitState(companyId, lawsuit.contract_id);
-
-          // 1. المذكرة الشارحة
-          try {
-            let memoHtml = generateLegalComplaintHTML(getMemoDocumentDataForGeneration(legalState));
-            // تضمين اللوقو والتوقيع والختم في HTML
-            memoHtml = await embedImagesInHtml(memoHtml, images);
-            customerFolder.file('1. المذكرة الشارحة.html', memoHtml);
-          } catch (error) {
-            console.error('Error generating memo:', error);
-          }
-
-          // 2. كشف المطالبات المالية
-          try {
-            let claimsHtml = generateClaimsStatementHtml(buildClaimsStatementData(legalState));
-            // تضمين اللوقو والتوقيع والختم في HTML
-            claimsHtml = await embedImagesInHtml(claimsHtml, images);
-            customerFolder.file('2. كشف المطالبات المالية.html', claimsHtml);
-          } catch (error) {
-            console.error('Error generating claims:', error);
-          }
-
-          // 3. كشف المستندات المرفوعة
-          try {
-            let docsListHtml = generateDocumentsListHtml({
-              caseTitle: lawsuit.case_title,
-              customerName,
-              amount: lawsuit.claim_amount || 0,
-              documents: [
-                { name: 'المذكرة الشارحة', status: 'مرفق' },
-                { name: 'كشف المطالبات المالية', status: 'مرفق' },
-                { name: 'صورة من العقد', status: 'مرفق' },
-                { name: 'السجل التجاري', status: 'مرفق' },
-                { name: 'قيد المنشأة', status: 'مرفق' },
-              ],
-            });
-            // تضمين اللوقو والتوقيع والختم في HTML
-            docsListHtml = await embedImagesInHtml(docsListHtml, images);
-            customerFolder.file('3. كشف المستندات المرفوعة.html', docsListHtml);
-          } catch (error) {
-            console.error('Error generating docs list:', error);
-          }
-
-          successCount++;
-        } catch (error) {
-          console.error(`Error processing lawsuit for ${lawsuit.defendant_first_name}:`, error);
-          errorCount++;
-        }
-      }
-
-      // توليد ملف ZIP
-      const content = await zip.generateAsync({ type: 'blob' });
-      const fileName = `مستندات_التقاضي_${format(new Date(), 'yyyy-MM-dd_HH-mm')}.zip`;
-      saveAs(content, fileName);
-
-      toast.success(`تم توليد المستندات بنجاح`, {
-        description: `${successCount} عميل - ${errorCount} خطأ`,
+      const images = { logo, signature, stamp };
+      const companyDocuments = await collectLegalPages(async (offset, size) => {
+        const result = await supabase.from('company_legal_documents').select('id,document_name,document_type,file_url,company_id', { count: 'exact' })
+          .eq('company_id', exportCompany).eq('is_active', true).order('id').range(offset, offset + size - 1);
+        if (result.error) throw result.error;
+        if (result.data?.some(document => document.company_id !== exportCompany)) throw new Error('مستند شركة خارج النطاق');
+        return { data: result.data || [], count: result.count };
       });
+      for (const lawsuit of exportLawsuits) {
+        const customerName = `${lawsuit.defendant_first_name || ''} ${lawsuit.defendant_last_name || ''}`.trim();
+        const safeName = `${lawsuit.id}-${customerName}`.replace(/[\\/:*?"<>|]/g, '_').slice(0, 120);
+        const folder = zip.folder(safeName);
+        if (!folder) throw new Error('تعذر إنشاء مجلد المستندات');
+        let documents = recordedPackageDocuments(companyDocuments.map(document => ({ id: document.id, title: document.document_name, type: document.document_type, hasReference: Boolean(document.file_url) })), [
+          { type: 'commercial_register', title: 'السجل التجاري' }, { type: 'establishment_record', title: 'قيد المنشأة' },
+        ]);
+        try {
+          if (lawsuit.company_id !== exportCompany) throw new Error('القضية خارج نطاق الشركة');
+          if (!lawsuit.contract_id) throw new Error('لا يوجد عقد مرتبط؛ لم تُولد مذكرة أو كشف مطالبات');
+          const storedDocuments = await collectLegalPages(async (offset, size) => {
+            const result = await supabase.from('contract_documents').select('id,company_id,contract_id,document_name,document_type,file_path', { count: 'exact' })
+              .eq('company_id', exportCompany).eq('contract_id', lawsuit.contract_id!).order('id').range(offset, offset + size - 1);
+            if (result.error) throw result.error;
+            if (result.data?.some(document => document.company_id !== exportCompany || document.contract_id !== lawsuit.contract_id)) throw new Error('مستند خارج نطاق العقد والشركة');
+            return { data: result.data || [], count: result.count };
+          });
+          documents.push(...recordedPackageDocuments(storedDocuments.map(document => ({ id: document.id, title: document.document_name, type: document.document_type, hasReference: Boolean(document.file_path) }))));
+          if (!storedDocuments.some(document => document.document_type === 'signed_contract' || document.document_type === 'contract')) documents.push({ title: 'صورة العقد الموقع', status: 'missing', included: false, originalIncluded: false });
+          const legalState = await loadCanonicalLawsuitState(exportCompany, lawsuit.contract_id);
+          documents.push(await generatePackageDocument('المذكرة الشارحة', '1-المذكرة-الشارحة.html', async () => embedImagesInHtml(generateLegalComplaintHTML(getMemoDocumentDataForGeneration(legalState)), images), (name, html) => { folder.file(name, html); }));
+          documents.push(await generatePackageDocument('كشف المطالبات المالية', '2-كشف-المطالبات-المالية.html', async () => embedImagesInHtml(generateClaimsStatementHtml(buildClaimsStatementData(legalState)), images), (name, html) => { folder.file(name, html); }));
+        } catch (error) {
+          documents.push({ title: 'تحميل بيانات القضية والمستندات', status: 'failed', included: false, originalIncluded: false, error: error instanceof Error ? error.message : 'فشل تحميل البيانات أو التوليد' });
+        }
+        folder.file('3-فهرس-حالة-المستندات.html', renderLawsuitPackageManifest(lawsuit.case_title, documents));
+        folder.file('manifest.json', JSON.stringify({ templateId: lawsuit.id, companyId: exportCompany, originalsIncluded: false, documents }, null, 2));
+        results.push({ templateId: lawsuit.id, title: lawsuit.case_title, documents });
+      }
+      const failed = results.flatMap(result => result.documents).filter(document => document.status === 'failed').length;
+      const generated = results.flatMap(result => result.documents).filter(document => document.status === 'included_generated').length;
+      zip.file('export-results.json', JSON.stringify({ companyId: exportCompany, exportedAt: new Date().toISOString(), scope: 'مواد مولدة وفهرس معلومات؛ الأصول غير مضمنة ولا توجد إفادة باكتمال الحافظة', generated, failed, results }, null, 2));
+      zip.file('اقرأني.html', renderLawsuitPackageManifest('نتائج توليد جميع الملفات', results.flatMap(result => result.documents.map(document => ({ ...document, title: `${result.templateId} - ${document.title}` })))));
+      const content = await zip.generateAsync({ type: 'blob' });
+      if (currentCompanyRef.current !== exportCompany) throw new Error('تغيرت الشركة أثناء التصدير؛ أعد المحاولة');
+      saveAs(content, `مواد-مولدة-وفهرس-تقاضي-${format(new Date(), 'yyyy-MM-dd_HH-mm')}.zip`);
+      const description = `${results.length} ملف قضية، ${generated} مستند مولد، ${failed} فشل موضح بالفهرس؛ الأصول غير مضمنة`;
+      if (failed) toast.warning('تم تصدير حزمة جزئية مع بيان حالات الفشل', { description });
+      else toast.success('تم تصدير المواد المولدة وفهرس المستندات', { description });
     } catch (error) {
-      console.error('Error generating documents:', error);
-      toast.error('حدث خطأ أثناء توليد المستندات');
-    } finally {
-      setIsGeneratingDocs(false);
-    }
+      toast.error(error instanceof Error ? error.message : 'فشل التصدير؛ لم تُنشأ حزمة');
+    } finally { setIsGeneratingDocs(false); }
   };
 
   // تصدير البيانات إلى Excel
   const handleExportToExcel = async () => {
-    if (!filteredLawsuits || filteredLawsuits.length === 0) {
+    if (!companyId || lawsuitsError || !filteredLawsuits || filteredLawsuits.length === 0) {
       toast.error('لا توجد بيانات للتصدير');
       return;
     }
@@ -364,7 +323,7 @@ export default function LawsuitDataPage() {
         'مبلغ_التعويض': lawsuit.compensation_amount || 0,
         'مبلغ_المخالفات': lawsuit.violations_amount || 0,
         'عدد_المخالفات': lawsuit.violations_count || 0,
-        'المبلغ_الاجمالي': Math.floor(Number(lawsuit.claim_amount)),
+        'المبلغ_الاجمالي': parseLegalClaimAmount(lawsuit.claim_amount),
         'المبلغ_بالكلام': lawsuit.claim_amount_words || '-',
         'الوقائع': lawsuit.facts || '-',
         'الطلبات': lawsuit.requests || '-',
@@ -426,8 +385,10 @@ export default function LawsuitDataPage() {
   return (
     <div className="legal-system min-h-screen p-4 md:p-6" dir="rtl">
       <div className="mx-auto max-w-7xl space-y-6">
-      <LegalPageHeader title="بيانات التقاضي" description="تابع بيانات الدعاوى المنشأة، وراجع ملفاتها والمستندات المرتبطة بها." actions={<><Button variant="ghost" onClick={() => navigate('/legal/delinquency')}><ArrowLeft className="h-4 w-4 ml-2" />تجهيز الدعاوى</Button><Button onClick={handleGenerateAllDocuments} disabled={isGeneratingDocs}><FolderDown className="h-4 w-4 ml-2" />{isGeneratingDocs ? 'جارٍ توليد المستندات…' : 'توليد المستندات'}</Button><Button variant="outline" onClick={handleExportToExcel}><FileSpreadsheet className="h-4 w-4 ml-2" />تصدير الجدول</Button><Button variant="outline" onClick={() => refetch()}><RefreshCw className="h-4 w-4 ml-2" />تحديث</Button></>} />
+      <LegalPageHeader title="بيانات التقاضي" description="تابع بيانات الدعاوى المنشأة، وراجع ملفاتها والمستندات المرتبطة بها." actions={<><Button variant="ghost" onClick={() => navigate('/legal/delinquency')}><ArrowLeft className="h-4 w-4 ml-2" />تجهيز الدعاوى</Button><Button onClick={handleGenerateAllDocuments} disabled={isGeneratingDocs || isLoading || !!lawsuitsError}><FolderDown className="h-4 w-4 ml-2" />{isGeneratingDocs ? 'جارٍ التوليد…' : 'مواد مولدة وفهرس المستندات'}</Button><Button variant="outline" onClick={handleExportToExcel} disabled={isLoading || !!lawsuitsError}><FileSpreadsheet className="h-4 w-4 ml-2" />تصدير الجدول</Button><Button variant="outline" onClick={() => refetch()}><RefreshCw className="h-4 w-4 ml-2" />تحديث</Button></>} />
 
+      <p className="text-sm text-muted-foreground">قيمة المطالبة والتعويض المطلوب لا تمثل مبلغ حكم نهائي أو دفعة فعلية. حزمة التوليد تتضمن فهرسًا صريحًا؛ الملفات الأصلية المخزنة لا تُضم إليها.</p>
+      {lawsuitsError && <Card role="alert" className="p-4 text-destructive">فشل تحميل بيانات التقاضي كاملة. أعد المحاولة قبل التصدير.</Card>}
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <Card className="legal-panel p-6">
@@ -628,19 +589,19 @@ export default function LawsuitDataPage() {
                     </TableCell>
                     {/* مبلغ الإيجار المتأخر */}
                     <TableCell className="bg-blue-50/30 font-semibold text-blue-700">
-                      {lawsuit.overdue_amount ? Math.floor(lawsuit.overdue_amount).toLocaleString() : '0'}
+                      {lawsuit.overdue_amount ? Number(lawsuit.overdue_amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0'}
                     </TableCell>
                     {/* التعويض الاتفاقي الموثق */}
                     <TableCell className="bg-blue-50/30 font-semibold text-blue-700">
-                      {lawsuit.late_penalty ? Math.floor(lawsuit.late_penalty).toLocaleString() : '0'}
+                      {lawsuit.late_penalty ? Number(lawsuit.late_penalty).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0'}
                     </TableCell>
                     {/* مبلغ التعويض */}
                     <TableCell className="bg-amber-50/30 font-semibold text-amber-700">
-                      {lawsuit.compensation_amount ? Math.floor(lawsuit.compensation_amount).toLocaleString() : '0'}
+                      {lawsuit.compensation_amount ? Number(lawsuit.compensation_amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0'}
                     </TableCell>
                     {/* مبلغ المخالفات */}
                     <TableCell className="bg-red-50/30 font-semibold text-red-700">
-                      {lawsuit.violations_amount ? Math.floor(lawsuit.violations_amount).toLocaleString() : '0'}
+                      {lawsuit.violations_amount ? Number(lawsuit.violations_amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0'}
                     </TableCell>
                     {/* عدد المخالفات */}
                     <TableCell className="bg-red-50/30">
@@ -648,7 +609,7 @@ export default function LawsuitDataPage() {
                     </TableCell>
                     {/* المبلغ الإجمالي */}
                     <TableCell className="font-bold text-teal-700">
-                      {Math.floor(Number(lawsuit.claim_amount)).toLocaleString()}
+                      {Number(lawsuit.claim_amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </TableCell>
                     {/* المبلغ بالكلام */}
                     <TableCell className="max-w-xs">

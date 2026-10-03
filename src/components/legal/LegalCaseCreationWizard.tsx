@@ -2,11 +2,11 @@ import { legalCaseTypeLabel, legalCaseStatusLabel } from './workspace/legalLabel
 /**
  * Legal Case Creation Wizard
  * 
- * Complete 5-step wizard for tracking legal cases:
+ * Create incoming or outgoing cases with an explicit claim amount.
  * 1. تفاصيل القضية - Type, priority, court info (complaint #, case #, court name, dates)
  * 2. معلومات العميل - Select customer first
  * 3. Select الفواتير/العقود - Multi-select filtered by customer
- * 4. رفع المستندات - Upload contracts, invoices, receipts, communications, photos, recordings
+ * Evidence is uploaded within the created case and is not persisted by this wizard.
  * 5. المراجعة - Review all details before submission
  */
 
@@ -39,8 +39,6 @@ import {
   ChevronLeft,
   ChevronRight,
   FileText,
-  Upload,
-  X,
   CheckCircle,
   FileWarning,
 } from 'lucide-react';
@@ -51,6 +49,8 @@ import { useCaseDraft } from '@/hooks/useCaseDraft';
 import { formatCurrency } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { LegalComplaintGenerator } from './LegalComplaintGenerator';
+import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
+import { parseLegalClaimAmount, legalDirectionLabel } from './workspace/legalCaseExport';
 
 import { useFleetifyTranslation } from "@/hooks/useTranslation";
 interface LegalCaseWizardProps {
@@ -60,6 +60,8 @@ interface LegalCaseWizardProps {
 }
 
 interface CaseFormData {
+  case_direction: 'filed_by_us' | 'filed_against_us';
+  claim_amount: string;
   case_title: string;
   case_type: 'payment_collection' | 'contract_breach' | 'vehicle_damage' | 'other';
   priority: 'low' | 'medium' | 'high' | 'urgent';
@@ -88,17 +90,10 @@ interface CaseFormData {
   emergency_contact: string;
   employer_info: string;
   
-  // Evidence files
-  evidence_files: Array<{
-    id: string;
-    name: string;
-    type: string;
-    size: number;
-    category: 'contract' | 'invoice' | 'receipt' | 'communication' | 'photo' | 'recording' | 'witness';
-  }>;
+
 }
 
-type WizardStep = 'details' | 'customer' | 'court' | 'invoices' | 'evidence' | 'review';
+type WizardStep = 'details' | 'customer' | 'court' | 'invoices' | 'review';
 
 const LegalCaseCreationWizard: React.FC<LegalCaseWizardProps> = ({
   open,
@@ -106,9 +101,12 @@ const LegalCaseCreationWizard: React.FC<LegalCaseWizardProps> = ({
   onSuccess,
 }) => {
   const { t } = useFleetifyTranslation("ui");
+  const { companyId } = useUnifiedCompanyAccess();
   const [currentStep, setCurrentStep] = useState<WizardStep>('details');
   const [showComplaintGenerator, setShowComplaintGenerator] = useState(false);
   const [formData, setFormData] = useState<CaseFormData>({
+    case_direction: 'filed_by_us',
+    claim_amount: '',
     case_title: '',
     case_type: 'payment_collection',
     priority: 'medium',
@@ -130,14 +128,13 @@ const LegalCaseCreationWizard: React.FC<LegalCaseWizardProps> = ({
     email: '',
     emergency_contact: '',
     employer_info: '',
-    evidence_files: [],
   });
 
   const createCaseMutation = useCreateLegalCase();
   const { saveDraft, lastSaved } = useCaseDraft(formData, currentStep);
 
-  const stepOrder: WizardStep[] = ['details', 'customer', 'court', 'invoices', 'evidence', 'review'];
-  const stepLabels: Record<WizardStep, string> = { details: 'القضية', customer: 'العميل', court: 'المحكمة', invoices: 'المطالبات', evidence: 'المستندات', review: 'المراجعة' };
+  const stepOrder: WizardStep[] = formData.case_direction === 'filed_against_us' ? ['details', 'customer', 'court', 'review'] : ['details', 'customer', 'court', 'invoices', 'review'];
+  const stepLabels: Record<WizardStep, string> = { details: 'القضية', customer: 'الطرف الآخر', court: 'المحكمة', invoices: 'مراجع المطالبات', review: 'المراجعة' };
   const currentStepIndex = stepOrder.indexOf(currentStep);
   const progress = ((currentStepIndex + 1) / stepOrder.length) * 100;
 
@@ -155,26 +152,22 @@ const LegalCaseCreationWizard: React.FC<LegalCaseWizardProps> = ({
 
   const handleSubmit = async () => {
     try {
+      if (!companyId) throw new Error('تعذر تحديد الشركة');
       if (!formData.case_title || !formData.customer_name) {
         toast.error('يرجى ملء جميع الحقول المطلوبة');
         return;
       }
 
-      const totalClaimAmount = calculateTotalClaim();
-
-      console.log('📝 Creating legal case with data:', {
-        case_title: formData.case_title,
-        customer_id: formData.customer_id,
-        customer_name: formData.customer_name,
-      });
+      const totalClaimAmount = parseLegalClaimAmount(formData.claim_amount);
 
       await createCaseMutation.mutateAsync({
         case_title: formData.case_title,
+        case_direction: formData.case_direction,
         case_type: formData.case_type,
         priority: formData.priority,
         case_status: 'active',
         description: formData.description,
-        client_id: formData.customer_id || undefined,  // Add client_id
+        client_id: formData.case_direction === 'filed_by_us' ? formData.customer_id || undefined : undefined,
         client_name: formData.customer_name,
         client_phone: formData.phone,
         client_email: formData.email,
@@ -197,28 +190,24 @@ const LegalCaseCreationWizard: React.FC<LegalCaseWizardProps> = ({
 رقم الهاتف: ${formData.phone || '-'}
 عدد الفواتير المحددة: ${formData.selected_invoices.length}
 عدد العقود المحددة: ${formData.selected_contracts.length}
-عدد ملفات الأدلة: ${formData.evidence_files.length}
+المستندات الأصلية: تُرفع من داخل ملف القضية بعد إنشائها؛ لا توجد ملفات مرفقة من هذا المعالج
+قيمة المطالبة المدخلة لا تمثل حكمًا أو دفعة فعلية
 النتيجة المتوقعة: ${formData.expected_outcome}`,
       });
 
-      console.log('✅ Legal case created successfully');
       onSuccess?.();
       onOpenChange(false);
       resetForm();
     } catch (error) {
       console.error('❌ Error creating legal case:', error);
-      toast.error('فشل في إنشاء القضية. يرجى المحاولة مرة أخرى.');
+      toast.error(error instanceof Error ? error.message : 'فشل في إنشاء القضية. يرجى المحاولة مرة أخرى.');
     }
-  };
-
-  const calculateTotalClaim = () => {
-    // This would sum up invoice amounts from selected_invoices
-    // For now, return 0 as placeholder
-    return 0;
   };
 
   const resetForm = () => {
     setFormData({
+      case_direction: 'filed_by_us',
+      claim_amount: '',
       case_title: '',
       case_type: 'payment_collection',
       priority: 'medium',
@@ -240,10 +229,10 @@ const LegalCaseCreationWizard: React.FC<LegalCaseWizardProps> = ({
       address: '',
       emergency_contact: '',
       employer_info: '',
-      evidence_files: [],
-    });
+      });
     setCurrentStep('details');
   };
+  React.useEffect(() => { resetForm(); }, [companyId]);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -251,7 +240,7 @@ const LegalCaseCreationWizard: React.FC<LegalCaseWizardProps> = ({
         <DialogHeader className="lw-form-heading">
           <span className="lw-eyebrow"><FileText size={16} />ملف قانوني جديد</span>
           <DialogTitle className="text-2xl">إنشاء قضية قانونية</DialogTitle>
-          <DialogDescription>أكمل بيانات الملف على ست خطوات، ثم راجع التفاصيل قبل إنشاء القضية.</DialogDescription>
+          <DialogDescription>حدد اتجاه الدعوى والطرف الآخر وقيمة المطالبة، ثم راجع الملف. تُرفع المستندات من داخل القضية بعد إنشائها.</DialogDescription>
           <div className="lw-step-caption">الخطوة {currentStepIndex + 1} من {stepOrder.length} · {stepLabels[currentStep]}</div>
           <Progress value={progress} aria-label="تقدم إنشاء القضية" className="mt-3 h-1.5" />
           <ol className="lw-step-rail" aria-label="مراحل إنشاء القضية">{stepOrder.map((step, index) => <li key={step} aria-current={step === currentStep ? 'step' : undefined} data-completed={index < currentStepIndex}><span>{index < currentStepIndex ? <CheckCircle size={16} /> : index + 1}</span><strong>{stepLabels[step]}</strong></li>)}</ol>
@@ -265,7 +254,7 @@ const LegalCaseCreationWizard: React.FC<LegalCaseWizardProps> = ({
 
           {/* Step 2: معلومات العميل */}
           {currentStep === 'customer' && (
-            <CustomerInfoStep formData={formData} setFormData={setFormData} />
+            formData.case_direction === 'filed_against_us' ? <IncomingPartyStep formData={formData} setFormData={setFormData} /> : <CustomerInfoStep formData={formData} setFormData={setFormData} />
           )}
 
           {/* Step 3: معلومات القضية في المحكمة */}
@@ -278,18 +267,13 @@ const LegalCaseCreationWizard: React.FC<LegalCaseWizardProps> = ({
             <InvoiceSelectionStep formData={formData} setFormData={setFormData} />
           )}
 
-          {/* Step 4: رفع المستندات */}
-          {currentStep === 'evidence' && (
-            <EvidenceUploadStep formData={formData} setFormData={setFormData} />
-          )}
-
           {/* Step 5: Review */}
           {currentStep === 'review' && (
             <div className="space-y-4">
               <ReviewStep formData={formData} />
               
               {/* زر إنشاء ملف البلاغ */}
-              <Card className="border-orange-200 bg-orange-50/50">
+              {formData.case_direction === 'filed_by_us' && <Card className="border-orange-200 bg-orange-50/50">
                 <CardHeader className="pb-2">
                   <CardTitle className="text-sm flex items-center gap-2">
                     <FileWarning className="w-4 h-4 text-orange-600" />
@@ -309,7 +293,7 @@ const LegalCaseCreationWizard: React.FC<LegalCaseWizardProps> = ({
                     إنشاء ملف البلاغ
                   </Button>
                 </CardContent>
-              </Card>
+              </Card>}
             </div>
           )}
         </div>
@@ -350,7 +334,7 @@ const LegalCaseCreationWizard: React.FC<LegalCaseWizardProps> = ({
       </DialogContent>
 
       {/* مكون إنشاء البلاغ */}
-      <LegalComplaintGenerator
+      {formData.case_direction === 'filed_by_us' && <LegalComplaintGenerator
         open={showComplaintGenerator}
         onOpenChange={setShowComplaintGenerator}
         caseData={{
@@ -358,11 +342,11 @@ const LegalCaseCreationWizard: React.FC<LegalCaseWizardProps> = ({
           customer_id: formData.customer_id,
           national_id: formData.national_id,
           phone: formData.phone,
-          total_amount: 0,
+          total_amount: Number(formData.claim_amount) || 0,
           late_fees: 0,
           unpaid_rent: 0,
         }}
-      />
+      />}
     </Dialog>
   );
 };
@@ -376,9 +360,30 @@ interface CaseDetailsStepProps {
   setFormData: (data: CaseFormData) => void;
 }
 
+const IncomingPartyStep: React.FC<CaseDetailsStepProps> = ({ formData, setFormData }) => (
+  <div className="space-y-4">
+    <h3 className="font-semibold">بيانات المدعي / الطرف الآخر</h3>
+    <p className="text-sm text-muted-foreground">أدخل البيانات الواردة في الدعوى المرفوعة على الشركة.</p>
+    <div><Label htmlFor="incoming-party-name">اسم المدعي *</Label><Input id="incoming-party-name" value={formData.customer_name} onChange={event => setFormData({ ...formData, customer_name: event.target.value })} /></div>
+    <div><Label htmlFor="incoming-party-phone">الهاتف</Label><Input id="incoming-party-phone" value={formData.phone} onChange={event => setFormData({ ...formData, phone: event.target.value })} /></div>
+    <div><Label htmlFor="incoming-party-email">البريد الإلكتروني</Label><Input id="incoming-party-email" value={formData.email} onChange={event => setFormData({ ...formData, email: event.target.value })} /></div>
+    <div><Label htmlFor="incoming-party-id">رقم الهوية / السجل بحسب المستند</Label><Input id="incoming-party-id" value={formData.national_id} onChange={event => setFormData({ ...formData, national_id: event.target.value })} /></div>
+  </div>
+);
+
 const CaseDetailsStep: React.FC<CaseDetailsStepProps> = ({ formData, setFormData }) => {
   return (
     <div className="space-y-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div><Label htmlFor="case_direction">اتجاه الدعوى *</Label>
+          <Select value={formData.case_direction} onValueChange={(value: CaseFormData['case_direction']) => setFormData({ ...formData, case_direction: value, customer_id: '', customer_name: '', phone: '', email: '', national_id: '', address: '', selected_invoices: [], selected_contracts: [], expected_outcome: value === 'filed_against_us' ? 'other' : 'payment' })}>
+            <SelectTrigger id="case_direction"><SelectValue /></SelectTrigger>
+            <SelectContent><SelectItem value="filed_by_us">مرفوعة من الشركة</SelectItem><SelectItem value="filed_against_us">مرفوعة على الشركة</SelectItem></SelectContent>
+          </Select>
+        </div>
+        <div><Label htmlFor="claim_amount">قيمة المطالبة (ر.ق) *</Label><Input id="claim_amount" type="number" min="0" step="0.01" value={formData.claim_amount} onChange={event => setFormData({ ...formData, claim_amount: event.target.value })} placeholder="أدخل المبلغ أو صفرًا للمطالبة غير المالية" /></div>
+      </div>
+      <Alert><AlertDescription>هذه قيمة المطالبة بحسب المستندات؛ تُسجل النتيجة والحكم والدفع لاحقًا بصورة منفصلة. لا تُجمع تلقائيًا من الفواتير المعروضة.</AlertDescription></Alert>
       <div>
         <Label htmlFor="case_title" className="text-base font-semibold mb-2 block">
           عنوان القضية *
@@ -586,6 +591,7 @@ const InvoiceSelectionStep: React.FC<InvoiceSelectionStepProps> = ({
   formData,
   setFormData,
 }) => {
+  const { companyId } = useUnifiedCompanyAccess();
   // Fetch outstanding amounts from Supabase
   const [unpaidRent, setUnpaidRent] = React.useState<any[]>([]);
   const [lateFees, setLateFees] = React.useState<any[]>([]);
@@ -594,7 +600,7 @@ const InvoiceSelectionStep: React.FC<InvoiceSelectionStepProps> = ({
 
   React.useEffect(() => {
     const fetchOutstandingAmounts = async () => {
-      if (!formData.customer_id) return;
+      if (!formData.customer_id || !companyId) return;
       
       try {
         setLoading(true);
@@ -603,6 +609,7 @@ const InvoiceSelectionStep: React.FC<InvoiceSelectionStepProps> = ({
         const { data: rentData, error: rentError } = await supabase
           .from('invoices')
           .select('id, invoice_number, total_amount, invoice_date, payment_status, due_date')
+          .eq('company_id', companyId)
           .eq('customer_id', formData.customer_id)
           .neq('payment_status', 'paid')
           .lte('due_date', new Date().toISOString())
@@ -615,6 +622,7 @@ const InvoiceSelectionStep: React.FC<InvoiceSelectionStepProps> = ({
         const { data: feesData, error: feesError } = await supabase
           .from('late_fees')
           .select('id, fee_amount, days_overdue, invoice_id, status, created_at')
+          .eq('company_id', companyId)
           .eq('status', 'applied')
           .in('invoice_id', (rentData || []).map(inv => inv.id))
           .order('created_at', { ascending: false });
@@ -627,6 +635,7 @@ const InvoiceSelectionStep: React.FC<InvoiceSelectionStepProps> = ({
         const { data: contractsData } = await supabase
           .from('contracts')
           .select('id')
+          .eq('company_id', companyId)
           .eq('customer_id', formData.customer_id);
         
         if (contractsData && contractsData.length > 0) {
@@ -634,6 +643,7 @@ const InvoiceSelectionStep: React.FC<InvoiceSelectionStepProps> = ({
           const { data: violationsData, error: violationsError } = await supabase
             .from('penalties')
             .select('id, penalty_number, violation_type, amount, penalty_date, status, payment_status')
+            .eq('company_id', companyId)
             .in('contract_id', contractIds)
             .neq('payment_status', 'paid')
             .neq('status', 'cancelled')
@@ -658,7 +668,7 @@ const InvoiceSelectionStep: React.FC<InvoiceSelectionStepProps> = ({
       }
     };
     fetchOutstandingAmounts();
-  }, [formData.customer_id]);
+  }, [formData.customer_id, companyId]);
 
   // Calculate total outstanding amount
   const totalRent = unpaidRent.reduce((sum, inv) => sum + inv.total_amount, 0);
@@ -865,6 +875,7 @@ interface CustomerInfoStepProps {
 }
 
 const CustomerInfoStep: React.FC<CustomerInfoStepProps> = ({ formData, setFormData }) => {
+  const { companyId } = useUnifiedCompanyAccess();
   const [customers, setCustomers] = React.useState<Customer[]>([]);
   const [filteredCustomers, setFilteredCustomers] = React.useState<Customer[]>([]);
   const [loading, setLoading] = React.useState(false);
@@ -875,11 +886,13 @@ const CustomerInfoStep: React.FC<CustomerInfoStepProps> = ({ formData, setFormDa
   // Fetch customers from database
   React.useEffect(() => {
     const fetchCustomers = async () => {
+      if (!companyId) return;
       try {
         setLoading(true);
         const { data, error } = await supabase
           .from('customers')
           .select('id, first_name, last_name, first_name_ar, last_name_ar, company_name, company_name_ar, email, phone, address, national_id, emergency_contact_name')
+          .eq('company_id', companyId)
           .eq('is_active', true)
           .order('first_name_ar', { nullsFirst: false });
 
@@ -895,16 +908,17 @@ const CustomerInfoStep: React.FC<CustomerInfoStepProps> = ({ formData, setFormDa
     };
 
     fetchCustomers();
-  }, []);
+  }, [companyId]);
 
   // Auto-extract customer from selected invoices
   React.useEffect(() => {
     const extractCustomerFromInvoices = async () => {
-      if (formData.selected_invoices.length > 0 && !formData.customer_id) {
+      if (companyId && formData.selected_invoices.length > 0 && !formData.customer_id) {
         try {
           const { data, error } = await supabase
             .from('invoices')
             .select('customer_id')
+            .eq('company_id', companyId)
             .in('id', formData.selected_invoices)
             .limit(1);
 
@@ -923,15 +937,17 @@ const CustomerInfoStep: React.FC<CustomerInfoStepProps> = ({ formData, setFormDa
     };
 
     extractCustomerFromInvoices();
-  }, [formData.selected_invoices]);
+  }, [formData.selected_invoices, companyId]);
 
   // Fetch customer's previous cases
   const fetchCustomerCases = async (customerId: string) => {
+    if (!companyId) return;
     try {
       setLoadingCases(true);
       const { data, error } = await supabase
         .from('legal_cases')
         .select('id, case_title, case_type, case_status, case_value, created_at')
+        .eq('company_id', companyId)
         .eq('client_id', customerId)
         .order('created_at', { ascending: false })
         .limit(5);
@@ -1168,177 +1184,6 @@ const CustomerInfoStep: React.FC<CustomerInfoStepProps> = ({ formData, setFormDa
 };
 
 // ============================================================================
-// STEP 4: رفع المستندات
-// ============================================================================
-
-interface EvidenceUploadStepProps {
-  formData: CaseFormData;
-  setFormData: (data: CaseFormData) => void;
-}
-
-const EvidenceUploadStep: React.FC<EvidenceUploadStepProps> = ({
-  formData,
-  setFormData,
-}) => {
-  const { t } = useFleetifyTranslation("ui");
-  const [dragActive, setDragActive] = React.useState(false);
-
-  const evidenceCategories = [
-    { value: 'contract', label: 'العقود' },
-    { value: 'invoice', label: 'الفواتير' },
-    { value: 'receipt', label: t("paymentReceipts") },
-    { value: 'communication', label: 'البريد الإلكتروني/SMS Communications' },
-    { value: 'photo', label: t("photosVehicledamage") },
-    { value: 'recording', label: t("voiceRecordings") },
-    { value: 'witness', label: t("witnessStatements") },
-  ];
-
-  const handleDrag = (e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (e.type === 'dragenter' || e.type === 'dragover') {
-      setDragActive(true);
-    } else if (e.type === 'dragleave') {
-      setDragActive(false);
-    }
-  };
-
-  const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setDragActive(false);
-
-    const files = e.dataTransfer.files;
-    addFiles(files);
-  };
-
-  const handleFileInput = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.currentTarget.files;
-    if (files) {
-      addFiles(files);
-    }
-  };
-
-  const addFiles = (files: FileList) => {
-    const newFiles = Array.from(files).map((file) => ({
-      id: `file-${Date.now()}-${Math.random()}`,
-      name: file.name,
-      type: file.type,
-      size: file.size,
-      category: 'communication' as const,
-    }));
-
-    setFormData({
-      ...formData,
-      evidence_files: [...formData.evidence_files, ...newFiles],
-    });
-
-    toast.success(`${newFiles.length} ملف تمت إضافته`);
-  };
-
-  const removeFile = (fileId: string) => {
-    setFormData({
-      ...formData,
-      evidence_files: formData.evidence_files.filter((f) => f.id !== fileId),
-    });
-  };
-
-  const updateFileCategory = (fileId: string, category: any) => {
-    setFormData({
-      ...formData,
-      evidence_files: formData.evidence_files.map((f) =>
-        f.id === fileId ? { ...f, category } : f
-      ),
-    });
-  };
-
-  return (
-    <div className="space-y-6">
-      <Alert>
-        <AlertCircle className="h-4 w-4" />
-        <AlertDescription>
-          رفع المستندات <strong>اختياري</strong>. يمكنك إضافة المستندات لاحقاً من صفحة القضية.
-        </AlertDescription>
-      </Alert>
-
-      {/* Drag & Drop Zone */}
-      <div
-        onDragEnter={handleDrag}
-        onDragLeave={handleDrag}
-        onDragOver={handleDrag}
-        onDrop={handleDrop}
-        className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
-          dragActive ? 'border-primary bg-primary/5' : 'border-muted-foreground/25'
-        }`}
-      >
-        <Upload className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
-        <p className="text-sm font-medium mb-1">اسحب وأفلت الملفات هنا</p>
-        <p className="text-xs text-muted-foreground mb-4">أو انقر لاختيار الملفات</p>
-        <input
-          type="file"
-          multiple
-          onChange={handleFileInput}
-          className="hidden"
-          id="file-input"
-        />
-        <Label htmlFor="file-input" className="cursor-pointer">
-          <Button variant="outline" size="sm">
-            اختر الملفات
-          </Button>
-        </Label>
-      </div>
-
-      {/* Files List */}
-      {formData.evidence_files.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">الأدلة المرفوعة</CardTitle>
-            <CardDescription>
-              {formData.evidence_files.length} ملف مرفوع
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {formData.evidence_files.map((file) => (
-              <div key={file.id} className="flex items-center gap-3 p-3 border rounded-lg">
-                <FileText className="h-5 w-5 text-muted-foreground" />
-                <div className="flex-1 min-w-0">
-                  <div className="font-medium truncate text-sm">{file.name}</div>
-                  <div className="text-xs text-muted-foreground">
-                    {(file.size / 1024 / 1024).toFixed(2)} MB
-                  </div>
-                </div>
-                <Select
-                  value={file.category}
-                  onValueChange={(value) => updateFileCategory(file.id, value)}
-                >
-                  <SelectTrigger className="w-[150px] h-9">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {evidenceCategories.map((cat) => (
-                      <SelectItem key={cat.value} value={cat.value}>
-                        {cat.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => removeFile(file.id)}
-                 aria-label="إزالة الملف المختار" title="إزالة الملف المختار">
-                  <X className="h-4 w-4" />
-                </Button>
-              </div>
-            ))}
-          </CardContent>
-        </Card>
-      )}
-    </div>
-  );
-};
-
-// ============================================================================
 // STEP 5: Review
 // ============================================================================
 
@@ -1347,6 +1192,7 @@ interface ReviewStepProps {
 }
 
 const ReviewStep: React.FC<ReviewStepProps> = ({ formData }) => {
+  const { companyId } = useUnifiedCompanyAccess();
   const [selectedInvoicesData, setSelectedInvoicesData] = React.useState<any[]>([]);
   const [selectedContractsData, setSelectedContractsData] = React.useState<any[]>([]);
   const [selectedPenaltiesData, setSelectedPenaltiesData] = React.useState<any[]>([]);
@@ -1354,6 +1200,7 @@ const ReviewStep: React.FC<ReviewStepProps> = ({ formData }) => {
 
   React.useEffect(() => {
     const fetchSelectedData = async () => {
+      if (!companyId) return;
       try {
         setLoading(true);
         
@@ -1362,7 +1209,8 @@ const ReviewStep: React.FC<ReviewStepProps> = ({ formData }) => {
           const { data: invoicesData } = await supabase
             .from('invoices')
             .select('id, invoice_number, total_amount, invoice_date, payment_status')
-            .in('id', formData.selected_invoices);
+            .eq('company_id', companyId)
+            .in('id', formData.selected_invoices.filter(id => !id.startsWith('violation-')));
           setSelectedInvoicesData(invoicesData || []);
         }
         
@@ -1371,6 +1219,7 @@ const ReviewStep: React.FC<ReviewStepProps> = ({ formData }) => {
           const { data: contractsData } = await supabase
             .from('contracts')
             .select('id, contract_number, start_date, end_date, monthly_rate')
+            .eq('company_id', companyId)
             .in('id', formData.selected_contracts);
           setSelectedContractsData(contractsData || []);
         }
@@ -1381,6 +1230,7 @@ const ReviewStep: React.FC<ReviewStepProps> = ({ formData }) => {
           const { data: violationsData, error: violationsError } = await supabase
             .from('penalties')
             .select('id, penalty_number, violation_type, amount, penalty_date')
+            .eq('company_id', companyId)
             .in('id', violationIds);
           if (!violationsError) {
             setSelectedPenaltiesData((violationsData || []).map((violation) => ({
@@ -1399,7 +1249,7 @@ const ReviewStep: React.FC<ReviewStepProps> = ({ formData }) => {
       }
     };
     fetchSelectedData();
-  }, [formData.selected_invoices, formData.selected_contracts]);
+  }, [formData.selected_invoices, formData.selected_contracts, companyId]);
 
   return (
     <div className="space-y-6">
@@ -1408,6 +1258,8 @@ const ReviewStep: React.FC<ReviewStepProps> = ({ formData }) => {
           <CardTitle>تفاصيل القضية</CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
+          <div className="flex justify-between"><span>اتجاه الدعوى:</span><strong>{legalDirectionLabel(formData.case_direction)}</strong></div>
+          <div className="flex justify-between"><span>قيمة المطالبة (وليست حكمًا):</span><strong>{formData.claim_amount ? formatCurrency(Number(formData.claim_amount)) : 'غير محددة'}</strong></div>
           <div className="flex justify-between items-start">
             <span className="text-muted-foreground">العنوان:</span>
             <span className="font-medium">{formData.case_title}</span>
@@ -1429,7 +1281,7 @@ const ReviewStep: React.FC<ReviewStepProps> = ({ formData }) => {
 
       <Card>
         <CardHeader>
-          <CardTitle>معلومات العميل</CardTitle>
+          <CardTitle>معلومات الطرف الآخر</CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
           <div className="flex justify-between items-start">
@@ -1536,33 +1388,7 @@ const ReviewStep: React.FC<ReviewStepProps> = ({ formData }) => {
                 </div>
               )}
 
-              {/* Evidence Files */}
-              {formData.evidence_files.length > 0 && (
-                <div>
-                  <h4 className="font-semibold mb-3 flex items-center gap-2">
-                    ملفات الأدلة
-                    <Badge variant="secondary">{formData.evidence_files.length}</Badge>
-                  </h4>
-                  <div className="space-y-2">
-                    {formData.evidence_files.map((file) => (
-                      <div key={file.id} className="flex justify-between items-center p-3 bg-muted/50 rounded-lg">
-                        <div className="flex items-center gap-2">
-                          <FileText className="h-4 w-4 text-muted-foreground" />
-                          <div>
-                            <div className="font-medium text-sm">{file.name}</div>
-                            <div className="text-xs text-muted-foreground">
-                              {(file.size / 1024).toFixed(1)} KB
-                            </div>
-                          </div>
-                        </div>
-                        <Badge variant="outline">{file.category}</Badge>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {selectedInvoicesData.length === 0 && selectedPenaltiesData.length === 0 && selectedContractsData.length === 0 && formData.evidence_files.length === 0 && (
+              {selectedInvoicesData.length === 0 && selectedPenaltiesData.length === 0 && selectedContractsData.length === 0 && (
                 <div className="text-center py-8 text-muted-foreground">
                   لم يتم تحديد أي أدلة بعد
                 </div>
@@ -1575,7 +1401,7 @@ const ReviewStep: React.FC<ReviewStepProps> = ({ formData }) => {
       <Alert className="border-green-200 bg-green-50">
         <CheckCircle className="h-4 w-4 text-green-600" />
         <AlertDescription className="text-green-800">
-          جميع المعلومات مكتملة. انقر على "إنشاء القضية" للإنهاء.
+          راجع البيانات قبل إنشاء القضية. لم تُرفق ملفات المستندات من هذا المعالج؛ أضفها داخل ملف القضية بعد إنشائها. اكتمال هذه البيانات لا يعني اكتمال الحافظة القانونية.
         </AlertDescription>
       </Alert>
     </div>

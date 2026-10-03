@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query"
-import { supabase } from "@/integrations/supabase/client"
-
+import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess'
+import { financeToday, requireFinanceCompany } from '@/services/financialReporting'
+import { readOutstandingInvoiceReport, requireInvoiceReportDate, type InvoiceReportKind, type OutstandingInvoiceRow } from '@/services/financialInvoiceReports'
 
 export interface CashFlowData {
   operating_activities: {
@@ -18,164 +19,84 @@ export interface CashFlowData {
   net_cash_flow: number
 }
 
-export interface PayablesData {
-  vendor_name: string
-  amount: number
-  due_date: string
-  overdue_days: number
-  status: string
-}
+export type PayablesData = OutstandingInvoiceRow
 
-export interface ReceivablesData {
-  customer_name: string
-  amount: number
-  due_date: string
-  overdue_days: number
-  status: string
-}
+export type ReceivablesData = OutstandingInvoiceRow
 
 export const useCashFlowReport = (startDate?: string, endDate?: string) => {
+  const { companyId, user, isInitializing, isAuthenticating, authError } = useUnifiedCompanyAccess()
+  const asOf = endDate ?? financeToday()
   return useQuery({
-    queryKey: ["cash-flow-report", startDate, endDate],
-    queryFn: async () => {
-      // Fetch journal entries for the period
-      let query = supabase
-        .from("journal_entries")
-        .select(`
-          *,
-          journal_entry_lines(
-            *,
-            account:chart_of_accounts(account_name, account_type)
-          )
-        `)
-        .eq("status", "posted")
-
-      if (startDate) query = query.gte("entry_date", startDate)
-      if (endDate) query = query.lte("entry_date", endDate)
-
-      const { data, error } = await query
-
-      if (error) throw error
-
-      // Process cash flow data
-      const cashFlowData: CashFlowData = {
-        operating_activities: [],
-        investing_activities: [],
-        financing_activities: [],
-        net_cash_flow: 0
-      }
-
-      // Calculate cash flows from operations, investing, and financing
-      let operatingCash = 0
-      let investingCash = 0
-      let financingCash = 0
-
-      data?.forEach(entry => {
-        entry.journal_entry_lines?.forEach((line: any) => {
-          const amount = Number(line.debit_amount || 0) - Number(line.credit_amount || 0)
-          
-          // Categorize based on account type and entry reference
-          if (entry.reference_type === 'invoice' || entry.reference_type === 'payment') {
-            operatingCash += amount
-          } else if (entry.reference_type === 'fixed_asset') {
-            investingCash += amount
-          } else if (entry.reference_type === 'loan' || entry.reference_type === 'equity') {
-            financingCash += amount
-          }
-        })
-      })
-
-      cashFlowData.operating_activities.push({ name: "التدفق النقدي من العمليات", amount: operatingCash })
-      cashFlowData.investing_activities.push({ name: "التدفق النقدي من الاستثمار", amount: investingCash })
-      cashFlowData.financing_activities.push({ name: "التدفق النقدي من التمويل", amount: financingCash })
-      cashFlowData.net_cash_flow = operatingCash + investingCash + financingCash
-
-      return cashFlowData
-    }
+    queryKey: ["cash-flow-report", companyId, user?.id, startDate, asOf],
+    enabled: !isInitializing && !isAuthenticating,
+    retry: false,
+    queryFn: async (): Promise<CashFlowData> => {
+      if (authError || !user) throw new Error('يلزم تسجيل الدخول لقراءة التقارير المالية.')
+      requireFinanceCompany(companyId)
+      requireInvoiceReportDate(asOf)
+      if (startDate) requireInvoiceReportDate(startDate)
+      // Summing both sides of a balanced journal falsely reports zero cash flow.
+      // The configured statement package owns cash-account mappings and review.
+      throw new Error('يلزم إعداد تصنيفات التدفقات النقدية ومراجعتها في حزمة القوائم المالية (/finance/reports/financial-statements).')
+    },
   })
 }
 
-export const usePayablesReport = () => {
-  return useQuery({
-    queryKey: ["payables-report"],
+function useOutstandingInvoiceReport(kind: InvoiceReportKind, cutoff?: string) {
+  const { companyId, user, isInitializing, isAuthenticating, authError } = useUnifiedCompanyAccess()
+  const asOf = cutoff ?? financeToday()
+  const query = useQuery({
+    queryKey: [`${kind}-report`, companyId, user?.id, asOf],
+    enabled: !isInitializing && !isAuthenticating,
+    retry: false,
+    staleTime: 0,
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("invoices")
-        .select(`
-          *,
-          vendors!vendor_id(vendor_name)
-        `)
-        .eq("invoice_type", "purchase")
-        .neq("payment_status", "paid")
-
-      if (error) throw error
-
-      const payablesData: PayablesData[] = (data || []).map(invoice => {
-        const dueDate = new Date(invoice.due_date || invoice.invoice_date)
-        const today = new Date()
-        const overdueDays = Math.max(0, Math.floor((today.getTime() - dueDate.getTime()) / (1000 * 60 * 60 * 24)))
-
-        return {
-          vendor_name: invoice.vendors?.vendor_name || 'مورد غير محدد',
-          amount: Number(invoice.balance_due || invoice.total_amount),
-          due_date: invoice.due_date || invoice.invoice_date,
-          overdue_days: overdueDays,
-          status: overdueDays > 0 ? 'متأخر' : 'مستحق'
-        }
-      })
-
-      return payablesData
-    }
+      if (authError || !user) throw new Error('يلزم تسجيل الدخول لقراءة التقارير المالية.')
+      requireFinanceCompany(companyId)
+      return readOutstandingInvoiceReport(companyId, kind, asOf)
+    },
   })
+  return {
+    ...query,
+    // A refetch error must not leave the last successful dataset exportable.
+    data: query.isError || isInitializing || isAuthenticating ? undefined : query.data,
+    isLoading: query.isLoading || isInitializing || isAuthenticating,
+    reportMetadata: {
+      asOf,
+      defaultAsOf: 'today_in_qatar' as const,
+      dateSource: 'invoice_date' as const,
+      balanceBasis: 'current_invoice_balance' as const,
+      isHistoricalBalance: false as const,
+      retrievedAt: query.dataUpdatedAt ? new Date(query.dataUpdatedAt).toISOString() : null,
+      description: 'أرصدة الفواتير الحالية وقت القراءة للفواتير غير الملغاة بتاريخ الفاتورة حتى تاريخ القطع. تُحسب أيام التأخر عند تاريخ القطع؛ يستخدم تاريخ الفاتورة عند غياب تاريخ الاستحقاق. لا يعيد هذا الكشف بناء رصيد تاريخي من السداد.',
+    },
+  }
 }
 
-export const useReceivablesReport = () => {
-  return useQuery({
-    queryKey: ["receivables-report"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("invoices")
-        .select(`
-          *,
-          customers!customer_id(first_name, last_name, company_name)
-        `)
-        .eq("invoice_type", "sales")
-        .neq("payment_status", "paid")
+export const usePayablesReport = (asOf?: string) => useOutstandingInvoiceReport('payables', asOf)
 
-      if (error) throw error
-
-      const receivablesData: ReceivablesData[] = (data || []).map(invoice => {
-        const dueDate = new Date(invoice.due_date || invoice.invoice_date)
-        const today = new Date()
-        const overdueDays = Math.max(0, Math.floor((today.getTime() - dueDate.getTime()) / (1000 * 60 * 60 * 24)))
-
-        const customerName = invoice.customers?.company_name || 
-                            `${invoice.customers?.first_name || ''} ${invoice.customers?.last_name || ''}`.trim() ||
-                            'عميل غير محدد'
-
-        return {
-          customer_name: customerName,
-          amount: Number(invoice.balance_due || invoice.total_amount),
-          due_date: invoice.due_date || invoice.invoice_date,
-          overdue_days: overdueDays,
-          status: overdueDays > 0 ? 'متأخر' : 'مستحق'
-        }
-      })
-
-      return receivablesData
-    }
-  })
-}
+export const useReceivablesReport = (asOf?: string) => useOutstandingInvoiceReport('receivables', asOf)
 
 // HTML Export utilities
-export const exportToHTML = (content: string, title: string, companyName?: string) => {
+export interface FinancialPrintMetadata {
+  asOf: string
+  description: string
+  retrievedAt?: string | null
+}
+
+const escapePrintText = (value: string) => value.replace(/[&<>"']/g, character => ({
+  '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+})[character] ?? character)
+
+export const exportToHTML = (content: string, title: string, companyName?: string, reportMetadata?: FinancialPrintMetadata) => {
   // Create print-friendly content container
   const printContent = `
     <div id="print-content" style="display: none;">
       <div class="header">
-        <div class="company-name">${companyName || 'اسم الشركة'}</div>
-        <div class="report-title">${title}</div>
-        <div class="report-date">تاريخ التقرير: ${new Date().toLocaleDateString('en-GB')}</div>
+        <div class="company-name">${escapePrintText(companyName || 'اسم الشركة')}</div>
+        <div class="report-title">${escapePrintText(title)}</div>
+        <div class="report-date">تاريخ الإنشاء: ${new Date().toLocaleDateString('en-GB')}</div>
+        ${reportMetadata ? `<div class="report-date">تاريخ قطع الفواتير: ${escapePrintText(requireInvoiceReportDate(reportMetadata.asOf))}</div><div class="report-date">${escapePrintText(reportMetadata.description)}</div>${reportMetadata.retrievedAt ? `<div class="report-date">وقت قراءة المصدر: ${escapePrintText(reportMetadata.retrievedAt)}</div>` : ''}` : ''}
       </div>
       
       <div class="content">

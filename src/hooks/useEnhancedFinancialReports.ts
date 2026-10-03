@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import * as Sentry from "@sentry/react";
 import { supabase } from '@/integrations/supabase/client';
 import { useUnifiedCompanyAccess } from './useUnifiedCompanyAccess';
+import { financeToday, readIncomeStatementAccounts } from '@/services/financialReporting';
 
 const normalizeAccountType = (value?: string | null) => {
   const normalized = String(value || '').trim().toLowerCase();
@@ -376,18 +377,51 @@ export const useEnhancedFinancialReports = (
   startDate?: string,
   endDate?: string
 ) => {
-  const { companyId, getQueryKey } = useUnifiedCompanyAccess();
+  const access = useUnifiedCompanyAccess();
+  const { companyId, getQueryKey } = access;
+  const actorId = access.user?.id;
+  const canRead = Boolean(companyId && actorId && !access.isAuthenticating && !access.isInitializing && !access.authError);
 
-  return useQuery({
-    queryKey: getQueryKey([
+  const query = useQuery({
+    queryKey: [...getQueryKey([
       'enhanced-financial-reports',
       reportType,
       startDate || 'unbounded-start',
       endDate || 'unbounded-end',
-    ]),
+    ]), actorId || 'no-authenticated-actor'],
     queryFn: async () => {
       Sentry.addBreadcrumb({ category: "enhancedfinancialreports", message: "Fetching data", level: "info" });
-      if (!companyId) return null;
+      if (!canRead || !companyId) throw new Error('Authenticated company access is required for financial reports');
+
+      // The server reader includes all period movements, inactive accounts with
+      // postings, and reversals of closing entries. A direct joined REST read
+      // below is row-limited and must not be used for an income statement.
+      if (reportType === 'income_statement') {
+        const periodEnd = endDate || financeToday();
+        const periodStart = startDate || `${periodEnd.slice(0, 4)}-01-01`;
+        const incomeAccounts = await readIncomeStatementAccounts(companyId, periodStart, periodEnd);
+        const rowsFor = (kind: 'revenue' | 'expense') => incomeAccounts
+          .filter(account => isAccountType(account.account_type, kind))
+          .map(account => ({
+            accountCode: account.account_code,
+            accountName: account.account_name,
+            accountNameAr: account.account_name_ar || account.account_name,
+            balance: account.current_balance,
+          }));
+        const revenueAccounts = rowsFor('revenue');
+        const expenseAccounts = rowsFor('expense');
+        const totalRevenue = revenueAccounts.reduce((sum, account) => sum + account.balance, 0);
+        const totalExpenses = expenseAccounts.reduce((sum, account) => sum + account.balance, 0);
+        return {
+          title: 'Income Statement', titleAr: 'قائمة الدخل',
+          sections: [
+            { title: 'Revenue', titleAr: 'الإيرادات', accounts: revenueAccounts, subtotal: totalRevenue },
+            { title: 'Expenses', titleAr: 'المصروفات', accounts: expenseAccounts, subtotal: totalExpenses },
+          ],
+          totalDebits: totalExpenses, totalCredits: totalRevenue,
+          netIncome: totalRevenue - totalExpenses,
+        };
+      }
 
       // Fetch real accounting data from database
       const { data: accounts, error: accountsError } = await supabase
@@ -513,62 +547,6 @@ export const useEnhancedFinancialReports = (
           }],
           totalDebits,
           totalCredits
-        };
-      }
-
-      if (reportType === 'income_statement') {
-        const revenueAccounts = accounts?.filter(acc => 
-          isAccountType(acc.account_type, 'revenue') && !acc.is_header
-        ).map(acc => {
-          const balance = accountBalances.get(acc.id);
-          return {
-            accountCode: acc.account_code,
-            accountName: acc.account_name,
-            accountNameAr: acc.account_name_ar || acc.account_name,
-            accountLevel: acc.account_level,
-            isHeader: acc.is_header,
-            balance: Math.abs(balance?.balance || 0)
-          };
-        }) || [];
-
-        const expenseAccounts = accounts?.filter(acc => 
-          isAccountType(acc.account_type, 'expense') && !acc.is_header
-        ).map(acc => {
-          const balance = accountBalances.get(acc.id);
-          return {
-            accountCode: acc.account_code,
-            accountName: acc.account_name,
-            accountNameAr: acc.account_name_ar || acc.account_name,
-            accountLevel: acc.account_level,
-            isHeader: acc.is_header,
-            balance: Math.abs(balance?.balance || 0)
-          };
-        }) || [];
-
-        const totalRevenue = revenueAccounts.reduce((sum, acc) => sum + acc.balance, 0);
-        const totalExpenses = expenseAccounts.reduce((sum, acc) => sum + acc.balance, 0);
-        const netIncome = totalRevenue - totalExpenses;
-
-        return {
-          title: 'Income Statement',
-          titleAr: 'قائمة الدخل',
-          sections: [
-            {
-              title: 'Revenue',
-              titleAr: 'الإيرادات',
-              accounts: revenueAccounts,
-              subtotal: totalRevenue
-            },
-            {
-              title: 'Expenses',
-              titleAr: 'المصروفات',
-              accounts: expenseAccounts,
-              subtotal: totalExpenses
-            }
-          ],
-          totalDebits: totalExpenses,
-          totalCredits: totalRevenue,
-          netIncome
         };
       }
 
@@ -873,9 +851,10 @@ export const useEnhancedFinancialReports = (
 
       return null;
     },
-    enabled: !!companyId, // إزالة شرط endDate لأن الميزانية يمكن عرضها بدون تواريخ
+    enabled: canRead,
     staleTime: 5 * 60 * 1000, // Cache for 5 minutes
   });
+  return canRead ? query : { ...query, data: undefined };
 };
 
 // Hook to get detailed enhanced customer data for reporting

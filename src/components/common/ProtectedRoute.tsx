@@ -34,9 +34,9 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
 
   const isBusy = loading || isInitializing;
 
-  if (isBusy && !user) {
+  if (isBusy) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-slate-950 p-6" dir="rtl">
+      <div role="status" aria-live="polite" className="min-h-screen flex flex-col items-center justify-center bg-slate-950 p-6" dir="rtl">
         <div className="text-center space-y-6">
           <div className="w-16 h-16 rounded-xl bg-teal-500 flex items-center justify-center shadow-lg mx-auto">
             <span className="text-white font-bold text-3xl">F</span>
@@ -74,7 +74,7 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
       fallback={
         showFallback ? undefined : <Navigate to={redirectTo} replace />
       }
-      hideIfNoAccess={!showFallback}
+      hideIfNoAccess={false}
     >
       {children}
     </PermissionGuard>

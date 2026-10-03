@@ -66,6 +66,7 @@ describe('complete financial readers', () => {
               id: String(i),
               journal_entry_id: 'entry-a',
               account_id: 'account-a',
+              chart_of_accounts: { id: 'account-a', company_id: 'company-a' },
             }));
       let start = 0,
         end = 499;
@@ -93,6 +94,76 @@ describe('complete financial readers', () => {
     expect(rows[0].journal_entry_lines).toHaveLength(1204);
     expect(scopes).toContainEqual(['journal_entries', 'company_id', 'company-a']);
     expect(scopes).toContainEqual(['journal_entry_lines', 'journal_entries.company_id', 'company-a']);
+    expect(scopes).toContainEqual(['journal_entry_lines', 'chart_of_accounts.company_id', 'company-a']);
+  });
+  it.each(['relationship', 'later-page', 'foreign-account'] as const)('rejects a %s journal read failure', async failure => {
+    from.mockImplementation((table: string) => {
+      let start = 0;
+      const query = {
+        select: vi.fn((selection: string) => {
+          if (table === 'journal_entry_lines') {
+            expect(selection).toContain('chart_of_accounts!journal_entry_lines_account_id_fkey(');
+            expect(selection).not.toContain('fk_journal_entry_lines_account');
+          }
+          return query;
+        }),
+        eq: vi.fn().mockReturnThis(),
+        order: vi.fn().mockReturnThis(),
+        range: (first: number) => { start = first; return query; },
+        then: (resolve: (value: unknown) => unknown) => {
+          const entry = { id: 'entry-a', entry_number: 'JE-1', description: 'Payroll' };
+          const line = { id: String(start), journal_entry_id: 'entry-a', account_id: 'account-a', chart_of_accounts: { company_id: failure === 'foreign-account' ? 'company-b' : 'company-a' } };
+          const error = table === 'journal_entry_lines' && (failure === 'relationship' || (failure === 'later-page' && start > 0))
+            ? { message: failure === 'relationship' ? 'PGRST200: relationship not found' : 'Later journal page denied' }
+            : null;
+          return Promise.resolve(resolve(table === 'journal_entries'
+            ? { data: [entry], error: null, count: 1 }
+            : { data: error ? null : [line], error, count: failure === 'later-page' ? 2 : 1 }));
+        },
+      };
+      return query;
+    });
+    await expect(readFinancialJournals('company-a')).rejects.toThrow(failure === 'relationship' ? 'PGRST200' : failure === 'later-page' ? 'Later journal page denied' : 'account could not be verified');
+  });
+  it.each(['missing-lines', 'truncated-lines', 'unbalanced-lines', 'orphan-line'] as const)('rejects %s instead of issuing an incomplete posted journal', async failure => {
+    from.mockImplementation((table: string) => {
+      const entry = { id: 'entry-a', entry_number: 'JE-1', description: 'Payroll', status: 'posted', total_debit: 100, total_credit: 100 };
+      const account = { company_id: 'company-a' };
+      const lines = failure === 'missing-lines' ? [] : [
+        { id: 'line-1', journal_entry_id: failure === 'orphan-line' ? 'entry-other' : 'entry-a', debit_amount: failure === 'truncated-lines' ? 50 : 100, credit_amount: 0, chart_of_accounts: account },
+        { id: 'line-2', journal_entry_id: 'entry-a', debit_amount: 0, credit_amount: failure === 'unbalanced-lines' ? 90 : 100, chart_of_accounts: account },
+      ];
+      const data = table === 'journal_entries' ? [entry] : lines;
+      const query = {
+        select: vi.fn().mockReturnThis(), eq: vi.fn().mockReturnThis(),
+        order: vi.fn().mockReturnThis(), range: vi.fn().mockReturnThis(),
+        then: (resolve: (value: unknown) => unknown) => Promise.resolve(resolve({ data, error: null, count: data.length })),
+      };
+      return query;
+    });
+    await expect(readFinancialJournals('company-a', { status: 'posted' })).rejects.toThrow(failure === 'missing-lines' ? 'Incomplete journal detail' : failure === 'orphan-line' ? 'Journal detail changed' : 'does not reconcile');
+  });
+  it('keeps an explicitly posted reversal-marked entry and reconciles its complete detail', async () => {
+    const filters: unknown[][] = [];
+    from.mockImplementation((table: string) => {
+      const entry = { id: 'entry-a', entry_number: 'JE-1', description: 'Payroll', status: 'posted', reversed_at: '2026-09-30', total_debit: 100, total_credit: 100 };
+      const data = table === 'journal_entries' ? [entry] : [
+        { id: 'line-1', journal_entry_id: 'entry-a', debit_amount: 100, credit_amount: 0, chart_of_accounts: { company_id: 'company-a' } },
+        { id: 'line-2', journal_entry_id: 'entry-a', debit_amount: 0, credit_amount: 100, chart_of_accounts: { company_id: 'company-a' } },
+      ];
+      const query = {
+        select: vi.fn().mockReturnThis(), order: vi.fn().mockReturnThis(), range: vi.fn().mockReturnThis(),
+        eq: (...args: unknown[]) => { filters.push([table, ...args]); return query; },
+        then: (resolve: (value: unknown) => unknown) => Promise.resolve(resolve({ data, error: null, count: data.length })),
+      };
+      return query;
+    });
+    const rows = await readFinancialJournals('company-a', { status: 'posted' });
+    expect(rows).toHaveLength(1);
+    expect(rows[0].journal_entry_lines).toHaveLength(2);
+    expect(filters).toContainEqual(['journal_entries', 'status', 'posted']);
+    expect(filters).toContainEqual(['journal_entry_lines', 'journal_entries.status', 'posted']);
+    expect(filters.some(filter => String(filter[1]).includes('reversed_at'))).toBe(false);
   });
   it('propagates summary errors and rejects malformed snapshots', async () => {
     rpc.mockReturnValue({ single: vi.fn().mockResolvedValue({ data: null, error: new Error('Denied') }) });

@@ -1,5 +1,6 @@
 // Synthetic SQL equivalence and scaling checks. Never accepts a remote database URL.
 import assert from 'node:assert/strict';
+import { createHash } from 'node:crypto';
 import { readFile,writeFile,mkdir } from 'node:fs/promises';
 import { beforeEach,afterEach,describe,it } from 'node:test';
 import { PGlite } from '@electric-sql/pglite';
@@ -12,7 +13,7 @@ const cash='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1',revenue='aaaaaaaa-aaaa-4aaa-8a
 const capital='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa3',expense='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa4';
 const fixed='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa5',liability='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa6';
 const retained='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa7',reserve='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa8';
-const migration='20260918002000_financial_statement_packages';
+const migration='20260917235336_financial_statement_packages';
 const review={classifications:true,policies:true,reconciliations:true,disclosures:true,periodCutoff:true};
 let db,config;
 const query=async(sql,args=[])=>(await db.query(sql,args)).rows;
@@ -62,7 +63,7 @@ async function setup(instance=new PGlite()){
  const baseline=await read('../../supabase/migrations/20260712052300_atomic_payment_cancellation_and_contract_totals.sql');
  const start=baseline.indexOf('CREATE OR REPLACE FUNCTION public.is_finance_action_authorized(');
  await db.exec(baseline.slice(start,baseline.indexOf('CREATE OR REPLACE FUNCTION public.canonical_contract_paid_amount',start)));
- await db.exec(await read('../../supabase/migrations/20260918001000_professional_balance_sheets.sql'));
+ await db.exec(await read('../../supabase/migrations/20260917235302_professional_balance_sheets.sql'));
  await db.exec(await read(`../../supabase/migrations/${migration}.sql`));
  await db.query(`INSERT INTO companies VALUES($1,'Synthetic company','شركة اختبار','TEST-CR','QAR','Doha','الدوحة'),($2,'Other company','شركة أخرى','OTHER','QAR','Doha','الدوحة')`,[company,foreign]);
  await db.query(`INSERT INTO profiles(user_id,company_id,is_active,first_name,last_name) VALUES($1,$3,true,'Maker','Accountant'),($2,$3,true,'Reviewer','Accountant')`,[maker,reviewer,company]);
@@ -78,7 +79,7 @@ async function setup(instance=new PGlite()){
  await journal({date:'2026-03-01',debits:[[expense,50]],credits:[[cash,50]]});
 }
 
-const performanceMigration='20260918005000_financial_report_calculation_performance';
+const performanceMigration='20260918014423_financial_report_calculation_performance';
 const stripTimes=value=>Array.isArray(value)?value.map(stripTimes):value&&typeof value==='object'?Object.fromEntries(Object.entries(value).filter(([key])=>key!=='generatedAt').map(([key,item])=>[key,stripTimes(item)])):value;
 const install=async()=>{await admin();await db.exec(await read('../../supabase/migrations/'+performanceMigration+'.sql'));await auth();};
 async function manyJournals(n){
@@ -124,6 +125,187 @@ describe('financial reporting performance migration',{concurrency:false},()=>{
      const calls=(await val("SELECT current_setting('test.period_calls') value")).split(',').filter(Boolean);
      assert.equal(calls.length,expected);assert.equal(new Set(calls).size,expected);
    }
+ });
+});
+
+const diagnosticMigration='20261001020219_diagnostic_scope_after_source_fingerprint';
+const assemblySignature='balance_sheet_private.assemble_report(uuid,date,date,jsonb,jsonb)';
+const normalizeDefinition=definition=>definition.replace(/\r\n/g,'\n');
+const functionMetadata=signature=>query(`SELECT p.oid,p.proowner,p.proacl,p.proconfig,p.provolatile,p.prosecdef,
+ pg_get_functiondef(p.oid) AS definition FROM pg_proc p WHERE p.oid=$1::regprocedure`,[signature]);
+const omitChecks=report=>Object.fromEntries(Object.entries(stripTimes(report)).filter(([key])=>key!=='checks'));
+async function installFingerprintCalculationChain(){
+ await admin();
+ // The governance migration's fixture dependency is unrelated to this calculator.
+ await db.exec(`CREATE FUNCTION public.update_updated_at_column() RETURNS trigger LANGUAGE plpgsql AS $$
+ BEGIN NEW.updated_at=now();RETURN NEW;END;$$;`);
+ for(const name of [performanceMigration,'20260921120100_balance_sheet_governance','20260923161547_balance_sheet_source_fingerprint'])
+   await db.exec(await read('../../supabase/migrations/'+name+'.sql'));
+ await auth();
+}
+const installDiagnosticScope=async()=>{await admin();await db.exec(await read('../../supabase/migrations/'+diagnosticMigration+'.sql'));await auth();};
+
+describe('diagnostic scopes after the source-fingerprint migration',{concurrency:false},()=>{
+ beforeEach(async()=>{await setup();await installFingerprintCalculationChain();});
+ afterEach(async()=>db?.close());
+ it('preserves payloads, source fingerprints and function privileges while attributing and merging checks',async()=>{
+   await admin();
+   await db.query(`INSERT INTO vehicles(company_id,is_active,purchase_cost,purchase_date)
+     VALUES($1,true,0,NULL),($2,true,0,NULL)`,[company,foreign]);
+   const current={accounts:[{id:cash,code:'cash',balance:10}],totals:{assets:10},sourceFingerprint:'current-source',checks:[
+     {code:'shared_check',severity:'error',count:2,asOfDate:'2026-08-31',detail:[{id:cash,code:'cash'}]},
+     {code:'changed_count',severity:'warning',count:1,asOfDate:'2026-08-31',detail:[]}]};
+   const comparison={accounts:[{id:cash,code:'cash',balance:4}],totals:{assets:4},sourceFingerprint:'comparison-source',checks:[
+     {code:'shared_check',severity:'error',count:2,asOfDate:'2025-12-31',detail:[{id:cash,code:'cash'}]},
+     {code:'changed_count',severity:'warning',count:3,asOfDate:'2025-12-31',detail:[{id:revenue,code:'revenue'}]},
+     {code:'comparison_error',severity:'error',count:1,asOfDate:'2025-12-31',detail:[{id:capital,code:'capital'}]}]};
+   const assemble=()=>val(`SELECT ${assemblySignature.split('(')[0]}($1,'2026-08-31','2025-12-31',$2,$3) value`,[company,current,comparison]);
+   const before=await assemble(),metadataBefore=(await functionMetadata(assemblySignature))[0];
+   const periodBefore=(await functionMetadata('balance_sheet_private.period(uuid,date)'))[0];
+   assert.equal(before.checks.filter(c=>c.code==='shared_check').length,2);
+   await installDiagnosticScope();await admin();
+   const after=await assemble(),metadataAfter=(await functionMetadata(assemblySignature))[0];
+   assert.deepEqual(omitChecks(after),omitChecks(before));
+   assert.equal(after.fingerprint,before.fingerprint);
+   assert.equal(after.accounts[0].comparisonBalance,4);
+   assert.deepEqual({...metadataAfter,definition:null},{...metadataBefore,definition:null});
+   assert.deepEqual((await functionMetadata('balance_sheet_private.period(uuid,date)'))[0],periodBefore);
+   assert.deepEqual(after.checks.filter(c=>c.code==='shared_check'),[{...current.checks[0],scope:'as_of'}]);
+   assert.deepEqual(after.checks.filter(c=>c.code==='changed_count').sort((a,b)=>a.scope.localeCompare(b.scope)),[
+     {...current.checks[1],scope:'as_of'},{...comparison.checks[1],scope:'comparison_only'}]);
+   assert.deepEqual(after.checks.find(c=>c.code==='comparison_error'),{...comparison.checks[2],scope:'comparison_only'});
+   for(const code of ['current_vehicles_missing_cost','current_vehicles_missing_purchase_date']){
+     const check=after.checks.find(c=>c.code===code);
+     assert.equal(check.scope,'current_register');assert.equal(check.count,1);assert.deepEqual(check.detail,[]);
+   }
+   // Exercise this function's fingerprint contract independently of the source
+   // aggregation helper, which this narrow migration intentionally does not replace.
+   current.sourceFingerprint='changed-current-source';const changedCurrent=await assemble();
+   assert.notEqual(changedCurrent.fingerprint,after.fingerprint);
+   assert.deepEqual(changedCurrent.accounts,after.accounts);assert.deepEqual(changedCurrent.current,after.current);
+   current.sourceFingerprint='current-source';comparison.sourceFingerprint='changed-comparison-source';
+   assert.notEqual((await assemble()).fingerprint,after.fingerprint);
+   comparison.sourceFingerprint='comparison-source';assert.equal((await assemble()).fingerprint,after.fingerprint);
+   await db.query("UPDATE companies SET name='',name_ar=NULL,commercial_register='',currency='' WHERE id=$1",[company]);
+   const missingIdentity=await assemble();
+   for(const code of ['missing_company_identity','missing_company_currency']){
+     const check=missingIdentity.checks.find(c=>c.code===code);
+     assert.equal(check.scope,'as_of');assert.equal(check.severity,'error');assert.deepEqual(check.detail,[]);
+   }
+ });
+ it('preserves the real ledger payload and fingerprint, company authorization and date validation after the full calculation chain',async()=>{
+   const report=()=>val("SELECT public.get_professional_balance_sheet_v1($1,'2026-08-31','2025-12-31') value",[company]);
+   const before=await report();await installDiagnosticScope();const after=await report();
+   assert.deepEqual(omitChecks(after),omitChecks(before));assert.equal(after.fingerprint,before.fingerprint);
+   assert.equal(after.company.id,company);
+   assert.ok(after.checks.every(c=>['as_of','comparison_only','current_register'].includes(c.scope)));
+   await assert.rejects(()=>val("SELECT public.get_professional_balance_sheet_v1($1,'2026-08-31',NULL) value",[foreign]),e=>e.code==='42501');
+   await admin();
+   for(const role of ['anon','authenticated','service_role'])
+     assert.equal(await val('SELECT has_function_privilege($1,$2,\'EXECUTE\') value',[role,assemblySignature]),false);
+   await assert.rejects(()=>val("SELECT balance_sheet_private.assemble_report($1,'2026-08-31','2026-08-31','{}','{}') value",[company]),e=>e.code==='22023');
+   await assert.rejects(()=>val("SELECT balance_sheet_private.assemble_report($1,'2026-08-31',NULL,'{}','{}') value",['99999999-9999-4999-8999-999999999999']),e=>e.code==='22023');
+ });
+ it('rolls back to the exact previous function definition, OID, ACL and payload',async()=>{
+   await admin();const metadataBefore=(await functionMetadata(assemblySignature))[0];await auth();
+   const report=()=>val("SELECT public.get_professional_balance_sheet_v1($1,'2026-08-31','2025-12-31') value",[company]);
+   const before=await report();await installDiagnosticScope();await admin();
+   assert.notEqual(normalizeDefinition((await functionMetadata(assemblySignature))[0].definition),normalizeDefinition(metadataBefore.definition));
+   await db.exec(await read('../../supabase/rollbacks/'+diagnosticMigration+'.rollback.sql'));
+   const metadataAfter=(await functionMetadata(assemblySignature))[0];
+   assert.deepEqual({...metadataAfter,definition:normalizeDefinition(metadataAfter.definition)},
+     {...metadataBefore,definition:normalizeDefinition(metadataBefore.definition)});
+   await auth();assert.deepEqual(stripTimes(await report()),stripTimes(before));
+ });
+});
+
+const xorMigration='20261001021004_xor_source_fingerprint_after_diagnostic_scope';
+const sourceFingerprintSignature='balance_sheet_private.source_fingerprint(uuid,date)';
+const capturedSourceDefinitionSha='ad9fb83231735f096e11af002a98c284a9cb1caf109af071c1216ef8a94261fb';
+const sourceHash=(tenant=company,cutoff='2026-08-31')=>val('SELECT balance_sheet_private.source_fingerprint($1,$2) value',[tenant,cutoff]);
+const liveBalance=()=>val("SELECT public.get_professional_balance_sheet_v1($1,'2026-08-31','2025-12-31') value",[company]);
+const installXorSource=async()=>{await admin();await db.exec(await read('../../supabase/migrations/'+xorMigration+'.sql'));await auth();};
+
+describe('source fingerprint XOR fold after diagnostic scopes',{concurrency:false},()=>{
+ beforeEach(async()=>{
+   await setup();await installFingerprintCalculationChain();await installDiagnosticScope();await admin();
+   // Model the inspected deployment, whose scalar-subquery/null literal spelling
+   // differs from the historical local artifact. Its independent capture hash
+   // guards the canonical fixture rather than accepting an arbitrary rollback.
+   await db.exec(await read('./fixtures/source-fingerprint-live-before-xor.sql'));
+   const definition=normalizeDefinition((await functionMetadata(sourceFingerprintSignature))[0].definition);
+   assert.equal(createHash('sha256').update(definition).digest('hex'),capturedSourceDefinitionSha);
+   await auth();
+ });
+ afterEach(async()=>db?.close());
+ it('detects changed descriptions and balanced gross movements across many rows without changing account totals',async()=>{
+   await manyJournals(40);await admin();const oldHash=await sourceHash();
+   const line=(await query(`SELECT l.id FROM journal_entry_lines l JOIN journal_entries e ON e.id=l.journal_entry_id
+     WHERE e.company_id=$1 AND e.entry_date<='2026-08-31' ORDER BY l.id LIMIT 1`,[company]))[0].id;
+   await db.query("UPDATE journal_entry_lines SET line_description='First source-only edit' WHERE id=$1",[line]);
+   assert.equal(await sourceHash(),oldHash,'Reproduce the saturated bit_or defect before installing XOR');
+   await auth();const before=await liveBalance();await installXorSource();const after=await liveBalance();
+   assert.deepEqual(after.accounts,before.accounts);assert.deepEqual(after.current,before.current);assert.deepEqual(after.checks,before.checks);
+   assert.notEqual(after.fingerprint,before.fingerprint);
+   await admin();const first=await sourceHash();
+   await db.query("UPDATE journal_entry_lines SET line_description='Second source-only edit' WHERE id=$1",[line]);
+   assert.notEqual(await sourceHash(),first);await auth();const descriptionChanged=await liveBalance();
+   assert.notEqual(descriptionChanged.fingerprint,after.fingerprint);assert.deepEqual(descriptionChanged.current,after.current);
+   const a=await journal({debits:[[cash,100]],credits:[[revenue,100]]});
+   const b=await journal({debits:[[cash,200]],credits:[[revenue,200]]});
+   const grossBefore=await liveBalance();await admin();const grossHash=await sourceHash();
+   for(const [id,delta] of [[a,10],[b,-10]]){
+     await db.query(`UPDATE journal_entry_lines SET
+       debit_amount=CASE WHEN debit_amount>0 THEN debit_amount+$2 ELSE debit_amount END,
+       credit_amount=CASE WHEN credit_amount>0 THEN credit_amount+$2 ELSE credit_amount END
+       WHERE journal_entry_id=$1`,[id,delta]);
+     await db.query('UPDATE journal_entries SET total_debit=total_debit+$2,total_credit=total_credit+$2 WHERE id=$1',[id,delta]);
+   }
+   assert.notEqual(await sourceHash(),grossHash);await auth();const grossAfter=await liveBalance();
+   assert.notEqual(grossAfter.fingerprint,grossBefore.fingerprint);
+   assert.deepEqual(grossAfter.current,grossBefore.current);assert.deepEqual(grossAfter.accounts,grossBefore.accounts);
+ });
+ it('is invariant to physical row order and excludes other companies and entries after the cutoff',async()=>{
+   await manyJournals(12);await installXorSource();await admin();const baseline=await sourceHash();
+   const physicalOrder=()=>val('SELECT jsonb_agg(id ORDER BY ctid) value FROM journal_entry_lines');
+   const orderBefore=await physicalOrder();
+   await db.exec(`CREATE TEMP TABLE reordered_source_lines AS SELECT * FROM journal_entry_lines ORDER BY ctid;
+     DELETE FROM journal_entry_lines;
+     INSERT INTO journal_entry_lines SELECT * FROM reordered_source_lines ORDER BY ctid DESC;`);
+   assert.deepEqual(await physicalOrder(),[...orderBefore].reverse());assert.equal(await sourceHash(),baseline);
+   const otherBefore=await sourceHash(foreign);
+   await db.query(`INSERT INTO chart_of_accounts(id,company_id,account_code,account_name,account_type,account_subtype,account_level,is_header,is_active)
+     VALUES('bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbb1',$1,'OTHER_CASH','Other cash','asset','current_asset',3,false,true),
+       ('bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbb2',$1,'OTHER_REVENUE','Other revenue','revenue',NULL,3,false,true)`,[foreign]);
+   const foreignEntry=(await query(`INSERT INTO journal_entries(company_id,entry_date,status,total_debit,total_credit)
+     VALUES($1,'2026-02-01','posted',77,77) RETURNING id`,[foreign]))[0].id;
+   await db.query(`INSERT INTO journal_entry_lines(journal_entry_id,account_id,line_number,debit_amount,credit_amount)
+     VALUES($1,'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbb1',1,77,0),($1,'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbb2',2,0,77)`,[foreignEntry]);
+   assert.equal(await sourceHash(),baseline);assert.notEqual(await sourceHash(foreign),otherBefore);
+   await journal({date:'2027-01-01',debits:[[cash,999]],credits:[[revenue,999]]});await admin();
+   assert.equal(await sourceHash(),baseline);assert.notEqual(await sourceHash(company,'2027-01-01'),baseline);
+ });
+ it('keeps the empty-source fallback and distinguishes NULL from empty descriptions',async()=>{
+   await installXorSource();await admin();
+   assert.equal(await sourceHash('99999999-9999-4999-8999-999999999999'),createHash('sha256').update('none').digest('hex'));
+   const original=await sourceHash();const id=(await query('SELECT id FROM journal_entry_lines ORDER BY id LIMIT 1'))[0].id;
+   await db.query("UPDATE journal_entry_lines SET line_description='' WHERE id=$1",[id]);assert.notEqual(await sourceHash(),original);
+   await db.query('UPDATE journal_entry_lines SET line_description=NULL WHERE id=$1',[id]);assert.equal(await sourceHash(),original);
+ });
+ it('preserves OID, ACL and adjacent functions and restores the exact captured live definition on rollback',async()=>{
+   await admin();const before=(await functionMetadata(sourceFingerprintSignature))[0];
+   const unchanged=['balance_sheet_private.record_hash(text)','balance_sheet_private.period(uuid,date)',assemblySignature];
+   const adjacentBefore=[];for(const name of unchanged)adjacentBefore.push((await functionMetadata(name))[0]);
+   const hashBefore=await sourceHash();await installXorSource();await admin();const after=(await functionMetadata(sourceFingerprintSignature))[0];
+   assert.deepEqual({...after,definition:null},{...before,definition:null});
+   assert.equal(normalizeDefinition(after.definition).replace('bit_xor(','bit_or('),normalizeDefinition(before.definition));
+   for(let i=0;i<unchanged.length;i++)assert.deepEqual((await functionMetadata(unchanged[i]))[0],adjacentBefore[i]);
+   for(const role of ['anon','authenticated','service_role'])
+     assert.equal(await val('SELECT has_function_privilege($1,$2,\'EXECUTE\') value',[role,sourceFingerprintSignature]),false);
+   await db.exec(await read('../../supabase/rollbacks/'+xorMigration+'.rollback.sql'));
+   const rolledBack=(await functionMetadata(sourceFingerprintSignature))[0];
+   assert.deepEqual({...rolledBack,definition:normalizeDefinition(rolledBack.definition)},
+     {...before,definition:normalizeDefinition(before.definition)});assert.equal(await sourceHash(),hashBefore);
  });
 });
 

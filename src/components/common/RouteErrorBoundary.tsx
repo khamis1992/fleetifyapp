@@ -12,7 +12,7 @@
  * - Retry functionality
  */
 
-import React, { Component, ReactNode, useEffect } from 'react';
+import React, { Component, ReactNode } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -48,6 +48,12 @@ class RouteErrorBoundaryClass extends Component<RouteErrorBoundaryProps, RouteEr
   static getDerivedStateFromError(error: Error): Partial<RouteErrorBoundaryState> {
     console.error('🔴 [RouteErrorBoundary] Error caught:', error);
     return { hasError: true, error };
+  }
+
+  componentDidUpdate(previousProps: RouteErrorBoundaryProps) {
+    if (previousProps.resetKey !== this.props.resetKey && this.state.hasError) {
+      this.setState({ hasError: false, error: null, errorInfo: null, errorCount: 0 });
+    }
   }
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
@@ -143,8 +149,9 @@ class RouteErrorBoundaryClass extends Component<RouteErrorBoundaryProps, RouteEr
 export const RouteErrorBoundary: React.FC<RouteErrorBoundaryProps> = (props) => {
   const location = useLocation();
   
-  // Use location.key as reset trigger - this changes on every navigation
-  return <RouteErrorBoundaryClass key={location.key} {...props} resetKey={location.key} />;
+  // Reset a captured error on navigation without remounting healthy route
+  // children. Query-only changes must preserve editable drafts and filters.
+  return <RouteErrorBoundaryClass {...props} resetKey={location.key} />;
 };
 
 // Error Fallback UI Component

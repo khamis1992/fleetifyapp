@@ -1,7 +1,8 @@
 import { LegalCalendar } from '@/components/legal/workspace/LegalCalendar';
-import { legalCaseCsv, downloadLegalCases } from '@/components/legal/workspace/legalCaseExport';
+import { legalCaseCsv, downloadLegalCases, legalCaseExportRows, legalDirectionLabel } from '@/components/legal/workspace/legalCaseExport';
+import { loadAllLegalCases, loadLegalAttachmentMetadata, type LegalCaseFilters } from '@/services/legalCaseQueries';
 import { legalCaseTypeLabel, legalCaseStatusLabel } from '@/components/legal/workspace/legalLabels';
-import React, { useState, useMemo, useCallback, useEffect } from 'react';
+import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -120,6 +121,7 @@ const getLegalCaseTitle = (legalCase?: { case_title_ar?: string | null; case_tit
 
 const getLegalCaseCustomerName = (legalCase?: LegalCase | null) => {
   if (!legalCase) return 'غير محدد';
+  if (legalCase.case_direction === 'filed_against_us') return legalCase.client_name || 'غير محدد';
 
   const customer = legalCase.contract?.customer;
   if (customer) {
@@ -168,6 +170,8 @@ export const LegalCasesTracking: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('current');
   const [typeFilter, setTypeFilter] = useState<string>('all');
+  const [directionFilter, setDirectionFilter] = useState('all');
+  const [isExporting, setIsExporting] = useState(false);
   const [showCaseWizard, setShowCaseWizard] = useState(false);
   const [showTriggersConfig, setShowTriggersConfig] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
@@ -184,6 +188,8 @@ export const LegalCasesTracking: React.FC = () => {
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [caseToEdit, setCaseToEdit] = useState<LegalCase | null>(null);
   const [editFormData, setEditFormData] = useState({
+    case_direction: 'filed_by_us' as 'filed_by_us' | 'filed_against_us',
+    client_name: '',
     case_title: '',
     case_type: '',
     case_status: '',
@@ -364,6 +370,8 @@ export const LegalCasesTracking: React.FC = () => {
   const handleEditCase = useCallback((legalCase: LegalCase) => {
     setCaseToEdit(legalCase);
     setEditFormData({
+      case_direction: legalCase.case_direction || 'filed_by_us',
+      client_name: getLegalCaseCustomerName(legalCase),
       case_title: legalCase.case_title || '',
       case_type: legalCase.case_type || '',
       case_status: legalCase.case_status || '',
@@ -392,6 +400,8 @@ export const LegalCasesTracking: React.FC = () => {
         id: caseToEdit.id,
         data: {
           case_title: editFormData.case_title,
+          case_direction: editFormData.case_direction,
+          client_name: editFormData.client_name,
           case_type: editFormData.case_type,
           priority: editFormData.priority,
           description: editFormData.description || null,
@@ -874,17 +884,33 @@ export const LegalCasesTracking: React.FC = () => {
     }
   }, [caseToClose, closeFormData, companyId, user?.id, queryClient]);
 
-  const { data: casesResponse, isLoading, error } = useLegalCases(
-    {
+  const caseFilters: LegalCaseFilters = {
       contract_id: searchParams.get('contract_id') || undefined,
       case_status: !['all', 'current'].includes(statusFilter) ? statusFilter : undefined,
       exclude_cancelled: statusFilter === 'current',
       case_type: typeFilter !== 'all' ? typeFilter : undefined,
+      case_direction: directionFilter === 'all' ? undefined : directionFilter as LegalCaseFilters['case_direction'],
       search: searchTerm || undefined,
       page: activeTab === 'cases' ? currentPage : 1,
       pageSize: activeTab === 'cases' ? pageSize : 1000,
-    }
-  );
+    };
+  const { data: casesResponse, isLoading, error } = useLegalCases(caseFilters);
+  const exportCompanyRef = useRef(companyId);
+  exportCompanyRef.current = companyId;
+  const handleExportCases = async () => {
+    if (!companyId || !user?.id) { toast.error('تعذر تحديد الشركة أو صلاحية المستخدم'); return; }
+    const exportCompany = companyId;
+    setIsExporting(true);
+    try {
+      const allCases = await loadAllLegalCases(supabase, exportCompany, { ...caseFilters });
+      const attachments = await loadLegalAttachmentMetadata(supabase, exportCompany, allCases.map(item => item.id));
+      if (exportCompanyRef.current !== exportCompany) throw new Error('تغيرت الشركة أثناء التصدير؛ أعد المحاولة');
+      downloadLegalCases(legalCaseCsv(legalCaseExportRows(allCases, attachments, getLegalCaseTitle, getLegalCaseCustomerName)));
+      toast.success(`تم تصدير ${allCases.length} قضية حسب الفلاتر`, { description: 'يتضمن معلومات المستندات فقط؛ ملفات الأصول غير مضمنة في CSV' });
+    } catch (exportError) {
+      toast.error(exportError instanceof Error ? exportError.message : 'فشل تصدير القضايا أو فهرس المستندات؛ لم يُنشأ ملف جزئي');
+    } finally { setIsExporting(false); }
+  };
 
   const { data: stats, isLoading: isLoadingStats, error: statsError } = useLegalCaseStats();
 
@@ -904,7 +930,8 @@ export const LegalCasesTracking: React.FC = () => {
 
   useEffect(() => {
     setSelectedCaseIds([]);
-  }, [currentPage, searchTerm, statusFilter, typeFilter]);
+  }, [currentPage, searchTerm, statusFilter, typeFilter, directionFilter, companyId]);
+  useEffect(() => { setCurrentPage(1); }, [searchTerm, statusFilter, typeFilter, directionFilter, companyId]);
 
   const handleToggleCaseSelection = useCallback((caseId: string) => {
     setSelectedCaseIds((prev) =>
@@ -1070,11 +1097,8 @@ export const LegalCasesTracking: React.FC = () => {
               <span>إلغاء المحدد ({selectedCancellableCaseIds.length})</span>
             </Button>
           )}
-          <Button variant="outline" disabled={isLoading || cases.length === 0} onClick={() => downloadLegalCases(legalCaseCsv([
-            ['رقم القضية', 'عنوان القضية', 'العميل', 'النوع', 'الحالة', 'قيمة المطالبة (ر.ق)', 'المحكمة', 'موعد الجلسة'],
-            ...cases.map(item => [item.case_number, getLegalCaseTitle(item), getLegalCaseCustomerName(item), getTypeLabel(item.case_type), legalCaseStatusLabel(item.case_status), item.case_value ?? '', item.court_name, item.hearing_date]),
-          ]))} className="legal-action-secondary gap-2">
-            <Download size={16} /><span>تصدير الصفحة الحالية</span>
+          <Button variant="outline" disabled={isLoading || isExporting || !!error || totalCases === 0} onClick={handleExportCases} className="legal-action-secondary gap-2">
+            <Download size={16} /><span>{isExporting ? 'جاري تحميل جميع النتائج…' : 'تصدير كل نتائج الفلاتر'}</span>
           </Button>
           <Button
             onClick={() => setShowCaseWizard(true)}
@@ -1096,6 +1120,10 @@ export const LegalCasesTracking: React.FC = () => {
             className="overflow-hidden border-b border-[#E5EAF1]"
           >
             <div id="legal-case-filters" className="grid grid-cols-1 gap-4 bg-[#F6F8FB] p-5 sm:grid-cols-2 lg:grid-cols-3">
+              <Select value={directionFilter} onValueChange={setDirectionFilter}>
+                <SelectTrigger aria-label="اتجاه الدعوى" className="rounded-lg border-[#E5EAF1] bg-white"><SelectValue /></SelectTrigger>
+                <SelectContent><SelectItem value="all">جميع اتجاهات الدعوى</SelectItem><SelectItem value="filed_by_us">مرفوعة من الشركة</SelectItem><SelectItem value="filed_against_us">مرفوعة على الشركة</SelectItem></SelectContent>
+              </Select>
               <Select value={statusFilter} onValueChange={setStatusFilter}>
                 <SelectTrigger className="rounded-lg border-[#E5EAF1] bg-white">
                   <SelectValue placeholder="تصفية حسب الحالة" />
@@ -1173,7 +1201,7 @@ export const LegalCasesTracking: React.FC = () => {
                 />
               </TableHead>
               <TableHead className="px-6 py-4 font-medium">رقم الملف</TableHead>
-              <TableHead className="px-6 py-4 font-medium">العميل</TableHead>
+              <TableHead className="px-6 py-4 font-medium">الطرف الآخر</TableHead>
               <TableHead className="px-6 py-4 font-medium">نوع القضية</TableHead>
               <TableHead className="px-6 py-4 font-medium">المطالبة</TableHead>
               <TableHead className="px-6 py-4 font-medium">الحالة</TableHead>
@@ -1209,6 +1237,7 @@ export const LegalCasesTracking: React.FC = () => {
                   <TableCell className="px-6 py-4 font-semibold text-[#020617]"><button type="button" className="lw-file-link" onClick={() => handleViewDetails(item)} aria-label={`فتح القضية ${item.case_number}`}><FileText size={15} /><bdi>{item.case_number}</bdi></button></TableCell>
                   <TableCell className="px-6 py-4">
                     <div className="font-medium text-[#020617]">{getLegalCaseCustomerName(item as LegalCase)}</div>
+                    <Badge variant="outline" className="mt-1">{legalDirectionLabel(item.case_direction)}</Badge>
                     <div className="mt-0.5 text-xs text-[#94A3B8]">
                       {getLegalCaseTitle(item)}
                     </div>
@@ -1547,6 +1576,7 @@ export const LegalCasesTracking: React.FC = () => {
                 <div className="space-y-1">
                   <p className="text-sm text-slate-500">قيمة المطالبة</p>
                   <p className="font-medium text-lg text-[#E55B5B]">{formatCurrency(selectedCase.case_value || 0)}</p>
+                  <p className="text-sm">{legalDirectionLabel(selectedCase.case_direction)} · مبلغ مطالبة وليس حكمًا أو دفعًا فعليًا</p>
                 </div>
               </div>
 
@@ -2003,6 +2033,15 @@ export const LegalCasesTracking: React.FC = () => {
               </div>
 
               <div className="space-y-2">
+                <Label htmlFor="edit-direction">اتجاه الدعوى</Label>
+                <Select value={editFormData.case_direction} onValueChange={(value: 'filed_by_us' | 'filed_against_us') => setEditFormData(prev => ({ ...prev, case_direction: value }))}>
+                  <SelectTrigger id="edit-direction"><SelectValue /></SelectTrigger>
+                  <SelectContent><SelectItem value="filed_by_us">مرفوعة من الشركة</SelectItem><SelectItem value="filed_against_us">مرفوعة على الشركة</SelectItem></SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2"><Label htmlFor="edit-party-name">اسم الطرف الآخر</Label><Input id="edit-party-name" value={editFormData.client_name} onChange={event => setEditFormData(prev => ({ ...prev, client_name: event.target.value }))} /></div>
+
+              <div className="space-y-2">
                 <Label htmlFor="edit-priority">الأولوية</Label>
                 <Select
                   value={editFormData.priority}
@@ -2025,10 +2064,13 @@ export const LegalCasesTracking: React.FC = () => {
                 <Input
                   id="edit-value"
                   type="number"
+                  min="0"
+                  step="0.01"
                   value={editFormData.case_value}
                   onChange={(e) => setEditFormData(prev => ({ ...prev, case_value: parseFloat(e.target.value) || 0 }))}
                   placeholder="0"
                 />
+                <p className="text-xs text-muted-foreground">قيمة المطالبة منفصلة عن مبلغ الحكم والالتزام أو التحصيل الفعلي.</p>
               </div>
 
               <div className="space-y-2">

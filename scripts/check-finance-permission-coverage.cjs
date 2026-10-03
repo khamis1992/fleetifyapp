@@ -426,12 +426,23 @@ const enforcementFiles = [
     ],
   },
   {
+    path: path.join(process.cwd(), 'src', 'utils', 'arabicReportPdf.ts'),
+    markers: [
+      'export async function exportArabicReportPdf',
+      'await createArabicPdf()',
+      'const meta = payload.metadata',
+      'meta.sourceFingerprint',
+      'pdf.save(fileName)',
+    ],
+  },
+  {
     path: path.join(process.cwd(), 'src', 'components', 'finance', 'TrialBalanceReport.tsx'),
     markers: [
-      'exportOfficialFinancialReportToPDF',
+      'await exportArabicReportPdf(',
+      'from "@/utils/arabicReportPdf"',
       'exportOfficialFinancialReportToExcel',
       'buildTrialBalanceReport',
-      'sourceFingerprint',
+      'sourceFingerprint: auditReport.sourceFingerprint',
     ],
     forbiddenMarkers: [
       'import jsPDF from "jspdf"',
@@ -442,9 +453,10 @@ const enforcementFiles = [
   {
     path: path.join(process.cwd(), 'src', 'components', 'finance', 'IncomeStatementReport.tsx'),
     markers: [
-      'exportOfficialFinancialReportToPDF',
+      'await exportArabicReportPdf(',
+      'from "@/utils/arabicReportPdf"',
       'buildIncomeStatementReport',
-      'sourceFingerprint',
+      'sourceFingerprint: sourceReport.sourceFingerprint',
       'income_statement',
     ],
     forbiddenMarkers: [
@@ -469,7 +481,7 @@ const enforcementFiles = [
     ],
   },
   {
-    path: path.join(process.cwd(), 'supabase', 'migrations', '20260918001000_professional_balance_sheets.sql'),
+    path: path.join(process.cwd(), 'supabase', 'migrations', '20260917235302_professional_balance_sheets.sql'),
     markers: [
       'is_finance_action_authorized',
       'professional_balance_sheet_reports_read',
@@ -482,9 +494,10 @@ const enforcementFiles = [
   {
     path: path.join(process.cwd(), 'src', 'components', 'finance', 'CashFlowStatementReport.tsx'),
     markers: [
-      'exportOfficialFinancialReportToPDF',
+      'await exportArabicReportPdf(',
+      'from "@/utils/arabicReportPdf"',
       'buildCashFlowReport',
-      'sourceFingerprint',
+      'sourceFingerprint: sourceReport.sourceFingerprint',
       'cash_flow_statement',
     ],
     forbiddenMarkers: [

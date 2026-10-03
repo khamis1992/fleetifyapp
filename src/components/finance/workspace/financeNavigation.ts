@@ -351,6 +351,15 @@ export const financeNavigation: FinanceNavigationGroup[] = [
     ],
     secondaryItems: [
       {
+        id: "report-insolvency-portfolio",
+        descriptionAr: "الحصر الكامل للوضع المالي والأسطول والقضايا والمرفقات الفعلية مع فهرس النواقص للمحامي.",
+        href: "/finance/reports/insolvency-portfolio",
+        ar: "حافظة الوضع المالي ومستندات المحامي",
+        en: "Financial position and lawyer portfolio",
+        permission: "finance.reports.view",
+        parentId: "reports",
+      },
+      {
         id: "report-trial-balance",
         descriptionAr: "أرصدة جميع الحسابات بمدينها ودائنها للتحقق من التوازن.",
         href: "/finance/reports/trial-balance",

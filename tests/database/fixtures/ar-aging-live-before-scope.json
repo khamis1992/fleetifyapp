@@ -1,0 +1,252 @@
+{
+  "views": [
+    {
+      "acl": "{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}",
+      "name": "collections_priority_list",
+      "owner": "postgres",
+      "options": null,
+      "definition": " SELECT i.customer_id,\n    COALESCE(NULLIF(concat_ws(' '::text, c.first_name_ar, c.last_name_ar), ''::text), NULLIF(concat_ws(' '::text, c.first_name, c.last_name), ''::text), c.company_name_ar, c.company_name, 'غير معروف'::text) AS customer_name_ar,\n    COALESCE(NULLIF(concat_ws(' '::text, c.first_name, c.last_name), ''::text), c.company_name, c.first_name_ar, 'Unknown'::text) AS customer_name_en,\n    c.phone AS customer_phone,\n    c.email AS customer_email,\n    sum(i.total_amount - COALESCE(i.paid_amount, 0::numeric)) AS total_outstanding,\n    count(*) AS total_invoices,\n    max(CURRENT_DATE - i.due_date) AS max_days_overdue,\n    sum(\n        CASE\n            WHEN i.due_date < (CURRENT_DATE - '90 days'::interval) THEN i.total_amount - COALESCE(i.paid_amount, 0::numeric)\n            ELSE 0::numeric\n        END) AS critical_amount,\n    sum(\n        CASE\n            WHEN i.due_date < (CURRENT_DATE - '60 days'::interval) AND i.due_date >= (CURRENT_DATE - '90 days'::interval) THEN i.total_amount - COALESCE(i.paid_amount, 0::numeric)\n            ELSE 0::numeric\n        END) AS high_risk_amount,\n    max(CURRENT_DATE - i.due_date)::numeric * 0.5 + sum(i.total_amount - COALESCE(i.paid_amount, 0::numeric)) / 1000::numeric AS priority_score,\n        CASE\n            WHEN max(CURRENT_DATE - i.due_date) >= 90 THEN 'critical'::text\n            WHEN max(CURRENT_DATE - i.due_date) >= 60 THEN 'high'::text\n            WHEN max(CURRENT_DATE - i.due_date) >= 30 THEN 'medium'::text\n            ELSE 'low'::text\n        END AS risk_category,\n        CASE\n            WHEN max(CURRENT_DATE - i.due_date) >= 90 THEN 'legal_action'::text\n            WHEN max(CURRENT_DATE - i.due_date) >= 60 THEN 'final_notice'::text\n            WHEN max(CURRENT_DATE - i.due_date) >= 30 THEN 'follow_up_call'::text\n            ELSE 'monitor'::text\n        END AS recommended_action,\n    max(p.payment_date)::text AS last_payment_date,\n    avg(CURRENT_DATE - i.due_date) AS avg_dso\n   FROM invoices i\n     JOIN customers c ON c.id = i.customer_id\n     LEFT JOIN payments p ON p.customer_id = i.customer_id\n  WHERE i.payment_status <> ALL (ARRAY['paid'::text, 'cancelled'::text])\n  GROUP BY i.customer_id, c.first_name_ar, c.last_name_ar, c.first_name, c.last_name, c.company_name_ar, c.company_name, c.phone, c.email;"
+    },
+    {
+      "acl": "{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}",
+      "name": "company_ar_aging_summary",
+      "owner": "postgres",
+      "options": null,
+      "definition": " SELECT count(DISTINCT customer_id) AS total_customers_with_ar,\n    count(*) AS total_outstanding_invoices,\n    COALESCE(sum(total_amount - COALESCE(paid_amount, 0::numeric)), 0::numeric) AS total_ar_amount,\n    COALESCE(sum(\n        CASE\n            WHEN due_date IS NULL OR due_date >= CURRENT_DATE THEN total_amount - COALESCE(paid_amount, 0::numeric)\n            ELSE 0::numeric\n        END), 0::numeric) AS current_total,\n    COALESCE(sum(\n        CASE\n            WHEN due_date < CURRENT_DATE AND due_date >= (CURRENT_DATE - '30 days'::interval) THEN total_amount - COALESCE(paid_amount, 0::numeric)\n            ELSE 0::numeric\n        END), 0::numeric) AS days_1_30_total,\n    COALESCE(sum(\n        CASE\n            WHEN due_date < (CURRENT_DATE - '30 days'::interval) AND due_date >= (CURRENT_DATE - '60 days'::interval) THEN total_amount - COALESCE(paid_amount, 0::numeric)\n            ELSE 0::numeric\n        END), 0::numeric) AS days_31_60_total,\n    COALESCE(sum(\n        CASE\n            WHEN due_date < (CURRENT_DATE - '60 days'::interval) AND due_date >= (CURRENT_DATE - '90 days'::interval) THEN total_amount - COALESCE(paid_amount, 0::numeric)\n            ELSE 0::numeric\n        END), 0::numeric) AS days_61_90_total,\n    COALESCE(sum(\n        CASE\n            WHEN due_date < (CURRENT_DATE - '90 days'::interval) THEN total_amount - COALESCE(paid_amount, 0::numeric)\n            ELSE 0::numeric\n        END), 0::numeric) AS days_90_plus_total,\n        CASE\n            WHEN sum(total_amount - COALESCE(paid_amount, 0::numeric)) > 0::numeric THEN round(sum(\n            CASE\n                WHEN due_date IS NULL OR due_date >= CURRENT_DATE THEN total_amount - COALESCE(paid_amount, 0::numeric)\n                ELSE 0::numeric\n            END) * 100.0 / NULLIF(sum(total_amount - COALESCE(paid_amount, 0::numeric)), 0::numeric), 1)\n            ELSE 0::numeric\n        END AS current_percentage,\n        CASE\n            WHEN sum(total_amount - COALESCE(paid_amount, 0::numeric)) > 0::numeric THEN round(sum(\n            CASE\n                WHEN due_date < CURRENT_DATE AND due_date >= (CURRENT_DATE - '30 days'::interval) THEN total_amount - COALESCE(paid_amount, 0::numeric)\n                ELSE 0::numeric\n            END) * 100.0 / NULLIF(sum(total_amount - COALESCE(paid_amount, 0::numeric)), 0::numeric), 1)\n            ELSE 0::numeric\n        END AS days_1_30_percentage,\n        CASE\n            WHEN sum(total_amount - COALESCE(paid_amount, 0::numeric)) > 0::numeric THEN round(sum(\n            CASE\n                WHEN due_date < (CURRENT_DATE - '30 days'::interval) AND due_date >= (CURRENT_DATE - '60 days'::interval) THEN total_amount - COALESCE(paid_amount, 0::numeric)\n                ELSE 0::numeric\n            END) * 100.0 / NULLIF(sum(total_amount - COALESCE(paid_amount, 0::numeric)), 0::numeric), 1)\n            ELSE 0::numeric\n        END AS days_31_60_percentage,\n        CASE\n            WHEN sum(total_amount - COALESCE(paid_amount, 0::numeric)) > 0::numeric THEN round(sum(\n            CASE\n                WHEN due_date < (CURRENT_DATE - '60 days'::interval) AND due_date >= (CURRENT_DATE - '90 days'::interval) THEN total_amount - COALESCE(paid_amount, 0::numeric)\n                ELSE 0::numeric\n            END) * 100.0 / NULLIF(sum(total_amount - COALESCE(paid_amount, 0::numeric)), 0::numeric), 1)\n            ELSE 0::numeric\n        END AS days_61_90_percentage,\n        CASE\n            WHEN sum(total_amount - COALESCE(paid_amount, 0::numeric)) > 0::numeric THEN round(sum(\n            CASE\n                WHEN due_date < (CURRENT_DATE - '90 days'::interval) THEN total_amount - COALESCE(paid_amount, 0::numeric)\n                ELSE 0::numeric\n            END) * 100.0 / NULLIF(sum(total_amount - COALESCE(paid_amount, 0::numeric)), 0::numeric), 1)\n            ELSE 0::numeric\n        END AS days_90_plus_percentage,\n    COALESCE(avg(CURRENT_DATE - due_date) FILTER (WHERE due_date < CURRENT_DATE), 0::numeric) AS avg_days_overdue,\n    count(*) FILTER (WHERE due_date < (CURRENT_DATE - '60 days'::interval)) AS high_priority_count,\n    COALESCE(sum(total_amount - COALESCE(paid_amount, 0::numeric)) FILTER (WHERE due_date < (CURRENT_DATE - '60 days'::interval)), 0::numeric) AS high_priority_amount\n   FROM invoices i\n  WHERE payment_status <> ALL (ARRAY['paid'::text, 'cancelled'::text]);"
+    },
+    {
+      "acl": "{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}",
+      "name": "customer_ar_aging_summary",
+      "owner": "postgres",
+      "options": null,
+      "definition": " SELECT i.customer_id,\n    COALESCE(NULLIF(concat_ws(' '::text, c.first_name_ar, c.last_name_ar), ''::text), NULLIF(concat_ws(' '::text, c.first_name, c.last_name), ''::text), c.company_name_ar, c.company_name, 'غير معروف'::text) AS customer_name_ar,\n    COALESCE(NULLIF(concat_ws(' '::text, c.first_name, c.last_name), ''::text), c.company_name, c.first_name_ar, 'Unknown'::text) AS customer_name_en,\n    c.phone AS customer_phone,\n    c.email AS customer_email,\n    count(*) AS total_invoices,\n    sum(i.total_amount - COALESCE(i.paid_amount, 0::numeric)) AS total_outstanding,\n    sum(\n        CASE\n            WHEN i.due_date IS NULL OR i.due_date >= CURRENT_DATE THEN i.total_amount - COALESCE(i.paid_amount, 0::numeric)\n            ELSE 0::numeric\n        END) AS current_amount,\n    sum(\n        CASE\n            WHEN i.due_date < CURRENT_DATE AND i.due_date >= (CURRENT_DATE - '30 days'::interval) THEN i.total_amount - COALESCE(i.paid_amount, 0::numeric)\n            ELSE 0::numeric\n        END) AS days_1_30,\n    sum(\n        CASE\n            WHEN i.due_date < (CURRENT_DATE - '30 days'::interval) AND i.due_date >= (CURRENT_DATE - '60 days'::interval) THEN i.total_amount - COALESCE(i.paid_amount, 0::numeric)\n            ELSE 0::numeric\n        END) AS days_31_60,\n    sum(\n        CASE\n            WHEN i.due_date < (CURRENT_DATE - '60 days'::interval) AND i.due_date >= (CURRENT_DATE - '90 days'::interval) THEN i.total_amount - COALESCE(i.paid_amount, 0::numeric)\n            ELSE 0::numeric\n        END) AS days_61_90,\n    sum(\n        CASE\n            WHEN i.due_date < (CURRENT_DATE - '90 days'::interval) THEN i.total_amount - COALESCE(i.paid_amount, 0::numeric)\n            ELSE 0::numeric\n        END) AS days_90_plus,\n    max(CURRENT_DATE - i.due_date) AS max_days_overdue,\n    max(p.payment_date)::text AS last_payment_date\n   FROM invoices i\n     JOIN customers c ON c.id = i.customer_id\n     LEFT JOIN payments p ON p.customer_id = i.customer_id\n  WHERE i.payment_status <> ALL (ARRAY['paid'::text, 'cancelled'::text])\n  GROUP BY i.customer_id, c.first_name_ar, c.last_name_ar, c.first_name, c.last_name, c.company_name_ar, c.company_name, c.phone, c.email;"
+    }
+  ],
+  "columns": [
+    {
+      "type": "uuid",
+      "table": "collections_priority_list",
+      "column": "customer_id"
+    },
+    {
+      "type": "text",
+      "table": "collections_priority_list",
+      "column": "customer_name_ar"
+    },
+    {
+      "type": "text",
+      "table": "collections_priority_list",
+      "column": "customer_name_en"
+    },
+    {
+      "type": "text",
+      "table": "collections_priority_list",
+      "column": "customer_phone"
+    },
+    {
+      "type": "text",
+      "table": "collections_priority_list",
+      "column": "customer_email"
+    },
+    {
+      "type": "numeric",
+      "table": "collections_priority_list",
+      "column": "total_outstanding"
+    },
+    {
+      "type": "bigint",
+      "table": "collections_priority_list",
+      "column": "total_invoices"
+    },
+    {
+      "type": "integer",
+      "table": "collections_priority_list",
+      "column": "max_days_overdue"
+    },
+    {
+      "type": "numeric",
+      "table": "collections_priority_list",
+      "column": "critical_amount"
+    },
+    {
+      "type": "numeric",
+      "table": "collections_priority_list",
+      "column": "high_risk_amount"
+    },
+    {
+      "type": "numeric",
+      "table": "collections_priority_list",
+      "column": "priority_score"
+    },
+    {
+      "type": "text",
+      "table": "collections_priority_list",
+      "column": "risk_category"
+    },
+    {
+      "type": "text",
+      "table": "collections_priority_list",
+      "column": "recommended_action"
+    },
+    {
+      "type": "text",
+      "table": "collections_priority_list",
+      "column": "last_payment_date"
+    },
+    {
+      "type": "numeric",
+      "table": "collections_priority_list",
+      "column": "avg_dso"
+    },
+    {
+      "type": "bigint",
+      "table": "company_ar_aging_summary",
+      "column": "total_customers_with_ar"
+    },
+    {
+      "type": "bigint",
+      "table": "company_ar_aging_summary",
+      "column": "total_outstanding_invoices"
+    },
+    {
+      "type": "numeric",
+      "table": "company_ar_aging_summary",
+      "column": "total_ar_amount"
+    },
+    {
+      "type": "numeric",
+      "table": "company_ar_aging_summary",
+      "column": "current_total"
+    },
+    {
+      "type": "numeric",
+      "table": "company_ar_aging_summary",
+      "column": "days_1_30_total"
+    },
+    {
+      "type": "numeric",
+      "table": "company_ar_aging_summary",
+      "column": "days_31_60_total"
+    },
+    {
+      "type": "numeric",
+      "table": "company_ar_aging_summary",
+      "column": "days_61_90_total"
+    },
+    {
+      "type": "numeric",
+      "table": "company_ar_aging_summary",
+      "column": "days_90_plus_total"
+    },
+    {
+      "type": "numeric",
+      "table": "company_ar_aging_summary",
+      "column": "current_percentage"
+    },
+    {
+      "type": "numeric",
+      "table": "company_ar_aging_summary",
+      "column": "days_1_30_percentage"
+    },
+    {
+      "type": "numeric",
+      "table": "company_ar_aging_summary",
+      "column": "days_31_60_percentage"
+    },
+    {
+      "type": "numeric",
+      "table": "company_ar_aging_summary",
+      "column": "days_61_90_percentage"
+    },
+    {
+      "type": "numeric",
+      "table": "company_ar_aging_summary",
+      "column": "days_90_plus_percentage"
+    },
+    {
+      "type": "numeric",
+      "table": "company_ar_aging_summary",
+      "column": "avg_days_overdue"
+    },
+    {
+      "type": "bigint",
+      "table": "company_ar_aging_summary",
+      "column": "high_priority_count"
+    },
+    {
+      "type": "numeric",
+      "table": "company_ar_aging_summary",
+      "column": "high_priority_amount"
+    },
+    {
+      "type": "uuid",
+      "table": "customer_ar_aging_summary",
+      "column": "customer_id"
+    },
+    {
+      "type": "text",
+      "table": "customer_ar_aging_summary",
+      "column": "customer_name_ar"
+    },
+    {
+      "type": "text",
+      "table": "customer_ar_aging_summary",
+      "column": "customer_name_en"
+    },
+    {
+      "type": "text",
+      "table": "customer_ar_aging_summary",
+      "column": "customer_phone"
+    },
+    {
+      "type": "text",
+      "table": "customer_ar_aging_summary",
+      "column": "customer_email"
+    },
+    {
+      "type": "bigint",
+      "table": "customer_ar_aging_summary",
+      "column": "total_invoices"
+    },
+    {
+      "type": "numeric",
+      "table": "customer_ar_aging_summary",
+      "column": "total_outstanding"
+    },
+    {
+      "type": "numeric",
+      "table": "customer_ar_aging_summary",
+      "column": "current_amount"
+    },
+    {
+      "type": "numeric",
+      "table": "customer_ar_aging_summary",
+      "column": "days_1_30"
+    },
+    {
+      "type": "numeric",
+      "table": "customer_ar_aging_summary",
+      "column": "days_31_60"
+    },
+    {
+      "type": "numeric",
+      "table": "customer_ar_aging_summary",
+      "column": "days_61_90"
+    },
+    {
+      "type": "numeric",
+      "table": "customer_ar_aging_summary",
+      "column": "days_90_plus"
+    },
+    {
+      "type": "integer",
+      "table": "customer_ar_aging_summary",
+      "column": "max_days_overdue"
+    },
+    {
+      "type": "text",
+      "table": "customer_ar_aging_summary",
+      "column": "last_payment_date"
+    }
+  ]
+}

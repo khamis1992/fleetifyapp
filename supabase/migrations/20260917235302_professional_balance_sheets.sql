@@ -178,10 +178,10 @@ WITH entries AS MATERIALIZED (
   FROM public.journal_entry_lines l JOIN entries e ON e.id = l.journal_entry_id
   LEFT JOIN public.chart_of_accounts a ON a.id = l.account_id AND a.company_id = p_company
 ), entry_totals AS (
-  SELECT e.id, e.total_debit, e.total_credit, count(l.id) AS n,
+  SELECT e.id, e.entry_number, e.total_debit, e.total_credit, count(l.id) AS n,
     COALESCE(sum(l.debit),0) AS debit, COALESCE(sum(l.credit),0) AS credit
   FROM entries e LEFT JOIN source_lines l ON l.journal_entry_id = e.id
-  WHERE e.status = 'posted' GROUP BY e.id,e.total_debit,e.total_credit
+  WHERE e.status = 'posted' GROUP BY e.id,e.entry_number,e.total_debit,e.total_credit
 ), account_seed AS (
   SELECT a.id, a.account_code AS code, a.account_name AS name, a.account_name_ar AS name_ar,
     balance_sheet_private.account_type(a.account_type) AS type, a.account_type AS raw_type,

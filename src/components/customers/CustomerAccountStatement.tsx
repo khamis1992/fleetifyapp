@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback, useEffect } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -7,23 +7,28 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { 
-  CalendarIcon, 
   FileText, 
   Download, 
   Filter, 
   Printer,
   RefreshCw,
-  Mail,
-  Settings,
-  Eye,
   BarChart3
 } from 'lucide-react';
 import { useCustomerAccountStatement } from '@/hooks/useCustomerAccountStatement';
+import { useCompanyCurrency } from '@/hooks/useCompanyCurrency';
 import { Customer } from '@/types/customer';
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
 import { toast } from 'sonner';
-import { supabase } from '@/integrations/supabase/client';
+import { escapeHtml } from '@/utils/htmlSanitizer';
+
+const printText = (value: unknown) => escapeHtml(String(value ?? ''));
+const csvCell = (value: string | number | null | undefined) => {
+  const text = String(value ?? '');
+  // Keep numeric amounts numeric; neutralize formula-like text in spreadsheet apps.
+  const safeText = typeof value !== 'number' && /^\s*[=+@-]/.test(text) ? `'${text}` : text;
+  return `"${safeText.replace(/"/g, '""')}"`;
+};
 
 // Professional currency formatting for accounting
 const formatCurrency = (amount: number, currency: string = 'QAR') => {
@@ -53,34 +58,12 @@ export const CustomerAccountStatement: React.FC<CustomerAccountStatementProps> =
   const [dateTo, setDateTo] = useState<string>('');
   const [showFilters, setShowFilters] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
-  const [companyCurrency, setCompanyCurrency] = useState<string>('QAR');
-
-  // Fetch company currency
-  useEffect(() => {
-    const fetchCompanyCurrency = async () => {
-      try {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) return;
-
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('companies(currency)')
-          .eq('user_id', user.id)
-          .single();
-
-        if (profile && profile.companies) {
-          const currency = (profile.companies as any).currency || 'QAR';
-          setCompanyCurrency(currency);
-          console.log('✅ Company currency loaded:', currency);
-        }
-      } catch (error) {
-        console.error('Failed to fetch company currency:', error);
-        // Keep the Qatar company default when profile currency is unavailable.
-      }
-    };
-
-    fetchCompanyCurrency();
-  }, []);
+  const { currency: companyCurrency } = useCompanyCurrency();
+  const balanceLabel = dateFrom ? 'صافي حركة الفترة' : 'الرصيد الصافي';
+  const runningBalanceLabel = dateFrom ? 'الرصيد الجاري للفترة' : 'الرصيد الجاري';
+  const balanceBasis = dateFrom
+    ? 'الرصيد المعروض هو صافي حركة الفترة المحددة فقط؛ لا يشمل الحركات السابقة لبدايتها، ولا يمثل رصيدًا افتتاحيًا أو مصادقة على رصيد الحساب.'
+    : 'الكشف يعرض حركات الفواتير والدفعات المسجلة، ولا يُعدّ مصادقة على رصيد الحساب.';
 
   // Helper functions
   const getTransactionTypeBadge = useCallback((type: string) => {
@@ -144,17 +127,18 @@ export const CustomerAccountStatement: React.FC<CustomerAccountStatementProps> =
       if (format === 'csv') {
         const csvContent = [
           // Header row
-          'التاريخ,النوع,الوصف,رقم المرجع,مدين,دائن,الرصيد الجاري',
+          ['أساس الرصيد', balanceBasis, '', '', '', '', ''].map(csvCell).join(','),
+          ['التاريخ', 'النوع', 'الوصف', 'رقم المرجع', 'مدين', 'دائن', runningBalanceLabel].map(csvCell).join(','),
           // Data rows
           ...transactions.map(t => [
             formatDate(t.transaction_date),
             getTransactionTypeLabel(t.transaction_type),
-            t.description.replace(/,/g, ';'), // Escape commas
+            t.description,
             t.reference_number,
             t.debit_amount || 0,
             t.credit_amount || 0,
             t.running_balance
-          ].join(','))
+          ].map(csvCell).join(','))
         ].join('\n');
 
         // Download CSV
@@ -189,7 +173,7 @@ export const CustomerAccountStatement: React.FC<CustomerAccountStatementProps> =
     const printContent = `
       <html>
         <head>
-          <title>كشف حساب العميل - ${customerName}</title>
+          <title>كشف حساب العميل - ${printText(customerName)}</title>
           <style>
             body { font-family: Arial, sans-serif; direction: rtl; }
             table { width: 100%; border-collapse: collapse; margin-top: 20px; }
@@ -203,10 +187,11 @@ export const CustomerAccountStatement: React.FC<CustomerAccountStatementProps> =
         <body>
           <div class="header">
             <h1>كشف حساب العميل</h1>
-            <h2>${customerName}</h2>
-            <p>كود العميل: ${customer.customer_code}</p>
-            ${dateFrom || dateTo ? `<p>الفترة: ${dateFrom ? formatDate(dateFrom) : ''} - ${dateTo ? formatDate(dateTo) : ''}</p>` : ''}
-            <p>تاريخ الطباعة: ${formatDate(new Date().toISOString())}</p>
+            <h2>${printText(customerName)}</h2>
+            <p>كود العميل: ${printText(customer.customer_code)}</p>
+            ${dateFrom || dateTo ? `<p>الفترة: ${printText(dateFrom ? formatDate(dateFrom) : '')} - ${printText(dateTo ? formatDate(dateTo) : '')}</p>` : ''}
+            <p>${printText(balanceBasis)}</p>
+            <p>تاريخ الطباعة: ${printText(formatDate(new Date().toISOString()))}</p>
           </div>
           
           <table>
@@ -218,36 +203,36 @@ export const CustomerAccountStatement: React.FC<CustomerAccountStatementProps> =
                 <th>رقم المرجع</th>
                 <th>مدين</th>
                 <th>دائن</th>
-                <th>الرصيد الجاري</th>
+                <th>${printText(runningBalanceLabel)}</th>
               </tr>
             </thead>
             <tbody>
               ${transactions.map(t => `
                 <tr>
-                  <td>${formatDate(t.transaction_date)}</td>
-                  <td>${getTransactionTypeLabel(t.transaction_type)}</td>
-                  <td>${t.description}</td>
-                  <td>${t.reference_number}</td>
-                  <td>${t.debit_amount > 0 ? formatCurrency(t.debit_amount, companyCurrency) : ''}</td>
-                  <td>${t.credit_amount > 0 ? formatCurrency(t.credit_amount, companyCurrency) : ''}</td>
-                  <td>${formatCurrency(Math.abs(t.running_balance), companyCurrency)} ${t.running_balance >= 0 ? 'مدين' : 'دائن'}</td>
+                  <td>${printText(formatDate(t.transaction_date))}</td>
+                  <td>${printText(getTransactionTypeLabel(t.transaction_type))}</td>
+                  <td>${printText(t.description)}</td>
+                  <td>${printText(t.reference_number)}</td>
+                  <td>${printText(t.debit_amount > 0 ? formatCurrency(t.debit_amount, companyCurrency) : '')}</td>
+                  <td>${printText(t.credit_amount > 0 ? formatCurrency(t.credit_amount, companyCurrency) : '')}</td>
+                  <td>${printText(formatCurrency(Math.abs(t.running_balance), companyCurrency))} ${printText(t.running_balance >= 0 ? 'مدين' : 'دائن')}</td>
                 </tr>
               `).join('')}
               <tr class="total-row">
                 <td colspan="4"><strong>الإجماليات</strong></td>
-                <td><strong>${formatCurrency(totalDebit, companyCurrency)}</strong></td>
-                <td><strong>${formatCurrency(totalCredit, companyCurrency)}</strong></td>
-                <td><strong>${formatCurrency(Math.abs(netBalance), companyCurrency)} ${netBalance >= 0 ? 'مدين' : 'دائن'}</strong></td>
+                <td><strong>${printText(formatCurrency(totalDebit, companyCurrency))}</strong></td>
+                <td><strong>${printText(formatCurrency(totalCredit, companyCurrency))}</strong></td>
+                <td><strong>${printText(formatCurrency(Math.abs(netBalance), companyCurrency))} ${printText(netBalance >= 0 ? 'مدين' : 'دائن')}</strong></td>
               </tr>
             </tbody>
           </table>
           
           <div class="summary">
             <h3>ملخص الحساب</h3>
-            <p>إجمالي المدين: ${formatCurrency(totalDebit, companyCurrency)}</p>
-            <p>إجمالي الدائن: ${formatCurrency(totalCredit, companyCurrency)}</p>
-            <p>الرصيد الصافي: ${formatCurrency(Math.abs(netBalance), companyCurrency)} ${netBalance >= 0 ? 'مدين' : 'دائن'}</p>
-            <p>عدد المعاملات: ${transactions.length}</p>
+            <p>إجمالي المدين: ${printText(formatCurrency(totalDebit, companyCurrency))}</p>
+            <p>إجمالي الدائن: ${printText(formatCurrency(totalCredit, companyCurrency))}</p>
+            <p>${printText(balanceLabel)}: ${printText(formatCurrency(Math.abs(netBalance), companyCurrency))} ${printText(netBalance >= 0 ? 'مدين' : 'دائن')}</p>
+            <p>عدد المعاملات: ${printText(transactions.length)}</p>
           </div>
         </body>
       </html>
@@ -449,6 +434,7 @@ export const CustomerAccountStatement: React.FC<CustomerAccountStatementProps> =
       </Card>
 
       {/* Professional Summary Cards */}
+      <p role="note" className="rounded-lg border bg-muted/50 p-4 text-sm">{balanceBasis}</p>
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card className="bg-gradient-card shadow-card hover:shadow-elevated transition-smooth border-l-4 border-l-destructive">
           <CardContent className="p-4">
@@ -476,7 +462,7 @@ export const CustomerAccountStatement: React.FC<CustomerAccountStatementProps> =
         
         <Card className="bg-gradient-card shadow-card hover:shadow-elevated transition-smooth border-l-4 border-l-primary">
           <CardContent className="p-4">
-            <div className="text-sm text-muted-foreground mb-1">الرصيد الصافي</div>
+            <div className="text-sm text-muted-foreground mb-1">{balanceLabel}</div>
             <div className={`text-2xl font-bold ${ netBalance >= 0 ? 'text-destructive' : 'text-emerald-600'}`}>
               {formatCurrency(Math.abs(netBalance), companyCurrency)}
             </div>
@@ -546,7 +532,7 @@ export const CustomerAccountStatement: React.FC<CustomerAccountStatementProps> =
                       <TableHead className="font-bold">رقم المرجع</TableHead>
                       <TableHead className="font-bold text-right">مدين</TableHead>
                       <TableHead className="font-bold text-right">دائن</TableHead>
-                      <TableHead className="font-bold text-right">الرصيد الجاري</TableHead>
+                      <TableHead className="font-bold text-right">{runningBalanceLabel}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>

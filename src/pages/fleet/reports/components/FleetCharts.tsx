@@ -8,11 +8,9 @@ import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import {
-  AreaChart,
   Area,
   BarChart,
   Bar,
-  LineChart,
   Line,
   PieChart,
   Pie,
@@ -30,9 +28,6 @@ import {
 import {
   TrendingUp,
   TrendingDown,
-  BarChart3,
-  PieChart as PieChartIcon,
-  Activity,
 } from 'lucide-react';
 import { systemColorPattern } from '@/lib/design-system/systemColorPattern';
 import type { 
@@ -147,7 +142,6 @@ export const RevenueChart: React.FC<RevenueChartProps> = ({
   <ChartContainer
     title="تحليل الإيرادات والأرباح"
     subtitle="آخر 6 أشهر"
-    badge={{ text: 'نمو 12%', trend: 'up' }}
     isDark={isDark}
     delay={0.5}
     className="lg:col-span-2"
