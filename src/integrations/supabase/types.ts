@@ -9313,6 +9313,56 @@ export type Database = {
           },
         ]
       }
+      financial_statement_notes: {
+        Row: {
+          id: string
+          company_id: string
+          as_of_date: string
+          account_code: string | null
+          note_key: string
+          title_ar: string
+          body_ar: string
+          sort_order: number
+          is_active: boolean
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          company_id: string
+          as_of_date: string
+          account_code?: string | null
+          note_key: string
+          title_ar: string
+          body_ar: string
+          sort_order?: number
+          is_active?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          company_id?: string
+          as_of_date?: string
+          account_code?: string | null
+          note_key?: string
+          title_ar?: string
+          body_ar?: string
+          sort_order?: number
+          is_active?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "financial_statement_notes_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       financial_report_snapshots: {
         Row: {
           approved_at: string | null
