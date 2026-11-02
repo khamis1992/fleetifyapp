@@ -34,6 +34,7 @@ import { getCriminalComplaintEligibility } from '../utils/legalCaseWorkflow';
 import { printHtmlDocumentAsPdf } from '../utils/printHtmlDocument';
 import { getContractDocumentReview } from '../utils/contractDocumentSelection';
 import { ContractMatchingDialog } from './ContractMatchingDialog';
+import { LegalCitationReview } from './LegalCitationReview';
 
 const baseMandatoryDocIds: (keyof DocumentsState)[] = [
   'memo',
@@ -280,6 +281,7 @@ export function LegalDocuments() {
         </div>
       </section>
 
+      <LegalCitationReview state={state} />
       <section className="lawsuit-section-panel">
         <div className="lawsuit-document-ledger">
           <div className="lawsuit-ledger-header">

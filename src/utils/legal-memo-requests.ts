@@ -1,6 +1,7 @@
 import type { LegalDocumentData, VehicleCustody } from './legal-document-generator';
 import { claimRegisterRequests } from './legal-claim-register-render';
 import { isTrafficViolationsOnlyScope } from '@/types/legalClaimScope';
+import { buildVerifiedExpeditedEnforcementRequest } from './legal-citations';
 
 export interface LegalMemoRequestSections {
   procedural: string[];
@@ -90,6 +91,7 @@ export function buildLegalMemoRequestSections(
         `إلزام المدعى عليه بأن يؤدي للمدعية مبلغ (${formatQar(violationsAmount)} ريال قطري) قيمة المخالفات المرورية المرتبطة بالعقد فقط، والتي ثبت وقوعها خلال فترة حيازته للمركبة وفق الكشوف الرسمية وأحكام العقد. ولا تشمل المطالبة رصيد الأجرة أو غرامات التأخير أو أي تعويضات أخرى ضمن هذه الدعوى.`,
       );
     }
+    addRequest(closing, buildVerifiedExpeditedEnforcementRequest());
     addRequest(closing, 'إلزام المدعى عليه بالرسوم والمصاريف ومقابل أتعاب المحاماة.');
     return { procedural, financial, closing };
   }
@@ -157,7 +159,7 @@ export function buildLegalMemoRequestSections(
 
   if (paymentDelayDamage > 0) {
     addRequest(financial,
-      `إلزام المدعى عليه بمبلغ (${formatQar(paymentDelayDamage)} ريال قطري)، أو بما تقدره المحكمة، تعويضاً عادلاً عن الضرر الفعلي المباشر الناجم عن التأخر في سداد الدين النقدي بعد إعذاره قانوناً، وفق المواد (256) و(263) و(268) من القانون المدني، وبما يشمل الأعباء التمويلية المرتبطة سببياً بالتأخر، دون تكرار أصل الدين أو الجمع بينه وبين تعويض اتفاقي عن الضرر ذاته.`,
+      `إلزام المدعى عليه بمبلغ (${formatQar(paymentDelayDamage)} ريال قطري)، أو بما تقدره المحكمة، تعويضاً عادلاً عن الضرر الفعلي المباشر الناجم عن التأخر في سداد الدين النقدي بعد إعذاره قانوناً، وفق الأساس القانوني الموثق بالمذكرة، وبما يشمل الأعباء التمويلية المرتبطة سببياً بالتأخر، دون تكرار أصل الدين أو الجمع بينه وبين تعويض اتفاقي عن الضرر ذاته.`,
     );
   }
 
@@ -184,7 +186,7 @@ export function buildLegalMemoRequestSections(
 
   addRequest(
     closing,
-    'شمول الحكم بالنفاذ المعجل، وبغير كفالة إن رأت المحكمة توافر شروط المادة (9) من قانون التنفيذ القضائي رقم (4) لسنة 2024، وعلى الأخص ما يترتب على تأخير التنفيذ من ضرر جسيم بمصلحة المدعية.',
+    buildVerifiedExpeditedEnforcementRequest(),
   );
   addRequest(closing, 'إلزام المدعى عليه بالرسوم والمصاريف ومقابل أتعاب المحاماة.');
 

@@ -6,6 +6,7 @@ import { COMPANY_INFO, generateRefNumber, formatDateAr } from './shared';
 import { getOfficialLetterStyles } from './styles';
 import { generateOfficialHeader, generateSignatureSection } from './templates';
 import type { ViolationsTransferData, CriminalComplaintData } from './types';
+import { buildVerifiedTrafficLiabilityText } from '../legal-citations';
 
 /**
  * توليد طلب تحويل المخالفات المرورية
@@ -123,7 +124,7 @@ export function generateViolationsTransferHtml(data: ViolationsTransferData): st
     <!-- السند القانوني -->
     <div class="content">
       <p>
-        <strong>السند القانوني:</strong> استناداً إلى المادة (3) من قانون المرور القطري رقم (19) لسنة 2007 والتي تنص على أن "مستعمل المركبة يكون مسؤولاً عن المخالفات التي ترتكب أثناء استعماله لها"، وحيث أن المخالفات المذكورة أعلاه قد ارتكبت خلال فترة الإيجار من قبل المستأجر المذكور، فإننا نطلب تحويل هذه المخالفات إلى اسمه.
+        <strong>أساس الطلب:</strong> ${buildVerifiedTrafficLiabilityText()}
       </p>
     </div>
     
@@ -271,18 +272,8 @@ export function generateCriminalComplaintHtml(data: CriminalComplaintData): stri
         <tbody>
           <tr>
             <td>قانون العقوبات القطري</td>
-            <td>المادة (321)</td>
-            <td>جريمة خيانة الأمانة - الاستيلاء على مال منقول مملوك للغير</td>
-          </tr>
-          <tr>
-            <td>قانون العقوبات القطري</td>
-            <td>المادة (324)</td>
-            <td>إساءة استعمال الأمانة - الاحتفاظ بالمركبة بعد انتهاء سبب الحيازة</td>
-          </tr>
-          <tr>
-            <td>قانون العقوبات القطري</td>
-            <td>المادة (333)</td>
-            <td>الاستيلاء غير المشروع على مال منقول</td>
+            <td>[يُستكمل]</td>
+            <td>يُستكمل النص المنطبق والتكييف القانوني بعد مراجعة الوقائع والمستندات</td>
           </tr>
         </tbody>
       </table>

@@ -1,12 +1,11 @@
-import type { LegalClaimRegister } from '@/types/legalClaimRegister';
+import { additionalPrimaryAmount, type LegalClaimRegister } from '@/types/legalClaimRegister';
+import { buildVerifiedJurisdictionText, buildVerifiedTrafficLiabilityText, omitUnverifiedArticleReferences, renderVerifiedLegalBasis } from './legal-citations';
 import { renderClaimRegister, renderClaimRegisterNarrative } from './legal-claim-register-render';
-import { additionalPrimaryAmount } from '@/types/legalClaimRegister';
 /**
  * Legal Document Generator
  * Generates legal complaint documents (مذكرة شارحة) for delinquent customers
  */
 
-import { format } from 'date-fns';
 import type { DelinquentCustomer } from '@/hooks/useDelinquentCustomers';
 import { buildLegalMemoRequestSections } from './legal-memo-requests';
 import {
@@ -209,7 +208,6 @@ function renderLegalRequestHtml(value: string): string {
   return escapeHtml(value)
     .replace(/^([^:]{2,12}:)/, '<strong>$1</strong>')
     .replace(/\(([^()]*)\)/g, '<strong>($1)</strong>')
-    .replace(/<strong>\(268\)<\/strong>/g, '(268)')
     .replace(
       /(قيمة صافي الأجرة المستحقة حتى )(\d{2}\/\d{2}\/\d{4})/,
       '$1<strong>$2</strong>',
@@ -218,6 +216,7 @@ function renderLegalRequestHtml(value: string): string {
 
 function sanitizeLegalDocumentData(data: LegalDocumentData): LegalDocumentData {
   const text = (value: string | null | undefined) => value == null ? value : escapeHtml(value);
+  const narrative = (value: string | null | undefined) => value == null ? value : text(omitUnverifiedArticleReferences(value));
   return {
     ...data,
     caseNumber: text(data.caseNumber) || undefined,
@@ -260,10 +259,10 @@ function sanitizeLegalDocumentData(data: LegalDocumentData): LegalDocumentData {
       return: text(data.contractClauses.return),
       violations: text(data.contractClauses.violations),
     } : undefined,
-    additionalNotes: text(data.additionalNotes) || undefined,
+    additionalNotes: text(omitUnverifiedArticleReferences(data.additionalNotes || '')) || undefined,
     breachDetails: data.breachDetails ? {
-      unpaidMonthsDescription: text(data.breachDetails.unpaidMonthsDescription) || undefined,
-      damagesDescription: text(data.breachDetails.damagesDescription) || undefined,
+      unpaidMonthsDescription: narrative(data.breachDetails.unpaidMonthsDescription) || undefined,
+      damagesDescription: narrative(data.breachDetails.damagesDescription) || undefined,
     } : undefined,
     terminationClause: data.terminationClause ? {
       number: escapeHtml(data.terminationClause.number),
@@ -271,7 +270,7 @@ function sanitizeLegalDocumentData(data: LegalDocumentData): LegalDocumentData {
     } : undefined,
     noticeException: data.noticeException ? {
       ...data.noticeException,
-      reason: escapeHtml(data.noticeException.reason),
+      reason: narrative(data.noticeException.reason) || '',
     } : undefined,
     formalNotices: data.formalNotices?.map((notice) => ({
       ...notice,
@@ -292,7 +291,7 @@ function sanitizeLegalDocumentData(data: LegalDocumentData): LegalDocumentData {
     damageCostItems: data.damageCostItems?.map((item) => ({
       ...item,
       type: escapeHtml(item.type),
-      description: escapeHtml(item.description),
+      description: narrative(item.description) || '',
     })),
   };
 }
@@ -336,11 +335,12 @@ export function buildLegalMemoFactsText(data: LegalDocumentData): string {
  * Updated to match new legal memo template structure
  */
 export function generateLegalComplaintHTML(data: LegalDocumentData): string {
+  const legalBasis = renderVerifiedLegalBasis(data);
   const memoRequests = buildLegalMemoRequestSections(data);
   data = sanitizeLegalDocumentData(data);
   const { customer, companyInfo, vehicleInfo, contractInfo, damages = 0, additionalNotes, breachDetails } = data;
 
-  const today = data.memoDate || format(new Date(), 'dd/MM/yyyy');
+  const today = data.memoDate || '[يُستكمل]';
   const currentDate = today;
 
   const refNumber = data.documentReference || `DRAFT-${contractInfo.contract_number}`;
@@ -364,20 +364,6 @@ export function generateLegalComplaintHTML(data: LegalDocumentData): string {
   const totalClaim = trafficOnlyClaim
     ? violationsAmount
     : overdueRent + latePenalty + violationsAmount + documentedDamages + retentionAmount;
-  const monetaryDelayDamage = (trafficOnlyClaim ? [] : data.damageCostItems || [])
-    .filter((item) => item.type === 'monetary_delay_damage')
-    .reduce((sum, item) => sum + item.amount, 0);
-  const financingBurdenDamage = (trafficOnlyClaim ? [] : data.damageCostItems || [])
-    .filter((item) => item.type === 'financing_burden_damage')
-    .reduce((sum, item) => sum + item.amount, 0);
-  const operationalLoss = (trafficOnlyClaim ? [] : data.damageCostItems || [])
-    .filter((item) => item.type === 'operational_loss')
-    .reduce((sum, item) => sum + item.amount, 0);
-  const paymentDelayDamage = monetaryDelayDamage + financingBurdenDamage;
-  const materialDamage = Math.max(
-    0,
-    documentedDamages - paymentDelayDamage - operationalLoss,
-  );
   const compensation = data.contractualCompensation;
   const compensationUnitsLabel = compensation?.method === 'daily' ? 'يوم تأخر عن الاستحقاقات'
     : compensation?.method === 'per_invoice' ? 'استحقاق غير مسدد' : 'شهر استحقاق غير مسدد';
@@ -443,7 +429,7 @@ export function generateLegalComplaintHTML(data: LegalDocumentData): string {
 
   // Company info constants
   const COMPANY_INFO = {
-    name_ar: companyInfo.name_ar || 'شركة العراف لتأجير السيارات',
+    name_ar: companyInfo.name_ar || '[يُستكمل]',
     name_en: companyInfo.name_en || 'AL-ARAF CAR RENTAL L.L.C',
     logo: '/receipts/logo.png',
     address: companyInfo.address || 'أم صلال محمد – الشارع التجاري – مبنى (79) – الطابق الأول – مكتب (2)',
@@ -1012,7 +998,7 @@ export function generateLegalComplaintHTML(data: LegalDocumentData): string {
       <div class="section-title">أولاً: الاختصاص القضائي</div>
       <div class="section-content">
         <p>
-          تتمسك المدعية باختصاص محكمة الاستثمار والتجارة بنظر الدعوى، عملاً بالمادة (7) من القانون رقم (21) لسنة 2021 بإنشاء محكمة الاستثمار والتجارة، باعتبار النزاع ناشئاً عن عقد إيجار مركبة أبرمته المدعية في إطار نشاطها التجاري.
+          ${buildVerifiedJurisdictionText()}
         </p>
       </div>
     </div>
@@ -1205,64 +1191,18 @@ export function generateLegalComplaintHTML(data: LegalDocumentData): string {
     </div>
 
     <!-- Section: Legal Basis -->
-    ${data.claimRegister && !trafficOnlyClaim ? '' : `
     <div class="section">
-      <div class="section-title">رابعاً: الأساس القانوني</div>
+      ${data.claimRegister && !trafficOnlyClaim ? '<h3>الأساس القانوني الموثق</h3>' : '<div class="section-title">رابعاً: الأساس القانوني الموثق</div>'}
       <div class="section-content">
-        <p>تستند هذه الدعوى إلى أحكام <strong>القانون المدني القطري رقم (22) لسنة 2004</strong>، وقانون إنشاء محكمة الاستثمار والتجارة رقم (21) لسنة 2021، وقانون التنفيذ القضائي رقم (4) لسنة 2024، وذلك على النحو الآتي:</p>
-
-        <div class="legal-article">
-          <strong>1. القوة الملزمة للعقد وحسن النية (المادتان 171 و172):</strong>
-          تقرر المادة (171) أن العقد شريعة المتعاقدين، وتوجب المادة (172) تنفيذه طبقاً لما اشتمل عليه وبطريقة تتفق مع حسن النية. والثابت من المستندات قيام العلاقة العقدية${trafficOnlyClaim ? ' ووقوع المخالفات المرورية المطالب بقيمتها خلال حيازة المدعى عليه للمركبة.' : '، في حين تخلف المدعى عليه عن الوفاء بكامل الأجرة المستحقة.'}
-        </div>
-        ${!trafficOnlyClaim ? `
-        <div class="legal-article">
-          <strong>2. الالتزام بسداد الأجرة (المادة 607):</strong>
-          يلتزم المستأجر بالوفاء بالأجرة في المواعيد المتفق عليها، والثابت من الفواتير وكشف الحساب أنه لم يسدد كامل الأجرة المستحقة، ولم يقدم ما يثبت براءة ذمته من الرصيد المطالب به.
-        </div>
-        <div class="legal-article">
-          <strong>3. ${effectiveTerminationPath === 'natural_expiry' ? 'انتهاء الإيجار بانقضاء مدته (المادة 625)' : effectiveTerminationPath === 'documented' ? 'الشرط الفاسخ الصريح (المادة 184)' : 'الفسخ القضائي (المادة 183)'}:</strong>
-          ${effectiveTerminationPath === 'natural_expiry'
-            ? 'ينتهي الإيجار بانقضاء المدة المحددة له في العقد دون حاجة إلى تنبيه بالإخلاء، ما لم يوجد اتفاق على امتداده، وقد ثبت انقضاء المدة وعدم التجديد بالمستندات المرفقة.'
-            : effectiveTerminationPath === 'documented'
-              ? `ورد الشرط الفاسخ بعبارة صريحة في البند رقم (${data.terminationClause?.number}) من العقد، وثبت وصول الإنذار وانقضاء مهلته دون تنفيذ؛ ومن ثم تطلب المدعية ثبوت الانفساخ، واحتياطياً الفسخ القضائي وفق المادة (183).`
-              : `تجيز المادة (183) طلب فسخ العقد عند عدم وفاء الطرف الآخر بالتزامه، مع التعويض إن كان له مقتضى، وذلك بعد الإعذار على الوجه المقرر قانوناً. وإذ يتعلق الإخلال بالتزام جوهري ومتجدد هو سداد الأجرة، تتمسك المدعية بطلب الفسخ وترتيب آثاره من التاريخ الذي تحدده المحكمة.${data.noticeException ? ` وتعرض المدعية الحالة الموثقة الآتية للنظر في انطباق المادة (262): ${data.noticeException.reason}.` : deliveredNotices.length > 0 ? ' وقد ثبت التكليف السابق بالسداد أو الرد بالمستندات.' : ''}`}
-        </div>
-        <div class="legal-article">
-          <strong>4. رد المركبة وتعويض التأخر في ردها (المواد 616 و617 و618):</strong>
-          تقضي المادة (616) بأن المستأجر يلتزم برد العين المؤجرة عند انتهاء الإيجار، فإذا أبقاها تحت يده دون حق التزم بأن يدفع للمؤجر تعويضاً يراعى في تقديره القيمة الإيجارية وما أصاب المؤجر من ضرر، مع مراعاة أحكام المادتين (617) و(618) بشأن حالة الرد ومصروفاته.
-        </div>
-        ` : ''}
-        ${!trafficOnlyClaim && custody === 'with_defendant' ? `
-        <div class="legal-article">
-          <strong>5. التعويض عن الإبقاء بعد انتهاء العلاقة الإيجارية:</strong>
-          إذا استمر في حيازتها بعد صيرورة الفسخ منتجًا لآثاره، التزم إلى جانب الرد بتعويض يراعى في تقديره أجر المثل والضرر الذي أصاب المدعية، دون الجمع عن الفترة نفسها بين الأجرة التعاقدية وتعويض الاحتباس.
-        </div>
-        ` : ''}
-        ${customer.violations_count > 0 ? `<div class="legal-article">
-          <strong>${trafficOnlyClaim ? '2' : custody === 'with_defendant' ? '6' : '5'}. المخالفات المرورية:</strong>
-          نص عقد الإيجار على تحمل المستأجر للمخالفات والالتزامات الناتجة عن استعمال المركبة، وقد ثبتت المخالفات المبينة بالكشف المرفق خلال فترة حيازته لها، ومن ثم يلتزم بأداء قيمتها للمدعية دون تعليق طلبات الدعوى على إجراء التحويل الإداري.
-        </div>` : ''}
-        ${!trafficOnlyClaim && materialDamage > 0 ? `<div class="legal-article">
-          <strong>${custody === 'with_defendant' ? '7' : '6'}. الأضرار والمصاريف:</strong>
-          يسأل المستأجر وفق المادة (613) عما يصيب العين أثناء انتفاعه بها من تلف أو هلاك ناشئ عن استعمال غير مألوف، وقد قصرت المدعية طلبها على الأضرار والمصاريف الثابتة بالتقارير والفواتير بعد تنزيل الاستهلاك وما غطاه التأمين.
-        </div>` : ''}
-        ${!trafficOnlyClaim && paymentDelayDamage > 0 ? `<div class="legal-article">
-          <strong>${custody === 'with_defendant' ? '8' : '7'}. التعويض عن التأخر في سداد المبالغ المستحقة (المواد 256 و263 و268):</strong>
-          تقضي المادة (256) بالتعويض عن الضرر الناشئ عن عدم التنفيذ أو التأخر فيه، وتحدد المادة (263) نطاقه بما لحق الدائن من خسارة وما فاته من كسب متى كان ذلك نتيجة طبيعية للإخلال، وتجيز المادة (268) للمحكمة عند ثبوت ضرر ناشئ عن التأخر في الوفاء بالدين النقدي بعد الإعذار أن تقضي بتعويض تراعى فيه مقتضيات العدالة. وقد حصرت المدعية طلبها في الضرر الفعلي المباشر المثبت بالمستندات، بما في ذلك الأعباء التمويلية التي ثبتت صلتها بالتأخر، دون إدخال أصل الدين أو الأقساط ذاتها مرتين، بإجمالي (${formatQar(paymentDelayDamage)}) ريال قطري${deliveredNotices.length > 0 ? ' من تاريخ الإعذار الثابت بالمستندات' : '، على أن يبدأ أثر التأخر من تاريخ الإعذار الثابت قانوناً'}.
-        </div>` : ''}
-        ${!trafficOnlyClaim && operationalLoss > 0 ? `<div class="legal-article">
-          <strong>${custody === 'with_defendant' ? '9' : '8'}. فوات الانتفاع خلال مدة الإصلاح بعد الاسترداد (المادتان 256 و263):</strong>
-          يشمل التعويض ما فات المدعية من كسب متى كان نتيجة طبيعية ومباشرة للإخلال. وقد حصرت المدعية مطالبتها في صافي فوات الانتفاع والكسب خلال مدة الإصلاح المعقولة بعد استرداد المركبة، والثابت بالمستندات بمبلغ (${formatQar(operationalLoss)}) ريال قطري، بعد استبعاد المصروفات التي لم تتحملها ودون ازدواج مع تعويض الاحتباس السابق على التسليم.
-        </div>` : ''}
-        ${!trafficOnlyClaim && latePenalty > 0 ? `<div class="legal-article">
-          <strong>${custody === 'with_defendant' ? (operationalLoss > 0 ? '10' : '9') : (operationalLoss > 0 ? '9' : '8')}. التعويض الاتفاقي:</strong>
-          تتمسك المدعية بالغرامة العقدية بوصفها تعويضاً اتفاقياً ثابتاً في البند رقم (${data.contractualCompensation?.clauseNumber}) من العقد${contractualCompensationClauseText ? `، ونصه: «${contractualCompensationClauseText}»` : ''}، وفق طريقة الحساب الواردة فيه (${contractualCompensationFormula})، بإجمالي (${formatQar(latePenalty)}) ريال قطري، وذلك في الحدود التي تجيزها أحكام القانون، مع خضوعه لرقابة المحكمة وفق المادتين (266) و(267)، ودون جمعه مع تعويض آخر عن الضرر ذاته.
-        </div>` : ''}
+        ${legalBasis}
+        ${!trafficOnlyClaim && custody === 'with_defendant' ? '<p>تطلب المدعية تعويض الاحتباس بعد زوال سند الحيازة وفق أجر المثل والضرر الثابت، دون الجمع مع الأجرة عن الفترة والمنفعة ذاتهما.</p>' : ''}
+        ${!trafficOnlyClaim && latePenalty > 0 ? `<p>تتمسك المدعية بالغرامة العقدية بوصفها تعويضاً اتفاقياً ثابتاً في البند رقم (${data.contractualCompensation?.clauseNumber}) من العقد${contractualCompensationClauseText ? `، ونصه: «${contractualCompensationClauseText}»` : ''}، وفق طريقة الحساب الواردة فيه (${contractualCompensationFormula})، بإجمالي (${formatQar(latePenalty)}) ريال قطري، في الحدود التي تجيزها أحكام القانون ومع خضوعه لرقابة المحكمة، ودون جمعه مع تعويض آخر عن الضرر ذاته.</p>` : ''}
+        ${customer.violations_count > 0 ? `<p>${buildVerifiedTrafficLiabilityText()}</p>` : ''}
       </div>
     </div>
 
     <!-- Section: Evidence -->
+    ${data.claimRegister && !trafficOnlyClaim ? '' : `
     <div class="section">
       <div class="section-title">خامساً: الإثبات والرد على الدفوع</div>
       <div class="section-content">

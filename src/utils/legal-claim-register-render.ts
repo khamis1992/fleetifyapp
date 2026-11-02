@@ -1,3 +1,4 @@
+import { omitUnverifiedArticleReferences } from './legal-citations';
 import {
   CLAIM_DISPOSITION_LABELS,
   fixedCompensationRow,
@@ -6,12 +7,12 @@ import {
 import type { LegalDocumentData } from "./legal-document-generator";
 
 const escape = (value: unknown) =>
-  String(value ?? "").replace(
+  omitUnverifiedArticleReferences(String(value ?? "")).replace(
     /[&<>"']/g,
     (c) =>
       ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[
         c
-      ]!)
+      ] ?? c)
   );
 const money = (value: number | null) =>
   value == null
@@ -131,7 +132,7 @@ export function renderClaimRegisterNarrative(data: LegalDocumentData): string {
   return (
     section(
       "ثالثاً: الأجرة المستحقة والفسخ ورد المركبة",
-      `<p>تستند المدعية إلى المواد (171) و(172) و(607) من القانون المدني بشأن تنفيذ العقد بحسن نية وسداد الأجرة، وإلى المادة (183) بشأن الفسخ عند الإخلال بعد استيفاء الإعذار متى كان واجباً، أو مسار انتهاء العقد الثابت بالمستندات والمبين في الوقائع.</p>${describe(
+      `<p>تتمسك المدعية بالعقد وسداد الأجرة، وبالفسخ عند الإخلال بعد استيفاء الإعذار متى كان واجباً، أو مسار انتهاء العقد الثابت بالمستندات والمبين في الوقائع. ترد النصوص التشريعية الموثقة في قسم الأساس القانوني.</p>${describe(
         ["rent_due", "legal_extension_rent"]
       )}${
         continuing
@@ -141,7 +142,7 @@ export function renderClaimRegisterNarrative(data: LegalDocumentData): string {
     ) +
     (retention || continuing ? section(
       "رابعاً: التعويض عن احتباس المركبة والحرمان من الانتفاع",
-      `<p>تستند المدعية إلى المادة (616) من القانون المدني بشأن الرد عند انتهاء الإيجار والتعويض عن إبقاء العين دون حق، مع مراعاة القيمة الإيجارية والضرر الثابت. يبدأ التعويض من اليوم التالي لتاريخ زوال سند الحيازة المحتسب وينتهي بالرد الفعلي المثبت أو نهاية الحرمان المعتبرة، دون تداخل مع الأجرة.</p>${
+      `<p>تطلب المدعية الرد عند انتهاء الإيجار والتعويض عن إبقاء العين دون حق، مع مراعاة القيمة الإيجارية والضرر الثابت. يبدأ التعويض من اليوم التالي لتاريخ زوال سند الحيازة المحتسب وينتهي بالرد الفعلي المثبت أو نهاية الحرمان المعتبرة، دون تداخل مع الأجرة.</p>${
         retention
           ? describe(["retention"])
           : ""
@@ -163,7 +164,7 @@ export function renderClaimRegisterNarrative(data: LegalDocumentData): string {
     ) : "") +
     (hasOpportunityClaim ? section(
       "خامساً: التعويض عن خسارة فرصة تأجير محددة",
-      `<p>تستند المطالبة إلى المادة (263) بشأن الخسارة والكسب الفائت المرتبطين بالإخلال، مع مراعاة جدية الفرصة واحتمال تحققها وصافي العائد والمصروفات المتجنبة وإمكان الحد من الضرر.</p>${describe(
+      `<p>تطلب المدعية التعويض عن الخسارة والكسب الفائت المرتبطين بالإخلال، مع مراعاة جدية الفرصة واحتمال تحققها وصافي العائد والمصروفات المتجنبة وإمكان الحد من الضرر.</p>${describe(
             ["rental_opportunity"]
           )}<p>يطرح الطلب بديلاً بقدر تداخله مع الأجرة أو الاحتباس عن المنفعة نفسها، ومستقلاً فقط بقدر ضرر مختلف مؤيد لم يجبر في بند آخر.</p>`
     ) : "") +
@@ -183,8 +184,8 @@ export function renderClaimRegisterNarrative(data: LegalDocumentData): string {
         .join(
           ""
         )}` : ""}${hasMaterialClaims && (data.damageCostItems || []).some(item => ['monetary_delay_damage', 'financing_burden_damage'].includes(item.type || ''))
-          ? '<p>التعويض عن الضرر المالي للتأخر في السداد يخضع للمادة (268) وثبوت الإعذار والضرر الإضافي وعلاقته بالتأخر.</p>' : ''}${items(['contractual_compensation']).length
-          ? '<p>التعويض الاتفاقي يخضع لرقابة المحكمة وفق المادتين (266) و(267)، دون تكرار الضرر.</p>' : ''}`
+          ? '<p>التعويض عن الضرر المالي للتأخر في السداد يشترط له ثبوت الإعذار والضرر الإضافي وعلاقته بالتأخر.</p>' : ''}${items(['contractual_compensation']).length
+          ? '<p>التعويض الاتفاقي يخضع لرقابة المحكمة في الحدود المقررة قانوناً، دون تكرار الضرر.</p>' : ''}`
     ) : "") +
     (hasReputationClaim ? section(
       "سابعاً: طلب التعويض عن الأضرار المعنوية والاعتبار التجاري",
@@ -218,5 +219,5 @@ export function claimRegisterRequests(register: LegalClaimRegister): string[] {
             ? "، وفق شرط الطلب الاحتياطي وخاضعًا لتقدير المحكمة، دون إضافته إلى إجمالي الأصل"
             : ""
         }.`
-    );
+    ).map(omitUnverifiedArticleReferences);
 }

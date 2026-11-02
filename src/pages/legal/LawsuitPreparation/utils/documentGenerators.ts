@@ -167,7 +167,7 @@ export function buildMemoDocumentData(
       total_debt: calculations.total,
     },
     companyInfo: {
-      name_ar: 'شركة العراف لتأجير السيارات',
+      name_ar: 'شركة العراف لتأجير السيارات ذ.م.م',
       name_en: 'Al-Araf Car Rental',
       address: 'أم صلال محمد – الشارع التجاري – مبنى (79) – الطابق الأول – مكتب (2)',
       cr_number: '146832',
